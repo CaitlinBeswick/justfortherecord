@@ -24,7 +24,8 @@ export function Navbar() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
             <Disc3 className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-serif text-xl tracking-tight">Melodex</span>
+          <span className="font-serif text-lg tracking-tight hidden sm:inline">Just For The Record</span>
+          <span className="font-serif text-lg tracking-tight sm:hidden">JFTR</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-1">
