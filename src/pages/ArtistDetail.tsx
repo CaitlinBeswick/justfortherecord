@@ -7,6 +7,29 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getArtist, getArtistReleases, getCoverArtUrl, getYear } from "@/services/musicbrainz";
 
+// Generate a consistent color based on the artist name
+function getArtistColor(name: string): string {
+  const colors = [
+    'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500',
+    'bg-lime-500', 'bg-green-500', 'bg-emerald-500', 'bg-teal-500',
+    'bg-cyan-500', 'bg-sky-500', 'bg-blue-500', 'bg-indigo-500',
+    'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 'bg-pink-500',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function getInitials(name: string): string {
+  const words = name.split(' ').filter(w => w.length > 0);
+  if (words.length === 1) {
+    return words[0].substring(0, 2).toUpperCase();
+  }
+  return words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
 const ArtistDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -23,8 +46,6 @@ const ArtistDetail = () => {
     queryFn: () => getArtistReleases(id!, 'album'),
     enabled: !!id,
   });
-
-  const placeholderArtist = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop";
 
   if (isLoading) {
     return (
@@ -63,12 +84,7 @@ const ArtistDetail = () => {
       <main className="pt-16">
         {/* Hero Section */}
         <div className="relative">
-          <div className="absolute inset-0 overflow-hidden">
-            <img
-              src={placeholderArtist}
-              alt=""
-              className="w-full h-full object-cover opacity-30 blur-3xl scale-110"
-            />
+          <div className={`absolute inset-0 overflow-hidden ${getArtistColor(artist.name)}`}>
             <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/70 to-background" />
           </div>
           
@@ -89,11 +105,11 @@ const ArtistDetail = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4 }}
               >
-                <img
-                  src={placeholderArtist}
-                  alt={artist.name}
-                  className="w-48 h-48 md:w-56 md:h-56 rounded-full object-cover border-4 border-border/50 shadow-2xl"
-                />
+                <div className={`w-48 h-48 md:w-56 md:h-56 rounded-full ${getArtistColor(artist.name)} border-4 border-border/50 shadow-2xl flex items-center justify-center`}>
+                  <span className="text-white font-bold text-6xl md:text-7xl drop-shadow-lg">
+                    {getInitials(artist.name)}
+                  </span>
+                </div>
               </motion.div>
 
               <motion.div
