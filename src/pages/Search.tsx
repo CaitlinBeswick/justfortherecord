@@ -61,9 +61,6 @@ const Search = () => {
   const showAlbums = activeTab === "all" || activeTab === "albums";
   const showArtists = activeTab === "all" || activeTab === "artists";
 
-  // Default placeholder image
-  const placeholderArtist = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop";
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -174,7 +171,6 @@ const Search = () => {
                         <ArtistCard
                           id={artist.id}
                           name={artist.name}
-                          imageUrl={placeholderArtist}
                           genres={artist.genres?.slice(0, 2).map(g => g.name) || [artist.type || 'Artist']}
                           onClick={() => navigate(`/artist/${artist.id}`)}
                         />
