@@ -2,23 +2,59 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { useParams, useNavigate } from "react-router-dom";
-import { popularArtists, featuredAlbums } from "@/data/mockData";
-import { ArrowLeft, UserPlus, UserCheck, Share2 } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getArtist, getArtistReleases, getCoverArtUrl, getYear } from "@/services/musicbrainz";
 
 const ArtistDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [following, setFollowing] = useState(false);
 
-  const artist = popularArtists.find((a) => a.id === id) || popularArtists[0];
+  const { data: artist, isLoading, error } = useQuery({
+    queryKey: ['artist', id],
+    queryFn: () => getArtist(id!),
+    enabled: !!id,
+  });
 
-  // Mock discography
-  const discography = featuredAlbums.slice(0, 4).map((album, index) => ({
-    ...album,
-    id: `disc-${index}`,
-    artist: artist.name,
-  }));
+  const { data: releases = [] } = useQuery({
+    queryKey: ['artist-releases', id],
+    queryFn: () => getArtistReleases(id!, 'album'),
+    enabled: !!id,
+  });
+
+  const placeholderArtist = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop";
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !artist) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h1 className="font-serif text-2xl text-foreground mb-2">Artist Not Found</h1>
+          <p className="text-muted-foreground mb-4">This artist couldn't be loaded from MusicBrainz.</p>
+          <button onClick={() => navigate(-1)} className="text-primary hover:underline">
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const genres = artist.genres?.slice(0, 3).map(g => g.name) || [];
+  const beginYear = artist["life-span"]?.begin?.split('-')[0];
 
   return (
     <div className="min-h-screen bg-background">
@@ -29,7 +65,7 @@ const ArtistDetail = () => {
         <div className="relative">
           <div className="absolute inset-0 overflow-hidden">
             <img
-              src={artist.imageUrl}
+              src={placeholderArtist}
               alt=""
               className="w-full h-full object-cover opacity-30 blur-3xl scale-110"
             />
@@ -54,7 +90,7 @@ const ArtistDetail = () => {
                 transition={{ duration: 0.4 }}
               >
                 <img
-                  src={artist.imageUrl}
+                  src={placeholderArtist}
                   alt={artist.name}
                   className="w-48 h-48 md:w-56 md:h-56 rounded-full object-cover border-4 border-border/50 shadow-2xl"
                 />
@@ -67,19 +103,22 @@ const ArtistDetail = () => {
                 className="flex-1 text-center md:text-left"
               >
                 <p className="text-sm text-primary font-medium uppercase tracking-wider">
-                  Artist
+                  {artist.type || "Artist"} {artist.country && `· ${artist.country}`}
                 </p>
                 <h1 className="font-serif text-5xl md:text-6xl text-foreground mt-2">
                   {artist.name}
                 </h1>
-                <p className="text-lg text-muted-foreground mt-2">
-                  {artist.genres.join(" · ")}
-                </p>
+                {genres.length > 0 && (
+                  <p className="text-lg text-muted-foreground mt-2">
+                    {genres.join(" · ")}
+                  </p>
+                )}
 
                 <div className="flex items-center justify-center md:justify-start gap-6 mt-4 text-sm text-muted-foreground">
-                  <span><strong className="text-foreground">2.4M</strong> followers</span>
-                  <span><strong className="text-foreground">12</strong> albums</span>
-                  <span><strong className="text-foreground">156</strong> songs</span>
+                  {beginYear && (
+                    <span>Active since <strong className="text-foreground">{beginYear}</strong></span>
+                  )}
+                  <span><strong className="text-foreground">{releases.length}</strong> albums</span>
                 </div>
 
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
@@ -114,28 +153,40 @@ const ArtistDetail = () => {
 
         {/* Discography */}
         <section className="container mx-auto px-4 py-8 pb-20">
-          <h2 className="font-serif text-2xl text-foreground mb-6">Discography</h2>
+          <h2 className="font-serif text-2xl text-foreground mb-6">
+            Discography {releases.length > 0 && `(${releases.length} albums)`}
+          </h2>
           
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
-          >
-            {discography.map((album, index) => (
-              <motion.div
-                key={album.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + index * 0.05 }}
-              >
-                <AlbumCard
-                  {...album}
-                  onClick={() => navigate(`/album/${album.id}`)}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
+          {releases.length > 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
+            >
+              {releases.map((release, index) => (
+                <motion.div
+                  key={release.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + index * 0.03 }}
+                >
+                  <AlbumCard
+                    id={release.id}
+                    title={release.title}
+                    artist={artist.name}
+                    coverUrl={getCoverArtUrl(release.id)}
+                    year={getYear(release["first-release-date"])}
+                    onClick={() => navigate(`/album/${release.id}`)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">
+              No albums found in the database.
+            </p>
+          )}
         </section>
       </main>
     </div>

@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { StarRating } from "./ui/StarRating";
+import { useState } from "react";
+import { Disc3 } from "lucide-react";
 
 interface AlbumCardProps {
   id: string;
@@ -19,6 +21,8 @@ export function AlbumCard({
   year,
   onClick,
 }: AlbumCardProps) {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -26,12 +30,19 @@ export function AlbumCard({
       className="album-card group cursor-pointer"
       onClick={onClick}
     >
-      <div className="relative aspect-square overflow-hidden">
-        <img
-          src={coverUrl}
-          alt={`${title} by ${artist}`}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+      <div className="relative aspect-square overflow-hidden bg-secondary">
+        {imageError ? (
+          <div className="h-full w-full flex items-center justify-center bg-muted">
+            <Disc3 className="h-12 w-12 text-muted-foreground/30" />
+          </div>
+        ) : (
+          <img
+            src={coverUrl}
+            alt={`${title} by ${artist}`}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={() => setImageError(true)}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         
         {rating !== undefined && (

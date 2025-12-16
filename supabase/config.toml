@@ -1,0 +1,4 @@
+project_id = "elydnykhwsvrtjonkvxj"
+
+[functions.musicbrainz]
+verify_jwt = false
