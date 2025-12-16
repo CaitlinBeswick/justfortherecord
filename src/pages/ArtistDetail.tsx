@@ -41,11 +41,34 @@ const ArtistDetail = () => {
     enabled: !!id,
   });
 
-  const { data: releases = [] } = useQuery({
+  const { data: releases = [], isLoading: releasesLoading } = useQuery({
     queryKey: ['artist-releases', id],
-    queryFn: () => getArtistReleases(id!, 'album'),
+    queryFn: () => getArtistReleases(id!), // Fetches all types now
     enabled: !!id,
   });
+
+  // Group releases by type
+  const groupedReleases = releases.reduce((acc, release) => {
+    const type = release["primary-type"] || "Other";
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(release);
+    return acc;
+  }, {} as Record<string, typeof releases>);
+
+  // Sort each group by date (newest first)
+  Object.values(groupedReleases).forEach(group => {
+    group.sort((a, b) => {
+      const dateA = a["first-release-date"] || "";
+      const dateB = b["first-release-date"] || "";
+      return dateB.localeCompare(dateA);
+    });
+  });
+
+  // Order of display
+  const typeOrder = ["Album", "Single", "EP", "Compilation", "Live", "Remix", "Other"];
+  const sortedTypes = Object.keys(groupedReleases).sort(
+    (a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b)
+  );
 
   if (isLoading) {
     return (
@@ -134,7 +157,7 @@ const ArtistDetail = () => {
                   {beginYear && (
                     <span>Active since <strong className="text-foreground">{beginYear}</strong></span>
                   )}
-                  <span><strong className="text-foreground">{releases.length}</strong> albums</span>
+                  <span><strong className="text-foreground">{releases.length}</strong> releases</span>
                 </div>
 
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
@@ -170,37 +193,52 @@ const ArtistDetail = () => {
         {/* Discography */}
         <section className="container mx-auto px-4 py-8 pb-20">
           <h2 className="font-serif text-2xl text-foreground mb-6">
-            Discography {releases.length > 0 && `(${releases.length} albums)`}
+            Discography {releases.length > 0 && `(${releases.length} releases)`}
           </h2>
           
-          {releases.length > 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
-            >
-              {releases.map((release, index) => (
-                <motion.div
-                  key={release.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + index * 0.03 }}
-                >
-                  <AlbumCard
-                    id={release.id}
-                    title={release.title}
-                    artist={artist.name}
-                    coverUrl={getCoverArtUrl(release.id)}
-                    year={getYear(release["first-release-date"])}
-                    onClick={() => navigate(`/album/${release.id}`)}
-                  />
-                </motion.div>
+          {releasesLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : releases.length > 0 ? (
+            <div className="space-y-10">
+              {sortedTypes.map((type) => (
+                <div key={type}>
+                  <h3 className="font-serif text-lg text-foreground mb-4 flex items-center gap-2">
+                    {type}s
+                    <span className="text-sm text-muted-foreground font-normal">
+                      ({groupedReleases[type].length})
+                    </span>
+                  </h3>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+                  >
+                    {groupedReleases[type].map((release, index) => (
+                      <motion.div
+                        key={release.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.02 }}
+                      >
+                        <AlbumCard
+                          id={release.id}
+                          title={release.title}
+                          artist={artist.name}
+                          coverUrl={getCoverArtUrl(release.id)}
+                          year={getYear(release["first-release-date"])}
+                          onClick={() => navigate(`/album/${release.id}`)}
+                        />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">
-              No albums found in the database.
+              No releases found in the database.
             </p>
           )}
         </section>

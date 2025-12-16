@@ -45,7 +45,9 @@ serve(async (req) => {
         break;
       
       case 'get-artist-releases':
-        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=${type || 'album'}&fmt=json&limit=50`;
+        // Fetch all release types by default, or specific type if provided
+        const releaseType = type || 'album|single|ep|compilation|live|remix';
+        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=${encodeURIComponent(releaseType)}&fmt=json&limit=100`;
         break;
       
       case 'get-release-tracks':
