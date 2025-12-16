@@ -89,7 +89,7 @@ export async function getArtist(id: string): Promise<MBArtist> {
   return await callMusicBrainz({ action: 'get-artist', id });
 }
 
-export async function getArtistReleases(artistId: string, type: string = 'album'): Promise<MBReleaseGroup[]> {
+export async function getArtistReleases(artistId: string, type?: string): Promise<MBReleaseGroup[]> {
   const data = await callMusicBrainz({ action: 'get-artist-releases', id: artistId, type });
   return data["release-groups"] || [];
 }
