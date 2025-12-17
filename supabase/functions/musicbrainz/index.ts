@@ -8,6 +8,30 @@ const corsHeaders = {
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT = "JustForTheRecord/1.0.0 (contact@example.com)";
 
+// Retry fetch with exponential backoff for transient errors
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.log(`Fetch attempt ${attempt + 1} failed: ${lastError.message}`);
+      
+      // Wait before retrying (exponential backoff: 500ms, 1000ms, 2000ms)
+      if (attempt < maxRetries - 1) {
+        const delay = 500 * Math.pow(2, attempt);
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -64,7 +88,7 @@ serve(async (req) => {
 
     console.log(`Fetching: ${url}`);
     
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       headers: {
         'User-Agent': USER_AGENT,
         'Accept': 'application/json',
