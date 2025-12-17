@@ -1,50 +1,11 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ArtistCard } from "@/components/ArtistCard";
-import { popularArtists } from "@/data/mockData";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
-import { useState } from "react";
-
-const allArtists = [
-  ...popularArtists,
-  {
-    id: "7",
-    name: "Daft Punk",
-    imageUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
-    genres: ["Electronic", "House"],
-  },
-  {
-    id: "8",
-    name: "Arctic Monkeys",
-    imageUrl: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=300&h=300&fit=crop",
-    genres: ["Indie Rock", "Alternative"],
-  },
-  {
-    id: "9",
-    name: "Bon Iver",
-    imageUrl: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=300&h=300&fit=crop",
-    genres: ["Indie Folk", "Alternative"],
-  },
-  {
-    id: "10",
-    name: "Tyler, the Creator",
-    imageUrl: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=300&h=300&fit=crop",
-    genres: ["Hip Hop", "Neo-Soul"],
-  },
-  {
-    id: "11",
-    name: "Billie Eilish",
-    imageUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=300&fit=crop",
-    genres: ["Pop", "Electropop"],
-  },
-  {
-    id: "12",
-    name: "The Weeknd",
-    imageUrl: "https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=300&h=300&fit=crop",
-    genres: ["R&B", "Pop"],
-  },
-];
+import { Search, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { searchArtists, MBArtist } from "@/services/musicbrainz";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -62,10 +23,21 @@ const itemVariants = {
 const Artists = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const filteredArtists = allArtists.filter((artist) =>
-    artist.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const { data: artists = [], isLoading } = useQuery({
+    queryKey: ['artists-search', debouncedSearch],
+    queryFn: () => searchArtists(debouncedSearch),
+    enabled: debouncedSearch.length >= 2,
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,7 +53,7 @@ const Artists = () => {
             <div>
               <h1 className="font-serif text-4xl text-foreground">Artists</h1>
               <p className="text-muted-foreground mt-1">
-                Discover and follow your favorite artists
+                Search millions of artists from MusicBrainz
               </p>
             </div>
             
@@ -97,23 +69,42 @@ const Artists = () => {
             </div>
           </div>
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8"
-          >
-            {filteredArtists.map((artist) => (
-              <motion.div key={artist.id} variants={itemVariants}>
-                <ArtistCard
-                  {...artist}
-                  onClick={() => navigate(`/artist/${artist.id}`)}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
+          {search.length < 2 && (
+            <div className="text-center py-20">
+              <Users className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                Type at least 2 characters to search artists
+              </p>
+            </div>
+          )}
 
-          {filteredArtists.length === 0 && (
+          {isLoading && search.length >= 2 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Searching...</p>
+            </div>
+          )}
+
+          {!isLoading && artists.length > 0 && (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8"
+            >
+              {artists.map((artist: MBArtist) => (
+                <motion.div key={artist.id} variants={itemVariants}>
+                  <ArtistCard
+                    id={artist.id}
+                    name={artist.name}
+                    genres={artist.genres?.slice(0, 2).map(g => g.name) || []}
+                    onClick={() => navigate(`/artist/${artist.id}`)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+
+          {!isLoading && search.length >= 2 && artists.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No artists found matching "{search}"</p>
             </div>
