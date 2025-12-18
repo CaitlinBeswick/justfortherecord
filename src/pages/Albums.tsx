@@ -1,68 +1,18 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
-import { featuredAlbums } from "@/data/mockData";
 import { useNavigate } from "react-router-dom";
-import { Filter, Grid, List } from "lucide-react";
-import { useState } from "react";
-
-const allAlbums = [
-  ...featuredAlbums,
-  {
-    id: "7",
-    title: "OK Computer",
-    artist: "Radiohead",
-    coverUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop",
-    rating: 5,
-    year: 1997,
-  },
-  {
-    id: "8",
-    title: "Kid A",
-    artist: "Radiohead",
-    coverUrl: "https://images.unsplash.com/photo-1446057032654-9d8885db76c6?w=400&h=400&fit=crop",
-    rating: 5,
-    year: 2000,
-  },
-  {
-    id: "9",
-    title: "Channel Orange",
-    artist: "Frank Ocean",
-    coverUrl: "https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=400&h=400&fit=crop",
-    rating: 4,
-    year: 2012,
-  },
-  {
-    id: "10",
-    title: "good kid, m.A.A.d city",
-    artist: "Kendrick Lamar",
-    coverUrl: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=400&h=400&fit=crop",
-    rating: 5,
-    year: 2012,
-  },
-  {
-    id: "11",
-    title: "DAMN.",
-    artist: "Kendrick Lamar",
-    coverUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop",
-    rating: 4,
-    year: 2017,
-  },
-  {
-    id: "12",
-    title: "Lonerism",
-    artist: "Tame Impala",
-    coverUrl: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=400&h=400&fit=crop",
-    rating: 4,
-    year: 2012,
-  },
-];
+import { Search, Loader2, AlertCircle, Disc3 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { searchReleases, getCoverArtUrl, getArtistNames, getYear, MBReleaseGroup } from "@/services/musicbrainz";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05 },
+    transition: { staggerChildren: 0.03 },
   },
 };
 
@@ -73,13 +23,29 @@ const itemVariants = {
 
 const Albums = () => {
   const navigate = useNavigate();
-  const [sortBy, setSortBy] = useState("rating");
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 400);
 
-  const sortedAlbums = [...allAlbums].sort((a, b) => {
-    if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
-    if (sortBy === "year") return (b.year || 0) - (a.year || 0);
-    return a.title.localeCompare(b.title);
+  const {
+    data: releases = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['search-releases', debouncedSearch],
+    queryFn: () => searchReleases(debouncedSearch),
+    enabled: debouncedSearch.length >= 2,
+    staleTime: 1000 * 60 * 5,
+    retry: 2,
   });
+
+  // Dedupe by release group ID
+  const uniqueReleases = releases.reduce((acc, release) => {
+    if (!acc.find(r => r.id === release.id)) {
+      acc.push(release);
+    }
+    return acc;
+  }, [] as MBReleaseGroup[]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -91,51 +57,82 @@ const Albums = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="flex flex-col gap-4 mb-8">
             <div>
               <h1 className="font-serif text-4xl text-foreground">Albums</h1>
               <p className="text-muted-foreground mt-1">
-                {allAlbums.length} albums in the collection
+                Search millions of albums, EPs, singles & more from MusicBrainz
               </p>
             </div>
             
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 rounded-lg bg-secondary p-1">
-                <button className="p-2 rounded-md bg-surface-elevated">
-                  <Grid className="h-4 w-4 text-foreground" />
-                </button>
-                <button className="p-2 rounded-md hover:bg-surface-elevated transition-colors">
-                  <List className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </div>
-              
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="rounded-lg bg-secondary px-4 py-2 text-sm text-foreground border-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="rating">Highest Rated</option>
-                <option value="year">Newest First</option>
-                <option value="title">Alphabetical</option>
-              </select>
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search for albums, EPs, singles..."
+                className="w-full rounded-lg bg-secondary pl-10 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
             </div>
           </div>
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
-          >
-            {sortedAlbums.map((album) => (
-              <motion.div key={album.id} variants={itemVariants}>
-                <AlbumCard
-                  {...album}
-                  onClick={() => navigate(`/album/${album.id}`)}
-                />
+          {!debouncedSearch || debouncedSearch.length < 2 ? (
+            <div className="text-center py-20">
+              <Disc3 className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">
+                Start typing to search MusicBrainz's database of millions of releases
+              </p>
+              <p className="text-muted-foreground/70 text-sm mt-2">
+                Albums, EPs, singles, compilations, live recordings & more
+              </p>
+            </div>
+          ) : isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Searching releases...</p>
+            </div>
+          ) : isError ? (
+            <div className="text-center py-20">
+              <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <p className="text-destructive font-medium">Failed to search releases</p>
+              <p className="text-muted-foreground text-sm mt-2">
+                {(error as Error)?.message || "Please try again later"}
+              </p>
+            </div>
+          ) : uniqueReleases.length === 0 ? (
+            <div className="text-center py-20">
+              <Disc3 className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                No releases found for "{debouncedSearch}"
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-muted-foreground mb-4">
+                Found {uniqueReleases.length} releases
+              </p>
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+              >
+                {uniqueReleases.map((release) => (
+                  <motion.div key={release.id} variants={itemVariants}>
+                    <AlbumCard
+                      id={release.id}
+                      title={release.title}
+                      artist={getArtistNames(release["artist-credit"])}
+                      coverUrl={getCoverArtUrl(release.id)}
+                      year={getYear(release["first-release-date"])}
+                      onClick={() => navigate(`/album/${release.id}`)}
+                    />
+                  </motion.div>
+                ))}
               </motion.div>
-            ))}
-          </motion.div>
+            </>
+          )}
         </motion.div>
       </main>
     </div>
