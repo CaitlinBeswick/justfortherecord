@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { User } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getArtistImage } from "@/services/musicbrainz";
 
 interface ArtistCardProps {
   id: string;
@@ -32,9 +33,15 @@ function getInitials(name: string): string {
   return words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
 
-export function ArtistCard({ name, genres, onClick }: ArtistCardProps) {
+export function ArtistCard({ id, name, genres, onClick }: ArtistCardProps) {
   const initials = getInitials(name);
   const bgColor = getArtistColor(name);
+
+  const { data: artistImage } = useQuery({
+    queryKey: ['artist-image', id],
+    queryFn: () => getArtistImage(id),
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  });
 
   return (
     <motion.div
@@ -43,10 +50,23 @@ export function ArtistCard({ name, genres, onClick }: ArtistCardProps) {
       className="group cursor-pointer text-center"
       onClick={onClick}
     >
-      <div className={`relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50 ${bgColor} flex items-center justify-center`}>
-        <span className="text-white font-bold text-2xl sm:text-3xl md:text-4xl drop-shadow-md">
-          {initials}
-        </span>
+      <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50">
+        {artistImage ? (
+          <img 
+            src={artistImage} 
+            alt={name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+        ) : null}
+        <div className={`${artistImage ? 'hidden' : ''} w-full h-full ${bgColor} flex items-center justify-center`}>
+          <span className="text-white font-bold text-2xl sm:text-3xl md:text-4xl drop-shadow-md">
+            {initials}
+          </span>
+        </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       </div>
       

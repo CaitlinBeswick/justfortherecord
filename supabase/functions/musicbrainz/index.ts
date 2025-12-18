@@ -89,8 +89,70 @@ serve(async (req) => {
         break;
       
       case 'get-artist':
-        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+genres+ratings&fmt=json`;
+        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+genres+ratings+url-rels&fmt=json`;
         break;
+      
+      case 'get-artist-image': {
+        // First get the artist with URL relations to find Wikidata ID
+        const artistUrl = `${MUSICBRAINZ_BASE}/artist/${id}?inc=url-rels&fmt=json`;
+        const artistResponse = await fetchWithRetry(artistUrl, {
+          headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
+        });
+        
+        if (!artistResponse.ok) {
+          return new Response(JSON.stringify({ imageUrl: null }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        const artistData = await artistResponse.json();
+        const relations = artistData.relations || [];
+        
+        // Find Wikidata relation
+        const wikidataRel = relations.find((r: any) => 
+          r.type === 'wikidata' && r.url?.resource
+        );
+        
+        if (!wikidataRel) {
+          return new Response(JSON.stringify({ imageUrl: null }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        // Extract Wikidata ID (e.g., Q123456)
+        const wikidataUrl = wikidataRel.url.resource;
+        const wikidataId = wikidataUrl.split('/').pop();
+        
+        // Fetch Wikidata entity to get image property (P18)
+        const wikidataApiUrl = `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`;
+        const wikidataResponse = await fetch(wikidataApiUrl, {
+          headers: { 'User-Agent': USER_AGENT },
+        });
+        
+        if (!wikidataResponse.ok) {
+          return new Response(JSON.stringify({ imageUrl: null }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        const wikidataData = await wikidataResponse.json();
+        const entity = wikidataData.entities?.[wikidataId];
+        const imageClaim = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+        
+        if (!imageClaim) {
+          return new Response(JSON.stringify({ imageUrl: null }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        // Convert filename to Wikimedia Commons URL
+        const filename = imageClaim.replace(/ /g, '_');
+        const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=500`;
+        
+        return new Response(JSON.stringify({ imageUrl }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       
       case 'get-release-group':
         url = `${MUSICBRAINZ_BASE}/release-group/${id}?inc=artists+releases+genres+ratings&fmt=json`;
