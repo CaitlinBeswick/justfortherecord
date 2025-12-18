@@ -33,10 +33,16 @@ const Artists = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data: artists = [], isLoading } = useQuery({
+  const {
+    data: artists = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ['artists-search', debouncedSearch],
     queryFn: () => searchArtists(debouncedSearch),
     enabled: debouncedSearch.length >= 2,
+    retry: 2,
   });
 
   return (
@@ -84,7 +90,16 @@ const Artists = () => {
             </div>
           )}
 
-          {!isLoading && artists.length > 0 && (
+          {isError && search.length >= 2 && (
+            <div className="text-center py-12">
+              <p className="text-destructive">Couldnt reach the music database. Please try again.</p>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {(error as Error)?.message}
+              </p>
+            </div>
+          )}
+
+          {!isLoading && !isError && artists.length > 0 && (
             <motion.div
               variants={containerVariants}
               initial="hidden"
@@ -96,7 +111,7 @@ const Artists = () => {
                   <ArtistCard
                     id={artist.id}
                     name={artist.name}
-                    genres={artist.genres?.slice(0, 2).map(g => g.name) || []}
+                    genres={artist.genres?.slice(0, 2).map((g) => g.name) || []}
                     onClick={() => navigate(`/artist/${artist.id}`)}
                   />
                 </motion.div>
@@ -104,7 +119,7 @@ const Artists = () => {
             </motion.div>
           )}
 
-          {!isLoading && search.length >= 2 && artists.length === 0 && (
+          {!isLoading && !isError && search.length >= 2 && artists.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No artists found matching "{search}"</p>
             </div>

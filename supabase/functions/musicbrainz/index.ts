@@ -8,27 +8,59 @@ const corsHeaders = {
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT = "JustForTheRecord/1.0.0 (contact@example.com)";
 
-// Retry fetch with exponential backoff for transient errors
-async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+// MusicBrainz is strict about traffic. Be a good citizen:
+// - keep at most ~1 request/sec per function instance
+// - retry transient network + rate-limit errors with backoff
+let lastUpstreamRequestAt = 0;
+async function throttleMusicBrainz() {
+  const now = Date.now();
+  const minGapMs = 1100;
+  const waitMs = Math.max(0, minGapMs - (now - lastUpstreamRequestAt));
+  lastUpstreamRequestAt = now + waitMs;
+  if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs));
+}
+
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 4): Promise<Response> {
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
     try {
-      const response = await fetch(url, options);
+      await throttleMusicBrainz();
+
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+
+      // Retry on common transient / upstream throttling responses
+      if ([429, 502, 503, 504].includes(response.status) && attempt < maxRetries - 1) {
+        const retryAfter = response.headers.get('retry-after');
+        const retryAfterMs = retryAfter ? Number(retryAfter) * 1000 : NaN;
+        const backoffMs = 600 * Math.pow(2, attempt);
+        const delay = Number.isFinite(retryAfterMs) ? retryAfterMs : backoffMs;
+        console.log(`Upstream ${response.status}; retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+
       return response;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.log(`Fetch attempt ${attempt + 1} failed: ${lastError.message}`);
-      
-      // Wait before retrying (exponential backoff: 500ms, 1000ms, 2000ms)
+
       if (attempt < maxRetries - 1) {
-        const delay = 500 * Math.pow(2, attempt);
+        const delay = 600 * Math.pow(2, attempt);
         console.log(`Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((r) => setTimeout(r, delay));
       }
+    } finally {
+      clearTimeout(timeout);
     }
   }
-  
+
   throw lastError;
 }
 
@@ -113,9 +145,21 @@ serve(async (req) => {
   } catch (error) {
     console.error('MusicBrainz function error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+
+    // Avoid surfacing raw upstream/network failures as a generic 500 to the client.
+    // Treat as bad-gateway so the UI can show a retry message.
+    const isUpstreamNetworkError = /Connection reset by peer|client error \(Connect\)|timed out|aborted/i.test(errorMessage);
+
+    return new Response(
+      JSON.stringify({
+        error: isUpstreamNetworkError
+          ? 'Music data provider is temporarily unavailable. Please try again.'
+          : errorMessage,
+      }),
+      {
+        status: isUpstreamNetworkError ? 502 : 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
