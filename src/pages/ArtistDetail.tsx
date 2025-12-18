@@ -39,12 +39,19 @@ const ArtistDetail = () => {
     queryKey: ['artist', id],
     queryFn: () => getArtist(id!),
     enabled: !!id,
+    retry: 2,
   });
 
-  const { data: releases = [], isLoading: releasesLoading } = useQuery({
+  const {
+    data: releases = [],
+    isLoading: releasesLoading,
+    isError: releasesIsError,
+    error: releasesError,
+  } = useQuery({
     queryKey: ['artist-releases', id],
     queryFn: () => getArtistReleases(id!), // Fetches all types now
     enabled: !!id,
+    retry: 2,
   });
 
   // Group releases by type
@@ -199,6 +206,13 @@ const ArtistDetail = () => {
           {releasesLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : releasesIsError ? (
+            <div className="text-center py-8">
+              <p className="text-destructive">Couldnt load this artists discography. Please try again.</p>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {(releasesError as Error)?.message}
+              </p>
             </div>
           ) : releases.length > 0 ? (
             <div className="space-y-10">
