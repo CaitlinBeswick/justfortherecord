@@ -89,6 +89,15 @@ export async function getArtist(id: string): Promise<MBArtist> {
   return await callMusicBrainz({ action: 'get-artist', id });
 }
 
+export async function getArtistImage(id: string): Promise<string | null> {
+  try {
+    const data = await callMusicBrainz({ action: 'get-artist-image', id });
+    return data.imageUrl || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getArtistReleases(artistId: string, type?: string): Promise<MBReleaseGroup[]> {
   const data = await callMusicBrainz({ action: 'get-artist-releases', id: artistId, type });
   return data["release-groups"] || [];

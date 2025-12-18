@@ -5,7 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getArtist, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
+import { getArtist, getArtistImage, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -41,6 +41,13 @@ const ArtistDetail = () => {
     enabled: !!id,
     retry: 3,
     staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: artistImage } = useQuery({
+    queryKey: ['artist-image', id],
+    queryFn: () => getArtistImage(id!),
+    enabled: !!id,
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });
 
   // Use release-groups from the artist response (already included in getArtist)
@@ -127,7 +134,19 @@ const ArtistDetail = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4 }}
               >
-                <div className={`w-48 h-48 md:w-56 md:h-56 rounded-full ${getArtistColor(artist.name)} border-4 border-border/50 shadow-2xl flex items-center justify-center`}>
+                {artistImage ? (
+                  <img 
+                    src={artistImage} 
+                    alt={artist.name}
+                    className="w-48 h-48 md:w-56 md:h-56 rounded-full border-4 border-border/50 shadow-2xl object-cover"
+                    onError={(e) => {
+                      // Fall back to initials if image fails to load
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <div className={`w-48 h-48 md:w-56 md:h-56 rounded-full ${getArtistColor(artist.name)} border-4 border-border/50 shadow-2xl flex items-center justify-center ${artistImage ? 'hidden' : ''}`}>
                   <span className="text-white font-bold text-6xl md:text-7xl drop-shadow-lg">
                     {getInitials(artist.name)}
                   </span>
