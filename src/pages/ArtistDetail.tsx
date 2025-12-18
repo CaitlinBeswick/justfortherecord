@@ -5,7 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getArtist, getArtistReleases, getCoverArtUrl, getYear } from "@/services/musicbrainz";
+import { getArtist, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -39,20 +39,12 @@ const ArtistDetail = () => {
     queryKey: ['artist', id],
     queryFn: () => getArtist(id!),
     enabled: !!id,
-    retry: 2,
+    retry: 3,
+    staleTime: 1000 * 60 * 5,
   });
 
-  const {
-    data: releases = [],
-    isLoading: releasesLoading,
-    isError: releasesIsError,
-    error: releasesError,
-  } = useQuery({
-    queryKey: ['artist-releases', id],
-    queryFn: () => getArtistReleases(id!), // Fetches all types now
-    enabled: !!id,
-    retry: 2,
-  });
+  // Use release-groups from the artist response (already included in getArtist)
+  const releases: MBReleaseGroup[] = artist?.["release-groups"] || [];
 
   // Group releases by type
   const groupedReleases = releases.reduce((acc, release) => {
@@ -95,7 +87,7 @@ const ArtistDetail = () => {
         <div className="container mx-auto px-4 pt-24 text-center">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <h1 className="font-serif text-2xl text-foreground mb-2">Artist Not Found</h1>
-          <p className="text-muted-foreground mb-4">This artist couldn't be loaded from MusicBrainz.</p>
+          <p className="text-muted-foreground mb-4">This artist couldn't be loaded. Please try again.</p>
           <button onClick={() => navigate(-1)} className="text-primary hover:underline">
             Go Back
           </button>
@@ -203,18 +195,7 @@ const ArtistDetail = () => {
             Discography {releases.length > 0 && `(${releases.length} releases)`}
           </h2>
           
-          {releasesLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : releasesIsError ? (
-            <div className="text-center py-8">
-              <p className="text-destructive">Couldnt load this artists discography. Please try again.</p>
-              <p className="text-muted-foreground mt-2 text-sm">
-                {(releasesError as Error)?.message}
-              </p>
-            </div>
-          ) : releases.length > 0 ? (
+          {releases.length > 0 ? (
             <div className="space-y-10">
               {sortedTypes.map((type) => (
                 <div key={type}>
