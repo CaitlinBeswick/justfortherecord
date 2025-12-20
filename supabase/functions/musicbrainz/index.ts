@@ -25,6 +25,11 @@ async function throttleMusicBrainz() {
   if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs));
 }
 
+// Small in-memory cache to reduce repeated upstream calls during outages.
+// NOTE: cache is per function instance (best-effort), not persistent.
+const SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+const searchCache = new Map<string, { ts: number; data: any }>();
+
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 4): Promise<Response> {
   let lastError: Error | null = null;
 
@@ -249,13 +254,44 @@ serve(async (req) => {
     }
 
     console.log(`Fetching: ${url}`);
-    
-    const response = await fetchWithRetry(url, {
-      headers: {
-        'User-Agent': USER_AGENT,
-        'Accept': 'application/json',
-      },
-    });
+
+    let response: Response;
+    try {
+      response = await fetchWithRetry(url, {
+        headers: {
+          'User-Agent': USER_AGENT,
+          'Accept': 'application/json',
+        },
+      });
+    } catch (error) {
+      // For search endpoints, avoid hard-failing the UI during transient upstream outages.
+      // Return cached results if available; otherwise return empty results.
+      if (typeof action === 'string' && action.startsWith('search-')) {
+        const cacheKey = `${action}:${String(query || '')}`;
+        const cached = searchCache.get(cacheKey);
+        const fresh = cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS;
+
+        if (fresh) {
+          console.log(`Upstream failed; serving cached response for ${cacheKey}`);
+          return new Response(JSON.stringify(cached.data), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        console.log(`Upstream failed; serving empty response for ${cacheKey}`);
+        const empty = action === 'search-artist'
+          ? { created: new Date().toISOString(), count: 0, offset: 0, artists: [] }
+          : action === 'search-release'
+            ? { created: new Date().toISOString(), count: 0, offset: 0, releases: [] }
+            : { created: new Date().toISOString(), count: 0, offset: 0, recordings: [] };
+
+        return new Response(JSON.stringify(empty), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw error;
+    }
 
     if (!response.ok) {
       console.error(`MusicBrainz error: ${response.status} ${response.statusText}`);
@@ -267,6 +303,12 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log(`MusicBrainz response received, keys: ${Object.keys(data).join(', ')}`);
+
+    // Cache successful search responses (best-effort)
+    if (typeof action === 'string' && action.startsWith('search-')) {
+      const cacheKey = `${action}:${String(query || '')}`;
+      searchCache.set(cacheKey, { ts: Date.now(), data });
+    }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
