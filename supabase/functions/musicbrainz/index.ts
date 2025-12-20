@@ -8,6 +8,11 @@ const corsHeaders = {
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT = "JustForTheRecord/1.0.0 (contact@example.com)";
 
+function isMusicBrainzId(value: unknown): value is string {
+  // MusicBrainz IDs are UUIDs
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
 // MusicBrainz is strict about traffic. Be a good citizen:
 // - keep at most ~1 request/sec per function instance
 // - retry transient network + rate-limit errors with backoff
@@ -72,6 +77,22 @@ serve(async (req) => {
   try {
     const { action, query, id, type } = await req.json();
     console.log(`MusicBrainz request: action=${action}, query=${query}, id=${id}, type=${type}`);
+
+    const actionsRequiringId = new Set([
+      'get-artist',
+      'get-artist-image',
+      'get-release-group',
+      'get-release',
+      'get-artist-releases',
+      'get-release-tracks',
+    ]);
+
+    if (actionsRequiringId.has(action) && !isMusicBrainzId(id)) {
+      return new Response(JSON.stringify({ error: 'Invalid MusicBrainz ID' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     let url: string;
     
