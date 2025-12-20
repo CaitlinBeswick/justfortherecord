@@ -35,18 +35,21 @@ const ArtistDetail = () => {
   const navigate = useNavigate();
   const [following, setFollowing] = useState(false);
 
+  const artistId = id ?? "";
+  const isValidArtistId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(artistId);
+
   const { data: artist, isLoading, error } = useQuery({
-    queryKey: ['artist', id],
-    queryFn: () => getArtist(id!),
-    enabled: !!id,
+    queryKey: ['artist', artistId],
+    queryFn: () => getArtist(artistId),
+    enabled: isValidArtistId,
     retry: 3,
     staleTime: 1000 * 60 * 5,
   });
 
   const { data: artistImage } = useQuery({
-    queryKey: ['artist-image', id],
-    queryFn: () => getArtistImage(id!),
-    enabled: !!id,
+    queryKey: ['artist-image', artistId],
+    queryFn: () => getArtistImage(artistId),
+    enabled: isValidArtistId,
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });
 
@@ -75,6 +78,29 @@ const ArtistDetail = () => {
   const sortedTypes = Object.keys(groupedReleases).sort(
     (a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b)
   );
+
+  if (!isValidArtistId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h1 className="font-serif text-2xl text-foreground mb-2">Invalid Artist Link</h1>
+          <p className="text-muted-foreground mb-6">
+            This page needs a valid MusicBrainz artist ID.
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <button onClick={() => navigate(-1)} className="text-primary hover:underline">
+              Go Back
+            </button>
+            <button onClick={() => navigate('/artists')} className="text-primary hover:underline">
+              Search Artists
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
