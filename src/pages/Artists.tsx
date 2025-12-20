@@ -106,13 +106,14 @@ const Artists = () => {
               animate="visible"
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8"
             >
-              {artists.map((artist: MBArtist) => (
+              {artists.map((artist: MBArtist, index: number) => (
                 <motion.div key={artist.id} variants={itemVariants}>
                   <ArtistCard
                     id={artist.id}
                     name={artist.name}
                     genres={artist.genres?.slice(0, 2).map((g) => g.name) || []}
                     onClick={() => navigate(`/artist/${artist.id}`)}
+                    fetchDelay={index * 150} // Stagger image fetches by 150ms
                   />
                 </motion.div>
               ))}
