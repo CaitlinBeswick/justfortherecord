@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { getArtistImage } from "@/services/musicbrainz";
 
 interface ArtistCardProps {
@@ -8,6 +9,8 @@ interface ArtistCardProps {
   imageUrl?: string;
   genres: string[];
   onClick?: () => void;
+  /** Delay before fetching image (ms) - helps prevent API rate limiting */
+  fetchDelay?: number;
 }
 
 // Generate a consistent color based on the artist name
@@ -33,14 +36,26 @@ function getInitials(name: string): string {
   return words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
 
-export function ArtistCard({ id, name, genres, onClick }: ArtistCardProps) {
+export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: ArtistCardProps) {
   const initials = getInitials(name);
   const bgColor = getArtistColor(name);
+  
+  // Stagger image fetching to prevent API rate limiting
+  const [shouldFetch, setShouldFetch] = useState(fetchDelay === 0);
+  
+  useEffect(() => {
+    if (fetchDelay > 0) {
+      const timer = setTimeout(() => setShouldFetch(true), fetchDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [fetchDelay]);
 
   const { data: artistImage } = useQuery({
     queryKey: ['artist-image', id],
     queryFn: () => getArtistImage(id),
-    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+    staleTime: 1000 * 60 * 60 * 24, // Cache for 24 hours
+    enabled: shouldFetch,
+    retry: 1, // Only retry once to avoid overwhelming the API
   });
 
   return (
