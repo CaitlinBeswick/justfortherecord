@@ -115,8 +115,9 @@ serve(async (req) => {
       
       case 'get-artist-image': {
         // Artist images are a nice-to-have; never fail the whole request if upstream is flaky.
+        // We try multiple sources: Wikidata (P18), TheAudioDB, Fanart.tv via MusicBrainz relations
         try {
-          // First get the artist with URL relations to find Wikidata ID
+          // First get the artist with URL relations
           const artistUrl = `${MUSICBRAINZ_BASE}/artist/${id}?inc=url-rels&fmt=json`;
           const artistResponse = await fetchWithRetry(artistUrl, {
             headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
@@ -130,55 +131,89 @@ serve(async (req) => {
 
           const artistData = await artistResponse.json();
           const relations = artistData.relations || [];
+          const artistName = artistData.name || '';
 
-          // Find Wikidata relation
+          // Try source 1: Wikidata P18 image property
           const wikidataRel = relations.find((r: any) => r.type === 'wikidata' && r.url?.resource);
+          if (wikidataRel) {
+            const wikidataUrl = wikidataRel.url.resource;
+            const wikidataId = wikidataUrl.split('/').pop();
 
-          if (!wikidataRel) {
-            return new Response(JSON.stringify({ imageUrl: null }), {
+            if (wikidataId) {
+              try {
+                const wikidataApiUrl = `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`;
+                const wikidataResponse = await fetchWithRetry(wikidataApiUrl, {
+                  headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
+                }, 2);
+
+                if (wikidataResponse.ok) {
+                  const wikidataData = await wikidataResponse.json();
+                  const entity = wikidataData.entities?.[wikidataId];
+                  const imageClaim = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+
+                  if (imageClaim) {
+                    const filename = String(imageClaim).replace(/ /g, '_');
+                    const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=500`;
+                    console.log(`Found Wikidata image for ${artistName}`);
+                    return new Response(JSON.stringify({ imageUrl }), {
+                      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                    });
+                  }
+                }
+              } catch (e) {
+                console.log('Wikidata fetch failed, trying next source');
+              }
+            }
+          }
+
+          // Try source 2: TheAudioDB (free, no API key needed for basic lookups)
+          try {
+            const audioDbUrl = `https://www.theaudiodb.com/api/v1/json/2/search.php?s=${encodeURIComponent(artistName)}`;
+            const audioDbResponse = await fetch(audioDbUrl, {
+              headers: { 'User-Agent': USER_AGENT },
+            });
+
+            if (audioDbResponse.ok) {
+              const audioDbData = await audioDbResponse.json();
+              const artist = audioDbData.artists?.[0];
+              const thumbUrl = artist?.strArtistThumb || artist?.strArtistFanart || artist?.strArtistClearart;
+              
+              if (thumbUrl) {
+                console.log(`Found TheAudioDB image for ${artistName}`);
+                return new Response(JSON.stringify({ imageUrl: thumbUrl }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                });
+              }
+            }
+          } catch (e) {
+            console.log('TheAudioDB fetch failed, trying next source');
+          }
+
+          // Try source 3: Look for image URL in MusicBrainz relations (some artists have direct image links)
+          const imageRel = relations.find((r: any) => 
+            r.type === 'image' && r.url?.resource
+          );
+          if (imageRel) {
+            console.log(`Found MusicBrainz image relation for ${artistName}`);
+            return new Response(JSON.stringify({ imageUrl: imageRel.url.resource }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
 
-          // Extract Wikidata ID (e.g., Q123456)
-          const wikidataUrl = wikidataRel.url.resource;
-          const wikidataId = wikidataUrl.split('/').pop();
-
-          if (!wikidataId) {
-            return new Response(JSON.stringify({ imageUrl: null }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+          // Try source 4: Discogs - look for discogs relation and use their artist images
+          const discogsRel = relations.find((r: any) => r.type === 'discogs' && r.url?.resource);
+          if (discogsRel) {
+            // Discogs artist pages have predictable image URLs, but require scraping
+            // For now, we'll just note that discogs exists but can't easily get the image without API key
+            console.log(`Discogs relation found for ${artistName}, but no free image access`);
           }
 
-          // Fetch Wikidata entity to get image property (P18)
-          const wikidataApiUrl = `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`;
-          const wikidataResponse = await fetchWithRetry(wikidataApiUrl, {
-            headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
-          }, 3);
-
-          if (!wikidataResponse.ok) {
-            return new Response(JSON.stringify({ imageUrl: null }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          const wikidataData = await wikidataResponse.json();
-          const entity = wikidataData.entities?.[wikidataId];
-          const imageClaim = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
-
-          if (!imageClaim) {
-            return new Response(JSON.stringify({ imageUrl: null }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          // Convert filename to Wikimedia Commons URL
-          const filename = String(imageClaim).replace(/ /g, '_');
-          const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=500`;
-
-          return new Response(JSON.stringify({ imageUrl }), {
+          // No image found from any source
+          console.log(`No image found for artist ${artistName} (${id})`);
+          return new Response(JSON.stringify({ imageUrl: null }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
+
         } catch (error) {
           console.log('get-artist-image failed; returning null imageUrl', error);
           return new Response(JSON.stringify({ imageUrl: null }), {
