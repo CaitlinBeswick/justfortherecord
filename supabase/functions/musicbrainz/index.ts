@@ -114,65 +114,77 @@ serve(async (req) => {
         break;
       
       case 'get-artist-image': {
-        // First get the artist with URL relations to find Wikidata ID
-        const artistUrl = `${MUSICBRAINZ_BASE}/artist/${id}?inc=url-rels&fmt=json`;
-        const artistResponse = await fetchWithRetry(artistUrl, {
-          headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
-        });
-        
-        if (!artistResponse.ok) {
+        // Artist images are a nice-to-have; never fail the whole request if upstream is flaky.
+        try {
+          // First get the artist with URL relations to find Wikidata ID
+          const artistUrl = `${MUSICBRAINZ_BASE}/artist/${id}?inc=url-rels&fmt=json`;
+          const artistResponse = await fetchWithRetry(artistUrl, {
+            headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
+          });
+
+          if (!artistResponse.ok) {
+            return new Response(JSON.stringify({ imageUrl: null }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const artistData = await artistResponse.json();
+          const relations = artistData.relations || [];
+
+          // Find Wikidata relation
+          const wikidataRel = relations.find((r: any) => r.type === 'wikidata' && r.url?.resource);
+
+          if (!wikidataRel) {
+            return new Response(JSON.stringify({ imageUrl: null }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Extract Wikidata ID (e.g., Q123456)
+          const wikidataUrl = wikidataRel.url.resource;
+          const wikidataId = wikidataUrl.split('/').pop();
+
+          if (!wikidataId) {
+            return new Response(JSON.stringify({ imageUrl: null }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Fetch Wikidata entity to get image property (P18)
+          const wikidataApiUrl = `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`;
+          const wikidataResponse = await fetchWithRetry(wikidataApiUrl, {
+            headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
+          }, 3);
+
+          if (!wikidataResponse.ok) {
+            return new Response(JSON.stringify({ imageUrl: null }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const wikidataData = await wikidataResponse.json();
+          const entity = wikidataData.entities?.[wikidataId];
+          const imageClaim = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+
+          if (!imageClaim) {
+            return new Response(JSON.stringify({ imageUrl: null }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Convert filename to Wikimedia Commons URL
+          const filename = String(imageClaim).replace(/ /g, '_');
+          const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=500`;
+
+          return new Response(JSON.stringify({ imageUrl }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.log('get-artist-image failed; returning null imageUrl', error);
           return new Response(JSON.stringify({ imageUrl: null }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        
-        const artistData = await artistResponse.json();
-        const relations = artistData.relations || [];
-        
-        // Find Wikidata relation
-        const wikidataRel = relations.find((r: any) => 
-          r.type === 'wikidata' && r.url?.resource
-        );
-        
-        if (!wikidataRel) {
-          return new Response(JSON.stringify({ imageUrl: null }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        // Extract Wikidata ID (e.g., Q123456)
-        const wikidataUrl = wikidataRel.url.resource;
-        const wikidataId = wikidataUrl.split('/').pop();
-        
-        // Fetch Wikidata entity to get image property (P18)
-        const wikidataApiUrl = `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`;
-        const wikidataResponse = await fetch(wikidataApiUrl, {
-          headers: { 'User-Agent': USER_AGENT },
-        });
-        
-        if (!wikidataResponse.ok) {
-          return new Response(JSON.stringify({ imageUrl: null }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        const wikidataData = await wikidataResponse.json();
-        const entity = wikidataData.entities?.[wikidataId];
-        const imageClaim = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
-        
-        if (!imageClaim) {
-          return new Response(JSON.stringify({ imageUrl: null }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        // Convert filename to Wikimedia Commons URL
-        const filename = imageClaim.replace(/ /g, '_');
-        const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=500`;
-        
-        return new Response(JSON.stringify({ imageUrl }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
       }
       
       case 'get-release-group':
