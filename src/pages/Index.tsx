@@ -1,11 +1,13 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
-import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistCard } from "@/components/ArtistCard";
 import { ReviewCard } from "@/components/ReviewCard";
-import { featuredAlbums, popularArtists, recentReviews } from "@/data/mockData";
+import { recentReviews } from "@/data/mockData";
 import { ArrowRight, TrendingUp, Clock, Disc3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { searchArtists, MBArtist } from "@/services/musicbrainz";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -22,8 +24,36 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+// Featured artists to search for
+const FEATURED_ARTIST_NAMES = [
+  "Radiohead",
+  "Kendrick Lamar", 
+  "Frank Ocean",
+  "Tame Impala",
+  "The Beatles",
+  "Pink Floyd",
+];
+
 const Index = () => {
   const navigate = useNavigate();
+
+  // Fetch real artists from MusicBrainz
+  const { data: artists, isLoading: artistsLoading } = useQuery({
+    queryKey: ['featured-artists'],
+    queryFn: async () => {
+      const results: MBArtist[] = [];
+      for (const name of FEATURED_ARTIST_NAMES) {
+        const searchResults = await searchArtists(name);
+        // Get the first exact or close match
+        const match = searchResults.find(a => 
+          a.name.toLowerCase() === name.toLowerCase()
+        ) || searchResults[0];
+        if (match) results.push(match);
+      }
+      return results;
+    },
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,43 +96,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Albums */}
-      <section className="container mx-auto px-4 py-12">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={containerVariants}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h2 className="font-serif text-2xl text-foreground">Trending Albums</h2>
-            </div>
-            <button 
-              onClick={() => navigate("/albums")}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              View all <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-          
-          <motion.div 
-            variants={containerVariants}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
-          >
-            {featuredAlbums.map((album) => (
-              <motion.div key={album.id} variants={itemVariants}>
-                <AlbumCard
-                  {...album}
-                  onClick={() => navigate(`/album/${album.id}`)}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
-      </section>
-
       {/* Popular Artists */}
       <section className="container mx-auto px-4 py-12">
         <motion.div
@@ -128,17 +121,29 @@ const Index = () => {
             variants={containerVariants}
             className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-6"
           >
-            {popularArtists.map((artist) => (
-              <motion.div key={artist.id} variants={itemVariants}>
-                <ArtistCard
-                  {...artist}
-                  onClick={() => navigate(`/artist/${artist.id}`)}
-                />
-              </motion.div>
-            ))}
+            {artistsLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-2">
+                  <Skeleton className="w-20 h-20 rounded-full" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))
+            ) : (
+              artists?.map((artist) => (
+                <motion.div key={artist.id} variants={itemVariants}>
+                  <ArtistCard
+                    id={artist.id}
+                    name={artist.name}
+                    genres={artist.genres?.slice(0, 2).map(g => g.name) || []}
+                    onClick={() => navigate(`/artist/${artist.id}`)}
+                  />
+                </motion.div>
+              ))
+            )}
           </motion.div>
         </motion.div>
       </section>
+
 
       {/* Recent Reviews */}
       <section className="container mx-auto px-4 py-12 pb-20">
