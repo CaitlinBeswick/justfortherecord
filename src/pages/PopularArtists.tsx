@@ -242,6 +242,7 @@ const PopularArtists = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [visibleCount, setVisibleCount] = useState(48); // Start with 48 artists
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres(prev => 
@@ -253,13 +254,13 @@ const PopularArtists = () => {
 
   const clearGenres = () => setSelectedGenres([]);
 
-  // Fetch popular artists in batches
-  const { data: artists = [], isLoading } = useQuery({
-    queryKey: ['popular-artists-1000'],
-    queryFn: async () => {
+  // Fetch popular artists in smaller batches - only fetch what's visible
+  const { data: artists = [] as MBArtist[], isLoading, isFetching } = useQuery<MBArtist[]>({
+    queryKey: ['popular-artists', visibleCount],
+    queryFn: async (): Promise<MBArtist[]> => {
       const results: MBArtist[] = [];
-      const batchSize = 10;
-      const maxArtists = Math.min(POPULAR_ARTIST_NAMES.length, 1000);
+      const batchSize = 3; // Smaller batch size to avoid rate limiting
+      const maxArtists = Math.min(POPULAR_ARTIST_NAMES.length, visibleCount);
       
       for (let i = 0; i < maxArtists; i += batchSize) {
         const batch = POPULAR_ARTIST_NAMES.slice(i, i + batchSize);
@@ -277,16 +278,21 @@ const PopularArtists = () => {
         );
         results.push(...batchResults.filter((r): r is MBArtist => r !== null));
         
-        // Small delay between batches to avoid rate limiting
+        // Longer delay between batches to avoid rate limiting
         if (i + batchSize < maxArtists) {
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
       
       return results;
     },
     staleTime: 1000 * 60 * 60 * 24, // Cache for 24 hours
+    placeholderData: (previousData) => previousData,
   });
+
+  const loadMore = () => {
+    setVisibleCount(prev => Math.min(prev + 48, POPULAR_ARTIST_NAMES.length));
+  };
 
   // Filter artists based on search and genres
   const filteredArtists = useMemo(() => {
@@ -327,7 +333,7 @@ const PopularArtists = () => {
             <div>
               <h1 className="font-serif text-4xl text-foreground">Popular Artists</h1>
               <p className="text-muted-foreground mt-1">
-                Top 1000 artists across all genres
+                Discover artists across all genres
               </p>
             </div>
             
@@ -374,13 +380,10 @@ const PopularArtists = () => {
             </div>
           </div>
 
-          {isLoading ? (
+          {isLoading && artists.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
               <p className="text-muted-foreground">Loading artists...</p>
-              <p className="text-sm text-muted-foreground/60 mt-1">
-                {artists.length} / 1000 loaded
-              </p>
             </div>
           ) : filteredArtists.length > 0 ? (
             <>
@@ -406,6 +409,26 @@ const PopularArtists = () => {
                   </motion.div>
                 ))}
               </motion.div>
+              
+              {/* Load More Button */}
+              {visibleCount < POPULAR_ARTIST_NAMES.length && !search && selectedGenres.length === 0 && (
+                <div className="flex justify-center mt-8">
+                  <button
+                    onClick={loadMore}
+                    disabled={isFetching}
+                    className="inline-flex items-center gap-2 rounded-lg bg-secondary px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-hover disabled:opacity-50"
+                  >
+                    {isFetching ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading more...
+                      </>
+                    ) : (
+                      <>Load More Artists ({Math.min(POPULAR_ARTIST_NAMES.length - visibleCount, 48)} more)</>
+                    )}
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-20">
