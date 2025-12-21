@@ -303,30 +303,29 @@ const PopularArtists = () => {
   });
 
   const loadMore = useCallback(() => {
-    if (!isFetching && visibleCount < POPULAR_ARTIST_NAMES.length) {
-      setVisibleCount(prev => Math.min(prev + 48, POPULAR_ARTIST_NAMES.length));
-    }
-  }, [isFetching, visibleCount]);
+    setVisibleCount(prev => Math.min(prev + 48, POPULAR_ARTIST_NAMES.length));
+  }, []);
 
   // Infinite scroll observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const currentRef = loadMoreRef.current;
+    if (!currentRef) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !search && selectedGenres.length === 0) {
+        if (entries[0].isIntersecting && !isFetching && visibleCount < POPULAR_ARTIST_NAMES.length) {
           loadMore();
         }
       },
-      { threshold: 0.1, rootMargin: '100px' }
+      { threshold: 0.1, rootMargin: '200px' }
     );
 
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
+    observer.observe(currentRef);
 
     return () => observer.disconnect();
-  }, [loadMore, search, selectedGenres]);
+  }, [isFetching, visibleCount, loadMore]);
 
   // Filter artists based on search and genres
   const filteredArtists = useMemo(() => {
