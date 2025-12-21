@@ -1,10 +1,12 @@
+import inRainbowsCover from "@/assets/in-rainbows-cover.jpg";
+
 // Using Wikipedia/Wikimedia Commons images for real album covers
 export const featuredAlbums = [
   {
     id: "1",
     title: "In Rainbows",
     artist: "Radiohead",
-    coverUrl: "https://upload.wikimedia.org/wikipedia/en/2/2e/In_Rainbows_Official_Cover.jpg",
+    coverUrl: inRainbowsCover,
     rating: 5,
     year: 2007,
   },
@@ -94,7 +96,7 @@ export const recentReviews = [
   {
     id: "1",
     albumTitle: "In Rainbows",
-    albumCover: "https://upload.wikimedia.org/wikipedia/en/2/2e/In_Rainbows_Official_Cover.jpg",
+    albumCover: inRainbowsCover,
     artist: "Radiohead",
     username: "musiclover42",
     userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
