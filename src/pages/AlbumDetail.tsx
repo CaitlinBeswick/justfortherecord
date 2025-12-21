@@ -45,12 +45,38 @@ const AlbumDetail = () => {
     enabled: !!id,
   });
 
-  // Get tracks from the first release
-  const firstReleaseId = releaseGroup?.releases?.[0]?.id;
+  // Find the best release to get tracks from
+  // Prefer: official releases, more tracks, earliest date (original release)
+  const bestRelease = (() => {
+    const releases = releaseGroup?.releases || [];
+    if (releases.length === 0) return null;
+    
+    // Sort by: status (official first), track count (most tracks), date (earliest)
+    const sorted = [...releases].sort((a: any, b: any) => {
+      // Prefer official releases
+      const aOfficial = a.status === 'Official' ? 1 : 0;
+      const bOfficial = b.status === 'Official' ? 1 : 0;
+      if (bOfficial !== aOfficial) return bOfficial - aOfficial;
+      
+      // Prefer releases with more tracks (fuller version)
+      const aTrackCount = a.media?.reduce((sum: number, m: any) => sum + (m['track-count'] || 0), 0) || 0;
+      const bTrackCount = b.media?.reduce((sum: number, m: any) => sum + (m['track-count'] || 0), 0) || 0;
+      if (bTrackCount !== aTrackCount) return bTrackCount - aTrackCount;
+      
+      // Prefer earliest release date
+      const aDate = a.date || '9999';
+      const bDate = b.date || '9999';
+      return aDate.localeCompare(bDate);
+    });
+    
+    return sorted[0];
+  })();
+  
+  const bestReleaseId = bestRelease?.id;
   const { data: releaseWithTracks } = useQuery({
-    queryKey: ['release-tracks', firstReleaseId],
-    queryFn: () => getReleaseTracks(firstReleaseId!),
-    enabled: !!firstReleaseId,
+    queryKey: ['release-tracks', bestReleaseId],
+    queryFn: () => getReleaseTracks(bestReleaseId!),
+    enabled: !!bestReleaseId,
   });
 
   // Fetch existing user rating
@@ -143,7 +169,8 @@ const AlbumDetail = () => {
     saveRatingMutation.mutate({ rating: userRating, review: reviewText });
   };
 
-  const tracks = releaseWithTracks?.media?.[0]?.tracks || [];
+  // Get all tracks from all media (supports multi-disc albums)
+  const tracks = releaseWithTracks?.media?.flatMap(m => m.tracks || []) || [];
   const coverUrl = id ? getCoverArtUrl(id, '500') : '';
   const placeholderCover = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop";
 
