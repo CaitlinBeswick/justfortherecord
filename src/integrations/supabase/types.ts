@@ -14,7 +14,152 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      album_ratings: {
+        Row: {
+          album_title: string
+          artist_name: string
+          created_at: string
+          id: string
+          rating: number
+          release_group_id: string
+          review_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          album_title: string
+          artist_name: string
+          created_at?: string
+          id?: string
+          rating: number
+          release_group_id: string
+          review_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          album_title?: string
+          artist_name?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          release_group_id?: string
+          review_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      list_items: {
+        Row: {
+          added_at: string
+          album_title: string
+          artist_name: string
+          id: string
+          list_id: string
+          notes: string | null
+          position: number | null
+          release_group_id: string
+        }
+        Insert: {
+          added_at?: string
+          album_title: string
+          artist_name: string
+          id?: string
+          list_id: string
+          notes?: string | null
+          position?: number | null
+          release_group_id: string
+        }
+        Update: {
+          added_at?: string
+          album_title?: string
+          artist_name?: string
+          id?: string
+          list_id?: string
+          notes?: string | null
+          position?: number | null
+          release_group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "user_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          favorite_genres: string[] | null
+          id: string
+          location: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          favorite_genres?: string[] | null
+          id: string
+          location?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          favorite_genres?: string[] | null
+          id?: string
+          location?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      user_lists: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          is_ranked: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          is_ranked?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          is_ranked?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

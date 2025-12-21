@@ -2,9 +2,9 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/ui/StarRating";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle } from "lucide-react";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   getReleaseGroup, 
   getReleaseTracks,
@@ -13,13 +13,30 @@ import {
   getYear,
   formatDuration 
 } from "@/services/musicbrainz";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 const AlbumDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
   const [userRating, setUserRating] = useState(0);
   const [liked, setLiked] = useState(false);
   const [coverError, setCoverError] = useState(false);
+  const [reviewText, setReviewText] = useState("");
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
 
   const { data: releaseGroup, isLoading, error } = useQuery({
     queryKey: ['release-group', id],
@@ -34,6 +51,96 @@ const AlbumDetail = () => {
     queryFn: () => getReleaseTracks(firstReleaseId!),
     enabled: !!firstReleaseId,
   });
+
+  // Fetch existing user rating
+  const { data: existingRating } = useQuery({
+    queryKey: ['user-album-rating', user?.id, id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('album_ratings')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('release_group_id', id!)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!id,
+  });
+
+  // Set initial values from existing rating
+  useEffect(() => {
+    if (existingRating) {
+      setUserRating(existingRating.rating);
+      setReviewText(existingRating.review_text || "");
+    }
+  }, [existingRating]);
+
+  // Save rating mutation
+  const saveRatingMutation = useMutation({
+    mutationFn: async ({ rating, review }: { rating: number; review?: string }) => {
+      if (!user || !id || !releaseGroup) throw new Error("Not authenticated");
+      
+      const artistName = getArtistNames(releaseGroup["artist-credit"]);
+      
+      const { error } = await supabase
+        .from('album_ratings')
+        .upsert({
+          user_id: user.id,
+          release_group_id: id,
+          album_title: releaseGroup.title,
+          artist_name: artistName,
+          rating,
+          review_text: review || null,
+        }, {
+          onConflict: 'user_id,release_group_id',
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-album-rating', user?.id, id] });
+      queryClient.invalidateQueries({ queryKey: ['user-ratings', user?.id] });
+      toast({
+        title: "Saved!",
+        description: "Your rating has been saved.",
+      });
+      setIsReviewDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleRatingChange = (rating: number) => {
+    setUserRating(rating);
+    if (user) {
+      saveRatingMutation.mutate({ rating, review: reviewText });
+    } else {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to rate albums.",
+      });
+      navigate('/auth');
+    }
+  };
+
+  const handleSaveReview = () => {
+    if (userRating === 0) {
+      toast({
+        title: "Rating required",
+        description: "Please rate the album before adding a review.",
+        variant: "destructive",
+      });
+      return;
+    }
+    saveRatingMutation.mutate({ rating: userRating, review: reviewText });
+  };
 
   const tracks = releaseWithTracks?.media?.[0]?.tracks || [];
   const coverUrl = id ? getCoverArtUrl(id, '500') : '';
@@ -152,20 +259,76 @@ const AlbumDetail = () => {
                 )}
 
                 <div className="mt-8">
-                  <p className="text-sm text-muted-foreground mb-2">Your Rating</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-sm text-muted-foreground">Your Rating</p>
+                    {existingRating && (
+                      <span className="flex items-center gap-1 text-xs text-primary">
+                        <Check className="h-3 w-3" />
+                        Saved
+                      </span>
+                    )}
+                  </div>
                   <StarRating
                     rating={userRating}
                     size="lg"
                     interactive
-                    onRatingChange={setUserRating}
+                    onRatingChange={handleRatingChange}
                   />
                 </div>
 
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-8">
-                  <button className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90">
-                    <Plus className="h-4 w-4" />
-                    Log Album
-                  </button>
+                  <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+                    <DialogTrigger asChild>
+                      <button 
+                        className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
+                        disabled={saveRatingMutation.isPending}
+                      >
+                        <Plus className="h-4 w-4" />
+                        {existingRating?.review_text ? "Edit Review" : "Add Review"}
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {existingRating?.review_text ? "Edit your review" : "Write a review"}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-2">Your Rating</p>
+                          <StarRating
+                            rating={userRating}
+                            size="lg"
+                            interactive
+                            onRatingChange={setUserRating}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-2">Review (optional)</p>
+                          <Textarea
+                            value={reviewText}
+                            onChange={(e) => setReviewText(e.target.value)}
+                            placeholder="Share your thoughts on this album..."
+                            rows={5}
+                          />
+                        </div>
+                        <button
+                          onClick={handleSaveReview}
+                          disabled={saveRatingMutation.isPending || userRating === 0}
+                          className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {saveRatingMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Review"
+                          )}
+                        </button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   <button
                     onClick={() => setLiked(!liked)}
                     className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
