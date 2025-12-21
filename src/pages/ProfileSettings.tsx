@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -44,6 +44,7 @@ const ProfileSettings = () => {
   const [favoriteGenres, setFavoriteGenres] = useState<string[]>([]);
   const [newGenre, setNewGenre] = useState("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -187,6 +188,46 @@ const ProfileSettings = () => {
     }
   };
 
+  const handleAvatarDelete = async () => {
+    if (!user || !avatarUrl) return;
+
+    setIsDeletingAvatar(true);
+
+    try {
+      // List files in user's folder
+      const { data: files, error: listError } = await supabase.storage
+        .from('avatars')
+        .list(user.id);
+
+      if (listError) throw listError;
+
+      // Delete all files in user's avatar folder
+      if (files && files.length > 0) {
+        const filePaths = files.map(file => `${user.id}/${file.name}`);
+        const { error: deleteError } = await supabase.storage
+          .from('avatars')
+          .remove(filePaths);
+
+        if (deleteError) throw deleteError;
+      }
+
+      setAvatarUrl("");
+
+      toast({
+        title: "Avatar removed",
+        description: "Your profile picture has been deleted.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingAvatar(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate();
@@ -273,13 +314,33 @@ const ProfileSettings = () => {
                     />
                   </div>
                   
-                  <div className="flex-1 space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Click the camera icon to upload a new photo
-                    </p>
-                    <p className="text-xs text-muted-foreground/60">
-                      Supports JPG, PNG, GIF up to 5MB
-                    </p>
+                  <div className="flex-1 space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">
+                        Click the camera icon to upload a new photo
+                      </p>
+                      <p className="text-xs text-muted-foreground/60">
+                        Supports JPG, PNG, GIF up to 5MB
+                      </p>
+                    </div>
+                    
+                    {avatarUrl && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleAvatarDelete}
+                        disabled={isDeletingAvatar}
+                        className="gap-2"
+                      >
+                        {isDeletingAvatar ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                        Remove Photo
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
