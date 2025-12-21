@@ -3,9 +3,10 @@ import { Navbar } from "@/components/Navbar";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate } from "react-router-dom";
 import { Search, Users, Loader2, X } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { searchArtists, MBArtist } from "@/services/musicbrainz";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -19,6 +20,17 @@ const itemVariants = {
   hidden: { opacity: 0, scale: 0.9 },
   visible: { opacity: 1, scale: 1 },
 };
+
+// Skeleton component for artist cards
+const ArtistCardSkeleton = () => (
+  <div className="flex flex-col items-center gap-3">
+    <Skeleton className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full" />
+    <div className="text-center w-full">
+      <Skeleton className="h-4 w-20 mx-auto mb-2" />
+      <Skeleton className="h-3 w-16 mx-auto" />
+    </div>
+  </div>
+);
 
 const GENRE_FILTERS = [
   "Rock", "Pop", "Hip Hop", "Electronic", "Jazz", "Classical", 
@@ -290,9 +302,31 @@ const PopularArtists = () => {
     placeholderData: (previousData) => previousData,
   });
 
-  const loadMore = () => {
-    setVisibleCount(prev => Math.min(prev + 48, POPULAR_ARTIST_NAMES.length));
-  };
+  const loadMore = useCallback(() => {
+    if (!isFetching && visibleCount < POPULAR_ARTIST_NAMES.length) {
+      setVisibleCount(prev => Math.min(prev + 48, POPULAR_ARTIST_NAMES.length));
+    }
+  }, [isFetching, visibleCount]);
+
+  // Infinite scroll observer
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !search && selectedGenres.length === 0) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: '100px' }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loadMore, search, selectedGenres]);
 
   // Filter artists based on search and genres
   const filteredArtists = useMemo(() => {
@@ -381,9 +415,10 @@ const PopularArtists = () => {
           </div>
 
           {isLoading && artists.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">Loading artists...</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+              {Array.from({ length: 24 }).map((_, index) => (
+                <ArtistCardSkeleton key={index} />
+              ))}
             </div>
           ) : filteredArtists.length > 0 ? (
             <>
@@ -410,23 +445,15 @@ const PopularArtists = () => {
                 ))}
               </motion.div>
               
-              {/* Load More Button */}
+              {/* Infinite Scroll Trigger */}
               {visibleCount < POPULAR_ARTIST_NAMES.length && !search && selectedGenres.length === 0 && (
-                <div className="flex justify-center mt-8">
-                  <button
-                    onClick={loadMore}
-                    disabled={isFetching}
-                    className="inline-flex items-center gap-2 rounded-lg bg-secondary px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-hover disabled:opacity-50"
-                  >
-                    {isFetching ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Loading more...
-                      </>
-                    ) : (
-                      <>Load More Artists ({Math.min(POPULAR_ARTIST_NAMES.length - visibleCount, 48)} more)</>
-                    )}
-                  </button>
+                <div ref={loadMoreRef} className="flex justify-center mt-8 py-4">
+                  {isFetching && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span className="text-sm">Loading more artists...</span>
+                    </div>
+                  )}
                 </div>
               )}
             </>
