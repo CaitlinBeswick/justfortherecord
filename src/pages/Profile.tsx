@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown, Heart } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -18,7 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
 
-type ProfileTab = "diary" | "reviews" | "lists" | "to_listen";
+type ProfileTab = "diary" | "reviews" | "lists" | "to_listen" | "following";
 type DiarySortOption = "date" | "rating" | "artist";
 
 interface Profile {
@@ -47,6 +47,13 @@ interface UserList {
   description: string | null;
   is_public: boolean;
   is_ranked: boolean;
+  created_at: string;
+}
+
+interface ArtistFollow {
+  id: string;
+  artist_id: string;
+  artist_name: string;
   created_at: string;
 }
 
@@ -114,9 +121,26 @@ const Profile = () => {
     enabled: !!user,
   });
 
+  // Fetch followed artists
+  const { data: followedArtists = [] } = useQuery({
+    queryKey: ['user-followed-artists', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('artist_follows')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as ArtistFollow[];
+    },
+    enabled: !!user,
+  });
+
   const tabs: { id: ProfileTab; label: string; icon: React.ReactNode }[] = [
     { id: "diary", label: "Diary", icon: <Disc3 className="h-4 w-4" /> },
     { id: "to_listen", label: "To Listen", icon: <Clock className="h-4 w-4" /> },
+    { id: "following", label: "Following", icon: <Heart className="h-4 w-4" /> },
     { id: "reviews", label: "Reviews", icon: <PenLine className="h-4 w-4" /> },
     { id: "lists", label: "Lists", icon: <List className="h-4 w-4" /> },
   ];
@@ -433,6 +457,61 @@ const Profile = () => {
                   >
                     <Plus className="h-4 w-4" />
                     Find Albums
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === "following" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <h2 className="font-serif text-xl text-foreground mb-6">
+                Artists You Follow ({followedArtists.length})
+              </h2>
+              {followedArtists.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                  {followedArtists.map((artist, index) => (
+                    <motion.div
+                      key={artist.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="group cursor-pointer text-center"
+                      onClick={() => navigate(`/artist/${artist.artist_id}`)}
+                    >
+                      <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50 bg-secondary flex items-center justify-center">
+                        <span className="text-foreground font-bold text-2xl sm:text-3xl">
+                          {artist.artist_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                        </span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      </div>
+                      <div className="mt-3">
+                        <h3 className="font-sans font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {artist.artist_name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Followed {new Date(artist.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Heart className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">You're not following any artists yet</p>
+                  <p className="text-sm text-muted-foreground/60 mt-2">
+                    Follow artists to see them here
+                  </p>
+                  <button 
+                    onClick={() => navigate('/search')}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Discover Artists
                   </button>
                 </div>
               )}
