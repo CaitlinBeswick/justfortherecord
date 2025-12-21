@@ -2,7 +2,14 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/ui/StarRating";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check } from "lucide-react";
+import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check, ChevronDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -38,6 +45,7 @@ const AlbumDetail = () => {
   const [coverError, setCoverError] = useState(false);
   const [reviewText, setReviewText] = useState("");
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
 
   const { data: releaseGroup, isLoading, error } = useQuery({
     queryKey: ['release-group', id],
@@ -45,39 +53,52 @@ const AlbumDetail = () => {
     enabled: !!id,
   });
 
-  // Find the best release to get tracks from
+  // Get sorted releases for the dropdown
   // Prefer: official releases, standard edition (not deluxe/expanded), earliest date (original release)
-  const bestRelease = (() => {
+  const sortedReleases = (() => {
     const releases = releaseGroup?.releases || [];
-    if (releases.length === 0) return null;
+    if (releases.length === 0) return [];
     
     // Filter to only official releases first
     const officialReleases = releases.filter((r: any) => r.status === 'Official');
     const candidateReleases = officialReleases.length > 0 ? officialReleases : releases;
     
     // Sort by: date (earliest first), then by track count (fewest = standard edition)
-    const sorted = [...candidateReleases].sort((a: any, b: any) => {
-      // Prefer earliest release date (original release)
+    return [...candidateReleases].sort((a: any, b: any) => {
       const aDate = a.date || '9999';
       const bDate = b.date || '9999';
       const dateCompare = aDate.localeCompare(bDate);
       if (dateCompare !== 0) return dateCompare;
       
-      // Among same-date releases, prefer fewer tracks (standard edition, not deluxe)
       const aTrackCount = a.media?.reduce((sum: number, m: any) => sum + (m['track-count'] || 0), 0) || 0;
       const bTrackCount = b.media?.reduce((sum: number, m: any) => sum + (m['track-count'] || 0), 0) || 0;
       return aTrackCount - bTrackCount;
     });
-    
-    return sorted[0];
   })();
+
+  // Default to best release (first in sorted list) if no selection made
+  const currentReleaseId = selectedReleaseId || sortedReleases[0]?.id;
   
-  const bestReleaseId = bestRelease?.id;
   const { data: releaseWithTracks } = useQuery({
-    queryKey: ['release-tracks', bestReleaseId],
-    queryFn: () => getReleaseTracks(bestReleaseId!),
-    enabled: !!bestReleaseId,
+    queryKey: ['release-tracks', currentReleaseId],
+    queryFn: () => getReleaseTracks(currentReleaseId!),
+    enabled: !!currentReleaseId,
   });
+
+  // Helper to generate release label for dropdown
+  const getReleaseLabel = (release: any) => {
+    const trackCount = release.media?.reduce((sum: number, m: any) => sum + (m['track-count'] || 0), 0) || 0;
+    const year = release.date?.slice(0, 4) || 'Unknown';
+    const country = release.country || '';
+    const disambiguation = release.disambiguation || '';
+    
+    let label = `${year}`;
+    if (country) label += ` · ${country}`;
+    label += ` · ${trackCount} tracks`;
+    if (disambiguation) label += ` (${disambiguation})`;
+    
+    return label;
+  };
 
   // Fetch existing user rating
   const { data: existingRating } = useQuery({
@@ -386,9 +407,26 @@ const AlbumDetail = () => {
 
         {/* Tracklist */}
         <section className="container mx-auto px-4 py-8 pb-20">
-          <h2 className="font-serif text-2xl text-foreground mb-6">
-            Tracklist {tracks.length > 0 && `(${tracks.length} tracks)`}
-          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="font-serif text-2xl text-foreground">
+              Tracklist {tracks.length > 0 && `(${tracks.length} tracks)`}
+            </h2>
+            
+            {sortedReleases.length > 1 && (
+              <Select value={currentReleaseId || ''} onValueChange={setSelectedReleaseId}>
+                <SelectTrigger className="w-full sm:w-[280px] bg-secondary border-border">
+                  <SelectValue placeholder="Select edition" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  {sortedReleases.map((release: any) => (
+                    <SelectItem key={release.id} value={release.id}>
+                      {getReleaseLabel(release)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
           
           {tracks.length > 0 ? (
             <motion.div
