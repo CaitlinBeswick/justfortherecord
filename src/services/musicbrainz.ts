@@ -54,12 +54,17 @@ async function callMusicBrainz(body: Record<string, string | undefined>) {
   const { data, error } = await supabase.functions.invoke('musicbrainz', {
     body,
   });
-  
+
   if (error) {
-    console.error('MusicBrainz API error:', error);
+    console.error('MusicBrainz invocation error:', error);
     throw new Error(error.message);
   }
-  
+
+  // Edge function returns 200 even on upstream failures; it surfaces errors in the payload.
+  if (data?.error) {
+    throw new Error(String(data.error));
+  }
+
   return data;
 }
 
