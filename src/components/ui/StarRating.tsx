@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Star, StarHalf } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StarRatingProps {
@@ -22,40 +22,72 @@ export function StarRating({
   interactive = false,
   onRatingChange,
 }: StarRatingProps) {
-  const handleClick = (index: number) => {
+  const handleClick = (index: number, isHalf: boolean) => {
     if (interactive && onRatingChange) {
-      onRatingChange(index + 1);
+      const newRating = isHalf ? index + 0.5 : index + 1;
+      onRatingChange(newRating);
     }
   };
 
   return (
     <div className="flex items-center gap-0.5">
       {Array.from({ length: maxRating }).map((_, index) => {
-        const filled = index < rating;
-        const halfFilled = index < rating && index + 1 > rating;
+        const filled = index + 1 <= rating;
+        const halfFilled = !filled && index + 0.5 <= rating;
 
         return (
-          <button
+          <div
             key={index}
-            type="button"
-            disabled={!interactive}
-            onClick={() => handleClick(index)}
             className={cn(
-              "transition-all duration-200",
-              interactive && "cursor-pointer hover:scale-110",
-              !interactive && "cursor-default"
+              "relative",
+              sizeClasses[size],
+              interactive && "cursor-pointer"
             )}
           >
+            {/* Background empty star */}
             <Star
               className={cn(
                 sizeClasses[size],
-                "transition-colors duration-200",
-                filled
-                  ? "fill-primary text-primary star-rating"
-                  : "fill-transparent text-muted-foreground/40"
+                "absolute inset-0 fill-transparent text-muted-foreground/40"
               )}
             />
-          </button>
+            
+            {/* Filled or half-filled star */}
+            {filled && (
+              <Star
+                className={cn(
+                  sizeClasses[size],
+                  "absolute inset-0 fill-primary text-primary star-rating"
+                )}
+              />
+            )}
+            {halfFilled && (
+              <StarHalf
+                className={cn(
+                  sizeClasses[size],
+                  "absolute inset-0 fill-primary text-primary star-rating"
+                )}
+              />
+            )}
+
+            {/* Interactive click areas */}
+            {interactive && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleClick(index, true)}
+                  className="absolute inset-y-0 left-0 w-1/2 hover:scale-110 transition-transform"
+                  aria-label={`Rate ${index + 0.5} stars`}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleClick(index, false)}
+                  className="absolute inset-y-0 right-0 w-1/2 hover:scale-110 transition-transform"
+                  aria-label={`Rate ${index + 1} stars`}
+                />
+              </>
+            )}
+          </div>
         );
       })}
     </div>
