@@ -37,7 +37,10 @@ export function ReviewCard({
       <img
         src={albumCover}
         alt={albumTitle}
-        className="h-24 w-24 rounded-lg object-cover shadow-lg"
+        className="h-24 w-24 rounded-lg object-cover shadow-lg bg-muted"
+        onError={(e) => {
+          e.currentTarget.src = '/placeholder.svg';
+        }}
       />
       
       <div className="flex-1 min-w-0">
