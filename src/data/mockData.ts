@@ -88,12 +88,12 @@ export const popularArtists = [
   },
 ];
 
-// Real MusicBrainz release group IDs for actual album covers from Cover Art Archive
+// Using Wikipedia/Wikimedia Commons images which are more reliably accessible
 export const recentReviews = [
   {
     id: "1",
     albumTitle: "In Rainbows",
-    albumCover: "https://coverartarchive.org/release-group/7d314545-4a20-3f9a-9a0a-d024d4f3a760/front-500",
+    albumCover: "https://upload.wikimedia.org/wikipedia/en/2/2e/In_Rainbows_Official_Cover.jpg",
     artist: "Radiohead",
     username: "musiclover42",
     userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
@@ -106,7 +106,7 @@ export const recentReviews = [
   {
     id: "2",
     albumTitle: "To Pimp a Butterfly",
-    albumCover: "https://coverartarchive.org/release-group/5cb7388e-b156-4c4e-a586-77e7a0cf1c71/front-500",
+    albumCover: "https://upload.wikimedia.org/wikipedia/en/f/f6/Kendrick_Lamar_-_To_Pimp_a_Butterfly.png",
     artist: "Kendrick Lamar",
     username: "hiphophead",
     userAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
@@ -119,7 +119,7 @@ export const recentReviews = [
   {
     id: "3",
     albumTitle: "Blonde",
-    albumCover: "https://coverartarchive.org/release-group/a6063ea7-c196-4dc9-b96a-621efba1d251/front-500",
+    albumCover: "https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg",
     artist: "Frank Ocean",
     username: "oceanfan",
     userAvatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop",
