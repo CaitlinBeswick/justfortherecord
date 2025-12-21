@@ -40,7 +40,7 @@ export function useListeningStatus(releaseGroupId?: string) {
   });
 
   // Fetch all user's listening statuses
-  const { data: allStatuses = [] } = useQuery({
+  const { data: allStatuses = [], isLoading: isLoadingAll } = useQuery({
     queryKey: ['listening-statuses', user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -53,6 +53,7 @@ export function useListeningStatus(releaseGroupId?: string) {
       return data as ListeningStatus[];
     },
     enabled: !!user,
+    staleTime: 0, // Always refetch when component mounts
   });
 
   const setStatusMutation = useMutation({
@@ -121,6 +122,7 @@ export function useListeningStatus(releaseGroupId?: string) {
   return {
     status: status?.status || null,
     isLoading,
+    isLoadingAll,
     allStatuses,
     setStatus: setStatusMutation.mutate,
     isPending: setStatusMutation.isPending,
