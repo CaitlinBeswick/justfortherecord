@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getArtistImage } from "@/services/musicbrainz";
 
 interface ArtistCardProps {
@@ -39,16 +39,42 @@ function getInitials(name: string): string {
 export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: ArtistCardProps) {
   const initials = getInitials(name);
   const bgColor = getArtistColor(name);
+  const cardRef = useRef<HTMLDivElement>(null);
   
-  // Stagger image fetching to prevent API rate limiting
-  const [shouldFetch, setShouldFetch] = useState(fetchDelay === 0);
+  // Lazy loading: only fetch when card is visible
+  const [isVisible, setIsVisible] = useState(false);
   
   useEffect(() => {
-    if (fetchDelay > 0) {
-      const timer = setTimeout(() => setShouldFetch(true), fetchDelay);
-      return () => clearTimeout(timer);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1, rootMargin: '50px' }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
     }
-  }, [fetchDelay]);
+
+    return () => observer.disconnect();
+  }, []);
+  
+  // Stagger image fetching to prevent API rate limiting
+  const [shouldFetch, setShouldFetch] = useState(false);
+  
+  useEffect(() => {
+    if (isVisible) {
+      if (fetchDelay > 0) {
+        const timer = setTimeout(() => setShouldFetch(true), fetchDelay);
+        return () => clearTimeout(timer);
+      } else {
+        setShouldFetch(true);
+      }
+    }
+  }, [isVisible, fetchDelay]);
 
   const { data: artistImage } = useQuery({
     queryKey: ['artist-image', id],
@@ -60,6 +86,7 @@ export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: Artist
 
   return (
     <motion.div
+      ref={cardRef}
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.2 }}
       className="group cursor-pointer text-center"
@@ -70,7 +97,8 @@ export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: Artist
           <img 
             src={artistImage} 
             alt={name}
-            className="w-full h-full object-cover"
+            loading="lazy"
+            className="w-full h-full object-cover transition-opacity duration-300"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               e.currentTarget.nextElementSibling?.classList.remove('hidden');
