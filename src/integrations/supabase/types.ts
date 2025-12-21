@@ -91,6 +91,39 @@ export type Database = {
           },
         ]
       }
+      listening_status: {
+        Row: {
+          album_title: string
+          artist_name: string
+          created_at: string
+          id: string
+          release_group_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          album_title: string
+          artist_name: string
+          created_at?: string
+          id?: string
+          release_group_id: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          album_title?: string
+          artist_name?: string
+          created_at?: string
+          id?: string
+          release_group_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

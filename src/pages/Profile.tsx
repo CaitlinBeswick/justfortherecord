@@ -3,14 +3,15 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Settings, Disc3, PenLine, List, Loader2, Plus, User } from "lucide-react";
+import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
+import { useListeningStatus } from "@/hooks/useListeningStatus";
 
-type ProfileTab = "diary" | "reviews" | "lists";
+type ProfileTab = "diary" | "reviews" | "lists" | "to_listen";
 
 interface Profile {
   id: string;
@@ -45,6 +46,8 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>("diary");
+  const [showListened, setShowListened] = useState(false);
+  const { allStatuses, getStatusForAlbum } = useListeningStatus();
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -103,9 +106,12 @@ const Profile = () => {
 
   const tabs: { id: ProfileTab; label: string; icon: React.ReactNode }[] = [
     { id: "diary", label: "Diary", icon: <Disc3 className="h-4 w-4" /> },
+    { id: "to_listen", label: "To Listen", icon: <Clock className="h-4 w-4" /> },
     { id: "reviews", label: "Reviews", icon: <PenLine className="h-4 w-4" /> },
     { id: "lists", label: "Lists", icon: <List className="h-4 w-4" /> },
   ];
+
+  const toListenAlbums = allStatuses.filter(s => s.status === 'to_listen');
 
   if (authLoading || profileLoading) {
     return (
@@ -229,26 +235,50 @@ const Profile = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <h2 className="font-serif text-xl text-foreground mb-6">Recently Logged</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-serif text-xl text-foreground">Recently Logged</h2>
+                <button
+                  onClick={() => setShowListened(!showListened)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showListened ? (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      Showing listened
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="h-4 w-4" />
+                      Fading listened
+                    </>
+                  )}
+                </button>
+              </div>
               {ratings.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {ratings.map((rating, index) => (
-                    <motion.div
-                      key={rating.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <AlbumCard
-                        id={rating.release_group_id}
-                        title={rating.album_title}
-                        artist={rating.artist_name}
-                        coverUrl={getCoverArtUrl(rating.release_group_id)}
-                        rating={rating.rating}
-                        onClick={() => navigate(`/album/${rating.release_group_id}`)}
-                      />
-                    </motion.div>
-                  ))}
+                  {ratings.map((rating, index) => {
+                    const isListened = getStatusForAlbum(rating.release_group_id) === 'listened';
+                    return (
+                      <motion.div
+                        key={rating.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className={`transition-opacity duration-300 ${
+                          isListened && !showListened ? 'opacity-40 hover:opacity-100' : ''
+                        }`}
+                      >
+                        <AlbumCard
+                          id={rating.release_group_id}
+                          title={rating.album_title}
+                          artist={rating.artist_name}
+                          coverUrl={getCoverArtUrl(rating.release_group_id)}
+                          rating={rating.rating}
+                          onClick={() => navigate(`/album/${rating.release_group_id}`)}
+                        />
+                      </motion.div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -260,6 +290,50 @@ const Profile = () => {
                   >
                     <Plus className="h-4 w-4" />
                     Find Albums to Log
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === "to_listen" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <h2 className="font-serif text-xl text-foreground mb-6">Your Listening Queue</h2>
+              {toListenAlbums.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {toListenAlbums.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <AlbumCard
+                        id={item.release_group_id}
+                        title={item.album_title}
+                        artist={item.artist_name}
+                        coverUrl={getCoverArtUrl(item.release_group_id)}
+                        onClick={() => navigate(`/album/${item.release_group_id}`)}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Clock className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No albums in your listening queue</p>
+                  <p className="text-sm text-muted-foreground/60 mt-2">
+                    Mark albums as "To Listen" to add them here
+                  </p>
+                  <button 
+                    onClick={() => navigate('/search')}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Find Albums
                   </button>
                 </div>
               )}
