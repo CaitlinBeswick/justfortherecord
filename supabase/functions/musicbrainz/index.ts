@@ -349,10 +349,14 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error(`MusicBrainz error: ${response.status} ${response.statusText}`);
-      return new Response(JSON.stringify({ error: `MusicBrainz API error: ${response.status}` }), {
-        status: response.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // Return 200 so the client SDK doesn't treat it as an invocation error;
+      // client code can handle the error message consistently.
+      return new Response(
+        JSON.stringify({ error: `Music data provider error: ${response.status}` }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const data = await response.json();
@@ -376,16 +380,16 @@ serve(async (req) => {
     // Treat as bad-gateway so the UI can show a retry message.
     const isUpstreamNetworkError = /Connection reset by peer|client error \(Connect\)|timed out|aborted/i.test(errorMessage);
 
-    return new Response(
-      JSON.stringify({
-        error: isUpstreamNetworkError
-          ? 'Music data provider is temporarily unavailable. Please try again.'
-          : errorMessage,
-      }),
-      {
-        status: isUpstreamNetworkError ? 502 : 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+     return new Response(
+       JSON.stringify({
+         error: isUpstreamNetworkError
+           ? 'Music data provider is temporarily unavailable. Please try again.'
+           : errorMessage,
+       }),
+       {
+         // Return 200 so supabase.functions.invoke does not surface this as an invocation error.
+         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+       }
+     );
   }
 });
