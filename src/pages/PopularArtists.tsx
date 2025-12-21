@@ -4,10 +4,9 @@ import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate } from "react-router-dom";
 import { Search, Users, Loader2, X } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { searchArtists, MBArtist } from "@/services/musicbrainz";
 import { Skeleton } from "@/components/ui/skeleton";
-
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -38,6 +37,7 @@ const GENRE_FILTERS = [
   "Indie", "Soul", "Reggae", "Latin"
 ];
 
+const PAGE_SIZE = 24;
 // Extended list of 1000 popular artists
 const POPULAR_ARTIST_NAMES = [
   // Classic Rock & Rock Icons
@@ -254,11 +254,10 @@ const PopularArtists = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [visibleCount, setVisibleCount] = useState(48); // Start with 48 artists
 
   const toggleGenre = (genre: string) => {
-    setSelectedGenres(prev => 
-      prev.includes(genre) 
+    setSelectedGenres(prev =>
+      prev.includes(genre)
         ? prev.filter(g => g !== genre)
         : [...prev, genre]
     );
@@ -266,45 +265,63 @@ const PopularArtists = () => {
 
   const clearGenres = () => setSelectedGenres([]);
 
-  // Fetch popular artists in smaller batches - only fetch what's visible
-  const { data: artists = [] as MBArtist[], isLoading, isFetching } = useQuery<MBArtist[]>({
-    queryKey: ['popular-artists', visibleCount],
-    queryFn: async (): Promise<MBArtist[]> => {
-      const results: MBArtist[] = [];
-      const batchSize = 3; // Smaller batch size to avoid rate limiting
-      const maxArtists = Math.min(POPULAR_ARTIST_NAMES.length, visibleCount);
-      
-      for (let i = 0; i < maxArtists; i += batchSize) {
-        const batch = POPULAR_ARTIST_NAMES.slice(i, i + batchSize);
-        const batchResults = await Promise.all(
-          batch.map(async (name) => {
-            try {
-              const searchResults = await searchArtists(name);
-              return searchResults.find(a => 
-                a.name.toLowerCase() === name.toLowerCase()
-              ) || searchResults[0] || null;
-            } catch {
-              return null;
-            }
-          })
-        );
-        results.push(...batchResults.filter((r): r is MBArtist => r !== null));
-        
-        // Longer delay between batches to avoid rate limiting
-        if (i + batchSize < maxArtists) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
+  async function fetchPopularArtistsPage(offset: number): Promise<MBArtist[]> {
+    const maxArtists = Math.min(POPULAR_ARTIST_NAMES.length, offset + PAGE_SIZE);
+    const names = POPULAR_ARTIST_NAMES.slice(offset, maxArtists);
+
+    const results: MBArtist[] = [];
+    const batchSize = 3; // keep small to avoid provider throttling
+
+    for (let i = 0; i < names.length; i += batchSize) {
+      const batch = names.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map(async (name) => {
+          try {
+            const searchResults = await searchArtists(name);
+            return (
+              searchResults.find(a => a.name.toLowerCase() === name.toLowerCase()) ||
+              searchResults[0] ||
+              null
+            );
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      results.push(...batchResults.filter((r): r is MBArtist => r !== null));
+
+      if (i + batchSize < names.length) {
+        await new Promise(resolve => setTimeout(resolve, 60));
       }
-      
-      return results;
+    }
+
+    return results;
+  }
+
+  const {
+    data,
+    isPending,
+    isFetching,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery<MBArtist[]>({
+    queryKey: ['popular-artists'],
+    queryFn: ({ pageParam }) => fetchPopularArtistsPage(Number(pageParam ?? 0)),
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => {
+      const nextOffset = allPages.length * PAGE_SIZE;
+      return nextOffset < POPULAR_ARTIST_NAMES.length ? nextOffset : undefined;
     },
     staleTime: 1000 * 60 * 60 * 24, // Cache for 24 hours
-    placeholderData: (previousData) => previousData,
   });
 
+  const artists = useMemo(() => data?.pages.flat() ?? ([] as MBArtist[]), [data]);
+
   const loadMore = useCallback(() => {
-    setVisibleCount(prev => Math.min(prev + 48, POPULAR_ARTIST_NAMES.length));
-  }, []);
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   // Infinite scroll observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -315,7 +332,7 @@ const PopularArtists = () => {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isFetching && visibleCount < POPULAR_ARTIST_NAMES.length) {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
           loadMore();
         }
       },
@@ -325,8 +342,7 @@ const PopularArtists = () => {
     observer.observe(currentRef);
 
     return () => observer.disconnect();
-  }, [isFetching, visibleCount, loadMore]);
-
+  }, [hasNextPage, isFetchingNextPage, loadMore]);
   // Filter artists based on search and genres
   const filteredArtists = useMemo(() => {
     let filtered = artists;
@@ -413,7 +429,7 @@ const PopularArtists = () => {
             </div>
           </div>
 
-          {isLoading && artists.length === 0 ? (
+          {isPending && artists.length === 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
               {Array.from({ length: 24 }).map((_, index) => (
                 <ArtistCardSkeleton key={index} />
@@ -443,11 +459,11 @@ const PopularArtists = () => {
                   </motion.div>
                 ))}
               </motion.div>
-              
+
               {/* Infinite Scroll Trigger */}
-              {visibleCount < POPULAR_ARTIST_NAMES.length && !search && selectedGenres.length === 0 && (
+              {hasNextPage && !search && selectedGenres.length === 0 && (
                 <div ref={loadMoreRef} className="flex justify-center mt-8 py-4">
-                  {isFetching && (
+                  {(isFetchingNextPage || isFetching) && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       <span className="text-sm">Loading more artists...</span>
@@ -460,8 +476,8 @@ const PopularArtists = () => {
             <div className="text-center py-20">
               <Users className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
               <p className="text-muted-foreground">
-                {search || selectedGenres.length > 0 
-                  ? "No artists found matching your filters" 
+                {search || selectedGenres.length > 0
+                  ? "No artists found matching your filters"
                   : "No artists available"}
               </p>
               {(search || selectedGenres.length > 0) && (
