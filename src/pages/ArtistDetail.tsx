@@ -42,7 +42,7 @@ const ArtistDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { getStatusForAlbum } = useListeningStatus();
+  const { getStatusForAlbum, allStatuses } = useListeningStatus();
   const [fadeListened, setFadeListened] = useState(true);
 
   const artistId = id ?? "";
