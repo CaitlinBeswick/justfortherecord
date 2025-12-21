@@ -105,7 +105,35 @@ export async function getArtistImage(id: string): Promise<string | null> {
 
 export async function getArtistReleases(artistId: string, type?: string): Promise<MBReleaseGroup[]> {
   const data = await callMusicBrainz({ action: 'get-artist-releases', id: artistId, type });
-  return data["release-groups"] || [];
+  const releaseGroups: MBReleaseGroup[] = data["release-groups"] || [];
+  
+  // Deduplicate release groups by title (case-insensitive)
+  // Keep the one with the earliest release date (original release)
+  const uniqueByTitle = new Map<string, MBReleaseGroup>();
+  
+  for (const rg of releaseGroups) {
+    const normalizedTitle = rg.title.toLowerCase().trim();
+    const existing = uniqueByTitle.get(normalizedTitle);
+    
+    if (!existing) {
+      uniqueByTitle.set(normalizedTitle, rg);
+    } else {
+      // Keep the one with the earlier release date
+      const existingYear = getYear(existing["first-release-date"]) ?? 9999;
+      const currentYear = getYear(rg["first-release-date"]) ?? 9999;
+      
+      if (currentYear < existingYear) {
+        uniqueByTitle.set(normalizedTitle, rg);
+      }
+    }
+  }
+  
+  // Convert back to array and sort by release date (newest first)
+  return Array.from(uniqueByTitle.values()).sort((a, b) => {
+    const yearA = getYear(a["first-release-date"]) ?? 0;
+    const yearB = getYear(b["first-release-date"]) ?? 0;
+    return yearB - yearA;
+  });
 }
 
 export async function getReleaseGroup(id: string): Promise<MBReleaseGroup & { releases?: MBRelease[] }> {
