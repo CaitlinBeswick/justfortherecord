@@ -75,14 +75,47 @@ export async function searchArtists(query: string): Promise<MBArtist[]> {
 
 export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
   const data = await callMusicBrainz({ action: 'search-release', query });
+  
   // Map releases to release-group-like structure
-  return (data.releases || []).map((r: any) => ({
+  const rawReleases: MBReleaseGroup[] = (data.releases || []).map((r: any) => ({
     id: r["release-group"]?.id || r.id,
     title: r.title,
     "primary-type": r["release-group"]?.["primary-type"],
     "first-release-date": r.date,
     "artist-credit": r["artist-credit"],
   }));
+  
+  // Deduplicate by release group ID first (exact duplicates)
+  // Then by normalized title + artist combination (same album, different releases)
+  const seenIds = new Set<string>();
+  const uniqueByTitleArtist = new Map<string, MBReleaseGroup>();
+  
+  for (const rg of rawReleases) {
+    // Skip if we've already seen this exact release group ID
+    if (seenIds.has(rg.id)) continue;
+    seenIds.add(rg.id);
+    
+    // Create a key from normalized title + artist
+    const artistName = getArtistNames(rg["artist-credit"]).toLowerCase().trim();
+    const normalizedTitle = rg.title.toLowerCase().trim();
+    const key = `${artistName}::${normalizedTitle}`;
+    
+    const existing = uniqueByTitleArtist.get(key);
+    
+    if (!existing) {
+      uniqueByTitleArtist.set(key, rg);
+    } else {
+      // Keep the one with the earlier release date (original release)
+      const existingYear = getYear(existing["first-release-date"]) ?? 9999;
+      const currentYear = getYear(rg["first-release-date"]) ?? 9999;
+      
+      if (currentYear < existingYear) {
+        uniqueByTitleArtist.set(key, rg);
+      }
+    }
+  }
+  
+  return Array.from(uniqueByTitleArtist.values());
 }
 
 export async function searchRecordings(query: string): Promise<MBRecording[]> {
