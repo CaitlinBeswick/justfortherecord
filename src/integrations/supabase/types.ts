@@ -50,6 +50,30 @@ export type Database = {
         }
         Relationships: []
       }
+      artist_follows: {
+        Row: {
+          artist_id: string
+          artist_name: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          artist_id: string
+          artist_name: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          artist_id?: string
+          artist_name?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       list_items: {
         Row: {
           added_at: string

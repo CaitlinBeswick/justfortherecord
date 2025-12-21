@@ -4,8 +4,11 @@ import { AlbumCard } from "@/components/AlbumCard";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -33,7 +36,9 @@ function getInitials(name: string): string {
 const ArtistDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [following, setFollowing] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const artistId = id ?? "";
   const isValidArtistId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(artistId);
@@ -50,8 +55,77 @@ const ArtistDetail = () => {
     queryKey: ['artist-image', artistId],
     queryFn: () => getArtistImage(artistId),
     enabled: isValidArtistId,
-    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+    staleTime: 1000 * 60 * 60,
   });
+
+  // Check if user follows this artist
+  const { data: followData } = useQuery({
+    queryKey: ['artist-follow', user?.id, artistId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('artist_follows')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('artist_id', artistId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && isValidArtistId,
+  });
+
+  const following = !!followData;
+
+  // Follow/unfollow mutation
+  const followMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !artist) throw new Error("Not authenticated");
+      
+      if (following) {
+        const { error } = await supabase
+          .from('artist_follows')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('artist_id', artistId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('artist_follows')
+          .insert({
+            user_id: user.id,
+            artist_id: artistId,
+            artist_name: artist.name,
+          });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['artist-follow', user?.id, artistId] });
+      toast({
+        title: following ? "Unfollowed" : "Following",
+        description: following ? `You unfollowed ${artist?.name}` : `You're now following ${artist?.name}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFollow = () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to follow artists.",
+      });
+      navigate('/auth');
+      return;
+    }
+    followMutation.mutate();
+  };
 
   // Use release-groups from the artist response (already included in getArtist)
   // Filter to only include releases where this artist is the PRIMARY artist
@@ -220,12 +294,13 @@ const ArtistDetail = () => {
 
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
                   <button
-                    onClick={() => setFollowing(!following)}
+                    onClick={handleFollow}
+                    disabled={followMutation.isPending}
                     className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
                       following
                         ? "bg-secondary text-secondary-foreground hover:bg-surface-hover"
                         : "bg-primary text-primary-foreground hover:opacity-90"
-                    }`}
+                    } disabled:opacity-50`}
                   >
                     {following ? (
                       <>
