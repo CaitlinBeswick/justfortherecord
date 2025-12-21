@@ -365,7 +365,16 @@ const ArtistDetail = () => {
                     className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
                   >
                     {groupedReleases[type].map((release, index) => {
-                      const isListened = getStatusForAlbum(release.id) === 'listened';
+                      const normalized = (v: string) => v.trim().toLowerCase();
+                      const listenedById = getStatusForAlbum(release.id) === 'listened';
+                      const listenedByMetadata = allStatuses.some(
+                        (s) =>
+                          s.status === 'listened' &&
+                          normalized(s.album_title) === normalized(release.title) &&
+                          normalized(s.artist_name) === normalized(artist.name)
+                      );
+                      const isListened = listenedById || listenedByMetadata;
+
                       return (
                         <motion.div
                           key={release.id}
