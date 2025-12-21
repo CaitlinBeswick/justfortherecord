@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Albums from "./pages/Albums";
 import Artists from "./pages/Artists";
+import PopularArtists from "./pages/PopularArtists";
 import AlbumDetail from "./pages/AlbumDetail";
 import ArtistDetail from "./pages/ArtistDetail";
 import Search from "./pages/Search";
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/albums" element={<Albums />} />
             <Route path="/artists" element={<Artists />} />
+            <Route path="/artists/popular" element={<PopularArtists />} />
             <Route path="/album/:id" element={<AlbumDetail />} />
             <Route path="/artist/:id" element={<ArtistDetail />} />
             <Route path="/search" element={<Search />} />
