@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, Eye, EyeOff, ArrowUpDown } from "lucide-react";
+import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -56,6 +56,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<ProfileTab>("diary");
   const [showListened, setShowListened] = useState(false);
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
+  const [sortAscending, setSortAscending] = useState(false);
   const { allStatuses, getStatusForAlbum } = useListeningStatus();
 
   // Redirect to auth if not logged in
@@ -171,19 +172,21 @@ const Profile = () => {
 
   // Sort diary entries based on selected option
   const sortedDiaryEntries = [...diaryEntries].sort((a, b) => {
+    let comparison = 0;
     switch (diarySort) {
       case "date":
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        break;
       case "rating":
-        // Higher ratings first, unrated at the end
         const ratingA = a.rating ?? -1;
         const ratingB = b.rating ?? -1;
-        return ratingB - ratingA;
+        comparison = ratingB - ratingA;
+        break;
       case "artist":
-        return a.artist_name.localeCompare(b.artist_name);
-      default:
-        return 0;
+        comparison = a.artist_name.localeCompare(b.artist_name);
+        break;
     }
+    return sortAscending ? -comparison : comparison;
   });
 
   if (authLoading || profileLoading) {
@@ -324,6 +327,13 @@ const Profile = () => {
                       <SelectItem value="artist">Artist</SelectItem>
                     </SelectContent>
                   </Select>
+                  <button
+                    onClick={() => setSortAscending(!sortAscending)}
+                    className="flex items-center justify-center h-9 w-9 rounded-lg bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    title={sortAscending ? "Ascending" : "Descending"}
+                  >
+                    {sortAscending ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                  </button>
                   <button
                     onClick={() => setShowListened(!showListened)}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
