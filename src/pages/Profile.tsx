@@ -3,7 +3,14 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, Eye, EyeOff } from "lucide-react";
+import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, Eye, EyeOff, ArrowUpDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +19,7 @@ import { getCoverArtUrl } from "@/services/musicbrainz";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
 
 type ProfileTab = "diary" | "reviews" | "lists" | "to_listen";
+type DiarySortOption = "date" | "rating" | "artist";
 
 interface Profile {
   id: string;
@@ -47,6 +55,7 @@ const Profile = () => {
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>("diary");
   const [showListened, setShowListened] = useState(false);
+  const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
   const { allStatuses, getStatusForAlbum } = useListeningStatus();
 
   // Redirect to auth if not logged in
@@ -157,9 +166,25 @@ const Profile = () => {
       }
     });
 
-    // Sort by created_at descending
-    return entries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return entries;
   })();
+
+  // Sort diary entries based on selected option
+  const sortedDiaryEntries = [...diaryEntries].sort((a, b) => {
+    switch (diarySort) {
+      case "date":
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      case "rating":
+        // Higher ratings first, unrated at the end
+        const ratingA = a.rating ?? -1;
+        const ratingB = b.rating ?? -1;
+        return ratingB - ratingA;
+      case "artist":
+        return a.artist_name.localeCompare(b.artist_name);
+      default:
+        return 0;
+    }
+  });
 
   if (authLoading || profileLoading) {
     return (
@@ -283,34 +308,47 @@ const Profile = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <h2 className="font-serif text-xl text-foreground">
                   Recently Logged ({diaryEntries.length})
                 </h2>
-                <button
-                  onClick={() => setShowListened(!showListened)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    showListened 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-secondary text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {showListened ? (
-                    <>
-                      <Eye className="h-4 w-4" />
-                      Show all
-                    </>
-                  ) : (
-                    <>
-                      <EyeOff className="h-4 w-4" />
-                      Fade listened
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  <Select value={diarySort} onValueChange={(v) => setDiarySort(v as DiarySortOption)}>
+                    <SelectTrigger className="w-[140px] h-9">
+                      <ArrowUpDown className="h-3.5 w-3.5 mr-2" />
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Date</SelectItem>
+                      <SelectItem value="rating">Rating</SelectItem>
+                      <SelectItem value="artist">Artist</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <button
+                    onClick={() => setShowListened(!showListened)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                      showListened 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-secondary text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {showListened ? (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        Show all
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="h-4 w-4" />
+                        Fade listened
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-              {diaryEntries.length > 0 ? (
+              {sortedDiaryEntries.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {diaryEntries.map((entry, index) => (
+                  {sortedDiaryEntries.map((entry, index) => (
                     <motion.div
                       key={entry.id}
                       initial={{ opacity: 0, y: 20 }}
