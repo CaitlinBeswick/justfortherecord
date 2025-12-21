@@ -110,7 +110,7 @@ const Index = () => {
               <h2 className="font-serif text-2xl text-foreground">Popular Artists</h2>
             </div>
             <button 
-              onClick={() => navigate("/artists")}
+              onClick={() => navigate("/artists/popular")}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
             >
               View all <ArrowRight className="h-4 w-4" />
