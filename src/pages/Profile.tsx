@@ -157,7 +157,10 @@ const Profile = () => {
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <h1 className="font-serif text-3xl text-foreground">{displayName}</h1>
-                  <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground">
+                  <button 
+                    onClick={() => navigate("/profile/settings")}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+                  >
                     <Settings className="h-4 w-4" />
                   </button>
                 </div>
