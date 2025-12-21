@@ -2,13 +2,16 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useListeningStatus } from "@/hooks/useListeningStatus";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -39,6 +42,8 @@ const ArtistDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { getStatusForAlbum } = useListeningStatus();
+  const [fadeListened, setFadeListened] = useState(true);
 
   const artistId = id ?? "";
   const isValidArtistId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(artistId);
@@ -325,9 +330,24 @@ const ArtistDetail = () => {
 
         {/* Discography */}
         <section className="container mx-auto px-4 py-8 pb-20">
-          <h2 className="font-serif text-2xl text-foreground mb-6">
-            Discography {releases.length > 0 && `(${releases.length} releases)`}
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-serif text-2xl text-foreground">
+              Discography {releases.length > 0 && `(${releases.length} releases)`}
+            </h2>
+            {user && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="fade-listened"
+                  checked={fadeListened}
+                  onCheckedChange={setFadeListened}
+                />
+                <Label htmlFor="fade-listened" className="text-sm text-muted-foreground flex items-center gap-1.5 cursor-pointer">
+                  {fadeListened ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  Fade listened
+                </Label>
+              </div>
+            )}
+          </div>
           
           {releases.length > 0 ? (
             <div className="space-y-10">
@@ -344,23 +364,27 @@ const ArtistDetail = () => {
                     animate={{ opacity: 1 }}
                     className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
                   >
-                    {groupedReleases[type].map((release, index) => (
-                      <motion.div
-                        key={release.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.02 }}
-                      >
-                        <AlbumCard
-                          id={release.id}
-                          title={release.title}
-                          artist={artist.name}
-                          coverUrl={getCoverArtUrl(release.id)}
-                          year={getYear(release["first-release-date"])}
-                          onClick={() => navigate(`/album/${release.id}`)}
-                        />
-                      </motion.div>
-                    ))}
+                    {groupedReleases[type].map((release, index) => {
+                      const isListened = getStatusForAlbum(release.id) === 'listened';
+                      return (
+                        <motion.div
+                          key={release.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.02 }}
+                          className={fadeListened && isListened ? "opacity-40" : ""}
+                        >
+                          <AlbumCard
+                            id={release.id}
+                            title={release.title}
+                            artist={artist.name}
+                            coverUrl={getCoverArtUrl(release.id)}
+                            year={getYear(release["first-release-date"])}
+                            onClick={() => navigate(`/album/${release.id}`)}
+                          />
+                        </motion.div>
+                      );
+                    })}
                   </motion.div>
                 </div>
               ))}
