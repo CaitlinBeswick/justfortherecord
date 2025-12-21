@@ -88,11 +88,12 @@ export const popularArtists = [
   },
 ];
 
+// Real MusicBrainz release group IDs for actual album covers from Cover Art Archive
 export const recentReviews = [
   {
     id: "1",
     albumTitle: "In Rainbows",
-    albumCover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop",
+    albumCover: "https://coverartarchive.org/release-group/7d314545-4a20-3f9a-9a0a-d024d4f3a760/front-500",
     artist: "Radiohead",
     username: "musiclover42",
     userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
@@ -105,7 +106,7 @@ export const recentReviews = [
   {
     id: "2",
     albumTitle: "To Pimp a Butterfly",
-    albumCover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop",
+    albumCover: "https://coverartarchive.org/release-group/5cb7388e-b156-4c4e-a586-77e7a0cf1c71/front-500",
     artist: "Kendrick Lamar",
     username: "hiphophead",
     userAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
@@ -118,7 +119,7 @@ export const recentReviews = [
   {
     id: "3",
     albumTitle: "Blonde",
-    albumCover: "https://images.unsplash.com/photo-1598387993441-a364f854c3e1?w=200&h=200&fit=crop",
+    albumCover: "https://coverartarchive.org/release-group/a6063ea7-c196-4dc9-b96a-621efba1d251/front-500",
     artist: "Frank Ocean",
     username: "oceanfan",
     userAvatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop",
