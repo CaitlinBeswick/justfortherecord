@@ -112,6 +112,54 @@ const Profile = () => {
   ];
 
   const toListenAlbums = allStatuses.filter(s => s.status === 'to_listen');
+  const listenedAlbums = allStatuses.filter(s => s.status === 'listened');
+
+  // Combine ratings and listening status into a unified diary
+  // Include: all rated albums + all albums marked as "listened" (even without rating)
+  const diaryEntries = (() => {
+    const entries: Array<{
+      id: string;
+      release_group_id: string;
+      album_title: string;
+      artist_name: string;
+      rating?: number;
+      created_at: string;
+      isListened: boolean;
+    }> = [];
+
+    // Add all ratings
+    const seenReleaseIds = new Set<string>();
+    ratings.forEach(r => {
+      seenReleaseIds.add(r.release_group_id);
+      entries.push({
+        id: r.id,
+        release_group_id: r.release_group_id,
+        album_title: r.album_title,
+        artist_name: r.artist_name,
+        rating: r.rating,
+        created_at: r.created_at,
+        isListened: getStatusForAlbum(r.release_group_id) === 'listened',
+      });
+    });
+
+    // Add listened albums that don't have ratings
+    listenedAlbums.forEach(s => {
+      if (!seenReleaseIds.has(s.release_group_id)) {
+        entries.push({
+          id: s.id,
+          release_group_id: s.release_group_id,
+          album_title: s.album_title,
+          artist_name: s.artist_name,
+          rating: undefined,
+          created_at: s.created_at,
+          isListened: true,
+        });
+      }
+    });
+
+    // Sort by created_at descending
+    return entries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  })();
 
   if (authLoading || profileLoading) {
     return (
@@ -236,49 +284,52 @@ const Profile = () => {
               animate={{ opacity: 1 }}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-serif text-xl text-foreground">Recently Logged</h2>
+                <h2 className="font-serif text-xl text-foreground">
+                  Recently Logged ({diaryEntries.length})
+                </h2>
                 <button
                   onClick={() => setShowListened(!showListened)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    showListened 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-secondary text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   {showListened ? (
                     <>
                       <Eye className="h-4 w-4" />
-                      Showing listened
+                      Show all
                     </>
                   ) : (
                     <>
                       <EyeOff className="h-4 w-4" />
-                      Fading listened
+                      Fade listened
                     </>
                   )}
                 </button>
               </div>
-              {ratings.length > 0 ? (
+              {diaryEntries.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {ratings.map((rating, index) => {
-                    const isListened = getStatusForAlbum(rating.release_group_id) === 'listened';
-                    return (
-                      <motion.div
-                        key={rating.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className={`transition-opacity duration-300 ${
-                          isListened && !showListened ? 'opacity-40 hover:opacity-100' : ''
-                        }`}
-                      >
-                        <AlbumCard
-                          id={rating.release_group_id}
-                          title={rating.album_title}
-                          artist={rating.artist_name}
-                          coverUrl={getCoverArtUrl(rating.release_group_id)}
-                          rating={rating.rating}
-                          onClick={() => navigate(`/album/${rating.release_group_id}`)}
-                        />
-                      </motion.div>
-                    );
-                  })}
+                  {diaryEntries.map((entry, index) => (
+                    <motion.div
+                      key={entry.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={`transition-opacity duration-300 ${
+                        entry.isListened && showListened ? 'opacity-40 hover:opacity-100' : ''
+                      }`}
+                    >
+                      <AlbumCard
+                        id={entry.release_group_id}
+                        title={entry.album_title}
+                        artist={entry.artist_name}
+                        coverUrl={getCoverArtUrl(entry.release_group_id)}
+                        rating={entry.rating}
+                        onClick={() => navigate(`/album/${entry.release_group_id}`)}
+                      />
+                    </motion.div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-center py-12">
