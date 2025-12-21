@@ -171,7 +171,61 @@ serve(async (req) => {
             }
           }
 
-          // Try source 2: TheAudioDB (free, no API key needed for basic lookups)
+          // Try source 2: Deezer (free API, good quality artist photos)
+          try {
+            const deezerUrl = `https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=1`;
+            const deezerResponse = await fetch(deezerUrl, {
+              headers: { 'User-Agent': USER_AGENT },
+            });
+
+            if (deezerResponse.ok) {
+              const deezerData = await deezerResponse.json();
+              const artist = deezerData.data?.[0];
+              // Deezer provides picture_xl (1000x1000), picture_big (500x500), picture_medium (250x250)
+              const imageUrl = artist?.picture_xl || artist?.picture_big;
+              
+              if (imageUrl && artist?.name?.toLowerCase() === artistName.toLowerCase()) {
+                console.log(`Found Deezer image for ${artistName}`);
+                return new Response(JSON.stringify({ imageUrl }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                });
+              }
+            }
+          } catch (e) {
+            console.log('Deezer fetch failed, trying next source');
+          }
+
+          // Try source 3: Last.fm (free, good quality images)
+          try {
+            // Last.fm requires an API key for their official API, but we can use their public image CDN
+            // by searching via the free 2.0 API endpoint (no key needed for artist.getinfo with autocorrect)
+            const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.search&artist=${encodeURIComponent(artistName)}&format=json&limit=1`;
+            const lastfmResponse = await fetch(lastfmUrl, {
+              headers: { 'User-Agent': USER_AGENT },
+            });
+
+            if (lastfmResponse.ok) {
+              const lastfmData = await lastfmResponse.json();
+              const artist = lastfmData.results?.artistmatches?.artist?.[0];
+              // Last.fm returns array of images in different sizes
+              const images = artist?.image || [];
+              // Get the largest image (extralarge or large)
+              const largeImage = images.find((img: any) => img.size === 'extralarge')?.['#text'] ||
+                                images.find((img: any) => img.size === 'large')?.['#text'];
+              
+              if (largeImage && largeImage.length > 0 && !largeImage.includes('2a96cbd8b46e442fc41c2b86b821562f')) {
+                // Exclude default placeholder image
+                console.log(`Found Last.fm image for ${artistName}`);
+                return new Response(JSON.stringify({ imageUrl: largeImage }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                });
+              }
+            }
+          } catch (e) {
+            console.log('Last.fm fetch failed, trying next source');
+          }
+
+          // Try source 4: TheAudioDB (free, no API key needed for basic lookups)
           try {
             const audioDbUrl = `https://www.theaudiodb.com/api/v1/json/2/search.php?s=${encodeURIComponent(artistName)}`;
             const audioDbResponse = await fetch(audioDbUrl, {
