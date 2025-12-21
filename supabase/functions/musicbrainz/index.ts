@@ -115,7 +115,8 @@ serve(async (req) => {
         break;
       
       case 'get-artist':
-        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+genres+ratings+url-rels&fmt=json`;
+        // Include artist-credits in release-groups so we can filter primary artist releases
+        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+genres+ratings+url-rels+artist-credits&fmt=json`;
         break;
       
       case 'get-artist-image': {

@@ -54,7 +54,21 @@ const ArtistDetail = () => {
   });
 
   // Use release-groups from the artist response (already included in getArtist)
-  const releases: MBReleaseGroup[] = artist?.["release-groups"] || [];
+  // Filter to only include releases where this artist is the PRIMARY artist
+  // This excludes featured appearances, compilations where they're just one of many artists, etc.
+  const allReleases: MBReleaseGroup[] = artist?.["release-groups"] || [];
+  
+  const releases = allReleases.filter(release => {
+    const artistCredits = release["artist-credit"];
+    if (!artistCredits || artistCredits.length === 0) return true; // Include if no credits info
+    
+    // Check if this artist is the first/primary credited artist
+    const firstArtist = artistCredits[0]?.artist;
+    if (!firstArtist) return true;
+    
+    // Match by ID - the current artist should be the first credited artist
+    return firstArtist.id === artistId;
+  });
 
   // Group releases by type
   const groupedReleases = releases.reduce((acc, release) => {
