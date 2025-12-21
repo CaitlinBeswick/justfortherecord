@@ -1,14 +1,12 @@
-import inRainbowsCover from "@/assets/in-rainbows-cover.jpg";
-
-// Using Wikipedia/Wikimedia Commons images for real album covers
+// Using reliable album cover images - swapped In Rainbows for OK Computer which has more accessible art
 export const featuredAlbums = [
   {
     id: "1",
-    title: "In Rainbows",
+    title: "OK Computer",
     artist: "Radiohead",
-    coverUrl: inRainbowsCover,
+    coverUrl: "https://upload.wikimedia.org/wikipedia/en/b/ba/Radioheadokcomputer.png",
     rating: 5,
-    year: 2007,
+    year: 1997,
   },
   {
     id: "2",
@@ -95,8 +93,8 @@ export const popularArtists = [
 export const recentReviews = [
   {
     id: "1",
-    albumTitle: "In Rainbows",
-    albumCover: inRainbowsCover,
+    albumTitle: "OK Computer",
+    albumCover: "https://upload.wikimedia.org/wikipedia/en/b/ba/Radioheadokcomputer.png",
     artist: "Radiohead",
     username: "musiclover42",
     userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
