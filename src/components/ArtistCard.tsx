@@ -85,40 +85,41 @@ export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: Artist
   });
 
   return (
-    <motion.div
-      ref={cardRef}
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
-      className="group cursor-pointer text-center"
-      onClick={onClick}
-    >
-      <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50">
-        {artistImage ? (
-          <img 
-            src={artistImage} 
-            alt={name}
-            loading="lazy"
-            className="w-full h-full object-cover transition-opacity duration-300"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        <div className={`${artistImage ? 'hidden' : ''} w-full h-full ${bgColor} flex items-center justify-center`}>
-          <span className="text-white font-bold text-2xl sm:text-3xl md:text-4xl drop-shadow-md">
-            {initials}
-          </span>
+    <div ref={cardRef}>
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        transition={{ duration: 0.2 }}
+        className="group cursor-pointer text-center"
+        onClick={onClick}
+      >
+        <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50">
+          {artistImage ? (
+            <img 
+              src={artistImage} 
+              alt={name}
+              loading="lazy"
+              className="w-full h-full object-cover transition-opacity duration-300"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={`${artistImage ? 'hidden' : ''} w-full h-full ${bgColor} flex items-center justify-center`}>
+            <span className="text-white font-bold text-2xl sm:text-3xl md:text-4xl drop-shadow-md">
+              {initials}
+            </span>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      </div>
-      
-      <div className="mt-3">
-        <h3 className="font-sans font-semibold text-foreground">{name}</h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          {genres.slice(0, 2).join(" · ") || "Artist"}
-        </p>
-      </div>
-    </motion.div>
+        
+        <div className="mt-3">
+          <h3 className="font-sans font-semibold text-foreground">{name}</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            {genres.slice(0, 2).join(" · ") || "Artist"}
+          </p>
+        </div>
+      </motion.div>
+    </div>
   );
 }
