@@ -283,7 +283,8 @@ serve(async (req) => {
       }
       
       case 'get-release-group':
-        url = `${MUSICBRAINZ_BASE}/release-group/${id}?inc=artists+releases+genres+ratings&fmt=json`;
+        // Include media info so we can determine track counts for finding the best release
+        url = `${MUSICBRAINZ_BASE}/release-group/${id}?inc=artists+releases+genres+ratings+media&fmt=json`;
         break;
       
       case 'get-release':
