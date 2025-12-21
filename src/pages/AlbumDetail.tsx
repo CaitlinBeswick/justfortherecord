@@ -46,27 +46,27 @@ const AlbumDetail = () => {
   });
 
   // Find the best release to get tracks from
-  // Prefer: official releases, more tracks, earliest date (original release)
+  // Prefer: official releases, standard edition (not deluxe/expanded), earliest date (original release)
   const bestRelease = (() => {
     const releases = releaseGroup?.releases || [];
     if (releases.length === 0) return null;
     
-    // Sort by: status (official first), track count (most tracks), date (earliest)
-    const sorted = [...releases].sort((a: any, b: any) => {
-      // Prefer official releases
-      const aOfficial = a.status === 'Official' ? 1 : 0;
-      const bOfficial = b.status === 'Official' ? 1 : 0;
-      if (bOfficial !== aOfficial) return bOfficial - aOfficial;
-      
-      // Prefer releases with more tracks (fuller version)
-      const aTrackCount = a.media?.reduce((sum: number, m: any) => sum + (m['track-count'] || 0), 0) || 0;
-      const bTrackCount = b.media?.reduce((sum: number, m: any) => sum + (m['track-count'] || 0), 0) || 0;
-      if (bTrackCount !== aTrackCount) return bTrackCount - aTrackCount;
-      
-      // Prefer earliest release date
+    // Filter to only official releases first
+    const officialReleases = releases.filter((r: any) => r.status === 'Official');
+    const candidateReleases = officialReleases.length > 0 ? officialReleases : releases;
+    
+    // Sort by: date (earliest first), then by track count (fewest = standard edition)
+    const sorted = [...candidateReleases].sort((a: any, b: any) => {
+      // Prefer earliest release date (original release)
       const aDate = a.date || '9999';
       const bDate = b.date || '9999';
-      return aDate.localeCompare(bDate);
+      const dateCompare = aDate.localeCompare(bDate);
+      if (dateCompare !== 0) return dateCompare;
+      
+      // Among same-date releases, prefer fewer tracks (standard edition, not deluxe)
+      const aTrackCount = a.media?.reduce((sum: number, m: any) => sum + (m['track-count'] || 0), 0) || 0;
+      const bTrackCount = b.media?.reduce((sum: number, m: any) => sum + (m['track-count'] || 0), 0) || 0;
+      return aTrackCount - bTrackCount;
     });
     
     return sorted[0];
