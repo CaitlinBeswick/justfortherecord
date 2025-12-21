@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { ListeningStatusButtons } from "@/components/ListeningStatusButtons";
 
 const AlbumDetail = () => {
   const { id } = useParams();
@@ -276,7 +277,15 @@ const AlbumDetail = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-center md:justify-start gap-3 mt-8">
+                <div className="mt-8">
+                  <ListeningStatusButtons
+                    releaseGroupId={id!}
+                    albumTitle={releaseGroup.title}
+                    artistName={artistName}
+                  />
+                </div>
+
+                <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
                   <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
                     <DialogTrigger asChild>
                       <button 
