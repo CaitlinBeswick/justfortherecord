@@ -151,11 +151,39 @@ const ArtistDetail = () => {
     return firstArtist.id === artistId;
   });
 
-  // Group releases by type
-  const groupedReleases = releases.reduce((acc, release) => {
+  // Filter out Broadcasts and Singles
+  const filteredReleases = releases.filter(release => {
     const type = release["primary-type"] || "Other";
-    if (!acc[type]) acc[type] = [];
-    acc[type].push(release);
+    return type !== "Broadcast" && type !== "Single";
+  });
+
+  // Group releases by custom categories
+  const groupedReleases = filteredReleases.reduce((acc, release) => {
+    const primaryType = release["primary-type"] || "Other";
+    const secondaryTypes = release["secondary-types"] || [];
+    
+    let category: string;
+    
+    if (primaryType === "Album") {
+      if (secondaryTypes.includes("Compilation")) {
+        category = "Compilations";
+      } else if (secondaryTypes.includes("Live")) {
+        category = "Live Albums";
+      } else {
+        category = "Studio Albums";
+      }
+    } else if (primaryType === "EP") {
+      category = "EPs";
+    } else if (primaryType === "Compilation") {
+      category = "Compilations";
+    } else if (primaryType === "Live") {
+      category = "Live Albums";
+    } else {
+      category = "Other";
+    }
+    
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(release);
     return acc;
   }, {} as Record<string, typeof releases>);
 
@@ -169,13 +197,13 @@ const ArtistDetail = () => {
   });
 
   // Order of display
-  const typeOrder = ["Album", "Single", "EP", "Compilation", "Live", "Remix", "Other"];
+  const typeOrder = ["Studio Albums", "EPs", "Live Albums", "Compilations", "Other"];
   const sortedTypes = Object.keys(groupedReleases).sort(
     (a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b)
   );
 
-  // Calculate discography completion
-  const listenedCount = releases.filter(release => {
+  // Calculate discography completion (based on filtered releases only)
+  const listenedCount = filteredReleases.filter(release => {
     const normalized = (v: string) => v.trim().toLowerCase();
     const listenedById = getStatusForAlbum(release.id) === 'listened';
     const listenedByMetadata = allStatuses.some(
@@ -186,7 +214,7 @@ const ArtistDetail = () => {
     );
     return listenedById || listenedByMetadata;
   }).length;
-  const completionPercentage = releases.length > 0 ? Math.round((listenedCount / releases.length) * 100) : 0;
+  const completionPercentage = filteredReleases.length > 0 ? Math.round((listenedCount / filteredReleases.length) * 100) : 0;
 
   if (!isValidArtistId) {
     return (
@@ -358,7 +386,7 @@ const ArtistDetail = () => {
                   <span className="text-sm font-medium text-foreground">Discography Progress</span>
                 </div>
                 <span className="text-sm font-semibold text-foreground">
-                  {listenedCount} / {releases.length} <span className="text-muted-foreground font-normal">({completionPercentage}%)</span>
+                  {listenedCount} / {filteredReleases.length} <span className="text-muted-foreground font-normal">({completionPercentage}%)</span>
                 </span>
               </div>
               <Progress value={completionPercentage} className="h-2" />
@@ -367,7 +395,7 @@ const ArtistDetail = () => {
 
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-serif text-2xl text-foreground">
-              Discography {releases.length > 0 && `(${releases.length} releases)`}
+              Discography {filteredReleases.length > 0 && `(${filteredReleases.length} releases)`}
             </h2>
             {user && (
               <div className="flex items-center gap-2">
@@ -384,12 +412,12 @@ const ArtistDetail = () => {
             )}
           </div>
           
-          {releases.length > 0 ? (
+          {filteredReleases.length > 0 ? (
             <div className="space-y-10">
               {sortedTypes.map((type) => (
                 <div key={type}>
                   <h3 className="font-serif text-lg text-foreground mb-4 flex items-center gap-2">
-                    {type}s
+                    {type}
                     <span className="text-sm text-muted-foreground font-normal">
                       ({groupedReleases[type].length})
                     </span>
