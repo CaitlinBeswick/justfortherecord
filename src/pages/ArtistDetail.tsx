@@ -81,6 +81,26 @@ const ArtistDetail = () => {
     enabled: !!user && isValidArtistId,
   });
 
+  // Fetch user's album ratings to get loved status
+  const { data: userRatings = [] } = useQuery({
+    queryKey: ['user-ratings', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('album_ratings')
+        .select('release_group_id, loved')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Helper to check if an album is loved
+  const isAlbumLoved = (releaseGroupId: string): boolean => {
+    const rating = userRatings.find(r => r.release_group_id === releaseGroupId);
+    return rating?.loved ?? false;
+  };
+
   const following = !!followData;
 
   // Follow/unfollow mutation
@@ -483,6 +503,7 @@ const ArtistDetail = () => {
                             artist={artist.name}
                             coverUrl={getCoverArtUrl(release.id)}
                             year={getYear(release["first-release-date"])}
+                            loved={isAlbumLoved(release.id)}
                             onClick={() => navigate(`/album/${release.id}`)}
                           />
                         </motion.div>
