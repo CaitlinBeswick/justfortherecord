@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, ArrowUpDown, ArrowUp, ArrowDown, Heart } from "lucide-react";
+import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, ArrowUpDown, ArrowUp, ArrowDown, Heart, UserCheck } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -142,7 +142,7 @@ const Profile = () => {
   const tabs: { id: ProfileTab; label: string; icon: React.ReactNode }[] = [
     { id: "diary", label: "Diary", icon: <Disc3 className="h-4 w-4" /> },
     { id: "to_listen", label: "To Listen", icon: <Clock className="h-4 w-4" /> },
-    { id: "following", label: "Following", icon: <Heart className="h-4 w-4" /> },
+    { id: "following", label: "Following", icon: <UserCheck className="h-4 w-4" /> },
     { id: "reviews", label: "Reviews", icon: <PenLine className="h-4 w-4" /> },
     { id: "lists", label: "Lists", icon: <List className="h-4 w-4" /> },
   ];
@@ -512,7 +512,7 @@ const Profile = () => {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Heart className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <UserCheck className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                   <p className="text-muted-foreground">You're not following any artists yet</p>
                   <p className="text-sm text-muted-foreground/60 mt-2">
                     Follow artists to see them here
