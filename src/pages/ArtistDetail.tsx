@@ -378,10 +378,10 @@ const ArtistDetail = () => {
                       return (
                         <motion.div
                           key={release.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
+                          initial={{ y: 20 }}
+                          animate={{ y: 0 }}
                           transition={{ delay: index * 0.02 }}
-                          className={fadeListened && isListened ? "opacity-40" : ""}
+                          style={{ opacity: fadeListened && isListened ? 0.4 : 1 }}
                         >
                           <AlbumCard
                             id={release.id}
