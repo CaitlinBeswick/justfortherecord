@@ -125,14 +125,15 @@ const AlbumDetail = () => {
     }
   }, [existingRating]);
 
-  // Save rating mutation
+  // Save rating mutation - also marks as listened
   const saveRatingMutation = useMutation({
     mutationFn: async ({ rating, review }: { rating: number; review?: string }) => {
       if (!user || !id || !releaseGroup) throw new Error("Not authenticated");
       
       const artistName = getArtistNames(releaseGroup["artist-credit"]);
       
-      const { error } = await supabase
+      // Save the rating
+      const { error: ratingError } = await supabase
         .from('album_ratings')
         .upsert({
           user_id: user.id,
@@ -145,11 +146,28 @@ const AlbumDetail = () => {
           onConflict: 'user_id,release_group_id',
         });
       
-      if (error) throw error;
+      if (ratingError) throw ratingError;
+
+      // Also mark as listened automatically
+      const { error: statusError } = await supabase
+        .from('listening_status')
+        .upsert({
+          user_id: user.id,
+          release_group_id: id,
+          album_title: releaseGroup.title,
+          artist_name: artistName,
+          status: 'listened',
+        }, {
+          onConflict: 'user_id,release_group_id',
+        });
+      
+      if (statusError) throw statusError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-album-rating', user?.id, id] });
       queryClient.invalidateQueries({ queryKey: ['user-ratings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['listening-status', user?.id, id] });
+      queryClient.invalidateQueries({ queryKey: ['listening-statuses', user?.id] });
       toast({
         title: "Saved!",
         description: "Your rating has been saved.",

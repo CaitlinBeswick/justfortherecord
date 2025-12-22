@@ -151,18 +151,18 @@ const ArtistDetail = () => {
     return firstArtist.id === artistId;
   });
 
-  // Filter out Broadcasts and Singles
+  // Filter out Broadcasts, Singles, and Other
   const filteredReleases = releases.filter(release => {
     const type = release["primary-type"] || "Other";
-    return type !== "Broadcast" && type !== "Single";
+    return type !== "Broadcast" && type !== "Single" && type !== "Other";
   });
 
   // Group releases by custom categories
   const groupedReleases = filteredReleases.reduce((acc, release) => {
-    const primaryType = release["primary-type"] || "Other";
+    const primaryType = release["primary-type"] || "";
     const secondaryTypes = release["secondary-types"] || [];
     
-    let category: string;
+    let category: string | null = null;
     
     if (primaryType === "Album") {
       if (secondaryTypes.includes("Compilation")) {
@@ -178,12 +178,13 @@ const ArtistDetail = () => {
       category = "Compilations";
     } else if (primaryType === "Live") {
       category = "Live Albums";
-    } else {
-      category = "Other";
     }
     
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(release);
+    // Skip items that don't fit into our categories
+    if (category) {
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(release);
+    }
     return acc;
   }, {} as Record<string, typeof releases>);
 
@@ -196,8 +197,8 @@ const ArtistDetail = () => {
     });
   });
 
-  // Order of display
-  const typeOrder = ["Studio Albums", "EPs", "Live Albums", "Compilations", "Other"];
+  // Order of display (no "Other")
+  const typeOrder = ["Studio Albums", "EPs", "Live Albums", "Compilations"];
   const sortedTypes = Object.keys(groupedReleases).sort(
     (a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b)
   );
