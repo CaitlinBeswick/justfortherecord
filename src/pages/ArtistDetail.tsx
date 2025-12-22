@@ -217,6 +217,24 @@ const ArtistDetail = () => {
   }).length;
   const completionPercentage = filteredReleases.length > 0 ? Math.round((listenedCount / filteredReleases.length) * 100) : 0;
 
+  // Calculate per-category completion
+  const getCategoryProgress = (categoryReleases: MBReleaseGroup[]) => {
+    const listenedInCategory = categoryReleases.filter(release => {
+      const normalized = (v: string) => v.trim().toLowerCase();
+      const listenedById = getStatusForAlbum(release.id) === 'listened';
+      const listenedByMetadata = allStatuses.some(
+        (s) =>
+          s.status === 'listened' &&
+          normalized(s.album_title) === normalized(release.title) &&
+          artist && normalized(s.artist_name) === normalized(artist.name)
+      );
+      return listenedById || listenedByMetadata;
+    }).length;
+    const total = categoryReleases.length;
+    const percentage = total > 0 ? Math.round((listenedInCategory / total) * 100) : 0;
+    return { listened: listenedInCategory, total, percentage };
+  };
+
   if (!isValidArtistId) {
     return (
       <div className="min-h-screen bg-background">
@@ -378,13 +396,13 @@ const ArtistDetail = () => {
 
         {/* Discography */}
         <section className="container mx-auto px-4 py-8 pb-20">
-          {/* Completion Progress */}
-          {user && releases.length > 0 && (
+          {/* Overall Completion Progress */}
+          {user && filteredReleases.length > 0 && (
             <div className="mb-6 p-4 rounded-xl bg-secondary/50 border border-border">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">Discography Progress</span>
+                  <span className="text-sm font-medium text-foreground">Overall Discography Progress</span>
                 </div>
                 <span className="text-sm font-semibold text-foreground">
                   {listenedCount} / {filteredReleases.length} <span className="text-muted-foreground font-normal">({completionPercentage}%)</span>
@@ -415,14 +433,26 @@ const ArtistDetail = () => {
           
           {filteredReleases.length > 0 ? (
             <div className="space-y-10">
-              {sortedTypes.map((type) => (
+              {sortedTypes.map((type) => {
+                const categoryProgress = getCategoryProgress(groupedReleases[type]);
+                return (
                 <div key={type}>
-                  <h3 className="font-serif text-lg text-foreground mb-4 flex items-center gap-2">
-                    {type}
-                    <span className="text-sm text-muted-foreground font-normal">
-                      ({groupedReleases[type].length})
-                    </span>
-                  </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
+                    <h3 className="font-serif text-lg text-foreground flex items-center gap-2">
+                      {type}
+                      <span className="text-sm text-muted-foreground font-normal">
+                        ({groupedReleases[type].length})
+                      </span>
+                    </h3>
+                    {user && (
+                      <div className="flex items-center gap-2 flex-1 max-w-xs">
+                        <Progress value={categoryProgress.percentage} className="h-1.5 flex-1" />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {categoryProgress.listened}/{categoryProgress.total}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -460,7 +490,7 @@ const ArtistDetail = () => {
                     })}
                   </motion.div>
                 </div>
-              ))}
+              )})}
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">
