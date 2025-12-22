@@ -396,6 +396,7 @@ const Profile = () => {
                         artist={entry.artist_name}
                         coverUrl={getCoverArtUrl(entry.release_group_id)}
                         rating={entry.rating}
+                        loved={entry.loved}
                         onClick={() => navigate(`/album/${entry.release_group_id}`)}
                       />
                     </motion.div>
