@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/ui/StarRating";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check, ChevronDown } from "lucide-react";
+import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check, ChevronDown, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -183,6 +183,38 @@ const AlbumDetail = () => {
     },
   });
 
+  // Remove rating mutation
+  const removeRatingMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !id) throw new Error("Not authenticated");
+      
+      const { error } = await supabase
+        .from('album_ratings')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('release_group_id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setUserRating(0);
+      setReviewText("");
+      queryClient.invalidateQueries({ queryKey: ['user-album-rating', user?.id, id] });
+      queryClient.invalidateQueries({ queryKey: ['user-ratings', user?.id] });
+      toast({
+        title: "Removed",
+        description: "Your rating has been removed.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRatingChange = (rating: number) => {
     setUserRating(rating);
     if (user) {
@@ -193,6 +225,12 @@ const AlbumDetail = () => {
         description: "Please sign in to rate albums.",
       });
       navigate('/auth');
+    }
+  };
+
+  const handleRemoveRating = () => {
+    if (user) {
+      removeRatingMutation.mutate();
     }
   };
 
@@ -207,6 +245,7 @@ const AlbumDetail = () => {
     }
     saveRatingMutation.mutate({ rating: userRating, review: reviewText });
   };
+
 
   // Get all tracks from all media (supports multi-disc albums)
   const tracks = releaseWithTracks?.media?.flatMap(m => m.tracks || []) || [];
@@ -329,10 +368,21 @@ const AlbumDetail = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <p className="text-sm text-muted-foreground">Your Rating</p>
                     {existingRating && (
-                      <span className="flex items-center gap-1 text-xs text-primary">
-                        <Check className="h-3 w-3" />
-                        Saved
-                      </span>
+                      <>
+                        <span className="flex items-center gap-1 text-xs text-primary">
+                          <Check className="h-3 w-3" />
+                          Saved
+                        </span>
+                        <button
+                          onClick={handleRemoveRating}
+                          disabled={removeRatingMutation.isPending}
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors ml-2"
+                          title="Remove rating"
+                        >
+                          <X className="h-3 w-3" />
+                          Remove
+                        </button>
+                      </>
                     )}
                   </div>
                   <StarRating
