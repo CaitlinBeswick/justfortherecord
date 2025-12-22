@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { StarRating } from "./ui/StarRating";
 import { useState } from "react";
-import { Disc3 } from "lucide-react";
+import { Disc3, Heart } from "lucide-react";
 
 interface AlbumCardProps {
   id: string;
@@ -10,6 +10,7 @@ interface AlbumCardProps {
   coverUrl: string;
   rating?: number;
   year?: number;
+  loved?: boolean;
   onClick?: () => void;
 }
 
@@ -19,6 +20,7 @@ export function AlbumCard({
   coverUrl,
   rating,
   year,
+  loved,
   onClick,
 }: AlbumCardProps) {
   const [imageError, setImageError] = useState(false);
@@ -44,6 +46,13 @@ export function AlbumCard({
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        
+        {/* Loved indicator */}
+        {loved && (
+          <div className="absolute top-2 right-2 flex items-center justify-center w-6 h-6 rounded-full bg-primary/90 shadow-md">
+            <Heart className="h-3.5 w-3.5 text-primary-foreground fill-current" />
+          </div>
+        )}
         
         {rating !== undefined && (
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100">
