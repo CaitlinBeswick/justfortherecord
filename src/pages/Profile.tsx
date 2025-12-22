@@ -39,6 +39,7 @@ interface AlbumRating {
   rating: number;
   review_text: string | null;
   created_at: string;
+  loved: boolean;
 }
 
 interface UserList {
@@ -64,6 +65,7 @@ const Profile = () => {
   
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
   const [sortAscending, setSortAscending] = useState(false);
+  const [showLovedOnly, setShowLovedOnly] = useState(false);
   const { allStatuses, getStatusForAlbum } = useListeningStatus();
 
   // Redirect to auth if not logged in
@@ -159,6 +161,7 @@ const Profile = () => {
       rating?: number;
       created_at: string;
       isListened: boolean;
+      loved: boolean;
     }> = [];
 
     // Add all ratings
@@ -173,6 +176,7 @@ const Profile = () => {
         rating: r.rating,
         created_at: r.created_at,
         isListened: getStatusForAlbum(r.release_group_id) === 'listened',
+        loved: r.loved,
       });
     });
 
@@ -187,6 +191,7 @@ const Profile = () => {
           rating: undefined,
           created_at: s.created_at,
           isListened: true,
+          loved: false,
         });
       }
     });
@@ -194,8 +199,12 @@ const Profile = () => {
     return entries;
   })();
 
-  // Sort diary entries based on selected option
-  const sortedDiaryEntries = [...diaryEntries].sort((a, b) => {
+  // Filter and sort diary entries
+  const filteredDiaryEntries = showLovedOnly 
+    ? diaryEntries.filter(e => e.loved) 
+    : diaryEntries;
+
+  const sortedDiaryEntries = [...filteredDiaryEntries].sort((a, b) => {
     let comparison = 0;
     switch (diarySort) {
       case "date":
@@ -340,6 +349,18 @@ const Profile = () => {
                   Recently Logged ({diaryEntries.length})
                 </h2>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowLovedOnly(!showLovedOnly)}
+                    className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
+                      showLovedOnly 
+                        ? "bg-primary text-primary-foreground" 
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Show loved albums only"
+                  >
+                    <Heart className={`h-4 w-4 ${showLovedOnly ? "fill-current" : ""}`} />
+                    Loved
+                  </button>
                   <Select value={diarySort} onValueChange={(v) => setDiarySort(v as DiarySortOption)}>
                     <SelectTrigger className="w-[140px] h-9">
                       <ArrowUpDown className="h-3.5 w-3.5 mr-2" />
@@ -382,15 +403,27 @@ const Profile = () => {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Disc3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">You haven't logged any albums yet</p>
-                  <button 
-                    onClick={() => navigate('/search')}
-                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Find Albums to Log
-                  </button>
+                  {showLovedOnly ? (
+                    <>
+                      <Heart className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No loved albums yet</p>
+                      <p className="text-sm text-muted-foreground/60 mt-2">
+                        Heart albums on their detail page to add them here
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Disc3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">You haven't logged any albums yet</p>
+                      <button 
+                        onClick={() => navigate('/search')}
+                        className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Find Albums to Log
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </motion.div>

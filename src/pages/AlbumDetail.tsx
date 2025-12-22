@@ -122,6 +122,7 @@ const AlbumDetail = () => {
     if (existingRating) {
       setUserRating(existingRating.rating);
       setReviewText(existingRating.review_text || "");
+      setLiked(existingRating.loved || false);
     }
   }, [existingRating]);
 
@@ -215,6 +216,42 @@ const AlbumDetail = () => {
     },
   });
 
+  // Toggle loved status mutation
+  const toggleLovedMutation = useMutation({
+    mutationFn: async (newLovedStatus: boolean) => {
+      if (!user || !id) throw new Error("Not authenticated");
+      
+      // Check if a rating exists - we can only love rated albums
+      if (!existingRating) {
+        throw new Error("You must rate the album first before loving it");
+      }
+      
+      const { error } = await supabase
+        .from('album_ratings')
+        .update({ loved: newLovedStatus })
+        .eq('user_id', user.id)
+        .eq('release_group_id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-album-rating', user?.id, id] });
+      queryClient.invalidateQueries({ queryKey: ['user-ratings', user?.id] });
+      toast({
+        title: liked ? "Added to loved" : "Removed from loved",
+        description: liked ? "Album added to your loved albums!" : "Album removed from your loved albums.",
+      });
+    },
+    onError: (error) => {
+      setLiked(!liked); // Revert optimistic update
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRatingChange = (rating: number) => {
     setUserRating(rating);
     if (user) {
@@ -231,7 +268,32 @@ const AlbumDetail = () => {
   const handleRemoveRating = () => {
     if (user) {
       removeRatingMutation.mutate();
+      setLiked(false); // Also reset loved state when removing rating
     }
+  };
+
+  const handleToggleLoved = () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to love albums.",
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    if (!existingRating) {
+      toast({
+        title: "Rating required",
+        description: "Please rate the album first before loving it.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const newLovedStatus = !liked;
+    setLiked(newLovedStatus); // Optimistic update
+    toggleLovedMutation.mutate(newLovedStatus);
   };
 
   const handleSaveReview = () => {
@@ -455,12 +517,14 @@ const AlbumDetail = () => {
                     </DialogContent>
                   </Dialog>
                   <button
-                    onClick={() => setLiked(!liked)}
+                    onClick={handleToggleLoved}
+                    disabled={toggleLovedMutation.isPending}
                     className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                       liked
                         ? "bg-primary text-primary-foreground"
                         : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                    }`}
+                    } ${toggleLovedMutation.isPending ? "opacity-50 cursor-not-allowed" : ""}`}
+                    title={existingRating ? (liked ? "Remove from loved albums" : "Add to loved albums") : "Rate album first to love it"}
                   >
                     <Heart className={`h-5 w-5 ${liked ? "fill-current" : ""}`} />
                   </button>
