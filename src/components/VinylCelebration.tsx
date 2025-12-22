@@ -50,34 +50,55 @@ export function VinylCelebration({ isComplete, artistName }: VinylCelebrationPro
             transition={{ type: "spring", damping: 12, stiffness: 150 }}
             className="relative z-10 flex flex-col items-center gap-8"
           >
-            {/* Trophies orbiting around vinyl */}
-            {[...Array(8)].map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: [0, 1, 1, 0],
-                  rotate: [0, 360],
-                }}
-                transition={{
-                  duration: 3,
-                  delay: i * 0.2,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-                className="absolute"
-                style={{
-                  // Position in a circle around the center
-                  left: '50%',
-                  top: '50%',
-                  marginLeft: -12,
-                  marginTop: -12,
-                  transformOrigin: `12px ${140}px`,
-                }}
-              >
-                <Trophy className="h-6 w-6 text-primary" />
-              </motion.div>
-            ))}
+            {/* Trophies bursting outward from vinyl */}
+            {[...Array(10)].map((_, i) => {
+              const angle = (i * 360) / 10; // Evenly distribute around circle
+              const radians = (angle * Math.PI) / 180;
+              const startRadius = 130; // Start from edge of vinyl
+              const endRadius = 220; // Fly outward
+              
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ 
+                    opacity: 0,
+                    x: Math.cos(radians) * startRadius,
+                    y: Math.sin(radians) * startRadius,
+                    scale: 0.5,
+                    rotate: 0,
+                  }}
+                  animate={{
+                    opacity: [0, 1, 1, 0],
+                    x: [
+                      Math.cos(radians) * startRadius,
+                      Math.cos(radians) * endRadius,
+                    ],
+                    y: [
+                      Math.sin(radians) * startRadius,
+                      Math.sin(radians) * endRadius,
+                    ],
+                    scale: [0.5, 1, 1.2, 0],
+                    rotate: [0, 360],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    delay: 0.8 + i * 0.15,
+                    repeat: Infinity,
+                    repeatDelay: 0.5,
+                    ease: "easeOut",
+                  }}
+                  className="absolute"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    marginLeft: -12,
+                    marginTop: -12,
+                  }}
+                >
+                  <Trophy className="h-6 w-6 text-primary" />
+                </motion.div>
+              );
+            })}
 
             {/* Vinyl Record with bounce and spin */}
             <motion.div
