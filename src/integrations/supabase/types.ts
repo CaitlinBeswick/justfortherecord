@@ -20,6 +20,7 @@ export type Database = {
           artist_name: string
           created_at: string
           id: string
+          loved: boolean
           rating: number
           release_group_id: string
           review_text: string | null
@@ -31,6 +32,7 @@ export type Database = {
           artist_name: string
           created_at?: string
           id?: string
+          loved?: boolean
           rating: number
           release_group_id: string
           review_text?: string | null
@@ -42,6 +44,7 @@ export type Database = {
           artist_name?: string
           created_at?: string
           id?: string
+          loved?: boolean
           rating?: number
           release_group_id?: string
           review_text?: string | null
