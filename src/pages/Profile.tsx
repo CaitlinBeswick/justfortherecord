@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown, Heart } from "lucide-react";
+import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, ArrowUpDown, ArrowUp, ArrowDown, Heart } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -61,7 +61,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>("diary");
-  const [showListened, setShowListened] = useState(false);
+  
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
   const [sortAscending, setSortAscending] = useState(false);
   const { allStatuses, getStatusForAlbum } = useListeningStatus();
@@ -358,26 +358,6 @@ const Profile = () => {
                   >
                     {sortAscending ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
                   </button>
-                  <button
-                    onClick={() => setShowListened(!showListened)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                      showListened 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-secondary text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {showListened ? (
-                      <>
-                        <Eye className="h-4 w-4" />
-                        Show all
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="h-4 w-4" />
-                        Fade listened
-                      </>
-                    )}
-                  </button>
                 </div>
               </div>
               {sortedDiaryEntries.length > 0 ? (
@@ -388,9 +368,6 @@ const Profile = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className={`transition-opacity duration-300 ${
-                        entry.isListened && showListened ? 'opacity-40 hover:opacity-100' : ''
-                      }`}
                     >
                       <AlbumCard
                         id={entry.release_group_id}
