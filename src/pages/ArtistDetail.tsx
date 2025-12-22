@@ -13,6 +13,7 @@ import { useListeningStatus } from "@/hooks/useListeningStatus";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { VinylCelebration } from "@/components/VinylCelebration";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -243,6 +244,9 @@ const ArtistDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      
+      {/* 100% Completion Celebration */}
+      {user && <VinylCelebration isComplete={completionPercentage === 100 && releases.length > 0} artistName={artist.name} />}
       
       <main className="pt-16">
         {/* Hero Section */}
