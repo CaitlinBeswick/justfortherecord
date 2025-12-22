@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Sparkles } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 interface VinylCelebrationProps {
   isComplete: boolean;
@@ -50,26 +50,32 @@ export function VinylCelebration({ isComplete, artistName }: VinylCelebrationPro
             transition={{ type: "spring", damping: 12, stiffness: 150 }}
             className="relative z-10 flex flex-col items-center gap-8"
           >
-            {/* Sparkles around vinyl */}
-            {[...Array(12)].map((_, i) => (
+            {/* Trophies orbiting around vinyl */}
+            {[...Array(8)].map((_, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, scale: 0 }}
+                initial={{ opacity: 0 }}
                 animate={{
-                  opacity: [0, 1, 0],
-                  scale: [0, 1.2, 0],
-                  x: [0, Math.cos((i * Math.PI) / 6) * 140],
-                  y: [0, Math.sin((i * Math.PI) / 6) * 140],
+                  opacity: [0, 1, 1, 0],
+                  rotate: [0, 360],
                 }}
                 transition={{
-                  duration: 1.8,
-                  delay: i * 0.08,
+                  duration: 3,
+                  delay: i * 0.2,
                   repeat: Infinity,
-                  repeatDelay: 0.8,
+                  ease: "linear",
                 }}
                 className="absolute"
+                style={{
+                  // Position in a circle around the center
+                  left: '50%',
+                  top: '50%',
+                  marginLeft: -12,
+                  marginTop: -12,
+                  transformOrigin: `12px ${140}px`,
+                }}
               >
-                <Sparkles className="h-5 w-5 text-primary" />
+                <Trophy className="h-6 w-6 text-primary" />
               </motion.div>
             ))}
 
