@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -172,6 +173,20 @@ const ArtistDetail = () => {
     (a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b)
   );
 
+  // Calculate discography completion
+  const listenedCount = releases.filter(release => {
+    const normalized = (v: string) => v.trim().toLowerCase();
+    const listenedById = getStatusForAlbum(release.id) === 'listened';
+    const listenedByMetadata = allStatuses.some(
+      (s) =>
+        s.status === 'listened' &&
+        normalized(s.album_title) === normalized(release.title) &&
+        artist && normalized(s.artist_name) === normalized(artist.name)
+    );
+    return listenedById || listenedByMetadata;
+  }).length;
+  const completionPercentage = releases.length > 0 ? Math.round((listenedCount / releases.length) * 100) : 0;
+
   if (!isValidArtistId) {
     return (
       <div className="min-h-screen bg-background">
@@ -330,6 +345,22 @@ const ArtistDetail = () => {
 
         {/* Discography */}
         <section className="container mx-auto px-4 py-8 pb-20">
+          {/* Completion Progress */}
+          {user && releases.length > 0 && (
+            <div className="mb-6 p-4 rounded-xl bg-secondary/50 border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">Discography Progress</span>
+                </div>
+                <span className="text-sm font-semibold text-foreground">
+                  {listenedCount} / {releases.length} <span className="text-muted-foreground font-normal">({completionPercentage}%)</span>
+                </span>
+              </div>
+              <Progress value={completionPercentage} className="h-2" />
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-serif text-2xl text-foreground">
               Discography {releases.length > 0 && `(${releases.length} releases)`}
