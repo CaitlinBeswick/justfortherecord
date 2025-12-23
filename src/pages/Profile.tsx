@@ -184,6 +184,27 @@ const Profile = () => {
   // Get ratings map for quick lookup
   const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
+  // Calculate listen counts per album
+  const listenCountMap = new Map<string, number>();
+  diaryEntriesData.forEach(entry => {
+    const count = listenCountMap.get(entry.release_group_id) || 0;
+    listenCountMap.set(entry.release_group_id, count + 1);
+  });
+
+  // Calculate yearly stats
+  const yearlyStats = diaryEntriesData.reduce((acc, entry) => {
+    const year = new Date(entry.listened_on).getFullYear();
+    if (!acc[year]) {
+      acc[year] = { total: 0, relistens: 0, uniqueAlbums: new Set<string>() };
+    }
+    acc[year].total++;
+    if (entry.is_relisten) acc[year].relistens++;
+    acc[year].uniqueAlbums.add(entry.release_group_id);
+    return acc;
+  }, {} as Record<number, { total: number; relistens: number; uniqueAlbums: Set<string> }>);
+
+  const sortedYears = Object.keys(yearlyStats).map(Number).sort((a, b) => b - a);
+
   // Filter and sort diary entries from the new table
   const filteredDiaryEntries = (() => {
     let entries = [...diaryEntriesData];
@@ -347,6 +368,39 @@ const Profile = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
+              {/* Yearly Stats */}
+              {sortedYears.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="font-serif text-xl text-foreground mb-4">Yearly Stats</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {sortedYears.map(year => {
+                      const stats = yearlyStats[year];
+                      return (
+                        <div 
+                          key={year} 
+                          className="p-4 rounded-lg bg-card/50 border border-border/50 text-center"
+                        >
+                          <p className="text-2xl font-semibold text-foreground">{year}</p>
+                          <div className="mt-2 space-y-1 text-sm">
+                            <p className="text-muted-foreground">
+                              <span className="font-medium text-foreground">{stats.total}</span> listens
+                            </p>
+                            <p className="text-muted-foreground">
+                              <span className="font-medium text-foreground">{stats.uniqueAlbums.size}</span> albums
+                            </p>
+                            {stats.relistens > 0 && (
+                              <p className="text-primary text-xs">
+                                {stats.relistens} re-listens
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <h2 className="font-serif text-xl text-foreground">
                   Recently Logged ({diaryEntriesData.length})
@@ -420,10 +474,14 @@ const Profile = () => {
                             >
                               {entry.album_title}
                             </h3>
+                            {listenCountMap.get(entry.release_group_id)! > 1 && (
+                              <span className="flex items-center gap-1 text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full shrink-0">
+                                ×{listenCountMap.get(entry.release_group_id)}
+                              </span>
+                            )}
                             {entry.is_relisten && (
                               <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
                                 <RotateCcw className="h-3 w-3" />
-                                Re-listen
                               </span>
                             )}
                           </div>
