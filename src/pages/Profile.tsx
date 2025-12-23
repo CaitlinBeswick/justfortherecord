@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, ArrowUpDown, ArrowUp, ArrowDown, Heart, UserCheck, RotateCcw, Trash2 } from "lucide-react";
+import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, ArrowUpDown, ArrowUp, ArrowDown, Heart, UserCheck, RotateCcw, Trash2, Music, Calendar } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,7 +20,7 @@ import { useListeningStatus } from "@/hooks/useListeningStatus";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
-type ProfileTab = "diary" | "reviews" | "lists" | "to_listen" | "following";
+type ProfileTab = "albums" | "diary" | "reviews" | "lists" | "to_listen" | "following";
 type DiarySortOption = "date" | "rating" | "artist";
 
 interface Profile {
@@ -75,7 +75,8 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<ProfileTab>("diary");
+  const [activeTab, setActiveTab] = useState<ProfileTab>("albums");
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
   const [sortAscending, setSortAscending] = useState(false);
@@ -171,7 +172,8 @@ const Profile = () => {
   });
 
   const tabs: { id: ProfileTab; label: string; icon: React.ReactNode }[] = [
-    { id: "diary", label: "Diary", icon: <Disc3 className="h-4 w-4" /> },
+    { id: "albums", label: "Albums", icon: <Music className="h-4 w-4" /> },
+    { id: "diary", label: "Diary", icon: <Calendar className="h-4 w-4" /> },
     { id: "to_listen", label: "To Listen", icon: <Clock className="h-4 w-4" /> },
     { id: "following", label: "Following", icon: <UserCheck className="h-4 w-4" /> },
     { id: "reviews", label: "Reviews", icon: <PenLine className="h-4 w-4" /> },
@@ -210,6 +212,9 @@ const Profile = () => {
     let entries = [...diaryEntriesData];
     if (showRelistensOnly) {
       entries = entries.filter(e => e.is_relisten);
+    }
+    if (selectedYear) {
+      entries = entries.filter(e => new Date(e.listened_on).getFullYear() === selectedYear);
     }
     return entries;
   })();
@@ -363,64 +368,139 @@ const Profile = () => {
 
         {/* Content */}
         <section className="container mx-auto px-4 py-8 pb-20">
+          {/* Albums Tab - Grid of rated albums */}
+          {activeTab === "albums" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <h2 className="font-serif text-xl text-foreground mb-6">
+                Rated Albums ({ratings.length})
+              </h2>
+              {ratings.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {ratings.map((rating, index) => (
+                    <motion.div
+                      key={rating.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      className="group cursor-pointer"
+                      onClick={() => navigate(`/album/${rating.release_group_id}`)}
+                    >
+                      <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
+                        <img
+                          src={getCoverArtUrl(rating.release_group_id)}
+                          alt={rating.album_title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder.svg';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1 text-white text-sm">
+                            <span className="text-yellow-400">★</span>
+                            <span className="font-medium">{rating.rating}</span>
+                          </div>
+                        </div>
+                        {rating.loved && (
+                          <div className="absolute top-2 right-2">
+                            <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <h3 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                          {rating.album_title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground truncate">{rating.artist_name}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Music className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No albums rated yet</p>
+                  <button 
+                    onClick={() => navigate('/search')}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Find Albums
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Diary Tab - Listening logs with integrated yearly stats */}
           {activeTab === "diary" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              {/* Yearly Stats */}
+              {/* Integrated Year Selector with Stats */}
               {sortedYears.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="font-serif text-xl text-foreground mb-4">Yearly Stats</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {sortedYears.map(year => {
-                      const stats = yearlyStats[year];
-                      return (
-                        <div 
-                          key={year} 
-                          className="p-4 rounded-lg bg-card/50 border border-border/50 text-center"
-                        >
-                          <p className="text-2xl font-semibold text-foreground">{year}</p>
-                          <div className="mt-2 space-y-1 text-sm">
-                            <p className="text-muted-foreground">
-                              <span className="font-medium text-foreground">{stats.total}</span> listens
-                            </p>
-                            <p className="text-muted-foreground">
-                              <span className="font-medium text-foreground">{stats.uniqueAlbums.size}</span> albums
-                            </p>
-                            {stats.relistens > 0 && (
-                              <p className="text-primary text-xs">
-                                {stats.relistens} re-listens
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+                  <button
+                    onClick={() => setSelectedYear(null)}
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      selectedYear === null
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    All ({diaryEntriesData.length})
+                  </button>
+                  {sortedYears.map(year => {
+                    const stats = yearlyStats[year];
+                    return (
+                      <button
+                        key={year}
+                        onClick={() => setSelectedYear(selectedYear === year ? null : year)}
+                        className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                          selectedYear === year
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {year} <span className="opacity-70">({stats.total})</span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <h2 className="font-serif text-xl text-foreground">
-                  Recently Logged ({diaryEntriesData.length})
-                </h2>
+              {/* Stats summary for selected year */}
+              {selectedYear && yearlyStats[selectedYear] && (
+                <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
+                  <span><strong className="text-foreground">{yearlyStats[selectedYear].uniqueAlbums.size}</strong> albums</span>
+                  <span><strong className="text-foreground">{yearlyStats[selectedYear].total}</strong> listens</span>
+                  {yearlyStats[selectedYear].relistens > 0 && (
+                    <span className="text-primary">{yearlyStats[selectedYear].relistens} re-listens</span>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowRelistensOnly(!showRelistensOnly)}
-                    className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm font-medium transition-colors ${
                       showRelistensOnly 
                         ? "bg-primary text-primary-foreground" 
                         : "bg-secondary text-muted-foreground hover:text-foreground"
                     }`}
-                    title="Show re-listens only"
                   >
-                    <RotateCcw className={`h-4 w-4`} />
+                    <RotateCcw className="h-3.5 w-3.5" />
                     Re-listens
                   </button>
+                </div>
+                <div className="flex items-center gap-2">
                   <Select value={diarySort} onValueChange={(v) => setDiarySort(v as DiarySortOption)}>
-                    <SelectTrigger className="w-[140px] h-9">
-                      <ArrowUpDown className="h-3.5 w-3.5 mr-2" />
+                    <SelectTrigger className="w-[120px] h-8 text-sm">
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
@@ -431,15 +511,15 @@ const Profile = () => {
                   </Select>
                   <button
                     onClick={() => setSortAscending(!sortAscending)}
-                    className="flex items-center justify-center h-9 w-9 rounded-lg bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                    title={sortAscending ? "Ascending" : "Descending"}
+                    className="flex items-center justify-center h-8 w-8 rounded-lg bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {sortAscending ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                    {sortAscending ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </div>
+
               {sortedDiaryEntries.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {sortedDiaryEntries.map((entry, index) => {
                     const rating = ratingsMap.get(entry.release_group_id);
                     return (
@@ -447,12 +527,22 @@ const Profile = () => {
                         key={entry.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
-                        className="flex items-center gap-4 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 transition-colors group"
+                        transition={{ delay: index * 0.02 }}
+                        className="flex items-center gap-3 p-2 rounded-lg bg-card/30 hover:bg-card/60 transition-colors group"
                       >
+                        {/* Date column */}
+                        <div className="w-12 text-center shrink-0">
+                          <p className="text-lg font-semibold text-foreground leading-none">
+                            {format(new Date(entry.listened_on), 'd')}
+                          </p>
+                          <p className="text-xs text-muted-foreground uppercase">
+                            {format(new Date(entry.listened_on), 'MMM')}
+                          </p>
+                        </div>
+
                         {/* Album Cover */}
                         <div 
-                          className="w-14 h-14 rounded overflow-hidden shrink-0 cursor-pointer"
+                          className="w-10 h-10 rounded overflow-hidden shrink-0 cursor-pointer"
                           onClick={() => navigate(`/album/${entry.release_group_id}`)}
                         >
                           <img 
@@ -467,50 +557,41 @@ const Profile = () => {
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <h3 
-                              className="font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                              className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
                               onClick={() => navigate(`/album/${entry.release_group_id}`)}
                             >
                               {entry.album_title}
                             </h3>
-                            {listenCountMap.get(entry.release_group_id)! > 1 && (
-                              <span className="flex items-center gap-1 text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full shrink-0">
-                                ×{listenCountMap.get(entry.release_group_id)}
-                              </span>
-                            )}
                             {entry.is_relisten && (
-                              <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
-                                <RotateCcw className="h-3 w-3" />
-                              </span>
+                              <RotateCcw className="h-3 w-3 text-primary shrink-0" />
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">{entry.artist_name}</p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground/70">
-                            <span>{format(new Date(entry.listened_on), 'MMM d, yyyy')}</span>
-                            {entry.notes && (
-                              <span className="truncate max-w-[200px]" title={entry.notes}>
-                                "{entry.notes}"
-                              </span>
-                            )}
-                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
                         </div>
+
+                        {/* Listen count badge */}
+                        {listenCountMap.get(entry.release_group_id)! > 1 && (
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            ×{listenCountMap.get(entry.release_group_id)}
+                          </span>
+                        )}
 
                         {/* Rating */}
                         {rating && (
-                          <div className="flex items-center gap-1 text-sm shrink-0">
-                            <span className="text-yellow-400">★</span>
-                            <span className="font-medium">{rating.rating}</span>
+                          <div className="flex items-center gap-0.5 text-sm shrink-0">
+                            <span className="text-yellow-400 text-xs">★</span>
+                            <span className="text-xs font-medium">{rating.rating}</span>
                           </div>
                         )}
 
                         {/* Delete button */}
                         <button
                           onClick={() => handleDeleteDiaryEntry(entry.id)}
-                          className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-destructive transition-all"
-                          title="Delete entry"
+                          className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive transition-all"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </motion.div>
                     );
@@ -522,14 +603,16 @@ const Profile = () => {
                     <>
                       <RotateCcw className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                       <p className="text-muted-foreground">No re-listens logged yet</p>
-                      <p className="text-sm text-muted-foreground/60 mt-2">
-                        Log a re-listen from any album page
-                      </p>
+                    </>
+                  ) : selectedYear ? (
+                    <>
+                      <Calendar className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No listens in {selectedYear}</p>
                     </>
                   ) : (
                     <>
                       <Disc3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                      <p className="text-muted-foreground">You haven't logged any listens yet</p>
+                      <p className="text-muted-foreground">No listens logged yet</p>
                       <button 
                         onClick={() => navigate('/search')}
                         className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"

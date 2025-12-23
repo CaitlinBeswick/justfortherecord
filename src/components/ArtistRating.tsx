@@ -161,88 +161,77 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
   );
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card/50 p-4 space-y-4">
-      {/* Community Average */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Community Rating</span>
-        </div>
-      </div>
-      
+    <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-card/50 border border-border/50">
+      {/* Community Rating */}
       <div className="flex items-center gap-3">
-        {renderDisplayStars(averageRating)}
-        <span className="text-lg font-semibold">
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={cn(
+                "h-4 w-4",
+                star <= Math.round(averageRating)
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "text-muted-foreground/30"
+              )}
+            />
+          ))}
+        </div>
+        <span className="text-sm font-medium">
           {averageRating > 0 ? averageRating.toFixed(1) : "—"}
         </span>
-        <span className="text-sm text-muted-foreground">
-          ({ratingCount} {ratingCount === 1 ? "rating" : "ratings"})
+        <span className="text-xs text-muted-foreground">
+          ({ratingCount})
         </span>
       </div>
 
-      {/* Divider */}
-      <div className="border-t border-border/50" />
-
       {/* User Rating */}
-      {!user ? (
-        <p className="text-sm text-muted-foreground text-center">
-          Sign in to rate this artist
-        </p>
-      ) : isLoading ? (
-        <div className="flex items-center justify-center py-2">
-          <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Your Rating</span>
-            {existingRatingId && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDeleteRating}
-                disabled={saving}
-                className="text-destructive hover:text-destructive h-7 w-7 p-0"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1">
+      {user ? (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 key={star}
                 onClick={() => setRating(star)}
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
-                className="p-1 transition-transform hover:scale-110"
+                className="p-0.5 transition-transform hover:scale-110"
                 disabled={saving}
               >
                 <Star
                   className={cn(
-                    "h-6 w-6 transition-colors",
+                    "h-4 w-4 transition-colors",
                     star <= displayRating
-                      ? "fill-yellow-400 text-yellow-400"
+                      ? "fill-primary text-primary"
                       : "text-muted-foreground/30"
                   )}
                 />
               </button>
             ))}
-            {displayRating > 0 && (
-              <span className="ml-2 text-sm font-medium">{displayRating}/5</span>
-            )}
           </div>
-
           <Button
             onClick={handleSaveRating}
             disabled={saving || rating === 0}
-            className="w-full"
             size="sm"
+            variant="ghost"
+            className="h-7 px-2 text-xs"
           >
-            {saving ? "Saving..." : existingRatingId ? "Update Rating" : "Save Rating"}
+            {saving ? "..." : existingRatingId ? "Update" : "Save"}
           </Button>
-        </>
+          {existingRatingId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDeleteRating}
+              disabled={saving}
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      ) : (
+        <span className="text-xs text-muted-foreground">Sign in to rate</span>
       )}
     </div>
   );
