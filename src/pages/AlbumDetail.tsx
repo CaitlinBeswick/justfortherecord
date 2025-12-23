@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/ui/StarRating";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check, ChevronDown, X } from "lucide-react";
+import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check, ChevronDown, X, BookOpen } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { ListeningStatusButtons } from "@/components/ListeningStatusButtons";
+import { LogListenDialog } from "@/components/LogListenDialog";
 
 const AlbumDetail = () => {
   const { id } = useParams();
@@ -116,6 +117,25 @@ const AlbumDetail = () => {
     },
     enabled: !!user && !!id,
   });
+
+  // Check if user has diary entries for this album (to determine if relisten)
+  const { data: diaryEntries = [] } = useQuery({
+    queryKey: ['album-diary-entries', id, user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('release_group_id', id!)
+        .order('listened_on', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!id,
+  });
+
+  const hasListenedBefore = diaryEntries.length > 0;
 
   // Set initial values from existing rating
   useEffect(() => {
@@ -516,6 +536,20 @@ const AlbumDetail = () => {
                       </div>
                     </DialogContent>
                   </Dialog>
+                  {user && releaseGroup && (
+                    <LogListenDialog
+                      releaseGroupId={id!}
+                      albumTitle={releaseGroup.title}
+                      artistName={artistName}
+                      hasListenedBefore={hasListenedBefore}
+                      trigger={
+                        <button className="flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-sm font-medium text-secondary-foreground transition-colors hover:bg-surface-hover">
+                          <BookOpen className="h-4 w-4" />
+                          Log
+                        </button>
+                      }
+                    />
+                  )}
                   <button
                     onClick={handleToggleLoved}
                     disabled={toggleLovedMutation.isPending}

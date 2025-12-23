@@ -110,6 +110,42 @@ export type Database = {
         }
         Relationships: []
       }
+      diary_entries: {
+        Row: {
+          album_title: string
+          artist_name: string
+          created_at: string
+          id: string
+          is_relisten: boolean
+          listened_on: string
+          notes: string | null
+          release_group_id: string
+          user_id: string
+        }
+        Insert: {
+          album_title: string
+          artist_name: string
+          created_at?: string
+          id?: string
+          is_relisten?: boolean
+          listened_on?: string
+          notes?: string | null
+          release_group_id: string
+          user_id: string
+        }
+        Update: {
+          album_title?: string
+          artist_name?: string
+          created_at?: string
+          id?: string
+          is_relisten?: boolean
+          listened_on?: string
+          notes?: string | null
+          release_group_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       list_items: {
         Row: {
           added_at: string
