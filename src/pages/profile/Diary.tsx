@@ -38,7 +38,7 @@ interface AlbumRating {
   rating: number;
 }
 
-const Profile = () => {
+const Diary = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
@@ -351,4 +351,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default Diary;
