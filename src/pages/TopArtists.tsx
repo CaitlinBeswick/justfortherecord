@@ -91,9 +91,13 @@ const TopArtists = () => {
         </motion.div>
 
         {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="flex-shrink-0 w-44">
+                <Skeleton className="h-44 w-44 rounded-lg mb-3" />
+                <Skeleton className="h-4 w-32 mb-2" />
+                <Skeleton className="h-3 w-24" />
+              </div>
             ))}
           </div>
         ) : topArtists.length === 0 ? (
@@ -105,40 +109,45 @@ const TopArtists = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {topArtists.map((artist, index) => (
               <motion.div
                 key={artist.artist_id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.02 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: Math.min(index * 0.02, 0.3) }}
                 onClick={() => navigate(`/artist/${artist.artist_id}`)}
-                className="flex items-center gap-4 p-4 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 cursor-pointer transition-colors group"
+                className="flex-shrink-0 w-44 bg-card/50 border border-border/50 rounded-lg p-4 cursor-pointer hover:bg-card/80 transition-colors group"
               >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                  index === 0 ? 'bg-yellow-500 text-yellow-950' :
-                  index === 1 ? 'bg-gray-300 text-gray-700' :
-                  index === 2 ? 'bg-amber-600 text-amber-50' :
-                  'bg-secondary text-secondary-foreground'
-                }`}>
-                  {index + 1}
+                <div className="relative mb-3">
+                  <div className="w-36 h-36 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <span className="font-serif text-4xl text-primary/60">
+                      {artist.artist_name.charAt(0)}
+                    </span>
+                  </div>
+                  <div className={`absolute top-2 left-2 text-xs font-bold px-2 py-1 rounded ${
+                    index === 0 ? 'bg-yellow-500 text-yellow-950' :
+                    index === 1 ? 'bg-gray-300 text-gray-700' :
+                    index === 2 ? 'bg-amber-600 text-amber-50' :
+                    'bg-background/90 text-foreground'
+                  }`}>
+                    #{index + 1}
+                  </div>
                 </div>
                 
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                    {artist.artist_name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {artist.rating_count} {artist.rating_count === 1 ? 'rating' : 'ratings'}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
+                <h3 className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                  {artist.artist_name}
+                </h3>
+                <p className="text-xs text-muted-foreground mb-2">
+                  {artist.rating_count} {artist.rating_count === 1 ? 'rating' : 'ratings'}
+                </p>
+                
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className={`h-4 w-4 ${
+                        className={`h-3 w-3 ${
                           star <= Math.round(artist.avg_rating)
                             ? 'fill-yellow-400 text-yellow-400'
                             : 'text-muted-foreground/30'
@@ -146,7 +155,7 @@ const TopArtists = () => {
                       />
                     ))}
                   </div>
-                  <span className="text-lg font-semibold w-12 text-right">
+                  <span className="text-sm font-semibold ml-1">
                     {artist.avg_rating.toFixed(1)}
                   </span>
                 </div>
