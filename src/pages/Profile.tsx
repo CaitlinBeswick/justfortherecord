@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, ArrowUpDown, ArrowUp, ArrowDown, Heart, UserCheck } from "lucide-react";
+import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, ArrowUpDown, ArrowUp, ArrowDown, Heart, UserCheck, RotateCcw, Trash2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -14,9 +14,11 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
+import { format } from "date-fns";
+import { toast } from "sonner";
 
 type ProfileTab = "diary" | "reviews" | "lists" | "to_listen" | "following";
 type DiarySortOption = "date" | "rating" | "artist";
@@ -58,14 +60,27 @@ interface ArtistFollow {
   created_at: string;
 }
 
+interface DiaryEntry {
+  id: string;
+  release_group_id: string;
+  album_title: string;
+  artist_name: string;
+  listened_on: string;
+  is_relisten: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
 const Profile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ProfileTab>("diary");
   
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
   const [sortAscending, setSortAscending] = useState(false);
   const [showLovedOnly, setShowLovedOnly] = useState(false);
+  const [showRelistensOnly, setShowRelistensOnly] = useState(false);
   const { allStatuses, getStatusForAlbum } = useListeningStatus();
 
   // Redirect to auth if not logged in
@@ -139,6 +154,22 @@ const Profile = () => {
     enabled: !!user,
   });
 
+  // Fetch diary entries
+  const { data: diaryEntriesData = [] } = useQuery({
+    queryKey: ['diary-entries', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('listened_on', { ascending: false });
+      
+      if (error) throw error;
+      return data as DiaryEntry[];
+    },
+    enabled: !!user,
+  });
+
   const tabs: { id: ProfileTab; label: string; icon: React.ReactNode }[] = [
     { id: "diary", label: "Diary", icon: <Disc3 className="h-4 w-4" /> },
     { id: "to_listen", label: "To Listen", icon: <Clock className="h-4 w-4" /> },
@@ -150,69 +181,27 @@ const Profile = () => {
   const toListenAlbums = allStatuses.filter(s => s.status === 'to_listen');
   const listenedAlbums = allStatuses.filter(s => s.status === 'listened');
 
-  // Combine ratings and listening status into a unified diary
-  // Include: all rated albums + all albums marked as "listened" (even without rating)
-  const diaryEntries = (() => {
-    const entries: Array<{
-      id: string;
-      release_group_id: string;
-      album_title: string;
-      artist_name: string;
-      rating?: number;
-      created_at: string;
-      isListened: boolean;
-      loved: boolean;
-    }> = [];
+  // Get ratings map for quick lookup
+  const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
-    // Add all ratings
-    const seenReleaseIds = new Set<string>();
-    ratings.forEach(r => {
-      seenReleaseIds.add(r.release_group_id);
-      entries.push({
-        id: r.id,
-        release_group_id: r.release_group_id,
-        album_title: r.album_title,
-        artist_name: r.artist_name,
-        rating: r.rating,
-        created_at: r.created_at,
-        isListened: getStatusForAlbum(r.release_group_id) === 'listened',
-        loved: r.loved,
-      });
-    });
-
-    // Add listened albums that don't have ratings
-    listenedAlbums.forEach(s => {
-      if (!seenReleaseIds.has(s.release_group_id)) {
-        entries.push({
-          id: s.id,
-          release_group_id: s.release_group_id,
-          album_title: s.album_title,
-          artist_name: s.artist_name,
-          rating: undefined,
-          created_at: s.created_at,
-          isListened: true,
-          loved: false,
-        });
-      }
-    });
-
+  // Filter and sort diary entries from the new table
+  const filteredDiaryEntries = (() => {
+    let entries = [...diaryEntriesData];
+    if (showRelistensOnly) {
+      entries = entries.filter(e => e.is_relisten);
+    }
     return entries;
   })();
-
-  // Filter and sort diary entries
-  const filteredDiaryEntries = showLovedOnly 
-    ? diaryEntries.filter(e => e.loved) 
-    : diaryEntries;
 
   const sortedDiaryEntries = [...filteredDiaryEntries].sort((a, b) => {
     let comparison = 0;
     switch (diarySort) {
       case "date":
-        comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        comparison = new Date(b.listened_on).getTime() - new Date(a.listened_on).getTime();
         break;
       case "rating":
-        const ratingA = a.rating ?? -1;
-        const ratingB = b.rating ?? -1;
+        const ratingA = ratingsMap.get(a.release_group_id)?.rating ?? -1;
+        const ratingB = ratingsMap.get(b.release_group_id)?.rating ?? -1;
         comparison = ratingB - ratingA;
         break;
       case "artist":
@@ -221,6 +210,20 @@ const Profile = () => {
     }
     return sortAscending ? -comparison : comparison;
   });
+
+  const handleDeleteDiaryEntry = async (entryId: string) => {
+    const { error } = await supabase
+      .from('diary_entries')
+      .delete()
+      .eq('id', entryId);
+    
+    if (error) {
+      toast.error("Failed to delete entry");
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
+      toast.success("Entry deleted");
+    }
+  };
 
   if (authLoading || profileLoading) {
     return (
@@ -346,20 +349,20 @@ const Profile = () => {
             >
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <h2 className="font-serif text-xl text-foreground">
-                  Recently Logged ({diaryEntries.length})
+                  Recently Logged ({diaryEntriesData.length})
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setShowLovedOnly(!showLovedOnly)}
+                    onClick={() => setShowRelistensOnly(!showRelistensOnly)}
                     className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
-                      showLovedOnly 
+                      showRelistensOnly 
                         ? "bg-primary text-primary-foreground" 
                         : "bg-secondary text-muted-foreground hover:text-foreground"
                     }`}
-                    title="Show loved albums only"
+                    title="Show re-listens only"
                   >
-                    <Heart className={`h-4 w-4 ${showLovedOnly ? "fill-current" : ""}`} />
-                    Loved
+                    <RotateCcw className={`h-4 w-4`} />
+                    Re-listens
                   </button>
                   <Select value={diarySort} onValueChange={(v) => setDiarySort(v as DiarySortOption)}>
                     <SelectTrigger className="w-[140px] h-9">
@@ -382,40 +385,93 @@ const Profile = () => {
                 </div>
               </div>
               {sortedDiaryEntries.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {sortedDiaryEntries.map((entry, index) => (
-                    <motion.div
-                      key={entry.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <AlbumCard
-                        id={entry.release_group_id}
-                        title={entry.album_title}
-                        artist={entry.artist_name}
-                        coverUrl={getCoverArtUrl(entry.release_group_id)}
-                        rating={entry.rating}
-                        loved={entry.loved}
-                        onClick={() => navigate(`/album/${entry.release_group_id}`)}
-                      />
-                    </motion.div>
-                  ))}
+                <div className="space-y-3">
+                  {sortedDiaryEntries.map((entry, index) => {
+                    const rating = ratingsMap.get(entry.release_group_id);
+                    return (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                        className="flex items-center gap-4 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 transition-colors group"
+                      >
+                        {/* Album Cover */}
+                        <div 
+                          className="w-14 h-14 rounded overflow-hidden shrink-0 cursor-pointer"
+                          onClick={() => navigate(`/album/${entry.release_group_id}`)}
+                        >
+                          <img 
+                            src={getCoverArtUrl(entry.release_group_id, '250')}
+                            alt={entry.album_title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder.svg';
+                            }}
+                          />
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 
+                              className="font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => navigate(`/album/${entry.release_group_id}`)}
+                            >
+                              {entry.album_title}
+                            </h3>
+                            {entry.is_relisten && (
+                              <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
+                                <RotateCcw className="h-3 w-3" />
+                                Re-listen
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate">{entry.artist_name}</p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground/70">
+                            <span>{format(new Date(entry.listened_on), 'MMM d, yyyy')}</span>
+                            {entry.notes && (
+                              <span className="truncate max-w-[200px]" title={entry.notes}>
+                                "{entry.notes}"
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Rating */}
+                        {rating && (
+                          <div className="flex items-center gap-1 text-sm shrink-0">
+                            <span className="text-yellow-400">★</span>
+                            <span className="font-medium">{rating.rating}</span>
+                          </div>
+                        )}
+
+                        {/* Delete button */}
+                        <button
+                          onClick={() => handleDeleteDiaryEntry(entry.id)}
+                          className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-destructive transition-all"
+                          title="Delete entry"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  {showLovedOnly ? (
+                  {showRelistensOnly ? (
                     <>
-                      <Heart className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                      <p className="text-muted-foreground">No loved albums yet</p>
+                      <RotateCcw className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No re-listens logged yet</p>
                       <p className="text-sm text-muted-foreground/60 mt-2">
-                        Heart albums on their detail page to add them here
+                        Log a re-listen from any album page
                       </p>
                     </>
                   ) : (
                     <>
                       <Disc3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                      <p className="text-muted-foreground">You haven't logged any albums yet</p>
+                      <p className="text-muted-foreground">You haven't logged any listens yet</p>
                       <button 
                         onClick={() => navigate('/search')}
                         className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
