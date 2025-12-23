@@ -347,30 +347,51 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-border sticky top-16 bg-background/80 backdrop-blur-xl z-40">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center gap-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-4 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                    activeTab === tab.id
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Main Content with Vertical Sidebar */}
+        <div className="container mx-auto px-4 py-8 pb-20">
+          <div className="flex gap-8">
+            {/* Vertical Navigation */}
+            <aside className="hidden md:block w-48 shrink-0">
+              <nav className="sticky top-24 space-y-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </aside>
 
-        {/* Content */}
-        <section className="container mx-auto px-4 py-8 pb-20">
+            {/* Mobile horizontal scroll tabs */}
+            <div className="md:hidden w-full overflow-x-auto pb-4 -mx-4 px-4">
+              <div className="flex items-center gap-2 min-w-max">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <section className="flex-1 min-w-0">
           {/* Albums Tab - Grid of rated albums */}
           {activeTab === "albums" && (
             <motion.div
@@ -814,7 +835,9 @@ const Profile = () => {
               )}
             </motion.div>
           )}
-        </section>
+            </section>
+          </div>
+        </div>
       </main>
     </div>
   );
