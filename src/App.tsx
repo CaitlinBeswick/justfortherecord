@@ -16,6 +16,11 @@ const AlbumDetail = lazy(() => import("./pages/AlbumDetail"));
 const ArtistDetail = lazy(() => import("./pages/ArtistDetail"));
 const Search = lazy(() => import("./pages/Search"));
 const Profile = lazy(() => import("./pages/Profile"));
+const ProfileAlbums = lazy(() => import("./pages/profile/Albums"));
+const ProfileToListen = lazy(() => import("./pages/profile/ToListen"));
+const ProfileReviews = lazy(() => import("./pages/profile/Reviews"));
+const ProfileLists = lazy(() => import("./pages/profile/Lists"));
+const ProfileFriends = lazy(() => import("./pages/profile/Friends"));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -42,6 +47,11 @@ const App = () => (
               <Route path="/artist/:id" element={<ArtistDetail />} />
               <Route path="/search" element={<Search />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/albums" element={<ProfileAlbums />} />
+              <Route path="/profile/to-listen" element={<ProfileToListen />} />
+              <Route path="/profile/reviews" element={<ProfileReviews />} />
+              <Route path="/profile/lists" element={<ProfileLists />} />
+              <Route path="/profile/friends" element={<ProfileFriends />} />
               <Route path="/profile/settings" element={<ProfileSettings />} />
               <Route path="/user/:userId" element={<UserProfile />} />
               <Route path="/auth" element={<Auth />} />
