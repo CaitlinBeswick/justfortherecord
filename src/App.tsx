@@ -10,6 +10,8 @@ const Index = lazy(() => import("./pages/Index"));
 const Albums = lazy(() => import("./pages/Albums"));
 const Artists = lazy(() => import("./pages/Artists"));
 const PopularArtists = lazy(() => import("./pages/PopularArtists"));
+const TopArtists = lazy(() => import("./pages/TopArtists"));
+const TopAlbums = lazy(() => import("./pages/TopAlbums"));
 const AlbumDetail = lazy(() => import("./pages/AlbumDetail"));
 const ArtistDetail = lazy(() => import("./pages/ArtistDetail"));
 const Search = lazy(() => import("./pages/Search"));
@@ -33,6 +35,8 @@ const App = () => (
               <Route path="/albums" element={<Albums />} />
               <Route path="/artists" element={<Artists />} />
               <Route path="/artists/popular" element={<PopularArtists />} />
+              <Route path="/top-artists" element={<TopArtists />} />
+              <Route path="/top-albums" element={<TopAlbums />} />
               <Route path="/album/:id" element={<AlbumDetail />} />
               <Route path="/artist/:id" element={<ArtistDetail />} />
               <Route path="/search" element={<Search />} />
