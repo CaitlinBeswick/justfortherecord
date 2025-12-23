@@ -3,6 +3,7 @@ import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2 } from "luci
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +66,8 @@ export function Navbar() {
           >
             <Search className="h-5 w-5" />
           </Link>
+          
+          {user && <NotificationBell />}
           
           {loading ? (
             <div className="flex h-9 w-9 items-center justify-center">

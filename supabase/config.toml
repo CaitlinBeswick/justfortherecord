@@ -2,3 +2,6 @@ project_id = "elydnykhwsvrtjonkvxj"
 
 [functions.musicbrainz]
 verify_jwt = false
+
+[functions.check-new-releases]
+verify_jwt = false
