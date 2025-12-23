@@ -221,9 +221,11 @@ const Index = () => {
           </div>
           
           {artistsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 rounded-lg" />
+                <div key={i} className="flex-shrink-0 w-72">
+                  <Skeleton className="h-14 rounded-lg" />
+                </div>
               ))}
             </div>
           ) : topArtists.length === 0 ? (
@@ -235,14 +237,14 @@ const Index = () => {
           ) : (
             <motion.div 
               variants={containerVariants}
-              className="grid grid-cols-1 md:grid-cols-2 gap-3"
+              className="flex flex-nowrap gap-3 overflow-x-auto pb-2 scrollbar-hide"
             >
               {topArtists.map((artist, index) => (
                 <motion.div
                   key={artist.artist_id}
                   variants={itemVariants}
                   onClick={() => navigate(`/artist/${artist.artist_id}`)}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 cursor-pointer transition-colors group"
+                  className="flex-shrink-0 w-72 flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 cursor-pointer transition-colors group"
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                     index === 0 ? 'bg-yellow-500 text-yellow-950' :
@@ -292,9 +294,11 @@ const Index = () => {
           </div>
           
           {albumsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 rounded-lg" />
+                <div key={i} className="flex-shrink-0 w-80">
+                  <Skeleton className="h-16 rounded-lg" />
+                </div>
               ))}
             </div>
           ) : topAlbums.length === 0 ? (
@@ -306,14 +310,14 @@ const Index = () => {
           ) : (
             <motion.div 
               variants={containerVariants}
-              className="grid grid-cols-1 md:grid-cols-2 gap-3"
+              className="flex flex-nowrap gap-3 overflow-x-auto pb-2 scrollbar-hide"
             >
               {topAlbums.map((album, index) => (
                 <motion.div
                   key={album.release_group_id}
                   variants={itemVariants}
                   onClick={() => navigate(`/album/${album.release_group_id}`)}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 cursor-pointer transition-colors group"
+                  className="flex-shrink-0 w-80 flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 cursor-pointer transition-colors group"
                 >
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                     index === 0 ? 'bg-yellow-500 text-yellow-950' :
