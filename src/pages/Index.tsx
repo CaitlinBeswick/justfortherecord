@@ -2,7 +2,8 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ReviewCard } from "@/components/ReviewCard";
 import { recentReviews } from "@/data/mockData";
-import { ArrowRight, Clock, Trophy, Star, Disc3, Users } from "lucide-react";
+import { ArrowRight, Clock, Trophy, Star, Disc3, Users, Activity } from "lucide-react";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -340,6 +341,23 @@ const Index = () => {
               ))}
             </motion.div>
           )}
+        </motion.div>
+      </section>
+
+      {/* Friends Activity */}
+      <section className="container mx-auto px-4 py-12">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={containerVariants}
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <Activity className="h-5 w-5 text-primary" />
+            <h2 className="font-serif text-2xl text-foreground">Friends Activity</h2>
+          </div>
+          
+          <ActivityFeed />
         </motion.div>
       </section>
 
