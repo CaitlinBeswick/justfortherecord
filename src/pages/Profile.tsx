@@ -350,8 +350,8 @@ const Profile = () => {
         {/* Main Content with Vertical Sidebar */}
         <div className="container mx-auto px-4 py-8 pb-20">
           <div className="flex gap-8">
-            {/* Vertical Navigation */}
-            <aside className="hidden md:block w-48 shrink-0">
+            {/* Vertical Navigation (desktop) */}
+            <aside className="hidden md:block w-56 shrink-0">
               <nav className="sticky top-24 space-y-1">
                 {tabs.map((tab) => (
                   <button
@@ -370,25 +370,27 @@ const Profile = () => {
               </nav>
             </aside>
 
-            {/* Mobile horizontal scroll tabs */}
-            <div className="md:hidden w-full overflow-x-auto pb-4 -mx-4 px-4">
-              <div className="flex items-center gap-2 min-w-max">
+            {/* Vertical Navigation (mobile) */}
+            <aside className="md:hidden w-full">
+              <div className="space-y-1 mb-6">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                    className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       activeTab === tab.id
                         ? "bg-primary text-primary-foreground"
                         : "bg-secondary text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {tab.icon}
-                    {tab.label}
+                    <span className="flex items-center gap-3">
+                      {tab.icon}
+                      {tab.label}
+                    </span>
                   </button>
                 ))}
               </div>
-            </div>
+            </aside>
 
             {/* Content Area */}
             <section className="flex-1 min-w-0">
