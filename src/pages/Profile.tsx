@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, ArrowUpDown, ArrowUp, ArrowDown, Heart, UserCheck, RotateCcw, Trash2, Music, Calendar, Users, Activity } from "lucide-react";
+import { Settings, Disc3, PenLine, List, Loader2, Plus, User, Clock, ArrowUpDown, ArrowUp, ArrowDown, Heart, UserCheck, RotateCcw, Trash2, Music, Calendar, Users } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -21,9 +21,8 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 import { FriendsSection } from "@/components/FriendsSection";
-import { ActivityFeed } from "@/components/ActivityFeed";
 
-type ProfileTab = "albums" | "diary" | "activity" | "friends" | "reviews" | "lists" | "to_listen" | "following";
+type ProfileTab = "diary" | "albums" | "to_listen" | "reviews" | "lists" | "friends" | "following";
 type DiarySortOption = "date" | "rating" | "artist";
 
 interface Profile {
@@ -78,7 +77,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<ProfileTab>("albums");
+  const [activeTab, setActiveTab] = useState<ProfileTab>("diary");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
@@ -175,14 +174,13 @@ const Profile = () => {
   });
 
   const tabs: { id: ProfileTab; label: string; icon: React.ReactNode }[] = [
-    { id: "albums", label: "Albums", icon: <Music className="h-4 w-4" /> },
     { id: "diary", label: "Diary", icon: <Calendar className="h-4 w-4" /> },
-    { id: "activity", label: "Activity", icon: <Activity className="h-4 w-4" /> },
-    { id: "friends", label: "Friends", icon: <Users className="h-4 w-4" /> },
+    { id: "albums", label: "Albums", icon: <Music className="h-4 w-4" /> },
     { id: "to_listen", label: "To Listen", icon: <Clock className="h-4 w-4" /> },
-    { id: "following", label: "Artists", icon: <UserCheck className="h-4 w-4" /> },
     { id: "reviews", label: "Reviews", icon: <PenLine className="h-4 w-4" /> },
     { id: "lists", label: "Lists", icon: <List className="h-4 w-4" /> },
+    { id: "friends", label: "Friends", icon: <Users className="h-4 w-4" /> },
+    { id: "following", label: "Artists", icon: <UserCheck className="h-4 w-4" /> },
   ];
 
   const toListenAlbums = allStatuses.filter(s => s.status === 'to_listen');
@@ -655,13 +653,6 @@ const Profile = () => {
             </motion.div>
           )}
 
-          {/* Activity Tab */}
-          {activeTab === "activity" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="font-serif text-xl text-foreground mb-6">Friends Activity</h2>
-              <ActivityFeed />
-            </motion.div>
-          )}
 
           {/* Friends Tab */}
           {activeTab === "friends" && <FriendsSection />}
