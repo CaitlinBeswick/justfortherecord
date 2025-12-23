@@ -17,6 +17,7 @@ const ArtistDetail = lazy(() => import("./pages/ArtistDetail"));
 const Search = lazy(() => import("./pages/Search"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/search" element={<Search />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/profile/settings" element={<ProfileSettings />} />
+              <Route path="/user/:userId" element={<UserProfile />} />
               <Route path="/auth" element={<Auth />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
