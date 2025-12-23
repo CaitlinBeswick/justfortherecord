@@ -91,7 +91,7 @@ const TopArtists = () => {
         </motion.div>
 
         {isLoading ? (
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="flex-shrink-0 w-44">
                 <Skeleton className="h-44 w-44 rounded-lg mb-3" />
@@ -109,7 +109,7 @@ const TopArtists = () => {
             </p>
           </div>
         ) : (
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {topArtists.map((artist, index) => (
               <motion.div
                 key={artist.artist_id}
