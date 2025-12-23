@@ -16,14 +16,17 @@ interface AlbumRating {
   rating_count: number;
 }
 
-function AlbumCover({ releaseGroupId, title }: { releaseGroupId: string; title: string }) {
+function AlbumCover({ releaseGroupId, title, size = "small" }: { releaseGroupId: string; title: string; size?: "small" | "large" }) {
   const [hasError, setHasError] = useState(false);
   const imageUrl = getCoverArtUrl(releaseGroupId, '250');
 
+  const sizeClasses = size === "large" ? "w-36 h-36" : "w-12 h-12";
+  const iconSize = size === "large" ? "h-12 w-12" : "h-6 w-6";
+
   if (hasError) {
     return (
-      <div className="w-12 h-12 rounded bg-secondary flex items-center justify-center">
-        <Disc3 className="h-6 w-6 text-muted-foreground" />
+      <div className={`${sizeClasses} rounded-lg bg-secondary flex items-center justify-center`}>
+        <Disc3 className={`${iconSize} text-muted-foreground`} />
       </div>
     );
   }
@@ -32,7 +35,7 @@ function AlbumCover({ releaseGroupId, title }: { releaseGroupId: string; title: 
     <img 
       src={imageUrl} 
       alt={title}
-      className="w-12 h-12 rounded object-cover"
+      className={`${sizeClasses} rounded-lg object-cover`}
       onError={() => setHasError(true)}
     />
   );
@@ -118,9 +121,14 @@ const TopAlbums = () => {
         </motion.div>
 
         {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="flex-shrink-0 w-44">
+                <Skeleton className="h-36 w-36 rounded-lg mb-3" />
+                <Skeleton className="h-4 w-32 mb-2" />
+                <Skeleton className="h-3 w-24 mb-2" />
+                <Skeleton className="h-3 w-20" />
+              </div>
             ))}
           </div>
         ) : topAlbums.length === 0 ? (
@@ -132,42 +140,44 @@ const TopAlbums = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {topAlbums.map((album, index) => (
               <motion.div
                 key={album.release_group_id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.02 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: Math.min(index * 0.02, 0.3) }}
                 onClick={() => navigate(`/album/${album.release_group_id}`)}
-                className="flex items-center gap-4 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 cursor-pointer transition-colors group"
+                className="flex-shrink-0 w-44 bg-card/50 border border-border/50 rounded-lg p-4 cursor-pointer hover:bg-card/80 transition-colors group"
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                  index === 0 ? 'bg-yellow-500 text-yellow-950' :
-                  index === 1 ? 'bg-gray-300 text-gray-700' :
-                  index === 2 ? 'bg-amber-600 text-amber-50' :
-                  'bg-secondary text-secondary-foreground'
-                }`}>
-                  {index + 1}
+                <div className="relative mb-3">
+                  <AlbumCover releaseGroupId={album.release_group_id} title={album.album_title} size="large" />
+                  <div className={`absolute top-2 left-2 text-xs font-bold px-2 py-1 rounded ${
+                    index === 0 ? 'bg-yellow-500 text-yellow-950' :
+                    index === 1 ? 'bg-gray-300 text-gray-700' :
+                    index === 2 ? 'bg-amber-600 text-amber-50' :
+                    'bg-background/90 text-foreground'
+                  }`}>
+                    #{index + 1}
+                  </div>
                 </div>
                 
-                <AlbumCover releaseGroupId={album.release_group_id} title={album.album_title} />
+                <h3 className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                  {album.album_title}
+                </h3>
+                <p className="text-xs text-muted-foreground truncate mb-2">
+                  {album.artist_name}
+                </p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  {album.rating_count} {album.rating_count === 1 ? 'rating' : 'ratings'}
+                </p>
                 
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                    {album.album_title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {album.artist_name} · {album.rating_count} {album.rating_count === 1 ? 'rating' : 'ratings'}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className={`h-4 w-4 ${
+                        className={`h-3 w-3 ${
                           star <= Math.round(album.avg_rating)
                             ? 'fill-yellow-400 text-yellow-400'
                             : 'text-muted-foreground/30'
@@ -175,7 +185,7 @@ const TopAlbums = () => {
                       />
                     ))}
                   </div>
-                  <span className="text-lg font-semibold w-12 text-right">
+                  <span className="text-sm font-semibold ml-1">
                     {album.avg_rating.toFixed(1)}
                   </span>
                 </div>
