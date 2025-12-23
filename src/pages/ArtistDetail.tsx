@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
+import { ArtistRating } from "@/components/ArtistRating";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
@@ -333,82 +334,95 @@ const ArtistDetail = () => {
               Back
             </motion.button>
 
-            <div className="flex flex-col md:flex-row items-center md:items-end gap-8">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4 }}
-              >
-                {artistImage ? (
-                  <img 
-                    src={artistImage} 
-                    alt={artist.name}
-                    className="w-48 h-48 md:w-56 md:h-56 rounded-full border-4 border-border/50 shadow-2xl object-cover"
-                    onError={(e) => {
-                      // Fall back to initials if image fails to load
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }}
-                  />
-                ) : null}
-                <div className={`w-48 h-48 md:w-56 md:h-56 rounded-full ${getArtistColor(artist.name)} border-4 border-border/50 shadow-2xl flex items-center justify-center ${artistImage ? 'hidden' : ''}`}>
-                  <span className="text-white font-bold text-6xl md:text-7xl drop-shadow-lg">
-                    {getInitials(artist.name)}
-                  </span>
-                </div>
-              </motion.div>
+            <div className="flex flex-col lg:flex-row items-start gap-8">
+              {/* Left: Artist Info */}
+              <div className="flex flex-col md:flex-row items-center md:items-end gap-8 flex-1">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  {artistImage ? (
+                    <img 
+                      src={artistImage} 
+                      alt={artist.name}
+                      className="w-48 h-48 md:w-56 md:h-56 rounded-full border-4 border-border/50 shadow-2xl object-cover"
+                      onError={(e) => {
+                        // Fall back to initials if image fails to load
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-48 h-48 md:w-56 md:h-56 rounded-full ${getArtistColor(artist.name)} border-4 border-border/50 shadow-2xl flex items-center justify-center ${artistImage ? 'hidden' : ''}`}>
+                    <span className="text-white font-bold text-6xl md:text-7xl drop-shadow-lg">
+                      {getInitials(artist.name)}
+                    </span>
+                  </div>
+                </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-                className="flex-1 text-center md:text-left"
-              >
-                <p className="text-sm text-primary font-medium uppercase tracking-wider">
-                  {artist.type || "Artist"} {artist.country && `· ${artist.country}`}
-                </p>
-                <h1 className="font-serif text-5xl md:text-6xl text-foreground mt-2">
-                  {artist.name}
-                </h1>
-                {genres.length > 0 && (
-                  <p className="text-lg text-muted-foreground mt-2">
-                    {genres.join(" · ")}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1 }}
+                  className="flex-1 text-center md:text-left"
+                >
+                  <p className="text-sm text-primary font-medium uppercase tracking-wider">
+                    {artist.type || "Artist"} {artist.country && `· ${artist.country}`}
                   </p>
-                )}
-
-                <div className="flex items-center justify-center md:justify-start gap-6 mt-4 text-sm text-muted-foreground">
-                  {beginYear && (
-                    <span>Active since <strong className="text-foreground">{beginYear}</strong></span>
+                  <h1 className="font-serif text-5xl md:text-6xl text-foreground mt-2">
+                    {artist.name}
+                  </h1>
+                  {genres.length > 0 && (
+                    <p className="text-lg text-muted-foreground mt-2">
+                      {genres.join(" · ")}
+                    </p>
                   )}
-                  <span><strong className="text-foreground">{releases.length}</strong> releases</span>
-                </div>
 
-                <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
-                  <button
-                    onClick={handleFollow}
-                    disabled={followMutation.isPending}
-                    className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
-                      following
-                        ? "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                        : "bg-primary text-primary-foreground hover:opacity-90"
-                    } disabled:opacity-50`}
-                  >
-                    {following ? (
-                      <>
-                        <UserCheck className="h-4 w-4" />
-                        Following
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="h-4 w-4" />
-                        Follow
-                      </>
+                  <div className="flex items-center justify-center md:justify-start gap-6 mt-4 text-sm text-muted-foreground">
+                    {beginYear && (
+                      <span>Active since <strong className="text-foreground">{beginYear}</strong></span>
                     )}
-                  </button>
-                  <button className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors hover:bg-surface-hover">
-                    <Share2 className="h-5 w-5" />
-                  </button>
-                </div>
+                    <span><strong className="text-foreground">{releases.length}</strong> releases</span>
+                  </div>
+
+                  <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
+                    <button
+                      onClick={handleFollow}
+                      disabled={followMutation.isPending}
+                      className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
+                        following
+                          ? "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                          : "bg-primary text-primary-foreground hover:opacity-90"
+                      } disabled:opacity-50`}
+                    >
+                      {following ? (
+                        <>
+                          <UserCheck className="h-4 w-4" />
+                          Following
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4" />
+                          Follow
+                        </>
+                      )}
+                    </button>
+                    <button className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors hover:bg-surface-hover">
+                      <Share2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Right: Artist Rating */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="w-full lg:w-72 shrink-0"
+              >
+                <ArtistRating artistId={artistId} artistName={artist.name} />
               </motion.div>
             </div>
           </div>
