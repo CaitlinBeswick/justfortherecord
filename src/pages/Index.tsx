@@ -41,14 +41,14 @@ interface AlbumRating {
   rating_count: number;
 }
 
-function AlbumCoverSmall({ releaseGroupId, title }: { releaseGroupId: string; title: string }) {
+function AlbumCoverSquare({ releaseGroupId, title }: { releaseGroupId: string; title: string }) {
   const [hasError, setHasError] = useState(false);
   const imageUrl = getCoverArtUrl(releaseGroupId, '250');
 
   if (hasError) {
     return (
-      <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center">
-        <Disc3 className="h-5 w-5 text-muted-foreground" />
+      <div className="aspect-square rounded-lg bg-secondary flex items-center justify-center">
+        <Disc3 className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -57,7 +57,7 @@ function AlbumCoverSmall({ releaseGroupId, title }: { releaseGroupId: string; ti
     <img 
       src={imageUrl} 
       alt={title}
-      className="w-10 h-10 rounded object-cover"
+      className="aspect-square rounded-lg object-cover w-full"
       onError={() => setHasError(true)}
     />
   );
@@ -221,10 +221,12 @@ const Index = () => {
           </div>
           
           {artistsLoading ? (
-            <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-72">
-                  <Skeleton className="h-14 rounded-lg" />
+                <div key={i} className="flex-shrink-0 w-36">
+                  <Skeleton className="aspect-square rounded-lg mb-2" />
+                  <Skeleton className="h-4 w-full mb-1" />
+                  <Skeleton className="h-3 w-16" />
                 </div>
               ))}
             </div>
@@ -237,33 +239,34 @@ const Index = () => {
           ) : (
             <motion.div 
               variants={containerVariants}
-              className="flex flex-nowrap gap-3 overflow-x-auto pb-2 scrollbar-hide"
+              className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide"
             >
               {topArtists.map((artist, index) => (
                 <motion.div
                   key={artist.artist_id}
                   variants={itemVariants}
                   onClick={() => navigate(`/artist/${artist.artist_id}`)}
-                  className="flex-shrink-0 w-72 flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 cursor-pointer transition-colors group"
+                  className="flex-shrink-0 w-36 cursor-pointer group"
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                    index === 0 ? 'bg-yellow-500 text-yellow-950' :
-                    index === 1 ? 'bg-gray-300 text-gray-700' :
-                    index === 2 ? 'bg-amber-600 text-amber-50' :
-                    'bg-secondary text-secondary-foreground'
-                  }`}>
-                    {index + 1}
+                  <div className="relative aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-2 border border-border/50 group-hover:border-primary/50 transition-colors">
+                    <span className="font-serif text-3xl text-primary/60">
+                      {artist.artist_name.charAt(0)}
+                    </span>
+                    <div className={`absolute top-2 left-2 text-xs font-bold px-1.5 py-0.5 rounded ${
+                      index === 0 ? 'bg-yellow-500 text-yellow-950' :
+                      index === 1 ? 'bg-gray-300 text-gray-700' :
+                      index === 2 ? 'bg-amber-600 text-amber-50' :
+                      'bg-background/90 text-foreground'
+                    }`}>
+                      #{index + 1}
+                    </div>
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                      {artist.artist_name}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold text-sm">{artist.avg_rating.toFixed(1)}</span>
+                  <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                    {artist.artist_name}
+                  </h3>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs text-muted-foreground">{artist.avg_rating.toFixed(1)}</span>
                   </div>
                 </motion.div>
               ))}
@@ -294,10 +297,12 @@ const Index = () => {
           </div>
           
           {albumsLoading ? (
-            <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-80">
-                  <Skeleton className="h-16 rounded-lg" />
+                <div key={i} className="flex-shrink-0 w-36">
+                  <Skeleton className="aspect-square rounded-lg mb-2" />
+                  <Skeleton className="h-4 w-full mb-1" />
+                  <Skeleton className="h-3 w-24" />
                 </div>
               ))}
             </div>
@@ -310,36 +315,33 @@ const Index = () => {
           ) : (
             <motion.div 
               variants={containerVariants}
-              className="flex flex-nowrap gap-3 overflow-x-auto pb-2 scrollbar-hide"
+              className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide"
             >
               {topAlbums.map((album, index) => (
                 <motion.div
                   key={album.release_group_id}
                   variants={itemVariants}
                   onClick={() => navigate(`/album/${album.release_group_id}`)}
-                  className="flex-shrink-0 w-80 flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-card/80 cursor-pointer transition-colors group"
+                  className="flex-shrink-0 w-36 cursor-pointer group"
                 >
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                    index === 0 ? 'bg-yellow-500 text-yellow-950' :
-                    index === 1 ? 'bg-gray-300 text-gray-700' :
-                    index === 2 ? 'bg-amber-600 text-amber-50' :
-                    'bg-secondary text-secondary-foreground'
-                  }`}>
-                    {index + 1}
+                  <div className="relative mb-2">
+                    <AlbumCoverSquare releaseGroupId={album.release_group_id} title={album.album_title} />
+                    <div className={`absolute top-2 left-2 text-xs font-bold px-1.5 py-0.5 rounded ${
+                      index === 0 ? 'bg-yellow-500 text-yellow-950' :
+                      index === 1 ? 'bg-gray-300 text-gray-700' :
+                      index === 2 ? 'bg-amber-600 text-amber-50' :
+                      'bg-background/90 text-foreground'
+                    }`}>
+                      #{index + 1}
+                    </div>
                   </div>
-                  
-                  <AlbumCoverSmall releaseGroupId={album.release_group_id} title={album.album_title} />
-                  
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                      {album.album_title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground truncate">{album.artist_name}</p>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold text-sm">{album.avg_rating.toFixed(1)}</span>
+                  <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                    {album.album_title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground truncate">{album.artist_name}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs text-muted-foreground">{album.avg_rating.toFixed(1)}</span>
                   </div>
                 </motion.div>
               ))}
