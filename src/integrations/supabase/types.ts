@@ -77,6 +77,39 @@ export type Database = {
         }
         Relationships: []
       }
+      artist_ratings: {
+        Row: {
+          artist_id: string
+          artist_name: string
+          created_at: string
+          id: string
+          rating: number
+          review_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artist_id: string
+          artist_name: string
+          created_at?: string
+          id?: string
+          rating: number
+          review_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artist_id?: string
+          artist_name?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       list_items: {
         Row: {
           added_at: string
