@@ -121,7 +121,7 @@ const TopAlbums = () => {
         </motion.div>
 
         {isLoading ? (
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="flex-shrink-0 w-44">
                 <Skeleton className="h-36 w-36 rounded-lg mb-3" />
@@ -140,7 +140,7 @@ const TopAlbums = () => {
             </p>
           </div>
         ) : (
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {topAlbums.map((album, index) => (
               <motion.div
                 key={album.release_group_id}
