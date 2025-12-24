@@ -449,7 +449,7 @@ const AlbumDetail = () => {
                 </button>
 
                 {/* Personal Rating */}
-                <div className="flex items-center gap-3 mt-6">
+                <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
                   <span className="text-sm text-muted-foreground">Your rating:</span>
                   <StarRating
                     rating={userRating}
@@ -462,7 +462,7 @@ const AlbumDetail = () => {
                   )}
                 </div>
 
-                <div className="mt-8">
+                <div className="flex justify-center md:justify-start mt-4">
                   <ListeningStatusButtons
                     releaseGroupId={id!}
                     albumTitle={releaseGroup.title}
