@@ -1,14 +1,16 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Music, Heart, ArrowUpDown } from "lucide-react";
+import { Loader2, Plus, Music, Heart, ArrowUpDown, RefreshCw } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -48,7 +50,9 @@ const sortLabels: Record<SortOption, string> = {
 const Albums = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<SortOption>('release-desc');
+  const [isBackfilling, setIsBackfilling] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -90,6 +94,33 @@ const Albums = () => {
     }
   }, [ratings, sortBy]);
 
+  const ratingsWithoutReleaseDates = ratings.filter(r => !r.release_date).length;
+
+  const handleBackfill = async () => {
+    setIsBackfilling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-release-dates');
+      
+      if (error) {
+        toast.error('Failed to backfill release dates');
+        console.error('Backfill error:', error);
+        return;
+      }
+
+      if (data?.success) {
+        toast.success(data.message);
+        queryClient.invalidateQueries({ queryKey: ['user-ratings'] });
+      } else {
+        toast.error(data?.error || 'Failed to backfill release dates');
+      }
+    } catch (e) {
+      console.error('Backfill error:', e);
+      toast.error('Failed to backfill release dates');
+    } finally {
+      setIsBackfilling(false);
+    }
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -113,25 +144,42 @@ const Albums = () => {
             <ProfileNav activeTab="albums" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                   <h2 className="font-serif text-xl text-foreground">
                     Rated Albums ({ratings.length})
                   </h2>
-                  {ratings.length > 0 && (
-                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                      <SelectTrigger className="w-[180px]">
-                        <ArrowUpDown className="h-4 w-4 mr-2" />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(sortLabels) as SortOption[]).map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {sortLabels[option]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {ratingsWithoutReleaseDates > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBackfill}
+                        disabled={isBackfilling}
+                      >
+                        {isBackfilling ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Backfill Dates ({ratingsWithoutReleaseDates})
+                      </Button>
+                    )}
+                    {ratings.length > 0 && (
+                      <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                        <SelectTrigger className="w-[180px]">
+                          <ArrowUpDown className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(sortLabels) as SortOption[]).map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {sortLabels[option]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                 </div>
                 {sortedRatings.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
