@@ -98,7 +98,7 @@ const Following = () => {
                           onClick={() => navigate(`/artist/${artist.artist_id}`)}
                         >
                           <span className="text-foreground font-bold text-2xl sm:text-3xl">
-                            {artist.artist_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                            {(artist.artist_name || 'Unknown').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
                           </span>
                           <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                         </div>
@@ -107,7 +107,7 @@ const Following = () => {
                             className="font-sans font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer"
                             onClick={() => navigate(`/artist/${artist.artist_id}`)}
                           >
-                            {artist.artist_name}
+                            {artist.artist_name || 'Unknown Artist'}
                           </h3>
                           <p className="text-xs text-muted-foreground mt-1">
                             Followed {new Date(artist.created_at).toLocaleDateString()}
