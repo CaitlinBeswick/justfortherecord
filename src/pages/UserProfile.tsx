@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
+import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { User, Loader2, UserPlus, UserCheck, Clock, UserMinus, Music, Calendar } from "lucide-react";
+import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -173,6 +174,11 @@ const UserProfile = () => {
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap">
                   <h1 className="font-serif text-3xl text-foreground">{displayName}</h1>
+                  
+                  <ShareButton 
+                    title={displayName}
+                    text={`Check out ${displayName}'s music profile`}
+                  />
                   
                   {user && userId !== user.id && (
                     <>
