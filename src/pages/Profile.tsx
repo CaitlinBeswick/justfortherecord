@@ -54,7 +54,7 @@ const Profile = () => {
   }, [user, authLoading, navigate]);
 
   const { data: ratings = [] } = useQuery({
-    queryKey: ['user-ratings', user?.id],
+    queryKey: ['user-album-ratings-basic', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')

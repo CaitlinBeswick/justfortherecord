@@ -72,7 +72,7 @@ const UserProfile = () => {
 
   // Fetch user's album ratings (public)
   const { data: ratings = [] } = useQuery({
-    queryKey: ['user-ratings', userId],
+    queryKey: ['public-user-album-ratings', userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')
