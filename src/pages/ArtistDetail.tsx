@@ -227,10 +227,11 @@ const ArtistDetail = () => {
   // Calculate discography completion (based on filtered releases only)
   const listenedCount = filteredReleases.filter(release => {
     const normalized = (v: string) => v.trim().toLowerCase();
-    const listenedById = getStatusForAlbum(release.id) === 'listened';
+    const statusForAlbum = getStatusForAlbum(release.id);
+    const listenedById = statusForAlbum.isListened;
     const listenedByMetadata = allStatuses.some(
       (s) =>
-        s.status === 'listened' &&
+        s.is_listened &&
         normalized(s.album_title) === normalized(release.title) &&
         artist && normalized(s.artist_name) === normalized(artist.name)
     );
@@ -242,10 +243,11 @@ const ArtistDetail = () => {
   const getCategoryProgress = (categoryReleases: MBReleaseGroup[]) => {
     const listenedInCategory = categoryReleases.filter(release => {
       const normalized = (v: string) => v.trim().toLowerCase();
-      const listenedById = getStatusForAlbum(release.id) === 'listened';
+      const statusForAlbum = getStatusForAlbum(release.id);
+      const listenedById = statusForAlbum.isListened;
       const listenedByMetadata = allStatuses.some(
         (s) =>
-          s.status === 'listened' &&
+          s.is_listened &&
           normalized(s.album_title) === normalized(release.title) &&
           artist && normalized(s.artist_name) === normalized(artist.name)
       );
@@ -494,10 +496,11 @@ const ArtistDetail = () => {
                   >
                     {groupedReleases[type].map((release, index) => {
                       const normalized = (v: string) => v.trim().toLowerCase();
-                      const listenedById = getStatusForAlbum(release.id) === 'listened';
+                      const statusForAlbum = getStatusForAlbum(release.id);
+                      const listenedById = statusForAlbum.isListened;
                       const listenedByMetadata = allStatuses.some(
                         (s) =>
-                          s.status === 'listened' &&
+                          s.is_listened &&
                           normalized(s.album_title) === normalized(release.title) &&
                           normalized(s.artist_name) === normalized(artist.name)
                       );

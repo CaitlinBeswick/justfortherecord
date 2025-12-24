@@ -172,7 +172,8 @@ const AlbumDetail = () => {
           release_group_id: id,
           album_title: releaseGroup.title,
           artist_name: artistName,
-          status: 'listened',
+          is_listened: true,
+          is_to_listen: false,
         }, {
           onConflict: 'user_id,release_group_id',
         });

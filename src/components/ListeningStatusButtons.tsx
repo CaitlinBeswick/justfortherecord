@@ -1,5 +1,5 @@
 import { Check, Clock, Loader2 } from "lucide-react";
-import { useListeningStatus, ListeningStatusType } from "@/hooks/useListeningStatus";
+import { useListeningStatus } from "@/hooks/useListeningStatus";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -18,9 +18,9 @@ export function ListeningStatusButtons({
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { status, setStatus, isPending } = useListeningStatus(releaseGroupId);
+  const { isListened, isToListen, toggleStatus, isPending } = useListeningStatus(releaseGroupId);
 
-  const handleSetStatus = (newStatus: ListeningStatusType) => {
+  const handleToggle = (field: 'is_listened' | 'is_to_listen') => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -30,18 +30,23 @@ export function ListeningStatusButtons({
       return;
     }
 
-    // Toggle off if clicking the same status
-    const finalStatus = status === newStatus ? null : newStatus;
-    setStatus({ releaseGroupId, albumTitle, artistName, newStatus: finalStatus });
+    const currentValue = field === 'is_listened' ? isListened : isToListen;
+    toggleStatus({ 
+      releaseGroupId, 
+      albumTitle, 
+      artistName, 
+      field,
+      value: !currentValue 
+    });
   };
 
   return (
     <div className="flex items-center gap-2">
       <button
-        onClick={() => handleSetStatus('listened')}
+        onClick={() => handleToggle('is_listened')}
         disabled={isPending}
         className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-          status === 'listened'
+          isListened
             ? "bg-primary text-primary-foreground"
             : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
         }`}
@@ -54,10 +59,10 @@ export function ListeningStatusButtons({
         Listened
       </button>
       <button
-        onClick={() => handleSetStatus('to_listen')}
+        onClick={() => handleToggle('is_to_listen')}
         disabled={isPending}
         className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-          status === 'to_listen'
+          isToListen
             ? "bg-primary text-primary-foreground"
             : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
         }`}
