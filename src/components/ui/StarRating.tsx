@@ -1,5 +1,6 @@
 import { Star, StarHalf } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRef, useState, useCallback } from "react";
 
 interface StarRatingProps {
   rating: number;
@@ -15,6 +16,12 @@ const sizeClasses = {
   lg: "w-5 h-5",
 };
 
+const sizePx = {
+  sm: 12,
+  md: 16,
+  lg: 20,
+};
+
 export function StarRating({
   rating,
   maxRating = 5,
@@ -22,33 +29,123 @@ export function StarRating({
   interactive = false,
   onRatingChange,
 }: StarRatingProps) {
-  const handleClick = (index: number, isHalf: boolean) => {
-    if (interactive && onRatingChange) {
-      const newRating = isHalf ? index + 0.5 : index + 1;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+
+  const calculateRating = useCallback((clientX: number) => {
+    if (!containerRef.current) return null;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const starWidth = sizePx[size];
+    const gap = 2; // gap-0.5 = 2px
+    const totalWidth = (starWidth + gap) * maxRating - gap;
+    
+    const x = clientX - rect.left;
+    
+    // Allow going to 0 if dragging before the first star
+    if (x <= 0) return 0;
+    if (x >= totalWidth) return maxRating;
+    
+    // Calculate which star and position within it
+    const starWithGap = starWidth + gap;
+    const starIndex = Math.floor(x / starWithGap);
+    const positionInStar = (x % starWithGap) / starWidth;
+    
+    // Determine half or full star
+    if (positionInStar <= 0.5) {
+      return starIndex + 0.5;
+    } else {
+      return starIndex + 1;
+    }
+  }, [size, maxRating]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!interactive || !onRatingChange) return;
+    setIsDragging(true);
+    const newRating = calculateRating(e.clientX);
+    if (newRating !== null) {
       onRatingChange(newRating);
     }
-  };
+  }, [interactive, onRatingChange, calculateRating]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!interactive) return;
+    
+    const newRating = calculateRating(e.clientX);
+    setHoverRating(newRating);
+    
+    if (isDragging && onRatingChange && newRating !== null) {
+      onRatingChange(newRating);
+    }
+  }, [interactive, isDragging, onRatingChange, calculateRating]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsDragging(false);
+    setHoverRating(null);
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!interactive || !onRatingChange) return;
+    setIsDragging(true);
+    const touch = e.touches[0];
+    const newRating = calculateRating(touch.clientX);
+    if (newRating !== null) {
+      onRatingChange(newRating);
+    }
+  }, [interactive, onRatingChange, calculateRating]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!interactive || !isDragging || !onRatingChange) return;
+    const touch = e.touches[0];
+    const newRating = calculateRating(touch.clientX);
+    if (newRating !== null) {
+      onRatingChange(newRating);
+    }
+  }, [interactive, isDragging, onRatingChange, calculateRating]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const displayRating = hoverRating !== null && interactive ? hoverRating : rating;
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div
+      ref={containerRef}
+      className={cn(
+        "flex items-center gap-0.5 select-none",
+        interactive && "cursor-pointer touch-none"
+      )}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {Array.from({ length: maxRating }).map((_, index) => {
-        const filled = index + 1 <= rating;
-        const halfFilled = !filled && index + 0.5 <= rating;
+        const filled = index + 1 <= displayRating;
+        const halfFilled = !filled && index + 0.5 <= displayRating;
 
         return (
           <div
             key={index}
             className={cn(
               "relative",
-              sizeClasses[size],
-              interactive && "cursor-pointer"
+              sizeClasses[size]
             )}
           >
             {/* Background empty star */}
             <Star
               className={cn(
                 sizeClasses[size],
-                "absolute inset-0 fill-transparent text-muted-foreground/40"
+                "absolute inset-0 fill-transparent text-muted-foreground/40 transition-colors"
               )}
             />
             
@@ -57,7 +154,7 @@ export function StarRating({
               <Star
                 className={cn(
                   sizeClasses[size],
-                  "absolute inset-0 fill-primary text-primary star-rating"
+                  "absolute inset-0 fill-primary text-primary star-rating transition-colors"
                 )}
               />
             )}
@@ -65,27 +162,9 @@ export function StarRating({
               <StarHalf
                 className={cn(
                   sizeClasses[size],
-                  "absolute inset-0 fill-primary text-primary star-rating"
+                  "absolute inset-0 fill-primary text-primary star-rating transition-colors"
                 )}
               />
-            )}
-
-            {/* Interactive click areas */}
-            {interactive && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleClick(index, true)}
-                  className="absolute inset-y-0 left-0 w-1/2 hover:scale-110 transition-transform"
-                  aria-label={`Rate ${index + 0.5} stars`}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleClick(index, false)}
-                  className="absolute inset-y-0 right-0 w-1/2 hover:scale-110 transition-transform"
-                  aria-label={`Rate ${index + 1} stars`}
-                />
-              </>
             )}
           </div>
         );
