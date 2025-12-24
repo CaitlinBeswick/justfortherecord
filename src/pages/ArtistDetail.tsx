@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistRating } from "@/components/ArtistRating";
+import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
@@ -372,9 +373,12 @@ const ArtistDetail = () => {
                   <p className="text-sm text-primary font-medium uppercase tracking-wider">
                     {artist.type || "Artist"} {artist.country && `· ${artist.country}`}
                   </p>
-                  <h1 className="font-serif text-5xl md:text-6xl text-foreground mt-2">
-                    {artist.name}
-                  </h1>
+                  <div className="flex items-center gap-4 mt-2">
+                    <h1 className="font-serif text-5xl md:text-6xl text-foreground">
+                      {artist.name}
+                    </h1>
+                    <AverageArtistRating artistId={artistId} />
+                  </div>
                   {genres.length > 0 && (
                     <p className="text-lg text-muted-foreground mt-2">
                       {genres.join(" · ")}
@@ -414,18 +418,13 @@ const ArtistDetail = () => {
                       <Share2 className="h-5 w-5" />
                     </button>
                   </div>
+
+                  {/* Personal Artist Rating */}
+                  <div className="mt-4">
+                    <ArtistRating artistId={artistId} artistName={artist.name} />
+                  </div>
                 </motion.div>
               </div>
-
-              {/* Right: Artist Rating */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-                className="w-full lg:w-72 shrink-0"
-              >
-                <ArtistRating artistId={artistId} artistName={artist.name} />
-              </motion.div>
             </div>
           </div>
         </div>
