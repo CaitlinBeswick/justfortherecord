@@ -74,15 +74,16 @@ export async function searchArtists(query: string): Promise<MBArtist[]> {
 }
 
 export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
-  const data = await callMusicBrainz({ action: 'search-release', query });
+  // Search release-groups directly for better album discovery
+  const data = await callMusicBrainz({ action: 'search-release-group', query });
   
-  // Map releases to release-group-like structure
-  const rawReleases: MBReleaseGroup[] = (data.releases || []).map((r: any) => ({
-    id: r["release-group"]?.id || r.id,
-    title: r.title,
-    "primary-type": r["release-group"]?.["primary-type"],
-    "first-release-date": r.date,
-    "artist-credit": r["artist-credit"],
+  // Map release-groups to our structure
+  const rawReleases: MBReleaseGroup[] = (data["release-groups"] || []).map((rg: any) => ({
+    id: rg.id,
+    title: rg.title,
+    "primary-type": rg["primary-type"],
+    "first-release-date": rg["first-release-date"],
+    "artist-credit": rg["artist-credit"],
   }));
   
   // Deduplicate by release group ID first (exact duplicates)
