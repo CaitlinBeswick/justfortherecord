@@ -47,7 +47,7 @@ const Artists = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
               <h1 className="font-serif text-4xl text-foreground">Artists</h1>
-              <p className="text-muted-foreground mt-1">Search millions of artists from MusicBrainz</p>
+              <p className="text-muted-foreground mt-1">Search millions of artists</p>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
