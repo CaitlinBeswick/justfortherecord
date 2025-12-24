@@ -143,7 +143,7 @@ const Search = () => {
         return b.rating_count - a.rating_count;
       });
 
-      return albums.slice(0, 10);
+      return albums.slice(0, 20);
     },
     staleTime: 1000 * 60 * 5,
   });
@@ -168,7 +168,7 @@ const Search = () => {
         result.push({ artist_id: key, artist_name: value.name, avg_rating: avg, rating_count: value.ratings.length });
       });
       result.sort((a, b) => b.avg_rating !== a.avg_rating ? b.avg_rating - a.avg_rating : b.rating_count - a.rating_count);
-      return result.slice(0, 10);
+      return result.slice(0, 20);
     },
     staleTime: 1000 * 60 * 5,
   });
@@ -253,7 +253,7 @@ const Search = () => {
                   
                   {topAlbumsLoading ? (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      {Array.from({ length: 8 }).map((_, i) => (
+                      {Array.from({ length: 20 }).map((_, i) => (
                         <div key={i}>
                           <Skeleton className="aspect-square rounded-lg mb-2" />
                           <Skeleton className="h-4 w-full mb-1" />
@@ -274,7 +274,7 @@ const Search = () => {
                       animate="visible"
                       className="grid grid-cols-2 sm:grid-cols-4 gap-4"
                     >
-                      {topAlbums.slice(0, 8).map((album, index) => (
+                      {topAlbums.slice(0, 20).map((album, index) => (
                         <motion.div
                           key={album.release_group_id}
                           variants={itemVariants}
@@ -325,7 +325,7 @@ const Search = () => {
                   
                   {topArtistsLoading ? (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      {Array.from({ length: 8 }).map((_, i) => (
+                      {Array.from({ length: 20 }).map((_, i) => (
                         <div key={i}>
                           <Skeleton className="aspect-square rounded-full mb-2" />
                           <Skeleton className="h-4 w-full mb-1" />
@@ -346,7 +346,7 @@ const Search = () => {
                       animate="visible"
                       className="grid grid-cols-2 sm:grid-cols-4 gap-6"
                     >
-                      {topArtists.slice(0, 8).map((artist, index) => (
+                      {topArtists.slice(0, 20).map((artist, index) => (
                         <motion.div
                           key={artist.artist_id}
                           variants={itemVariants}
