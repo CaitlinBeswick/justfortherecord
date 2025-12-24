@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Music, Heart, ArrowUpDown, RefreshCw } from "lucide-react";
+import { Loader2, Plus, Music, Heart, ArrowUpDown, RefreshCw, Search } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -53,6 +54,7 @@ const Albums = () => {
   const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<SortOption>('release-desc');
   const [isBackfilling, setIsBackfilling] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -105,8 +107,17 @@ const Albums = () => {
     });
   }, [listenedStatuses, ratings]);
 
+  const filteredAlbums = useMemo(() => {
+    if (!searchQuery.trim()) return albums;
+    const query = searchQuery.toLowerCase();
+    return albums.filter(a => 
+      a.album_title.toLowerCase().includes(query) ||
+      a.artist_name.toLowerCase().includes(query)
+    );
+  }, [albums, searchQuery]);
+
   const sortedAlbums = useMemo(() => {
-    const sorted = [...albums];
+    const sorted = [...filteredAlbums];
     switch (sortBy) {
       case 'artist-asc':
         return sorted.sort((a, b) => (a.artist_name || '').localeCompare(b.artist_name || ''));
@@ -123,7 +134,7 @@ const Albums = () => {
       default:
         return sorted;
     }
-  }, [albums, sortBy]);
+  }, [filteredAlbums, sortBy]);
 
   const albumsWithoutReleaseDates = albums.filter(a => !a.release_date).length;
 
@@ -180,6 +191,15 @@ const Albums = () => {
                     Albums ({albums.length})
                   </h2>
                   <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search albums..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-[200px]"
+                      />
+                    </div>
                     {albumsWithoutReleaseDates > 0 && (
                       <Button
                         variant="outline"

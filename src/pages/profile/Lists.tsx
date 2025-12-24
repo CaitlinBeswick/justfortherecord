@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, List } from "lucide-react";
-import { useEffect } from "react";
+import { Loader2, Plus, List, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ interface UserList {
 const Lists = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -40,6 +42,13 @@ const Lists = () => {
       return data as UserList[];
     },
     enabled: !!user,
+  });
+
+  const filteredLists = lists.filter(list => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return list.name.toLowerCase().includes(query) ||
+           (list.description && list.description.toLowerCase().includes(query));
   });
 
   if (authLoading || isLoading) {
@@ -65,16 +74,27 @@ const Lists = () => {
             <ProfileNav activeTab="lists" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-serif text-xl text-foreground">Your Lists</h2>
-                  <button className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90">
-                    <Plus className="h-4 w-4" />
-                    Create List
-                  </button>
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                  <h2 className="font-serif text-xl text-foreground">Your Lists ({lists.length})</h2>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search lists..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-[180px]"
+                      />
+                    </div>
+                    <button className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90">
+                      <Plus className="h-4 w-4" />
+                      Create List
+                    </button>
+                  </div>
                 </div>
-                {lists.length > 0 ? (
+                {filteredLists.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {lists.map((list) => (
+                    {filteredLists.map((list) => (
                       <div key={list.id} className="rounded-xl bg-card p-4 hover:bg-surface-elevated transition-colors">
                         <h3 className="font-semibold text-foreground">{list.name}</h3>
                         {list.description && (
@@ -92,6 +112,11 @@ const Lists = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                ) : lists.length > 0 ? (
+                  <div className="text-center py-12">
+                    <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No lists match your search</p>
                   </div>
                 ) : (
                   <div className="text-center py-12">

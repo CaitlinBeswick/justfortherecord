@@ -2,8 +2,9 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Clock } from "lucide-react";
-import { useEffect } from "react";
+import { Loader2, Plus, Clock, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
 import { getCoverArtUrl } from "@/services/musicbrainz";
@@ -14,6 +15,7 @@ const ToListen = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { allStatuses, isLoading } = useListeningStatus();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -22,6 +24,13 @@ const ToListen = () => {
   }, [user, authLoading, navigate]);
 
   const toListenAlbums = allStatuses.filter(s => s.is_to_listen);
+  
+  const filteredAlbums = toListenAlbums.filter(album => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return album.album_title.toLowerCase().includes(query) ||
+           album.artist_name.toLowerCase().includes(query);
+  });
 
   if (authLoading || isLoading) {
     return (
@@ -46,10 +55,21 @@ const ToListen = () => {
             <ProfileNav activeTab="to_listen" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <h2 className="font-serif text-xl text-foreground mb-6">Your Listening Queue</h2>
-                {toListenAlbums.length > 0 ? (
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                  <h2 className="font-serif text-xl text-foreground">Your Listening Queue ({toListenAlbums.length})</h2>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search queue..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 w-[180px]"
+                    />
+                  </div>
+                </div>
+                {filteredAlbums.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {toListenAlbums.map((item, index) => (
+                    {filteredAlbums.map((item, index) => (
                       <motion.div
                         key={item.id}
                         initial={{ opacity: 0, y: 20 }}
@@ -65,6 +85,11 @@ const ToListen = () => {
                         />
                       </motion.div>
                     ))}
+                  </div>
+                ) : toListenAlbums.length > 0 ? (
+                  <div className="text-center py-12">
+                    <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No albums match your search</p>
                   </div>
                 ) : (
                   <div className="text-center py-12">

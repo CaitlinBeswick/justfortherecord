@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, UserCheck, UserMinus } from "lucide-react";
-import { useEffect } from "react";
+import { Loader2, Plus, UserCheck, UserMinus, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ const Following = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -57,6 +59,12 @@ const Following = () => {
     }
   };
 
+  const filteredArtists = followedArtists.filter(artist => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return artist.artist_name.toLowerCase().includes(query);
+  });
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -80,12 +88,23 @@ const Following = () => {
             <ProfileNav activeTab="following" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <h2 className="font-serif text-xl text-foreground mb-6">
-                  Artists You Follow ({followedArtists.length})
-                </h2>
-                {followedArtists.length > 0 ? (
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                  <h2 className="font-serif text-xl text-foreground">
+                    Artists You Follow ({followedArtists.length})
+                  </h2>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search artists..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 w-[180px]"
+                    />
+                  </div>
+                </div>
+                {filteredArtists.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    {followedArtists.map((artist, index) => (
+                    {filteredArtists.map((artist, index) => (
                       <motion.div
                         key={artist.id}
                         initial={{ opacity: 0, y: 20 }}
@@ -122,6 +141,11 @@ const Following = () => {
                         </div>
                       </motion.div>
                     ))}
+                  </div>
+                ) : followedArtists.length > 0 ? (
+                  <div className="text-center py-12">
+                    <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No artists match your search</p>
                   </div>
                 ) : (
                   <div className="text-center py-12">
