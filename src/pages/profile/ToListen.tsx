@@ -10,6 +10,8 @@ import { useListeningStatus } from "@/hooks/useListeningStatus";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -22,13 +24,21 @@ type SortOption =
   | 'artist-asc' 
   | 'artist-desc' 
   | 'album-asc' 
-  | 'album-desc';
+  | 'album-desc'
+  | 'date-added-desc'
+  | 'date-added-asc'
+  | 'rating-high'
+  | 'rating-low';
 
 const sortLabels: Record<SortOption, string> = {
   'artist-asc': 'Artist (A-Z)',
   'artist-desc': 'Artist (Z-A)',
   'album-asc': 'Album (A-Z)',
   'album-desc': 'Album (Z-A)',
+  'date-added-desc': 'Date Added (Newest)',
+  'date-added-asc': 'Date Added (Oldest)',
+  'rating-high': 'Rating (High-Low)',
+  'rating-low': 'Rating (Low-High)',
 };
 
 const ToListen = () => {
@@ -36,13 +46,31 @@ const ToListen = () => {
   const { user, loading: authLoading } = useAuth();
   const { allStatuses, isLoading } = useListeningStatus();
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('artist-asc');
+  const [sortBy, setSortBy] = useState<SortOption>('date-added-desc');
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
+
+  // Fetch ratings for sorting by rating
+  const { data: ratings = [] } = useQuery({
+    queryKey: ['user-album-ratings-for-tolisten', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('album_ratings')
+        .select('release_group_id, rating, release_date')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const ratingsMap = useMemo(() => {
+    return new Map(ratings.map(r => [r.release_group_id, r]));
+  }, [ratings]);
 
   const toListenAlbums = allStatuses.filter(s => s.is_to_listen);
   
@@ -69,10 +97,26 @@ const ToListen = () => {
         return sorted.sort((a, b) => (a.album_title || '').localeCompare(b.album_title || ''));
       case 'album-desc':
         return sorted.sort((a, b) => (b.album_title || '').localeCompare(a.album_title || ''));
+      case 'date-added-desc':
+        return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      case 'date-added-asc':
+        return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      case 'rating-high':
+        return sorted.sort((a, b) => {
+          const ratingA = ratingsMap.get(a.release_group_id)?.rating ?? 0;
+          const ratingB = ratingsMap.get(b.release_group_id)?.rating ?? 0;
+          return ratingB - ratingA;
+        });
+      case 'rating-low':
+        return sorted.sort((a, b) => {
+          const ratingA = ratingsMap.get(a.release_group_id)?.rating ?? 0;
+          const ratingB = ratingsMap.get(b.release_group_id)?.rating ?? 0;
+          return ratingA - ratingB;
+        });
       default:
         return sorted;
     }
-  }, [toListenAlbums, searchQuery, sortBy]);
+  }, [toListenAlbums, searchQuery, sortBy, ratingsMap]);
 
   if (authLoading || isLoading) {
     return (
