@@ -123,11 +123,22 @@ export async function searchRecordings(query: string): Promise<MBRecording[]> {
   return data.recordings || [];
 }
 
+// Validate that an ID is a valid UUID-like string (not undefined, null, or "undefined")
+function isValidId(id: string | undefined | null): id is string {
+  return !!id && id !== 'undefined' && id !== 'null' && id.length > 0;
+}
+
 export async function getArtist(id: string): Promise<MBArtist> {
+  if (!isValidId(id)) {
+    throw new Error('Invalid artist ID');
+  }
   return await callMusicBrainz({ action: 'get-artist', id });
 }
 
 export async function getArtistImage(id: string): Promise<string | null> {
+  if (!isValidId(id)) {
+    return null;
+  }
   try {
     const data = await callMusicBrainz({ action: 'get-artist-image', id });
     return data.imageUrl || null;
@@ -137,6 +148,9 @@ export async function getArtistImage(id: string): Promise<string | null> {
 }
 
 export async function getArtistReleases(artistId: string, type?: string): Promise<MBReleaseGroup[]> {
+  if (!isValidId(artistId)) {
+    throw new Error('Invalid artist ID');
+  }
   const data = await callMusicBrainz({ action: 'get-artist-releases', id: artistId, type });
   const releaseGroups: MBReleaseGroup[] = data["release-groups"] || [];
   
@@ -170,10 +184,16 @@ export async function getArtistReleases(artistId: string, type?: string): Promis
 }
 
 export async function getReleaseGroup(id: string): Promise<MBReleaseGroup & { releases?: MBRelease[] }> {
+  if (!isValidId(id)) {
+    throw new Error('Invalid release group ID');
+  }
   return await callMusicBrainz({ action: 'get-release-group', id });
 }
 
 export async function getReleaseTracks(releaseId: string): Promise<MBRelease> {
+  if (!isValidId(releaseId)) {
+    throw new Error('Invalid release ID');
+  }
   return await callMusicBrainz({ action: 'get-release-tracks', id: releaseId });
 }
 
