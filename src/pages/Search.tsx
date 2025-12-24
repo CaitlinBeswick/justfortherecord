@@ -375,7 +375,7 @@ const Search = () => {
               <div className="text-center py-8 border-t border-border/50">
                 <SearchIcon className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                 <p className="text-muted-foreground">
-                  Start typing to search MusicBrainz database
+                  Start typing to search database
                 </p>
                 <p className="text-sm text-muted-foreground/60 mt-2">
                   Search over 2 million artists and their discographies

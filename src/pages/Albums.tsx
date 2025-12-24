@@ -61,7 +61,7 @@ const Albums = () => {
             <div>
               <h1 className="font-serif text-4xl text-foreground">Albums</h1>
               <p className="text-muted-foreground mt-1">
-                Search millions of albums, EPs, singles & more from MusicBrainz
+                Search millions of albums & EPs
               </p>
             </div>
             
@@ -81,10 +81,10 @@ const Albums = () => {
             <div className="text-center py-12">
               <Disc3 className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
               <p className="text-muted-foreground text-lg">
-                Start typing to search MusicBrainz's database of millions of releases
+                Start typing to search for millions of releases
               </p>
               <p className="text-muted-foreground/70 text-sm mt-2">
-                Albums, EPs, singles, compilations, live recordings & more
+                Albums, EPs, compilations, live recordings & more
               </p>
             </div>
           ) : isLoading ? (
