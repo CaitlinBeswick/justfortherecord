@@ -1,14 +1,21 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Music, Heart } from "lucide-react";
-import { useEffect } from "react";
+import { Loader2, Plus, Music, Heart, ArrowUpDown } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AlbumRating {
   id: string;
@@ -17,11 +24,30 @@ interface AlbumRating {
   artist_name: string;
   rating: number;
   loved: boolean;
+  created_at: string;
 }
+
+type SortOption = 
+  | 'artist-asc' 
+  | 'artist-desc' 
+  | 'album-asc' 
+  | 'album-desc' 
+  | 'date-desc' 
+  | 'date-asc';
+
+const sortLabels: Record<SortOption, string> = {
+  'artist-asc': 'Artist (A-Z)',
+  'artist-desc': 'Artist (Z-A)',
+  'album-asc': 'Album (A-Z)',
+  'album-desc': 'Album (Z-A)',
+  'date-desc': 'Date Added (Newest)',
+  'date-asc': 'Date Added (Oldest)',
+};
 
 const Albums = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const [sortBy, setSortBy] = useState<SortOption>('date-desc');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -42,6 +68,25 @@ const Albums = () => {
     },
     enabled: !!user,
   });
+
+  const sortedRatings = useMemo(() => {
+    const sorted = [...ratings];
+    switch (sortBy) {
+      case 'artist-asc':
+        return sorted.sort((a, b) => a.artist_name.localeCompare(b.artist_name));
+      case 'artist-desc':
+        return sorted.sort((a, b) => b.artist_name.localeCompare(a.artist_name));
+      case 'album-asc':
+        return sorted.sort((a, b) => a.album_title.localeCompare(b.album_title));
+      case 'album-desc':
+        return sorted.sort((a, b) => b.album_title.localeCompare(a.album_title));
+      case 'date-asc':
+        return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      case 'date-desc':
+      default:
+        return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+  }, [ratings, sortBy]);
 
   if (authLoading || isLoading) {
     return (
@@ -66,12 +111,29 @@ const Albums = () => {
             <ProfileNav activeTab="albums" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <h2 className="font-serif text-xl text-foreground mb-6">
-                  Rated Albums ({ratings.length})
-                </h2>
-                {ratings.length > 0 ? (
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="font-serif text-xl text-foreground">
+                    Rated Albums ({ratings.length})
+                  </h2>
+                  {ratings.length > 0 && (
+                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                      <SelectTrigger className="w-[180px]">
+                        <ArrowUpDown className="h-4 w-4 mr-2" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(sortLabels) as SortOption[]).map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {sortLabels[option]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                {sortedRatings.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {ratings.map((rating, index) => (
+                    {sortedRatings.map((rating, index) => (
                       <motion.div
                         key={rating.id}
                         initial={{ opacity: 0, y: 20 }}
