@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, ArrowUp, ArrowDown, RotateCcw, Trash2, Disc3, Calendar } from "lucide-react";
+import { Loader2, Plus, ArrowUp, ArrowDown, RotateCcw, Trash2, Disc3, Star, Heart, Play } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -36,16 +36,15 @@ interface AlbumRating {
   id: string;
   release_group_id: string;
   rating: number;
+  loved: boolean;
 }
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
   const [sortAscending, setSortAscending] = useState(false);
-  const [showRelistensOnly, setShowRelistensOnly] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -58,7 +57,7 @@ const Profile = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')
-        .select('id, release_group_id, rating')
+        .select('id, release_group_id, rating, loved')
         .eq('user_id', user!.id);
       if (error) throw error;
       return data as AlbumRating[];
@@ -82,37 +81,7 @@ const Profile = () => {
 
   const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
-  const listenCountMap = new Map<string, number>();
-  diaryEntriesData.forEach(entry => {
-    const count = listenCountMap.get(entry.release_group_id) || 0;
-    listenCountMap.set(entry.release_group_id, count + 1);
-  });
-
-  const yearlyStats = diaryEntriesData.reduce((acc, entry) => {
-    const year = new Date(entry.listened_on).getFullYear();
-    if (!acc[year]) {
-      acc[year] = { total: 0, relistens: 0, uniqueAlbums: new Set<string>() };
-    }
-    acc[year].total++;
-    if (entry.is_relisten) acc[year].relistens++;
-    acc[year].uniqueAlbums.add(entry.release_group_id);
-    return acc;
-  }, {} as Record<number, { total: number; relistens: number; uniqueAlbums: Set<string> }>);
-
-  const sortedYears = Object.keys(yearlyStats).map(Number).sort((a, b) => b - a);
-
-  const filteredDiaryEntries = (() => {
-    let entries = [...diaryEntriesData];
-    if (showRelistensOnly) {
-      entries = entries.filter(e => e.is_relisten);
-    }
-    if (selectedYear) {
-      entries = entries.filter(e => new Date(e.listened_on).getFullYear() === selectedYear);
-    }
-    return entries;
-  })();
-
-  const sortedDiaryEntries = [...filteredDiaryEntries].sort((a, b) => {
+  const sortedDiaryEntries = [...diaryEntriesData].sort((a, b) => {
     let comparison = 0;
     switch (diarySort) {
       case "date":
@@ -167,79 +136,23 @@ const Profile = () => {
             <ProfileNav activeTab="diary" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {sortedYears.length > 0 && (
-                  <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-                    <button
-                      onClick={() => setSelectedYear(null)}
-                      className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        selectedYear === null
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      All ({diaryEntriesData.length})
-                    </button>
-                    {sortedYears.map(year => {
-                      const stats = yearlyStats[year];
-                      return (
-                        <button
-                          key={year}
-                          onClick={() => setSelectedYear(selectedYear === year ? null : year)}
-                          className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                            selectedYear === year
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-secondary text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          {year} <span className="opacity-70">({stats.total})</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {selectedYear && yearlyStats[selectedYear] && (
-                  <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
-                    <span><strong className="text-foreground">{yearlyStats[selectedYear].uniqueAlbums.size}</strong> albums</span>
-                    <span><strong className="text-foreground">{yearlyStats[selectedYear].total}</strong> listens</span>
-                    {yearlyStats[selectedYear].relistens > 0 && (
-                      <span className="text-primary">{yearlyStats[selectedYear].relistens} re-listens</span>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setShowRelistensOnly(!showRelistensOnly)}
-                      className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm font-medium transition-colors ${
-                        showRelistensOnly 
-                          ? "bg-primary text-primary-foreground" 
-                          : "bg-secondary text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      Re-listens
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Select value={diarySort} onValueChange={(v) => setDiarySort(v as DiarySortOption)}>
-                      <SelectTrigger className="w-[120px] h-8 text-sm">
-                        <SelectValue placeholder="Sort by" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="date">Date</SelectItem>
-                        <SelectItem value="rating">Rating</SelectItem>
-                        <SelectItem value="artist">Artist</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <button
-                      onClick={() => setSortAscending(!sortAscending)}
-                      className="flex items-center justify-center h-8 w-8 rounded-lg bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {sortAscending ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
-                    </button>
-                  </div>
+                <div className="flex items-center justify-end gap-2 mb-4">
+                  <Select value={diarySort} onValueChange={(v) => setDiarySort(v as DiarySortOption)}>
+                    <SelectTrigger className="w-[120px] h-8 text-sm">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Date</SelectItem>
+                      <SelectItem value="rating">Rating</SelectItem>
+                      <SelectItem value="artist">Artist</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <button
+                    onClick={() => setSortAscending(!sortAscending)}
+                    className="flex items-center justify-center h-8 w-8 rounded-lg bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {sortAscending ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+                  </button>
                 </div>
 
                 {sortedDiaryEntries.length > 0 ? (
@@ -285,23 +198,37 @@ const Profile = () => {
                               >
                                 {entry.album_title}
                               </h3>
-                              {entry.is_relisten && (
-                                <RotateCcw className="h-3 w-3 text-primary shrink-0" />
-                              )}
                             </div>
                             <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
                           </div>
 
-                          {listenCountMap.get(entry.release_group_id)! > 1 && (
-                            <span className="text-xs text-muted-foreground shrink-0">
-                              ×{listenCountMap.get(entry.release_group_id)}
-                            </span>
-                          )}
+                          {/* Listen type icon */}
+                          <div className="shrink-0" title={entry.is_relisten ? "Re-listen" : "First listen"}>
+                            {entry.is_relisten ? (
+                              <RotateCcw className="h-4 w-4 text-primary" />
+                            ) : (
+                              <Play className="h-4 w-4 text-green-500" />
+                            )}
+                          </div>
 
+                          {/* Rating display */}
                           {rating && (
-                            <div className="flex items-center gap-0.5 text-sm shrink-0">
-                              <span className="text-yellow-400 text-xs">★</span>
-                              <span className="text-xs font-medium">{rating.rating}</span>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <div className="flex items-center gap-0.5">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`h-3 w-3 ${
+                                      star <= rating.rating
+                                        ? "text-yellow-400 fill-yellow-400"
+                                        : "text-muted-foreground/30"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              {rating.loved && (
+                                <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 ml-1" />
+                              )}
                             </div>
                           )}
 
@@ -317,29 +244,15 @@ const Profile = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    {showRelistensOnly ? (
-                      <>
-                        <RotateCcw className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                        <p className="text-muted-foreground">No re-listens logged yet</p>
-                      </>
-                    ) : selectedYear ? (
-                      <>
-                        <Calendar className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                        <p className="text-muted-foreground">No listens in {selectedYear}</p>
-                      </>
-                    ) : (
-                      <>
-                        <Disc3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                        <p className="text-muted-foreground">No listens logged yet</p>
-                        <button 
-                          onClick={() => navigate('/search')}
-                          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Find Albums to Log
-                        </button>
-                      </>
-                    )}
+                    <Disc3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No listens logged yet</p>
+                    <button 
+                      onClick={() => navigate('/search')}
+                      className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Find Albums to Log
+                    </button>
                   </div>
                 )}
               </motion.div>
