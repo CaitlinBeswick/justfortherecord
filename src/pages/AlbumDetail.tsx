@@ -456,13 +456,20 @@ const AlbumDetail = () => {
                 )}
 
                 <div className="mt-8">
-                  <p className="text-sm text-muted-foreground mb-2">Your Rating</p>
-                  <StarRating
-                    rating={userRating}
-                    size="lg"
-                    interactive
-                    onRatingChange={handleRatingChange}
-                  />
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-muted-foreground">Your Rating</p>
+                    {userRating > 0 && (
+                      <span className="text-sm font-medium text-foreground">{userRating.toFixed(1)}</span>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <StarRating
+                      rating={userRating}
+                      size="lg"
+                      interactive
+                      onRatingChange={handleRatingChange}
+                    />
+                  </div>
                 </div>
 
                 <div className="mt-8">
