@@ -174,7 +174,7 @@ export function UserActivityFeed() {
 
   return (
     <div className="space-y-3">
-      {activities.slice(0, 20).map((activity, index) => (
+      {activities.slice(0, 5).map((activity, index) => (
         <motion.div
           key={activity.id}
           initial={{ opacity: 0, y: 10 }}
