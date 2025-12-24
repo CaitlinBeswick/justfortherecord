@@ -34,7 +34,7 @@ const Artists = () => {
   }, [user, authLoading, navigate]);
 
   const { data: followedArtists = [], isLoading } = useQuery({
-    queryKey: ['user-followed-artists', user?.id],
+    queryKey: ['user-followed-artists-full', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('artist_follows')
@@ -109,7 +109,7 @@ const Artists = () => {
     if (error) {
       toast.error("Failed to unfollow artist");
     } else {
-      queryClient.invalidateQueries({ queryKey: ['user-followed-artists'] });
+      queryClient.invalidateQueries({ queryKey: ['user-followed-artists-full'] });
       toast.success(`Unfollowed ${artistName}`);
     }
   };
