@@ -1,5 +1,12 @@
 import { useNavigate } from "react-router-dom";
-import { Calendar, Music, Clock, Users, List, UserCheck } from "lucide-react";
+import { Calendar, Music, Clock, Users, List, UserCheck, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 type ProfileTab = "diary" | "albums" | "to_listen" | "friends" | "lists" | "artists";
 
@@ -18,6 +25,7 @@ const tabs: { id: ProfileTab; label: string; icon: React.ReactNode; path: string
 
 export const ProfileNav = ({ activeTab }: ProfileNavProps) => {
   const navigate = useNavigate();
+  const activeTabData = tabs.find(tab => tab.id === activeTab) || tabs[0];
 
   return (
     <>
@@ -41,26 +49,39 @@ export const ProfileNav = ({ activeTab }: ProfileNavProps) => {
         </nav>
       </aside>
 
-      {/* Mobile navigation */}
-      <aside className="md:hidden w-full">
-        <div className="space-y-1 mb-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => navigate(tab.path)}
-              className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
+      {/* Mobile dropdown navigation */}
+      <aside className="md:hidden w-full mb-6">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="w-full justify-between bg-background border-border"
             >
               <span className="flex items-center gap-3">
+                {activeTabData.icon}
+                {activeTabData.label}
+              </span>
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent 
+            className="w-[var(--radix-dropdown-menu-trigger-width)] bg-popover border-border z-50"
+            align="start"
+          >
+            {tabs.map((tab) => (
+              <DropdownMenuItem
+                key={tab.id}
+                onClick={() => navigate(tab.path)}
+                className={`flex items-center gap-3 cursor-pointer ${
+                  activeTab === tab.id ? "bg-accent" : ""
+                }`}
+              >
                 {tab.icon}
                 {tab.label}
-              </span>
-            </button>
-          ))}
-        </div>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </aside>
     </>
   );
