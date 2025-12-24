@@ -28,12 +28,12 @@ export function AverageArtistRating({ artistId }: AverageArtistRatingProps) {
   if (ratingCount === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
-      <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-      <span className="text-lg font-semibold text-foreground">
+    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/50 border border-border/50">
+      <Star className="h-4 w-4 fill-primary/80 text-primary/80" />
+      <span className="text-sm font-medium text-foreground">
         {averageRating.toFixed(1)}
       </span>
-      <span className="text-sm text-muted-foreground">
+      <span className="text-xs text-muted-foreground">
         ({ratingCount})
       </span>
     </div>
