@@ -448,26 +448,33 @@ const AlbumDetail = () => {
                   {artistName}
                 </button>
 
-                {/* Personal Rating */}
-                <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
-                  <span className="text-sm text-muted-foreground">Your rating:</span>
-                  <StarRating
-                    rating={userRating}
-                    size="lg"
-                    interactive
-                    onRatingChange={handleRatingChange}
-                  />
-                  {userRating > 0 && (
-                    <span className="text-sm font-medium text-foreground">{userRating.toFixed(1)}</span>
-                  )}
-                </div>
+                {/* Rating & Status Card */}
+                <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    {/* Personal Rating */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">Your rating:</span>
+                      <StarRating
+                        rating={userRating}
+                        size="lg"
+                        interactive
+                        onRatingChange={handleRatingChange}
+                      />
+                      {userRating > 0 && (
+                        <span className="text-sm font-medium text-foreground">{userRating.toFixed(1)}</span>
+                      )}
+                    </div>
 
-                <div className="flex justify-center md:justify-start mt-4">
-                  <ListeningStatusButtons
-                    releaseGroupId={id!}
-                    albumTitle={releaseGroup.title}
-                    artistName={artistName}
-                  />
+                    {/* Divider */}
+                    <div className="hidden sm:block w-px h-8 bg-border/50" />
+
+                    {/* Listening Status */}
+                    <ListeningStatusButtons
+                      releaseGroupId={id!}
+                      albumTitle={releaseGroup.title}
+                      artistName={artistName}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
