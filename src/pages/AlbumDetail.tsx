@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/ui/StarRating";
+import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
+import { ArrowLeft, Heart, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -508,9 +509,11 @@ const AlbumDetail = () => {
                   >
                     <Heart className={`h-5 w-5 ${liked ? "fill-current" : ""}`} />
                   </button>
-                  <button className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors hover:bg-surface-hover">
-                    <Share2 className="h-5 w-5" />
-                  </button>
+                  <ShareButton 
+                    title={releaseGroup.title}
+                    text={`Check out ${releaseGroup.title} by ${artistName}`}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg"
+                  />
                 </div>
               </motion.div>
             </div>

@@ -3,8 +3,9 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistRating } from "@/components/ArtistRating";
 import { AverageArtistRating } from "@/components/AverageArtistRating";
+import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Share2, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
@@ -414,9 +415,11 @@ const ArtistDetail = () => {
                         </>
                       )}
                     </button>
-                    <button className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors hover:bg-surface-hover">
-                      <Share2 className="h-5 w-5" />
-                    </button>
+                    <ShareButton 
+                      title={artist.name}
+                      text={`Check out ${artist.name}`}
+                      className="flex h-10 w-10 items-center justify-center rounded-lg"
+                    />
                   </div>
 
                   {/* Personal Artist Rating */}
