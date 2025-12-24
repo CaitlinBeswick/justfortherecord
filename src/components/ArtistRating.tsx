@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Star, Trash2, Users } from "lucide-react";
+import { Star, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -19,26 +19,6 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [existingRatingId, setExistingRatingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  // Fetch community ratings
-  const { data: communityRatings = [] } = useQuery({
-    queryKey: ['artist-community-ratings', artistId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("artist_ratings")
-        .select("rating")
-        .eq("artist_id", artistId);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!artistId,
-  });
-
-  // Calculate average
-  const averageRating = communityRatings.length > 0
-    ? communityRatings.reduce((sum, r) => sum + Number(r.rating), 0) / communityRatings.length
-    : 0;
-  const ratingCount = communityRatings.length;
 
   // Fetch user's existing rating
   const { data: userRating, isLoading } = useQuery({
@@ -143,95 +123,58 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
 
   const displayRating = hoverRating || rating;
 
-  // Render stars for display (non-interactive)
-  const renderDisplayStars = (value: number) => (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={cn(
-            "h-4 w-4",
-            star <= Math.round(value)
-              ? "fill-yellow-400 text-yellow-400"
-              : "text-muted-foreground/30"
-          )}
-        />
-      ))}
-    </div>
-  );
+  if (!user) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Star className="h-4 w-4" />
+        <span>Sign in to rate this artist</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-card/50 border border-border/50">
-      {/* Community Rating */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((star) => (
+    <div className="flex items-center gap-3">
+      <span className="text-sm text-muted-foreground">Your rating:</span>
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            onClick={() => setRating(star)}
+            onMouseEnter={() => setHoverRating(star)}
+            onMouseLeave={() => setHoverRating(0)}
+            className="p-0.5 transition-transform hover:scale-110"
+            disabled={saving}
+          >
             <Star
-              key={star}
               className={cn(
-                "h-4 w-4",
-                star <= Math.round(averageRating)
-                  ? "fill-yellow-400 text-yellow-400"
+                "h-5 w-5 transition-colors",
+                star <= displayRating
+                  ? "fill-primary text-primary"
                   : "text-muted-foreground/30"
               )}
             />
-          ))}
-        </div>
-        <span className="text-sm font-medium">
-          {averageRating > 0 ? averageRating.toFixed(1) : "—"}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          ({ratingCount})
-        </span>
+          </button>
+        ))}
       </div>
-
-      {/* User Rating */}
-      {user ? (
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-0.5">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                onClick={() => setRating(star)}
-                onMouseEnter={() => setHoverRating(star)}
-                onMouseLeave={() => setHoverRating(0)}
-                className="p-0.5 transition-transform hover:scale-110"
-                disabled={saving}
-              >
-                <Star
-                  className={cn(
-                    "h-4 w-4 transition-colors",
-                    star <= displayRating
-                      ? "fill-primary text-primary"
-                      : "text-muted-foreground/30"
-                  )}
-                />
-              </button>
-            ))}
-          </div>
-          <Button
-            onClick={handleSaveRating}
-            disabled={saving || rating === 0}
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs"
-          >
-            {saving ? "..." : existingRatingId ? "Update" : "Save"}
-          </Button>
-          {existingRatingId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDeleteRating}
-              disabled={saving}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
-      ) : (
-        <span className="text-xs text-muted-foreground">Sign in to rate</span>
+      <Button
+        onClick={handleSaveRating}
+        disabled={saving || rating === 0}
+        size="sm"
+        variant="ghost"
+        className="h-7 px-2 text-xs"
+      >
+        {saving ? "..." : existingRatingId ? "Update" : "Save"}
+      </Button>
+      {existingRatingId && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDeleteRating}
+          disabled={saving}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
       )}
     </div>
   );
