@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Music, Heart, ArrowUpDown, RefreshCw, Search } from "lucide-react";
+import { Loader2, Plus, Music, Heart, ArrowUpDown, Search } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,8 +10,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -53,8 +51,8 @@ const Albums = () => {
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<SortOption>('release-desc');
-  const [isBackfilling, setIsBackfilling] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasTriggeredBackfill, setHasTriggeredBackfill] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -136,32 +134,18 @@ const Albums = () => {
     }
   }, [filteredAlbums, sortBy]);
 
-  const albumsWithoutReleaseDates = albums.filter(a => !a.release_date).length;
-
-  const handleBackfill = async () => {
-    setIsBackfilling(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('backfill-release-dates');
-      
-      if (error) {
-        toast.error('Failed to backfill release dates');
-        console.error('Backfill error:', error);
-        return;
-      }
-
-      if (data?.success) {
-        toast.success(data.message);
-        queryClient.invalidateQueries({ queryKey: ['user-ratings'] });
-      } else {
-        toast.error(data?.error || 'Failed to backfill release dates');
-      }
-    } catch (e) {
-      console.error('Backfill error:', e);
-      toast.error('Failed to backfill release dates');
-    } finally {
-      setIsBackfilling(false);
+  // Auto-backfill release dates on mount
+  useEffect(() => {
+    const albumsWithoutReleaseDates = albums.filter(a => !a.release_date).length;
+    if (user && albumsWithoutReleaseDates > 0 && !hasTriggeredBackfill) {
+      setHasTriggeredBackfill(true);
+      supabase.functions.invoke('backfill-release-dates').then(({ data }) => {
+        if (data?.success && data?.updated > 0) {
+          queryClient.invalidateQueries({ queryKey: ['user-ratings'] });
+        }
+      }).catch(console.error);
     }
-  };
+  }, [user, albums, hasTriggeredBackfill, queryClient]);
 
   if (authLoading || isLoading) {
     return (
@@ -200,21 +184,6 @@ const Albums = () => {
                         className="pl-9 w-[200px]"
                       />
                     </div>
-                    {albumsWithoutReleaseDates > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleBackfill}
-                        disabled={isBackfilling}
-                      >
-                        {isBackfilling ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                        )}
-                        Backfill Dates ({albumsWithoutReleaseDates})
-                      </Button>
-                    )}
                     {albums.length > 0 && (
                       <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
                         <SelectTrigger className="w-[180px]">
