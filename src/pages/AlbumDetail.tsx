@@ -184,7 +184,10 @@ const AlbumDetail = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-album-rating', user?.id, id] });
-      queryClient.invalidateQueries({ queryKey: ['user-ratings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings-basic', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings-summary', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-loved', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['listening-status', user?.id, id] });
       queryClient.invalidateQueries({ queryKey: ['listening-statuses', user?.id] });
       toast({
@@ -217,7 +220,10 @@ const AlbumDetail = () => {
     onSuccess: () => {
       setUserRating(0);
       queryClient.invalidateQueries({ queryKey: ['user-album-rating', user?.id, id] });
-      queryClient.invalidateQueries({ queryKey: ['user-ratings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings-basic', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings-summary', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-loved', user?.id] });
       toast({
         title: "Removed",
         description: "Your rating has been removed.",
@@ -252,7 +258,10 @@ const AlbumDetail = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-album-rating', user?.id, id] });
-      queryClient.invalidateQueries({ queryKey: ['user-ratings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings-basic', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings-summary', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-loved', user?.id] });
       toast({
         title: liked ? "Added to loved" : "Removed from loved",
         description: liked ? "Album added to your loved albums!" : "Album removed from your loved albums.",

@@ -84,7 +84,7 @@ const ArtistDetail = () => {
 
   // Fetch user's album ratings to get loved status
   const { data: userRatings = [] } = useQuery({
-    queryKey: ['user-ratings', user?.id],
+    queryKey: ['user-album-loved', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')

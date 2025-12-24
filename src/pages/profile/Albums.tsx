@@ -77,7 +77,7 @@ const Albums = () => {
 
   // Get all ratings (including those without listening_status)
   const { data: ratings = [], isLoading: isLoadingRatings } = useQuery({
-    queryKey: ['user-ratings', user?.id],
+    queryKey: ['user-album-ratings', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')
@@ -165,7 +165,7 @@ const Albums = () => {
       setHasTriggeredBackfill(true);
       supabase.functions.invoke('backfill-release-dates').then(({ data }) => {
         if (data?.success && data?.updated > 0) {
-          queryClient.invalidateQueries({ queryKey: ['user-ratings'] });
+          queryClient.invalidateQueries({ queryKey: ['user-album-ratings', user?.id] });
         }
       }).catch(console.error);
     }
