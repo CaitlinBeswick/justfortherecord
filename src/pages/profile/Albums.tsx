@@ -34,9 +34,7 @@ type SortOption =
   | 'album-asc' 
   | 'album-desc' 
   | 'release-desc' 
-  | 'release-asc'
-  | 'date-desc' 
-  | 'date-asc';
+  | 'release-asc';
 
 const sortLabels: Record<SortOption, string> = {
   'artist-asc': 'Artist (A-Z)',
@@ -45,14 +43,12 @@ const sortLabels: Record<SortOption, string> = {
   'album-desc': 'Album (Z-A)',
   'release-desc': 'Release Date (Newest)',
   'release-asc': 'Release Date (Oldest)',
-  'date-desc': 'Date Added (Newest)',
-  'date-asc': 'Date Added (Oldest)',
 };
 
 const Albums = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [sortBy, setSortBy] = useState<SortOption>('date-desc');
+  const [sortBy, setSortBy] = useState<SortOption>('release-desc');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -89,11 +85,8 @@ const Albums = () => {
         return sorted.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
       case 'release-asc':
         return sorted.sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
-      case 'date-asc':
-        return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      case 'date-desc':
       default:
-        return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return sorted;
     }
   }, [ratings, sortBy]);
 
