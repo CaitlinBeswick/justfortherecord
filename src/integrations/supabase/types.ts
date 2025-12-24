@@ -22,6 +22,7 @@ export type Database = {
           id: string
           loved: boolean
           rating: number
+          release_date: string | null
           release_group_id: string
           review_text: string | null
           updated_at: string
@@ -34,6 +35,7 @@ export type Database = {
           id?: string
           loved?: boolean
           rating: number
+          release_date?: string | null
           release_group_id: string
           review_text?: string | null
           updated_at?: string
@@ -46,6 +48,7 @@ export type Database = {
           id?: string
           loved?: boolean
           rating?: number
+          release_date?: string | null
           release_group_id?: string
           review_text?: string | null
           updated_at?: string

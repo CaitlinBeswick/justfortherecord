@@ -29,6 +29,7 @@ interface LogListenDialogProps {
   releaseGroupId: string;
   albumTitle: string;
   artistName: string;
+  releaseDate?: string;
   hasListenedBefore?: boolean;
   trigger?: React.ReactNode;
 }
@@ -37,6 +38,7 @@ export function LogListenDialog({
   releaseGroupId,
   albumTitle,
   artistName,
+  releaseDate,
   hasListenedBefore = false,
   trigger,
 }: LogListenDialogProps) {
@@ -104,6 +106,7 @@ export function LogListenDialog({
           artist_name: artistName,
           rating: rating > 0 ? rating : (existingRatingData?.rating || 0),
           review_text: review || null,
+          release_date: releaseDate || null,
         }, { onConflict: "user_id,release_group_id" });
 
       if (ratingError) {

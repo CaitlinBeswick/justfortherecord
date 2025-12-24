@@ -25,6 +25,7 @@ interface AlbumRating {
   rating: number;
   loved: boolean;
   created_at: string;
+  release_date: string | null;
 }
 
 type SortOption = 
@@ -32,6 +33,8 @@ type SortOption =
   | 'artist-desc' 
   | 'album-asc' 
   | 'album-desc' 
+  | 'release-desc' 
+  | 'release-asc'
   | 'date-desc' 
   | 'date-asc';
 
@@ -40,6 +43,8 @@ const sortLabels: Record<SortOption, string> = {
   'artist-desc': 'Artist (Z-A)',
   'album-asc': 'Album (A-Z)',
   'album-desc': 'Album (Z-A)',
+  'release-desc': 'Release Date (Newest)',
+  'release-asc': 'Release Date (Oldest)',
   'date-desc': 'Date Added (Newest)',
   'date-asc': 'Date Added (Oldest)',
 };
@@ -80,6 +85,10 @@ const Albums = () => {
         return sorted.sort((a, b) => (a.album_title || '').localeCompare(b.album_title || ''));
       case 'album-desc':
         return sorted.sort((a, b) => (b.album_title || '').localeCompare(a.album_title || ''));
+      case 'release-desc':
+        return sorted.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
+      case 'release-asc':
+        return sorted.sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
       case 'date-asc':
         return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       case 'date-desc':
