@@ -21,7 +21,7 @@ const ToListen = () => {
     }
   }, [user, authLoading, navigate]);
 
-  const toListenAlbums = allStatuses.filter(s => s.status === 'to_listen');
+  const toListenAlbums = allStatuses.filter(s => s.is_to_listen);
 
   if (authLoading || isLoading) {
     return (

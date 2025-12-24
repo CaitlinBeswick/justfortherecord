@@ -220,8 +220,9 @@ export type Database = {
           artist_name: string
           created_at: string
           id: string
+          is_listened: boolean
+          is_to_listen: boolean
           release_group_id: string
-          status: string
           updated_at: string
           user_id: string
         }
@@ -230,8 +231,9 @@ export type Database = {
           artist_name: string
           created_at?: string
           id?: string
+          is_listened?: boolean
+          is_to_listen?: boolean
           release_group_id: string
-          status: string
           updated_at?: string
           user_id: string
         }
@@ -240,8 +242,9 @@ export type Database = {
           artist_name?: string
           created_at?: string
           id?: string
+          is_listened?: boolean
+          is_to_listen?: boolean
           release_group_id?: string
-          status?: string
           updated_at?: string
           user_id?: string
         }

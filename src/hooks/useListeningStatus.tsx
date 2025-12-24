@@ -3,15 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
-export type ListeningStatusType = 'listened' | 'to_listen' | null;
-
 interface ListeningStatus {
   id: string;
   user_id: string;
   release_group_id: string;
   album_title: string;
   artist_name: string;
-  status: 'listened' | 'to_listen';
+  is_listened: boolean;
+  is_to_listen: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -53,43 +52,67 @@ export function useListeningStatus(releaseGroupId?: string) {
       return data as ListeningStatus[];
     },
     enabled: !!user,
-    staleTime: 0, // Always refetch when component mounts
+    staleTime: 0,
   });
 
-  const setStatusMutation = useMutation({
+  const toggleStatusMutation = useMutation({
     mutationFn: async ({ 
       releaseGroupId, 
       albumTitle, 
       artistName, 
-      newStatus 
+      field,
+      value
     }: { 
       releaseGroupId: string; 
       albumTitle: string; 
       artistName: string; 
-      newStatus: ListeningStatusType;
+      field: 'is_listened' | 'is_to_listen';
+      value: boolean;
     }) => {
       if (!user) throw new Error("Not authenticated");
 
-      if (newStatus === null) {
-        // Remove status
+      // Check if record exists
+      const { data: existing } = await supabase
+        .from('listening_status')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('release_group_id', releaseGroupId)
+        .maybeSingle();
+
+      if (existing) {
+        const newIsListened = field === 'is_listened' ? value : existing.is_listened;
+        const newIsToListen = field === 'is_to_listen' ? value : existing.is_to_listen;
+
+        // If both are false, delete the record
+        if (!newIsListened && !newIsToListen) {
+          const { error } = await supabase
+            .from('listening_status')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('release_group_id', releaseGroupId);
+          if (error) throw error;
+        } else {
+          // Update the record
+          const { error } = await supabase
+            .from('listening_status')
+            .update({
+              [field]: value,
+            })
+            .eq('user_id', user.id)
+            .eq('release_group_id', releaseGroupId);
+          if (error) throw error;
+        }
+      } else if (value) {
+        // Create new record
         const { error } = await supabase
           .from('listening_status')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('release_group_id', releaseGroupId);
-        if (error) throw error;
-      } else {
-        // Upsert status
-        const { error } = await supabase
-          .from('listening_status')
-          .upsert({
+          .insert({
             user_id: user.id,
             release_group_id: releaseGroupId,
             album_title: albumTitle,
             artist_name: artistName,
-            status: newStatus,
-          }, {
-            onConflict: 'user_id,release_group_id',
+            is_listened: field === 'is_listened' ? value : false,
+            is_to_listen: field === 'is_to_listen' ? value : false,
           });
         if (error) throw error;
       }
@@ -98,10 +121,9 @@ export function useListeningStatus(releaseGroupId?: string) {
       queryClient.invalidateQueries({ queryKey: ['listening-status', user?.id, variables.releaseGroupId] });
       queryClient.invalidateQueries({ queryKey: ['listening-statuses', user?.id] });
       
-      const statusLabel = variables.newStatus === 'listened' ? 'Listened' : 
-                          variables.newStatus === 'to_listen' ? 'To Listen' : 'Removed';
+      const label = variables.field === 'is_listened' ? 'Listened' : 'To Listen';
       toast({
-        title: variables.newStatus ? `Marked as ${statusLabel}` : "Status removed",
+        title: variables.value ? `Marked as ${label}` : `Removed from ${label}`,
         description: variables.albumTitle,
       });
     },
@@ -114,18 +136,22 @@ export function useListeningStatus(releaseGroupId?: string) {
     },
   });
 
-  const getStatusForAlbum = (albumId: string): ListeningStatusType => {
+  const getStatusForAlbum = (albumId: string) => {
     const found = allStatuses.find(s => s.release_group_id === albumId);
-    return found?.status || null;
+    return {
+      isListened: found?.is_listened ?? false,
+      isToListen: found?.is_to_listen ?? false,
+    };
   };
 
   return {
-    status: status?.status || null,
+    isListened: status?.is_listened ?? false,
+    isToListen: status?.is_to_listen ?? false,
     isLoading,
     isLoadingAll,
     allStatuses,
-    setStatus: setStatusMutation.mutate,
-    isPending: setStatusMutation.isPending,
+    toggleStatus: toggleStatusMutation.mutate,
+    isPending: toggleStatusMutation.isPending,
     getStatusForAlbum,
   };
 }
