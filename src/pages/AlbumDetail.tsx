@@ -147,6 +147,7 @@ const AlbumDetail = () => {
       if (!user || !id || !releaseGroup) throw new Error("Not authenticated");
       
       const artistName = getArtistNames(releaseGroup["artist-credit"]);
+      const releaseDate = releaseGroup["first-release-date"] || null;
       
       // Save the rating
       const { error: ratingError } = await supabase
@@ -158,6 +159,7 @@ const AlbumDetail = () => {
           artist_name: artistName,
           rating,
           review_text: review || null,
+          release_date: releaseDate,
         }, {
           onConflict: 'user_id,release_group_id',
         });
@@ -468,6 +470,7 @@ const AlbumDetail = () => {
                       releaseGroupId={id!}
                       albumTitle={releaseGroup.title}
                       artistName={artistName}
+                      releaseDate={releaseGroup["first-release-date"]}
                       hasListenedBefore={hasListenedBefore}
                       trigger={
                         <button className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90">
