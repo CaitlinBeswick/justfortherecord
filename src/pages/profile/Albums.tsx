@@ -75,13 +75,13 @@ const Albums = () => {
     enabled: !!user,
   });
 
-  // Get ratings for listened albums
+  // Get all ratings (including those without listening_status)
   const { data: ratings = [], isLoading: isLoadingRatings } = useQuery({
     queryKey: ['user-ratings', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')
-        .select('release_group_id, rating, loved, release_date')
+        .select('release_group_id, album_title, artist_name, rating, loved, release_date, created_at')
         .eq('user_id', user!.id);
       if (error) throw error;
       return data;
@@ -91,18 +91,42 @@ const Albums = () => {
 
   const isLoading = isLoadingListened || isLoadingRatings;
 
-  // Merge listened albums with their ratings
+  // Merge listened albums with ratings, and include rated albums not in listening_status
   const albums: ListenedAlbum[] = useMemo(() => {
-    const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
-    return listenedStatuses.map(status => {
-      const rating = ratingsMap.get(status.release_group_id);
-      return {
+    const albumsMap = new Map<string, ListenedAlbum>();
+    
+    // Add all listened albums
+    listenedStatuses.forEach(status => {
+      albumsMap.set(status.release_group_id, {
         ...status,
-        rating: rating?.rating,
-        loved: rating?.loved,
-        release_date: rating?.release_date,
-      };
+        rating: undefined,
+        loved: undefined,
+        release_date: undefined,
+      });
     });
+    
+    // Merge ratings and add any rated albums not already in the map
+    ratings.forEach(r => {
+      const existing = albumsMap.get(r.release_group_id);
+      if (existing) {
+        existing.rating = r.rating;
+        existing.loved = r.loved;
+        existing.release_date = r.release_date;
+      } else {
+        // Album was rated but not in listening_status - include it
+        albumsMap.set(r.release_group_id, {
+          release_group_id: r.release_group_id,
+          album_title: r.album_title,
+          artist_name: r.artist_name,
+          created_at: r.created_at,
+          rating: r.rating,
+          loved: r.loved,
+          release_date: r.release_date,
+        });
+      }
+    });
+    
+    return Array.from(albumsMap.values());
   }, [listenedStatuses, ratings]);
 
   const filteredAlbums = useMemo(() => {
