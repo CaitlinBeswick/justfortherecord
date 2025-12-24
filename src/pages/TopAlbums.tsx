@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Trophy, Disc3 } from "lucide-react";
+import { ArrowLeft, Trophy, Disc3 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { useState } from "react";
+import { StarRating } from "@/components/ui/StarRating";
 
 interface AlbumRating {
   release_group_id: string;
@@ -173,18 +174,7 @@ const TopAlbums = () => {
                 </p>
                 
                 <div className="flex items-center gap-1">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-3 w-3 ${
-                          star <= Math.round(album.avg_rating)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-muted-foreground/30'
-                        }`}
-                      />
-                    ))}
-                  </div>
+                  <StarRating rating={album.avg_rating} size="sm" />
                   <span className="text-sm font-semibold ml-1">
                     {album.avg_rating.toFixed(1)}
                   </span>
