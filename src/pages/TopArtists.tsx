@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Trophy, Users } from "lucide-react";
+import { ArrowLeft, Trophy, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StarRating } from "@/components/ui/StarRating";
 
 interface ArtistRating {
   artist_id: string;
@@ -143,18 +144,7 @@ const TopArtists = () => {
                 </p>
                 
                 <div className="flex items-center gap-1">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-3 w-3 ${
-                          star <= Math.round(artist.avg_rating)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-muted-foreground/30'
-                        }`}
-                      />
-                    ))}
-                  </div>
+                  <StarRating rating={artist.avg_rating} size="sm" />
                   <span className="text-sm font-semibold ml-1">
                     {artist.avg_rating.toFixed(1)}
                   </span>
