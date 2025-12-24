@@ -429,7 +429,7 @@ const AlbumDetail = () => {
                 <p className="text-sm text-primary font-medium uppercase tracking-wider">
                   {releaseGroup["primary-type"] || "Album"} · {year || "Unknown"}
                 </p>
-                <div className="flex items-center gap-4 mt-2">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-2">
                   <h1 className="font-serif text-4xl md:text-5xl text-foreground">
                     {releaseGroup.title}
                   </h1>
