@@ -18,7 +18,7 @@ interface ArtistFollow {
   created_at: string;
 }
 
-const Following = () => {
+const Artists = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
@@ -85,7 +85,7 @@ const Following = () => {
         <ProfileHeader />
         <div className="container mx-auto px-4 py-8 pb-20">
           <div className="flex gap-8">
-            <ProfileNav activeTab="following" />
+            <ProfileNav activeTab="artists" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -172,4 +172,4 @@ const Following = () => {
   );
 };
 
-export default Following;
+export default Artists;
