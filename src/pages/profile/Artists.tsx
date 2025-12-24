@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, UserCheck, UserMinus, Search } from "lucide-react";
+import { Loader2, Plus, UserCheck, UserMinus, Search, ArrowUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,13 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { toast } from "sonner";
 import { getArtistImage } from "@/services/musicbrainz";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ArtistFollow {
   id: string;
@@ -19,11 +26,19 @@ interface ArtistFollow {
   created_at: string;
 }
 
+interface ArtistRating {
+  artist_id: string;
+  rating: number;
+}
+
+type SortOption = 'name-asc' | 'name-desc' | 'rating-high' | 'rating-low';
+
 const Artists = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
   const [artistImages, setArtistImages] = useState<Record<string, string | null>>({});
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
@@ -53,6 +68,26 @@ const Artists = () => {
     },
     enabled: !!user,
   });
+
+  // Fetch artist ratings for sorting
+  const { data: artistRatings = [] } = useQuery({
+    queryKey: ['user-artist-ratings', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('artist_ratings')
+        .select('artist_id, rating')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return (data || []) as ArtistRating[];
+    },
+    enabled: !!user,
+  });
+
+  // Create a map for quick rating lookup
+  const ratingsMap = artistRatings.reduce((acc, r) => {
+    acc[r.artist_id] = r.rating;
+    return acc;
+  }, {} as Record<string, number>);
 
   useEffect(() => {
     console.log("[ProfileArtists] user", user?.id);
@@ -114,11 +149,32 @@ const Artists = () => {
     }
   };
 
-  const filteredArtists = followedArtists.filter(artist => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return artist.artist_name.toLowerCase().includes(query);
-  });
+  const filteredAndSortedArtists = followedArtists
+    .filter(artist => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return artist.artist_name.toLowerCase().includes(query);
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.artist_name.localeCompare(b.artist_name);
+        case 'name-desc':
+          return b.artist_name.localeCompare(a.artist_name);
+        case 'rating-high': {
+          const ratingA = ratingsMap[a.artist_id] ?? 0;
+          const ratingB = ratingsMap[b.artist_id] ?? 0;
+          return ratingB - ratingA;
+        }
+        case 'rating-low': {
+          const ratingA = ratingsMap[a.artist_id] ?? 0;
+          const ratingB = ratingsMap[b.artist_id] ?? 0;
+          return ratingA - ratingB;
+        }
+        default:
+          return 0;
+      }
+    });
 
   if (authLoading || isLoading) {
     return (
@@ -147,19 +203,33 @@ const Artists = () => {
                   <h2 className="font-serif text-xl text-foreground">
                     Artists You Follow ({followedArtists.length})
                   </h2>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search artists..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 w-[180px]"
-                    />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                      <SelectTrigger className="w-[160px]">
+                        <ArrowUpDown className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                        <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                        <SelectItem value="rating-high">Rating (High-Low)</SelectItem>
+                        <SelectItem value="rating-low">Rating (Low-High)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search artists..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-[180px]"
+                      />
+                    </div>
                   </div>
                 </div>
-                {filteredArtists.length > 0 ? (
+                {filteredAndSortedArtists.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    {filteredArtists.map((artist, index) => {
+                    {filteredAndSortedArtists.map((artist, index) => {
                       const imageUrl = artistImages[artist.artist_id];
                       const initials = (artist.artist_name || 'Unknown')
                         .split(' ')
