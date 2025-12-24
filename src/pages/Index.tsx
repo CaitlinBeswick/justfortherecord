@@ -40,7 +40,7 @@ const Index = () => {
               <span className="text-primary glow-text">you love</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-md">
-              Log albums, rate songs, and discover new artists. Your personal music diary, beautifully organized.
+              Log albums, review music and discover new artists. Your personal music diary, beautifully organised.
             </p>
             <div className="mt-8 flex gap-4">
               <button 
