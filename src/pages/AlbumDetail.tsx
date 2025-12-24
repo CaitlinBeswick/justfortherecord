@@ -315,6 +315,23 @@ const AlbumDetail = () => {
   const coverUrl = id ? getCoverArtUrl(id, '500') : '';
   const placeholderCover = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop";
 
+  // Handle missing or invalid ID
+  if (!id || id === 'undefined') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h1 className="font-serif text-2xl text-foreground mb-2">Invalid Album</h1>
+          <p className="text-muted-foreground mb-4">No album ID was provided.</p>
+          <button onClick={() => navigate(-1)} className="text-primary hover:underline">
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
