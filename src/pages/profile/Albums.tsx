@@ -35,7 +35,9 @@ type SortOption =
   | 'album-asc' 
   | 'album-desc' 
   | 'release-desc' 
-  | 'release-asc';
+  | 'release-asc'
+  | 'rating-high'
+  | 'rating-low';
 
 const sortLabels: Record<SortOption, string> = {
   'artist-asc': 'Artist (A-Z)',
@@ -44,6 +46,8 @@ const sortLabels: Record<SortOption, string> = {
   'album-desc': 'Album (Z-A)',
   'release-desc': 'Release Date (Newest)',
   'release-asc': 'Release Date (Oldest)',
+  'rating-high': 'Rating (High-Low)',
+  'rating-low': 'Rating (Low-High)',
 };
 
 const Albums = () => {
@@ -153,6 +157,10 @@ const Albums = () => {
         return sorted.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
       case 'release-asc':
         return sorted.sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
+      case 'rating-high':
+        return sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      case 'rating-low':
+        return sorted.sort((a, b) => (a.rating ?? 0) - (b.rating ?? 0));
       default:
         return sorted;
     }
