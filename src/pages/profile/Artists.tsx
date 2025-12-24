@@ -25,6 +25,7 @@ const Artists = () => {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [artistImages, setArtistImages] = useState<Record<string, string | null>>({});
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -41,7 +42,14 @@ const Artists = () => {
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as ArtistFollow[];
+
+      const rows = (data || []) as any[];
+      return rows.map((row) => ({
+        id: String(row.id),
+        artist_id: String(row.artist_id),
+        artist_name: String(row.artist_name ?? row.artistName ?? row.name ?? ''),
+        created_at: String(row.created_at ?? row.createdAt ?? ''),
+      })) as ArtistFollow[];
     },
     enabled: !!user,
   });
@@ -164,15 +172,12 @@ const Artists = () => {
                             className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50 bg-secondary flex items-center justify-center cursor-pointer"
                             onClick={() => navigate(`/artist/${artist.artist_id}`)}
                           >
-                            {imageUrl ? (
+                            {!brokenImages[artist.artist_id] && imageUrl ? (
                               <img 
                                 src={imageUrl} 
                                 alt={artist.artist_name}
                                 className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  // If image fails to load, hide it and show initials
-                                  e.currentTarget.style.display = 'none';
-                                }}
+                                onError={() => setBrokenImages((prev) => ({ ...prev, [artist.artist_id]: true }))}
                               />
                             ) : (
                               <span className="text-foreground font-bold text-2xl sm:text-3xl">
@@ -189,7 +194,7 @@ const Artists = () => {
                               {artist.artist_name || 'Unknown Artist'}
                             </h3>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Followed {new Date(artist.created_at).toLocaleDateString()}
+                              Followed {artist.created_at ? new Date(artist.created_at).toLocaleDateString() : "—"}
                             </p>
                             <button
                               onClick={() => handleUnfollow(artist.artist_id, artist.artist_name)}
