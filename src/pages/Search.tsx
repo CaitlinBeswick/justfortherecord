@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate } from "react-router-dom";
-import { Search as SearchIcon, Disc3, Users, Music, Loader2, Trophy, Star, ArrowRight } from "lucide-react";
+import { Search as SearchIcon, Disc3, Users, Loader2, Trophy, Star, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
-type SearchTab = "all" | "albums" | "artists" | "songs";
+type SearchTab = "all" | "albums" | "artists";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -179,7 +179,6 @@ const Search = () => {
     { id: "all", label: "All", icon: null },
     { id: "albums", label: "Albums", icon: <Disc3 className="h-4 w-4" /> },
     { id: "artists", label: "Artists", icon: <Users className="h-4 w-4" /> },
-    { id: "songs", label: "Songs", icon: <Music className="h-4 w-4" /> },
   ];
 
   const showAlbums = activeTab === "all" || activeTab === "albums";
@@ -373,26 +372,15 @@ const Search = () => {
                 </div>
               )}
 
-              {/* Songs tab placeholder */}
-              {activeTab === "songs" && (
-                <div className="text-center py-12 bg-card/30 rounded-xl border border-border/50">
-                  <Music className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-muted-foreground">Song ratings coming soon</p>
-                  <p className="text-sm text-muted-foreground/60 mt-1">Stay tuned for song-level tracking!</p>
-                </div>
-              )}
-
-              {activeTab !== "songs" && (
-                <div className="text-center py-8 border-t border-border/50">
-                  <SearchIcon className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Start typing to search MusicBrainz database
-                  </p>
-                  <p className="text-sm text-muted-foreground/60 mt-2">
-                    Search over 2 million artists and their discographies
-                  </p>
-                </div>
-              )}
+              <div className="text-center py-8 border-t border-border/50">
+                <SearchIcon className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Start typing to search MusicBrainz database
+                </p>
+                <p className="text-sm text-muted-foreground/60 mt-2">
+                  Search over 2 million artists and their discographies
+                </p>
+              </div>
             </div>
           ) : debouncedQuery.length < 2 ? (
             <div className="text-center py-12">
