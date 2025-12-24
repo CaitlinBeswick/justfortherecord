@@ -2,8 +2,9 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ReviewCard } from "@/components/ReviewCard";
 import { useNavigate } from "react-router-dom";
-import { Loader2, PenLine } from "lucide-react";
-import { useEffect } from "react";
+import { Loader2, PenLine, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ interface Profile {
 const Reviews = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -66,6 +68,13 @@ const Reviews = () => {
   });
 
   const ratingsWithReviews = ratings.filter(r => r.review_text);
+  const filteredReviews = ratingsWithReviews.filter(r => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return r.album_title.toLowerCase().includes(query) ||
+           r.artist_name.toLowerCase().includes(query) ||
+           (r.review_text && r.review_text.toLowerCase().includes(query));
+  });
   const displayName = profile?.display_name || profile?.username || user?.email?.split('@')[0] || 'User';
 
   if (authLoading || isLoading) {
@@ -91,10 +100,21 @@ const Reviews = () => {
             <ProfileNav activeTab="reviews" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <h2 className="font-serif text-xl text-foreground mb-6">Your Reviews</h2>
-                {ratingsWithReviews.length > 0 ? (
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                  <h2 className="font-serif text-xl text-foreground">Your Reviews ({ratingsWithReviews.length})</h2>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search reviews..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 w-[180px]"
+                    />
+                  </div>
+                </div>
+                {filteredReviews.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {ratingsWithReviews.map((rating, index) => (
+                    {filteredReviews.map((rating, index) => (
                       <motion.div
                         key={rating.id}
                         initial={{ opacity: 0, y: 20 }}
@@ -116,6 +136,11 @@ const Reviews = () => {
                         />
                       </motion.div>
                     ))}
+                  </div>
+                ) : ratingsWithReviews.length > 0 ? (
+                  <div className="text-center py-12">
+                    <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No reviews match your search</p>
                   </div>
                 ) : (
                   <div className="text-center py-12">

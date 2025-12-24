@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, RotateCcw, Trash2, Disc3, Star, Heart, Play, StarHalf } from "lucide-react";
+import { Loader2, Plus, RotateCcw, Trash2, Disc3, Star, Heart, Play, StarHalf, Search } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -45,6 +46,7 @@ const Diary = () => {
   const queryClient = useQueryClient();
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
   const [sortAscending, setSortAscending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -81,7 +83,14 @@ const Diary = () => {
 
   const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
-  const sortedDiaryEntries = [...diaryEntriesData].sort((a, b) => {
+  const filteredDiaryEntries = diaryEntriesData.filter(entry => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return entry.album_title.toLowerCase().includes(query) ||
+           entry.artist_name.toLowerCase().includes(query);
+  });
+
+  const sortedDiaryEntries = [...filteredDiaryEntries].sort((a, b) => {
     let comparison = 0;
     switch (diarySort) {
       case "date":
@@ -136,27 +145,41 @@ const Diary = () => {
             <ProfileNav activeTab="diary" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className="flex items-center justify-end mb-4">
-                  <Select 
-                    value={`${diarySort}-${sortAscending ? 'asc' : 'desc'}`} 
-                    onValueChange={(v) => {
-                      const [sort, dir] = v.split('-') as [DiarySortOption, string];
-                      setDiarySort(sort);
-                      setSortAscending(dir === 'asc');
-                    }}
-                  >
-                    <SelectTrigger className="w-[160px] h-8 text-sm">
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="date-desc">Date (Newest)</SelectItem>
-                      <SelectItem value="date-asc">Date (Oldest)</SelectItem>
-                      <SelectItem value="rating-desc">Rating (High)</SelectItem>
-                      <SelectItem value="rating-asc">Rating (Low)</SelectItem>
-                      <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
-                      <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                  <h2 className="font-serif text-xl text-foreground">
+                    Diary ({diaryEntriesData.length})
+                  </h2>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search diary..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-[180px]"
+                      />
+                    </div>
+                    <Select 
+                      value={`${diarySort}-${sortAscending ? 'asc' : 'desc'}`} 
+                      onValueChange={(v) => {
+                        const [sort, dir] = v.split('-') as [DiarySortOption, string];
+                        setDiarySort(sort);
+                        setSortAscending(dir === 'asc');
+                      }}
+                    >
+                      <SelectTrigger className="w-[160px] h-8 text-sm">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                        <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+                        <SelectItem value="rating-desc">Rating (High)</SelectItem>
+                        <SelectItem value="rating-asc">Rating (Low)</SelectItem>
+                        <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
+                        <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {sortedDiaryEntries.length > 0 ? (
