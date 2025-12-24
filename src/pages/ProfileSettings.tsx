@@ -24,9 +24,28 @@ interface Profile {
 }
 
 const GENRE_SUGGESTIONS = [
-  "Rock", "Pop", "Hip-Hop", "R&B", "Jazz", "Classical", "Electronic", 
-  "Country", "Folk", "Metal", "Punk", "Indie", "Soul", "Blues", "Reggae",
-  "Latin", "K-Pop", "Ambient", "Alternative", "Experimental"
+  // Popular / Mainstream
+  "Pop", "Rock", "Hip-Hop", "R&B", "Country", "EDM",
+  // Rock subgenres
+  "Alternative", "Indie", "Punk", "Metal", "Grunge", "Post-Rock", "Shoegaze", "Prog Rock",
+  // Electronic subgenres
+  "Electronic", "House", "Techno", "Ambient", "Drum & Bass", "Dubstep", "Synthwave", "IDM", "Trance",
+  // Hip-Hop / Urban
+  "Trap", "Drill", "Boom Bap", "Lo-Fi Hip-Hop", "Grime",
+  // Soul / Jazz / Blues
+  "Soul", "Jazz", "Blues", "Neo-Soul", "Funk", "Gospel",
+  // Classical / Orchestral
+  "Classical", "Orchestral", "Opera", "Chamber Music",
+  // World / Regional
+  "Latin", "Reggae", "Afrobeat", "K-Pop", "J-Pop", "Bossa Nova", "Flamenco", "Dancehall", "Ska",
+  // Folk / Acoustic
+  "Folk", "Acoustic", "Singer-Songwriter", "Americana", "Bluegrass",
+  // Experimental / Niche
+  "Experimental", "Noise", "Industrial", "Art Pop", "Psychedelic", "Krautrock",
+  // Era-based
+  "80s", "90s", "2000s", "Disco", "New Wave", "Britpop",
+  // Mood-based
+  "Chill", "Workout", "Study Music", "Sleep", "Party"
 ];
 
 const ProfileSettings = () => {
