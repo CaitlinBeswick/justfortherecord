@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Calendar, Music, Clock, PenLine, List, UserCheck } from "lucide-react";
 
-type ProfileTab = "diary" | "albums" | "to_listen" | "reviews" | "lists" | "following";
+type ProfileTab = "diary" | "albums" | "to_listen" | "reviews" | "lists" | "artists";
 
 interface ProfileNavProps {
   activeTab: ProfileTab;
@@ -13,7 +13,7 @@ const tabs: { id: ProfileTab; label: string; icon: React.ReactNode; path: string
   { id: "to_listen", label: "To Listen", icon: <Clock className="h-4 w-4" />, path: "/profile/to-listen" },
   { id: "reviews", label: "Reviews", icon: <PenLine className="h-4 w-4" />, path: "/profile/reviews" },
   { id: "lists", label: "Lists", icon: <List className="h-4 w-4" />, path: "/profile/lists" },
-  { id: "following", label: "Following", icon: <UserCheck className="h-4 w-4" />, path: "/profile/following" },
+  { id: "artists", label: "Artists", icon: <UserCheck className="h-4 w-4" />, path: "/profile/artists" },
 ];
 
 export const ProfileNav = ({ activeTab }: ProfileNavProps) => {
