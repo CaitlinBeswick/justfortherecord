@@ -41,14 +41,14 @@ export const ProfileNav = ({ activeTab }: ProfileNavProps) => {
         </nav>
       </aside>
 
-      {/* Mobile grid navigation - all tabs visible, content drops below */}
+      {/* Mobile grid navigation - 2 columns x 3 rows, content on separate page */}
       <aside className="md:hidden w-full mb-6">
-        <nav className="grid grid-cols-3 gap-2">
+        <nav className="grid grid-cols-2 gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => navigate(tab.path)}
-              className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-lg text-xs font-medium transition-colors ${
+              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === tab.id
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
