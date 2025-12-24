@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/ui/StarRating";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check, ChevronDown, X, BookOpen } from "lucide-react";
+import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check, ChevronDown, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -28,9 +28,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { ListeningStatusButtons } from "@/components/ListeningStatusButtons";
 import { LogListenDialog } from "@/components/LogListenDialog";
 
@@ -44,8 +42,6 @@ const AlbumDetail = () => {
   const [userRating, setUserRating] = useState(0);
   const [liked, setLiked] = useState(false);
   const [coverError, setCoverError] = useState(false);
-  const [reviewText, setReviewText] = useState("");
-  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
 
   const { data: releaseGroup, isLoading, error } = useQuery({
@@ -141,7 +137,6 @@ const AlbumDetail = () => {
   useEffect(() => {
     if (existingRating) {
       setUserRating(existingRating.rating);
-      setReviewText(existingRating.review_text || "");
       setLiked(existingRating.loved || false);
     }
   }, [existingRating]);
@@ -193,7 +188,6 @@ const AlbumDetail = () => {
         title: "Saved!",
         description: "Your rating has been saved.",
       });
-      setIsReviewDialogOpen(false);
     },
     onError: (error) => {
       toast({
@@ -219,7 +213,6 @@ const AlbumDetail = () => {
     },
     onSuccess: () => {
       setUserRating(0);
-      setReviewText("");
       queryClient.invalidateQueries({ queryKey: ['user-album-rating', user?.id, id] });
       queryClient.invalidateQueries({ queryKey: ['user-ratings', user?.id] });
       toast({
@@ -275,7 +268,7 @@ const AlbumDetail = () => {
   const handleRatingChange = (rating: number) => {
     setUserRating(rating);
     if (user) {
-      saveRatingMutation.mutate({ rating, review: reviewText });
+      saveRatingMutation.mutate({ rating });
     } else {
       toast({
         title: "Sign in required",
@@ -315,19 +308,6 @@ const AlbumDetail = () => {
     setLiked(newLovedStatus); // Optimistic update
     toggleLovedMutation.mutate(newLovedStatus);
   };
-
-  const handleSaveReview = () => {
-    if (userRating === 0) {
-      toast({
-        title: "Rating required",
-        description: "Please rate the album before adding a review.",
-        variant: "destructive",
-      });
-      return;
-    }
-    saveRatingMutation.mutate({ rating: userRating, review: reviewText });
-  };
-
 
   // Get all tracks from all media (supports multi-disc albums)
   const tracks = releaseWithTracks?.media?.flatMap(m => m.tracks || []) || [];
@@ -484,58 +464,6 @@ const AlbumDetail = () => {
                 </div>
 
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
-                  <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
-                    <DialogTrigger asChild>
-                      <button 
-                        className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
-                        disabled={saveRatingMutation.isPending}
-                      >
-                        <Plus className="h-4 w-4" />
-                        {existingRating?.review_text ? "Edit Review" : "Add Review"}
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>
-                          {existingRating?.review_text ? "Edit your review" : "Write a review"}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 mt-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-2">Your Rating</p>
-                          <StarRating
-                            rating={userRating}
-                            size="lg"
-                            interactive
-                            onRatingChange={setUserRating}
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-2">Review (optional)</p>
-                          <Textarea
-                            value={reviewText}
-                            onChange={(e) => setReviewText(e.target.value)}
-                            placeholder="Share your thoughts on this album..."
-                            rows={5}
-                          />
-                        </div>
-                        <button
-                          onClick={handleSaveReview}
-                          disabled={saveRatingMutation.isPending || userRating === 0}
-                          className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                          {saveRatingMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Saving...
-                            </>
-                          ) : (
-                            "Save Review"
-                          )}
-                        </button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
                   {user && releaseGroup && (
                     <LogListenDialog
                       releaseGroupId={id!}
@@ -543,8 +471,8 @@ const AlbumDetail = () => {
                       artistName={artistName}
                       hasListenedBefore={hasListenedBefore}
                       trigger={
-                        <button className="flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-sm font-medium text-secondary-foreground transition-colors hover:bg-surface-hover">
-                          <BookOpen className="h-4 w-4" />
+                        <button className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90">
+                          <Plus className="h-4 w-4" />
                           Log
                         </button>
                       }

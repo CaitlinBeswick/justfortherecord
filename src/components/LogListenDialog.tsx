@@ -45,32 +45,33 @@ export function LogListenDialog({
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const [isRelisten, setIsRelisten] = useState(hasListenedBefore);
-  const [notes, setNotes] = useState("");
+  const [review, setReview] = useState("");
   const [rating, setRating] = useState<number>(0);
   const [saving, setSaving] = useState(false);
 
-  // Fetch existing rating for this album
-  const { data: existingRating } = useQuery({
+  // Fetch existing rating and review for this album
+  const { data: existingRatingData } = useQuery({
     queryKey: ["album-rating", releaseGroupId, user?.id],
     queryFn: async () => {
       if (!user) return null;
       const { data } = await supabase
         .from("album_ratings")
-        .select("rating")
+        .select("rating, review_text")
         .eq("release_group_id", releaseGroupId)
         .eq("user_id", user.id)
         .maybeSingle();
-      return data?.rating ?? null;
+      return data;
     },
     enabled: !!user && open,
   });
 
-  // Set initial rating when dialog opens and existing rating is loaded
+  // Set initial rating and review when dialog opens
   useEffect(() => {
-    if (existingRating !== undefined && existingRating !== null) {
-      setRating(existingRating);
+    if (existingRatingData) {
+      setRating(existingRatingData.rating ?? 0);
+      setReview(existingRatingData.review_text ?? "");
     }
-  }, [existingRating]);
+  }, [existingRatingData]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -88,10 +89,10 @@ export function LogListenDialog({
       artist_name: artistName,
       listened_on: format(date, "yyyy-MM-dd"),
       is_relisten: isRelisten,
-      notes: notes || null,
+      notes: review || null,
     });
 
-    // Upsert rating if provided
+    // Upsert rating and review if rating provided
     if (rating > 0) {
       const { error: ratingError } = await supabase
         .from("album_ratings")
@@ -101,10 +102,27 @@ export function LogListenDialog({
           album_title: albumTitle,
           artist_name: artistName,
           rating: rating,
+          review_text: review || null,
         }, { onConflict: "user_id,release_group_id" });
 
       if (ratingError) {
         console.error("Error saving rating:", ratingError);
+      }
+    } else if (review) {
+      // If only review is provided without rating, still save/update the review
+      const { error: reviewError } = await supabase
+        .from("album_ratings")
+        .upsert({
+          user_id: user.id,
+          release_group_id: releaseGroupId,
+          album_title: albumTitle,
+          artist_name: artistName,
+          rating: existingRatingData?.rating || 0,
+          review_text: review,
+        }, { onConflict: "user_id,release_group_id" });
+
+      if (reviewError) {
+        console.error("Error saving review:", reviewError);
       }
     }
 
@@ -119,8 +137,9 @@ export function LogListenDialog({
       queryClient.invalidateQueries({ queryKey: ["album-diary-entries", releaseGroupId] });
       queryClient.invalidateQueries({ queryKey: ["album-rating", releaseGroupId] });
       queryClient.invalidateQueries({ queryKey: ["user-ratings"] });
+      queryClient.invalidateQueries({ queryKey: ["user-album-rating"] });
       setOpen(false);
-      setNotes("");
+      setReview("");
       setRating(0);
       setDate(new Date());
     }
@@ -228,23 +247,28 @@ export function LogListenDialog({
                 </Button>
               )}
             </div>
-            {existingRating && existingRating !== rating && (
+            {existingRatingData?.rating && existingRatingData.rating !== rating && (
               <p className="text-xs text-muted-foreground">
-                Current rating: {existingRating}/5 — this will update it
+                Current rating: {existingRatingData.rating}/5 — this will update it
               </p>
             )}
           </div>
 
-          {/* Notes */}
+          {/* Review */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
+            <Label htmlFor="review">Review (optional)</Label>
             <Textarea
-              id="notes"
-              placeholder="How was this listen?"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              id="review"
+              placeholder="Write your thoughts about this album..."
+              value={review}
+              onChange={(e) => setReview(e.target.value)}
               className="min-h-[80px] resize-none"
             />
+            {existingRatingData?.review_text && existingRatingData.review_text !== review && (
+              <p className="text-xs text-muted-foreground">
+                You have an existing review — this will update it
+              </p>
+            )}
           </div>
 
           {/* Submit Button */}
