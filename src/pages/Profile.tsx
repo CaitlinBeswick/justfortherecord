@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 
-type DiarySortOption = "date" | "rating" | "artist";
+type DiarySortOption = "date" | "rating" | "artist" | "album";
 
 interface DiaryEntry {
   id: string;
@@ -97,6 +97,9 @@ const Profile = () => {
       case "artist":
         comparison = a.artist_name.localeCompare(b.artist_name);
         break;
+      case "album":
+        comparison = a.album_title.localeCompare(b.album_title);
+        break;
     }
     return sortAscending ? -comparison : comparison;
   });
@@ -157,6 +160,8 @@ const Profile = () => {
                       <SelectItem value="rating-asc">Rating (Low)</SelectItem>
                       <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
                       <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
+                      <SelectItem value="album-asc">Album (A-Z)</SelectItem>
+                      <SelectItem value="album-desc">Album (Z-A)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
