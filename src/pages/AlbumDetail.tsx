@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/ui/StarRating";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, Check, ChevronDown, X } from "lucide-react";
+import { ArrowLeft, Heart, Plus, Share2, Clock, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -427,26 +427,7 @@ const AlbumDetail = () => {
                 )}
 
                 <div className="mt-8">
-                  <div className="flex items-center gap-2 mb-2">
-                    <p className="text-sm text-muted-foreground">Your Rating</p>
-                    {existingRating && (
-                      <>
-                        <span className="flex items-center gap-1 text-xs text-primary">
-                          <Check className="h-3 w-3" />
-                          Saved
-                        </span>
-                        <button
-                          onClick={handleRemoveRating}
-                          disabled={removeRatingMutation.isPending}
-                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors ml-2"
-                          title="Remove rating"
-                        >
-                          <X className="h-3 w-3" />
-                          Remove
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">Your Rating</p>
                   <StarRating
                     rating={userRating}
                     size="lg"
