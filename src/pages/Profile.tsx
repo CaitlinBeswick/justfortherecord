@@ -89,9 +89,9 @@ const Profile = () => {
         comparison = new Date(b.listened_on).getTime() - new Date(a.listened_on).getTime();
         break;
       case "rating":
-        // Use diary entry's own rating, fall back to album rating if none
-        const ratingA = a.rating ?? ratingsMap.get(a.release_group_id)?.rating ?? -1;
-        const ratingB = b.rating ?? ratingsMap.get(b.release_group_id)?.rating ?? -1;
+        // Use diary entry's own rating only
+        const ratingA = a.rating ?? -1;
+        const ratingB = b.rating ?? -1;
         comparison = ratingB - ratingA;
         break;
       case "artist":
@@ -165,8 +165,8 @@ const Profile = () => {
                   <div className="space-y-2">
                     {sortedDiaryEntries.map((entry, index) => {
                       const albumRating = ratingsMap.get(entry.release_group_id);
-                      // Use entry's own rating, fall back to album rating for older entries
-                      const entryRating = entry.rating ?? albumRating?.rating;
+                      // Only show the entry's own rating - no fallback to avoid confusion
+                      const entryRating = entry.rating;
                       const isLoved = albumRating?.loved ?? false;
                       return (
                         <motion.div
