@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { toast } from "sonner";
+import { getArtistImage } from "@/services/musicbrainz";
 
 interface ArtistFollow {
   id: string;
@@ -23,6 +24,7 @@ const Artists = () => {
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
+  const [artistImages, setArtistImages] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,6 +45,43 @@ const Artists = () => {
     },
     enabled: !!user,
   });
+
+  // Fetch artist images when followedArtists changes
+  useEffect(() => {
+    const fetchImages = async () => {
+      const newImages: Record<string, string | null> = {};
+      
+      // Fetch images in parallel, but limit concurrent requests
+      const batchSize = 5;
+      for (let i = 0; i < followedArtists.length; i += batchSize) {
+        const batch = followedArtists.slice(i, i + batchSize);
+        const results = await Promise.all(
+          batch.map(async (artist) => {
+            // Skip if we already have this image cached
+            if (artistImages[artist.artist_id] !== undefined) {
+              return { id: artist.artist_id, url: artistImages[artist.artist_id] };
+            }
+            try {
+              const imageUrl = await getArtistImage(artist.artist_id);
+              return { id: artist.artist_id, url: imageUrl };
+            } catch {
+              return { id: artist.artist_id, url: null };
+            }
+          })
+        );
+        
+        results.forEach(({ id, url }) => {
+          newImages[id] = url;
+        });
+      }
+      
+      setArtistImages(prev => ({ ...prev, ...newImages }));
+    };
+
+    if (followedArtists.length > 0) {
+      fetchImages();
+    }
+  }, [followedArtists]);
 
   const handleUnfollow = async (artistId: string, artistName: string) => {
     const { error } = await supabase
@@ -104,43 +143,65 @@ const Artists = () => {
                 </div>
                 {filteredArtists.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    {filteredArtists.map((artist, index) => (
-                      <motion.div
-                        key={artist.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="group text-center"
-                      >
-                        <div 
-                          className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50 bg-secondary flex items-center justify-center cursor-pointer"
-                          onClick={() => navigate(`/artist/${artist.artist_id}`)}
+                    {filteredArtists.map((artist, index) => {
+                      const imageUrl = artistImages[artist.artist_id];
+                      const initials = (artist.artist_name || 'Unknown')
+                        .split(' ')
+                        .map(w => w[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase();
+
+                      return (
+                        <motion.div
+                          key={artist.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="group text-center"
                         >
-                          <span className="text-foreground font-bold text-2xl sm:text-3xl">
-                            {(artist.artist_name || 'Unknown').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-                          </span>
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                        </div>
-                        <div className="mt-3">
-                          <h3 
-                            className="font-sans font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer"
+                          <div 
+                            className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50 bg-secondary flex items-center justify-center cursor-pointer"
                             onClick={() => navigate(`/artist/${artist.artist_id}`)}
                           >
-                            {artist.artist_name || 'Unknown Artist'}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Followed {new Date(artist.created_at).toLocaleDateString()}
-                          </p>
-                          <button
-                            onClick={() => handleUnfollow(artist.artist_id, artist.artist_name)}
-                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                          >
-                            <UserMinus className="h-3 w-3" />
-                            Unfollow
-                          </button>
-                        </div>
-                      </motion.div>
-                    ))}
+                            {imageUrl ? (
+                              <img 
+                                src={imageUrl} 
+                                alt={artist.artist_name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // If image fails to load, hide it and show initials
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <span className="text-foreground font-bold text-2xl sm:text-3xl">
+                                {initials}
+                              </span>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                          </div>
+                          <div className="mt-3">
+                            <h3 
+                              className="font-sans font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer"
+                              onClick={() => navigate(`/artist/${artist.artist_id}`)}
+                            >
+                              {artist.artist_name || 'Unknown Artist'}
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Followed {new Date(artist.created_at).toLocaleDateString()}
+                            </p>
+                            <button
+                              onClick={() => handleUnfollow(artist.artist_id, artist.artist_name)}
+                              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                            >
+                              <UserMinus className="h-3 w-3" />
+                              Unfollow
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 ) : followedArtists.length > 0 ? (
                   <div className="text-center py-12">
