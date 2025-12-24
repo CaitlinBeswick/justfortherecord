@@ -119,6 +119,7 @@ export type Database = {
           is_relisten: boolean
           listened_on: string
           notes: string | null
+          rating: number | null
           release_group_id: string
           user_id: string
         }
@@ -130,6 +131,7 @@ export type Database = {
           is_relisten?: boolean
           listened_on?: string
           notes?: string | null
+          rating?: number | null
           release_group_id: string
           user_id: string
         }
@@ -141,6 +143,7 @@ export type Database = {
           is_relisten?: boolean
           listened_on?: string
           notes?: string | null
+          rating?: number | null
           release_group_id?: string
           user_id?: string
         }

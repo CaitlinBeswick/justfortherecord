@@ -29,6 +29,7 @@ interface DiaryEntry {
   listened_on: string;
   is_relisten: boolean;
   notes: string | null;
+  rating: number | null;
   created_at: string;
 }
 
@@ -88,8 +89,9 @@ const Profile = () => {
         comparison = new Date(b.listened_on).getTime() - new Date(a.listened_on).getTime();
         break;
       case "rating":
-        const ratingA = ratingsMap.get(a.release_group_id)?.rating ?? -1;
-        const ratingB = ratingsMap.get(b.release_group_id)?.rating ?? -1;
+        // Use diary entry's own rating, fall back to album rating if none
+        const ratingA = a.rating ?? ratingsMap.get(a.release_group_id)?.rating ?? -1;
+        const ratingB = b.rating ?? ratingsMap.get(b.release_group_id)?.rating ?? -1;
         comparison = ratingB - ratingA;
         break;
       case "artist":
@@ -162,7 +164,10 @@ const Profile = () => {
                 {sortedDiaryEntries.length > 0 ? (
                   <div className="space-y-2">
                     {sortedDiaryEntries.map((entry, index) => {
-                      const rating = ratingsMap.get(entry.release_group_id);
+                      const albumRating = ratingsMap.get(entry.release_group_id);
+                      // Use entry's own rating, fall back to album rating for older entries
+                      const entryRating = entry.rating ?? albumRating?.rating;
+                      const isLoved = albumRating?.loved ?? false;
                       return (
                         <motion.div
                           key={entry.id}
@@ -216,11 +221,11 @@ const Profile = () => {
                           </div>
 
                           {/* Rating display with half-star support */}
-                          {rating && (
+                          {entryRating && entryRating > 0 && (
                             <div className="flex items-center gap-1 shrink-0">
                               <div className="flex items-center gap-0.5">
                                 {[1, 2, 3, 4, 5].map((star) => {
-                                  const ratingValue = rating.rating;
+                                  const ratingValue = entryRating;
                                   const isFull = star <= Math.floor(ratingValue);
                                   const isHalf = !isFull && star === Math.ceil(ratingValue) && ratingValue % 1 >= 0.5;
                                   
@@ -240,7 +245,7 @@ const Profile = () => {
                                   }
                                 })}
                               </div>
-                              {rating.loved && (
+                              {isLoved && (
                                 <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 ml-1" />
                               )}
                             </div>
