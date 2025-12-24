@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, List, Search } from "lucide-react";
+import { Loader2, Plus, List, Search, ArrowUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface UserList {
   id: string;
@@ -19,10 +26,13 @@ interface UserList {
   created_at: string;
 }
 
+type SortOption = 'name-asc' | 'name-desc';
+
 const Lists = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -44,12 +54,23 @@ const Lists = () => {
     enabled: !!user,
   });
 
-  const filteredLists = lists.filter(list => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return list.name.toLowerCase().includes(query) ||
-           (list.description && list.description.toLowerCase().includes(query));
-  });
+  const filteredAndSortedLists = lists
+    .filter(list => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return list.name.toLowerCase().includes(query) ||
+             (list.description && list.description.toLowerCase().includes(query));
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        default:
+          return 0;
+      }
+    });
 
   if (authLoading || isLoading) {
     return (
@@ -76,7 +97,17 @@ const Lists = () => {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                   <h2 className="font-serif text-xl text-foreground">Your Lists ({lists.length})</h2>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                      <SelectTrigger className="w-[140px]">
+                        <ArrowUpDown className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                        <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -92,9 +123,9 @@ const Lists = () => {
                     </button>
                   </div>
                 </div>
-                {filteredLists.length > 0 ? (
+                {filteredAndSortedLists.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredLists.map((list) => (
+                    {filteredAndSortedLists.map((list) => (
                       <div key={list.id} className="rounded-xl bg-card p-4 hover:bg-surface-elevated transition-colors">
                         <h3 className="font-semibold text-foreground">{list.name}</h3>
                         {list.description && (

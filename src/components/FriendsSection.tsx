@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { User, UserPlus, Search, Check, X, UserMinus, Loader2 } from "lucide-react";
+import { User, UserPlus, Search, Check, X, UserMinus, Loader2, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFriendships } from "@/hooks/useFriendships";
@@ -9,6 +9,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type SortOption = 'name-asc' | 'name-desc';
 
 interface SearchResult {
   id: string;
@@ -21,6 +30,7 @@ export function FriendsSection() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
   const debouncedSearch = useDebounce(searchQuery, 300);
   const {
     friends,
@@ -33,6 +43,22 @@ export function FriendsSection() {
     removeFriend,
     getFriendshipStatus
   } = useFriendships();
+
+  // Sort friends by name
+  const sortedFriends = useMemo(() => {
+    return [...friends].sort((a, b) => {
+      const nameA = a.friend_profile?.display_name || a.friend_profile?.username || '';
+      const nameB = b.friend_profile?.display_name || b.friend_profile?.username || '';
+      switch (sortBy) {
+        case 'name-asc':
+          return nameA.localeCompare(nameB);
+        case 'name-desc':
+          return nameB.localeCompare(nameA);
+        default:
+          return 0;
+      }
+    });
+  }, [friends, sortBy]);
 
   // Search for users
   const { data: searchResults = [], isLoading: searchLoading } = useQuery({
@@ -189,16 +215,30 @@ export function FriendsSection() {
 
       {/* Friends List */}
       <div>
-        <h3 className="text-lg font-medium text-foreground mb-4">
-          Friends ({friends.length})
-        </h3>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h3 className="text-lg font-medium text-foreground">
+            Friends ({friends.length})
+          </h3>
+          {friends.length > 0 && (
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-[140px]">
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
         {friendsLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
-        ) : friends.length > 0 ? (
+        ) : sortedFriends.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {friends.map((friendship, index) => (
+            {sortedFriends.map((friendship, index) => (
               <motion.div
                 key={friendship.id}
                 initial={{ opacity: 0, y: 20 }}
