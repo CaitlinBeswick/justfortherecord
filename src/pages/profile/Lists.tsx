@@ -70,7 +70,7 @@ const Lists = () => {
       <main className="pt-16">
         <ProfileHeader />
         <div className="container mx-auto px-4 py-8 pb-20">
-          <div className="flex gap-8">
+          <div className="flex flex-col md:flex-row md:gap-8">
             <ProfileNav activeTab="lists" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
