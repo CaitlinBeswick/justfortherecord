@@ -2,20 +2,41 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Clock, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader2, Plus, Clock, Search, ArrowUpDown } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type SortOption = 
+  | 'artist-asc' 
+  | 'artist-desc' 
+  | 'album-asc' 
+  | 'album-desc';
+
+const sortLabels: Record<SortOption, string> = {
+  'artist-asc': 'Artist (A-Z)',
+  'artist-desc': 'Artist (Z-A)',
+  'album-asc': 'Album (A-Z)',
+  'album-desc': 'Album (Z-A)',
+};
 
 const ToListen = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { allStatuses, isLoading } = useListeningStatus();
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('artist-asc');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -25,12 +46,33 @@ const ToListen = () => {
 
   const toListenAlbums = allStatuses.filter(s => s.is_to_listen);
   
-  const filteredAlbums = toListenAlbums.filter(album => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return album.album_title.toLowerCase().includes(query) ||
-           album.artist_name.toLowerCase().includes(query);
-  });
+  const filteredAlbums = useMemo(() => {
+    let result = toListenAlbums;
+    
+    // Filter by search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(album =>
+        album.album_title.toLowerCase().includes(query) ||
+        album.artist_name.toLowerCase().includes(query)
+      );
+    }
+    
+    // Sort
+    const sorted = [...result];
+    switch (sortBy) {
+      case 'artist-asc':
+        return sorted.sort((a, b) => (a.artist_name || '').localeCompare(b.artist_name || ''));
+      case 'artist-desc':
+        return sorted.sort((a, b) => (b.artist_name || '').localeCompare(a.artist_name || ''));
+      case 'album-asc':
+        return sorted.sort((a, b) => (a.album_title || '').localeCompare(b.album_title || ''));
+      case 'album-desc':
+        return sorted.sort((a, b) => (b.album_title || '').localeCompare(a.album_title || ''));
+      default:
+        return sorted;
+    }
+  }, [toListenAlbums, searchQuery, sortBy]);
 
   if (authLoading || isLoading) {
     return (
@@ -57,14 +99,31 @@ const ToListen = () => {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                   <h2 className="font-serif text-xl text-foreground">Your Listening Queue ({toListenAlbums.length})</h2>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search queue..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 w-[180px]"
-                    />
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search queue..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-[180px]"
+                      />
+                    </div>
+                    {toListenAlbums.length > 0 && (
+                      <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                        <SelectTrigger className="w-[160px]">
+                          <ArrowUpDown className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(sortLabels) as SortOption[]).map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {sortLabels[option]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
                 {filteredAlbums.length > 0 ? (
