@@ -85,13 +85,17 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
     "first-release-date": rg["first-release-date"],
     "artist-credit": rg["artist-credit"],
   }));
+
+  // This app's "Albums" search should not be dominated by Singles.
+  // Keep Albums/EPs/other long-form groups; drop Singles.
+  const filteredReleases = rawReleases.filter((rg) => rg["primary-type"] !== 'Single');
   
   // Deduplicate by release group ID first (exact duplicates)
   // Then by normalized title + artist combination (same album, different releases)
   const seenIds = new Set<string>();
   const uniqueByTitleArtist = new Map<string, MBReleaseGroup>();
   
-  for (const rg of rawReleases) {
+  for (const rg of filteredReleases) {
     // Skip if we've already seen this exact release group ID
     if (seenIds.has(rg.id)) continue;
     seenIds.add(rg.id);
