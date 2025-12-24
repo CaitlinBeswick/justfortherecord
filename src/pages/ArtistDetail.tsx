@@ -372,7 +372,7 @@ const ArtistDetail = () => {
                   className="flex-1 text-center md:text-left"
                 >
                   <p className="text-sm text-primary font-medium uppercase tracking-wider">
-                    {artist.type || "Artist"} {artist.country && `· ${artist.country}`}
+                    {(artist.type === "Person" ? "Artist" : artist.type) || "Artist"} {artist.country && `· ${artist.country}`}
                   </p>
                   <div className="flex items-center justify-center md:justify-start gap-4 mt-2">
                     <h1 className="font-serif text-5xl md:text-6xl text-foreground">
