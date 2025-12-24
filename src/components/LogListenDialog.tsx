@@ -122,7 +122,7 @@ export function LogListenDialog({
       queryClient.invalidateQueries({ queryKey: ["album-diary-entries", releaseGroupId] });
       queryClient.invalidateQueries({ queryKey: ["album-rating", releaseGroupId] });
       queryClient.invalidateQueries({ queryKey: ["user-ratings"] });
-      queryClient.invalidateQueries({ queryKey: ["user-album-rating"] });
+      queryClient.invalidateQueries({ queryKey: ["user-album-rating", user.id, releaseGroupId] });
       setOpen(false);
       setReview("");
       setRating(0);
