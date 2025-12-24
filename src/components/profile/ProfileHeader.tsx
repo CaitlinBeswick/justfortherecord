@@ -38,7 +38,7 @@ export const ProfileHeader = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')
-        .select('id, review_text')
+        .select('id')
         .eq('user_id', user!.id);
       if (error) throw error;
       return data;
@@ -59,10 +59,24 @@ export const ProfileHeader = () => {
     enabled: !!user,
   });
 
+  const { data: friendships = [] } = useQuery({
+    queryKey: ['user-friendships-count', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('friendships')
+        .select('id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const displayName = profile?.display_name || profile?.username || user?.email?.split('@')[0] || 'User';
   const ratingsCount = ratings.length;
   const artistsCount = followedArtists.length;
-  const reviewsCount = ratings.filter(r => r.review_text).length;
+  const friendsCount = friendships.length;
 
   return (
     <div className="gradient-hero">
@@ -120,8 +134,8 @@ export const ProfileHeader = () => {
                 <p className="text-xs text-muted-foreground">Artists</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-semibold text-foreground">{reviewsCount}</p>
-                <p className="text-xs text-muted-foreground">Reviews</p>
+                <p className="text-2xl font-semibold text-foreground">{friendsCount}</p>
+                <p className="text-xs text-muted-foreground">Friends</p>
               </div>
             </div>
 
