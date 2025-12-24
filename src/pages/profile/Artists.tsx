@@ -54,6 +54,14 @@ const Artists = () => {
     enabled: !!user,
   });
 
+  useEffect(() => {
+    console.log("[ProfileArtists] user", user?.id);
+  }, [user?.id]);
+
+  useEffect(() => {
+    console.log("[ProfileArtists] followedArtists (first 3)", followedArtists.slice(0, 3));
+  }, [followedArtists]);
+
   // Fetch artist images when followedArtists changes
   useEffect(() => {
     const fetchImages = async () => {
