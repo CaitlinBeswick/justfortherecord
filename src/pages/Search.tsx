@@ -3,8 +3,8 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate } from "react-router-dom";
-import { Search as SearchIcon, Disc3, Users, Music, Loader2, X, Trophy, Star, ArrowRight } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Search as SearchIcon, Disc3, Users, Music, Loader2, Trophy, Star, ArrowRight } from "lucide-react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   searchArtists, 
@@ -20,12 +20,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
 type SearchTab = "all" | "albums" | "artists" | "songs";
-
-const GENRE_FILTERS = [
-  "Rock", "Pop", "Hip Hop", "Electronic", "Jazz", "Classical", 
-  "R&B", "Metal", "Folk", "Country", "Blues", "Punk", 
-  "Indie", "Soul", "Reggae", "Latin"
-];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -83,7 +77,6 @@ const Search = () => {
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 
   // Debounce search
   const handleSearch = (value: string) => {
@@ -93,16 +86,6 @@ const Search = () => {
       setDebouncedQuery(value);
     }, 500);
   };
-
-  const toggleGenre = (genre: string) => {
-    setSelectedGenres(prev => 
-      prev.includes(genre) 
-        ? prev.filter(g => g !== genre)
-        : [...prev, genre]
-    );
-  };
-
-  const clearGenres = () => setSelectedGenres([]);
 
   const { data: artists = [], isLoading: loadingArtists } = useQuery({
     queryKey: ['search-artists', debouncedQuery],
@@ -190,21 +173,6 @@ const Search = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Filter results by selected genres
-  const filteredArtists = useMemo(() => {
-    if (selectedGenres.length === 0) return artists;
-    return artists.filter(artist => 
-      artist.genres?.some(g => 
-        selectedGenres.some(sg => g.name.toLowerCase().includes(sg.toLowerCase()))
-      )
-    );
-  }, [artists, selectedGenres]);
-
-  const filteredReleases = useMemo(() => {
-    if (selectedGenres.length === 0) return releases;
-    return releases;
-  }, [releases, selectedGenres]);
-
   const isLoading = loadingArtists || loadingReleases;
 
   const tabs: { id: SearchTab; label: string; icon: React.ReactNode }[] = [
@@ -263,88 +231,128 @@ const Search = () => {
             ))}
           </div>
 
-          {/* Genre Filters */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm text-muted-foreground">Filter by genre:</span>
-              {selectedGenres.length > 0 && (
-                <button
-                  onClick={clearGenres}
-                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
-                >
-                  <X className="h-3 w-3" />
-                  Clear all
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {GENRE_FILTERS.map((genre) => (
-                <button
-                  key={genre}
-                  onClick={() => toggleGenre(genre)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                    selectedGenres.includes(genre)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-surface-hover"
-                  }`}
-                >
-                  {genre}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Results or Top Rated Sections */}
           {!debouncedQuery || debouncedQuery.length < 2 ? (
             <div className="space-y-12">
-              {/* Top Rated Albums */}
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    <h2 className="font-serif text-2xl text-foreground">Top Rated Albums</h2>
+              {/* Top Rated Albums - show on "all" and "albums" tabs */}
+              {showAlbums && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <Trophy className="h-5 w-5 text-yellow-500" />
+                      <h2 className="font-serif text-2xl text-foreground">Top Rated Albums</h2>
+                    </div>
+                    <button 
+                      onClick={() => navigate("/top-albums")}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                      View Top 250 <ArrowRight className="h-4 w-4" />
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => navigate("/top-albums")}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                  >
-                    View Top 250 <ArrowRight className="h-4 w-4" />
-                  </button>
+                  
+                  {topAlbumsLoading ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i}>
+                          <Skeleton className="aspect-square rounded-lg mb-2" />
+                          <Skeleton className="h-4 w-full mb-1" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : topAlbums.length === 0 ? (
+                    <div className="text-center py-12 bg-card/30 rounded-xl border border-border/50">
+                      <Disc3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                      <p className="text-muted-foreground">No album ratings yet</p>
+                      <p className="text-sm text-muted-foreground/60 mt-1">Be the first to rate an album!</p>
+                    </div>
+                  ) : (
+                    <motion.div 
+                      variants={containerVariants}
+                      initial="hidden"
+                      animate="visible"
+                      className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+                    >
+                      {topAlbums.slice(0, 8).map((album, index) => (
+                        <motion.div
+                          key={album.release_group_id}
+                          variants={itemVariants}
+                          onClick={() => navigate(`/album/${album.release_group_id}`)}
+                          className="cursor-pointer group"
+                        >
+                          <div className="relative mb-2">
+                            <AlbumCoverSquare releaseGroupId={album.release_group_id} title={album.album_title} />
+                            <div className={`absolute top-2 left-2 text-xs font-bold px-1.5 py-0.5 rounded ${
+                              index === 0 ? 'bg-yellow-500 text-yellow-950' :
+                              index === 1 ? 'bg-gray-300 text-gray-700' :
+                              index === 2 ? 'bg-amber-600 text-amber-50' :
+                              'bg-background/90 text-foreground'
+                            }`}>
+                              #{index + 1}
+                            </div>
+                          </div>
+                          <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                            {album.album_title}
+                          </h3>
+                          <p className="text-xs text-muted-foreground truncate">{album.artist_name}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            <span className="text-xs text-muted-foreground">{album.avg_rating.toFixed(1)}</span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
                 </div>
-                
-                {topAlbumsLoading ? (
-                  <div className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="flex-shrink-0 w-36">
-                        <Skeleton className="aspect-square rounded-lg mb-2" />
-                        <Skeleton className="h-4 w-full mb-1" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                    ))}
+              )}
+
+              {/* Top Rated Artists - show on "all" and "artists" tabs */}
+              {showArtists && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <Trophy className="h-5 w-5 text-yellow-500" />
+                      <h2 className="font-serif text-2xl text-foreground">Top Rated Artists</h2>
+                    </div>
+                    <button 
+                      onClick={() => navigate("/top-artists")}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                      View Top 250 <ArrowRight className="h-4 w-4" />
+                    </button>
                   </div>
-                ) : topAlbums.length === 0 ? (
-                  <div className="text-center py-12 bg-card/30 rounded-xl border border-border/50">
-                    <Disc3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-muted-foreground">No album ratings yet</p>
-                    <p className="text-sm text-muted-foreground/60 mt-1">Be the first to rate an album!</p>
-                  </div>
-                ) : (
-                  <motion.div 
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide"
-                  >
-                    {topAlbums.map((album, index) => (
-                      <motion.div
-                        key={album.release_group_id}
-                        variants={itemVariants}
-                        onClick={() => navigate(`/album/${album.release_group_id}`)}
-                        className="flex-shrink-0 w-36 cursor-pointer group"
-                      >
-                        <div className="relative mb-2">
-                          <AlbumCoverSquare releaseGroupId={album.release_group_id} title={album.album_title} />
-                          <div className={`absolute top-2 left-2 text-xs font-bold px-1.5 py-0.5 rounded ${
+                  
+                  {topArtistsLoading ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i}>
+                          <Skeleton className="aspect-square rounded-full mb-2" />
+                          <Skeleton className="h-4 w-full mb-1" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : topArtists.length === 0 ? (
+                    <div className="text-center py-12 bg-card/30 rounded-xl border border-border/50">
+                      <Users className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                      <p className="text-muted-foreground">No artist ratings yet</p>
+                      <p className="text-sm text-muted-foreground/60 mt-1">Be the first to rate an artist!</p>
+                    </div>
+                  ) : (
+                    <motion.div 
+                      variants={containerVariants}
+                      initial="hidden"
+                      animate="visible"
+                      className="grid grid-cols-2 sm:grid-cols-4 gap-6"
+                    >
+                      {topArtists.slice(0, 8).map((artist, index) => (
+                        <motion.div
+                          key={artist.artist_id}
+                          variants={itemVariants}
+                          className="relative"
+                        >
+                          <div className={`absolute top-2 left-2 z-10 text-xs font-bold px-1.5 py-0.5 rounded ${
                             index === 0 ? 'bg-yellow-500 text-yellow-950' :
                             index === 1 ? 'bg-gray-300 text-gray-700' :
                             index === 2 ? 'bg-amber-600 text-amber-50' :
@@ -352,99 +360,39 @@ const Search = () => {
                           }`}>
                             #{index + 1}
                           </div>
-                        </div>
-                        <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                          {album.album_title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground truncate">{album.artist_name}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                          <span className="text-xs text-muted-foreground">{album.avg_rating.toFixed(1)}</span>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Top Rated Artists */}
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    <h2 className="font-serif text-2xl text-foreground">Top Rated Artists</h2>
-                  </div>
-                  <button 
-                    onClick={() => navigate("/top-artists")}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                  >
-                    View Top 250 <ArrowRight className="h-4 w-4" />
-                  </button>
+                          <ArtistCard
+                            id={artist.artist_id}
+                            name={artist.artist_name}
+                            genres={[`★ ${artist.avg_rating.toFixed(1)}`]}
+                            onClick={() => navigate(`/artist/${artist.artist_id}`)}
+                          />
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
                 </div>
-                
-                {topArtistsLoading ? (
-                  <div className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="flex-shrink-0 w-36">
-                        <Skeleton className="aspect-square rounded-lg mb-2" />
-                        <Skeleton className="h-4 w-full mb-1" />
-                        <Skeleton className="h-3 w-16" />
-                      </div>
-                    ))}
-                  </div>
-                ) : topArtists.length === 0 ? (
-                  <div className="text-center py-12 bg-card/30 rounded-xl border border-border/50">
-                    <Users className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-muted-foreground">No artist ratings yet</p>
-                    <p className="text-sm text-muted-foreground/60 mt-1">Be the first to rate an artist!</p>
-                  </div>
-                ) : (
-                  <motion.div 
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide"
-                  >
-                    {topArtists.map((artist, index) => (
-                      <motion.div
-                        key={artist.artist_id}
-                        variants={itemVariants}
-                        onClick={() => navigate(`/artist/${artist.artist_id}`)}
-                        className="flex-shrink-0 w-36 cursor-pointer group"
-                      >
-                        <div className="relative aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-2 border border-border/50 group-hover:border-primary/50 transition-colors">
-                          <span className="font-serif text-3xl text-primary/60">{artist.artist_name.charAt(0)}</span>
-                          <div className={`absolute top-2 left-2 text-xs font-bold px-1.5 py-0.5 rounded ${
-                            index === 0 ? 'bg-yellow-500 text-yellow-950' :
-                            index === 1 ? 'bg-gray-300 text-gray-700' :
-                            index === 2 ? 'bg-amber-600 text-amber-50' :
-                            'bg-background/90 text-foreground'
-                          }`}>
-                            #{index + 1}
-                          </div>
-                        </div>
-                        <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                          {artist.artist_name}
-                        </h3>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                          <span className="text-xs text-muted-foreground">{artist.avg_rating.toFixed(1)}</span>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                )}
-              </div>
+              )}
 
-              <div className="text-center py-8 border-t border-border/50">
-                <SearchIcon className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Start typing to search MusicBrainz database
-                </p>
-                <p className="text-sm text-muted-foreground/60 mt-2">
-                  Search over 2 million artists and their discographies
-                </p>
-              </div>
+              {/* Songs tab placeholder */}
+              {activeTab === "songs" && (
+                <div className="text-center py-12 bg-card/30 rounded-xl border border-border/50">
+                  <Music className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-muted-foreground">Song ratings coming soon</p>
+                  <p className="text-sm text-muted-foreground/60 mt-1">Stay tuned for song-level tracking!</p>
+                </div>
+              )}
+
+              {activeTab !== "songs" && (
+                <div className="text-center py-8 border-t border-border/50">
+                  <SearchIcon className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Start typing to search MusicBrainz database
+                  </p>
+                  <p className="text-sm text-muted-foreground/60 mt-2">
+                    Search over 2 million artists and their discographies
+                  </p>
+                </div>
+              )}
             </div>
           ) : debouncedQuery.length < 2 ? (
             <div className="text-center py-12">
@@ -455,14 +403,14 @@ const Search = () => {
           ) : (
             <div className="space-y-12">
               {/* Albums */}
-              {showAlbums && filteredReleases.length > 0 && (
+              {showAlbums && releases.length > 0 && (
                 <section>
                   <h2 className="font-serif text-xl text-foreground mb-4 flex items-center gap-2">
                     <Disc3 className="h-5 w-5 text-primary" />
-                    Albums ({filteredReleases.length})
+                    Albums ({releases.length})
                   </h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {filteredReleases.slice(0, 12).map((release: MBReleaseGroup) => (
+                    {releases.slice(0, 12).map((release: MBReleaseGroup) => (
                       <motion.div
                         key={release.id}
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -483,19 +431,14 @@ const Search = () => {
               )}
 
               {/* Artists */}
-              {showArtists && filteredArtists.length > 0 && (
+              {showArtists && artists.length > 0 && (
                 <section>
                   <h2 className="font-serif text-xl text-foreground mb-4 flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary" />
-                    Artists ({filteredArtists.length})
-                    {selectedGenres.length > 0 && (
-                      <span className="text-sm font-normal text-muted-foreground">
-                        (filtered)
-                      </span>
-                    )}
+                    Artists ({artists.length})
                   </h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-6">
-                    {filteredArtists.slice(0, 12).map((artist: MBArtist) => (
+                    {artists.slice(0, 12).map((artist: MBArtist) => (
                       <motion.div
                         key={artist.id}
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -514,20 +457,11 @@ const Search = () => {
               )}
 
               {/* No Results */}
-              {!isLoading && filteredReleases.length === 0 && filteredArtists.length === 0 && (
+              {!isLoading && releases.length === 0 && artists.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">
                     No results found for "{debouncedQuery}"
-                    {selectedGenres.length > 0 && " with selected genres"}
                   </p>
-                  {selectedGenres.length > 0 && (
-                    <button
-                      onClick={clearGenres}
-                      className="mt-2 text-sm text-primary hover:underline"
-                    >
-                      Clear genre filters
-                    </button>
-                  )}
                 </div>
               )}
             </div>
