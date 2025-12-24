@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, ArrowUp, ArrowDown, RotateCcw, Trash2, Disc3, Star, Heart, Play } from "lucide-react";
+import { Loader2, Plus, RotateCcw, Trash2, Disc3, Star, Heart, Play } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -136,23 +136,27 @@ const Profile = () => {
             <ProfileNav activeTab="diary" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className="flex items-center justify-end gap-2 mb-4">
-                  <Select value={diarySort} onValueChange={(v) => setDiarySort(v as DiarySortOption)}>
-                    <SelectTrigger className="w-[120px] h-8 text-sm">
+                <div className="flex items-center justify-end mb-4">
+                  <Select 
+                    value={`${diarySort}-${sortAscending ? 'asc' : 'desc'}`} 
+                    onValueChange={(v) => {
+                      const [sort, dir] = v.split('-') as [DiarySortOption, string];
+                      setDiarySort(sort);
+                      setSortAscending(dir === 'asc');
+                    }}
+                  >
+                    <SelectTrigger className="w-[160px] h-8 text-sm">
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="date">Date</SelectItem>
-                      <SelectItem value="rating">Rating</SelectItem>
-                      <SelectItem value="artist">Artist</SelectItem>
+                      <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                      <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+                      <SelectItem value="rating-desc">Rating (High)</SelectItem>
+                      <SelectItem value="rating-asc">Rating (Low)</SelectItem>
+                      <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
+                      <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <button
-                    onClick={() => setSortAscending(!sortAscending)}
-                    className="flex items-center justify-center h-8 w-8 rounded-lg bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {sortAscending ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
-                  </button>
                 </div>
 
                 {sortedDiaryEntries.length > 0 ? (
@@ -211,20 +215,30 @@ const Profile = () => {
                             )}
                           </div>
 
-                          {/* Rating display */}
+                          {/* Rating display with half-star support */}
                           {rating && (
                             <div className="flex items-center gap-1 shrink-0">
                               <div className="flex items-center gap-0.5">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={`h-3 w-3 ${
-                                      star <= rating.rating
-                                        ? "text-yellow-400 fill-yellow-400"
-                                        : "text-muted-foreground/30"
-                                    }`}
-                                  />
-                                ))}
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const ratingValue = rating.rating;
+                                  const isFull = star <= Math.floor(ratingValue);
+                                  const isHalf = !isFull && star === Math.ceil(ratingValue) && ratingValue % 1 >= 0.5;
+                                  
+                                  if (isFull) {
+                                    return <Star key={star} className="h-3 w-3 text-yellow-400 fill-yellow-400" />;
+                                  } else if (isHalf) {
+                                    return (
+                                      <div key={star} className="relative h-3 w-3">
+                                        <Star className="absolute h-3 w-3 text-muted-foreground/30" />
+                                        <div className="absolute overflow-hidden w-1/2 h-3">
+                                          <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                                        </div>
+                                      </div>
+                                    );
+                                  } else {
+                                    return <Star key={star} className="h-3 w-3 text-muted-foreground/30" />;
+                                  }
+                                })}
                               </div>
                               {rating.loved && (
                                 <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 ml-1" />
