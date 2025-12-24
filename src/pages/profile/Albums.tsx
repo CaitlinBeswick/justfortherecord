@@ -60,19 +60,39 @@ const Albums = () => {
     }
   }, [user, authLoading, navigate]);
 
-  const { data: ratings = [], isLoading } = useQuery({
-    queryKey: ['user-ratings', user?.id],
+  // First get listened albums, then get their ratings
+  const { data: listenedAlbums = [], isLoading: isLoadingListened } = useQuery({
+    queryKey: ['user-listened-albums', user?.id],
     queryFn: async () => {
+      const { data, error } = await supabase
+        .from('listening_status')
+        .select('release_group_id')
+        .eq('user_id', user!.id)
+        .eq('is_listened', true);
+      if (error) throw error;
+      return data.map(d => d.release_group_id);
+    },
+    enabled: !!user,
+  });
+
+  const { data: ratings = [], isLoading: isLoadingRatings } = useQuery({
+    queryKey: ['user-ratings', user?.id, listenedAlbums],
+    queryFn: async () => {
+      if (listenedAlbums.length === 0) return [];
+      
       const { data, error } = await supabase
         .from('album_ratings')
         .select('*')
         .eq('user_id', user!.id)
+        .in('release_group_id', listenedAlbums)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as AlbumRating[];
     },
-    enabled: !!user,
+    enabled: !!user && listenedAlbums.length > 0,
   });
+
+  const isLoading = isLoadingListened || isLoadingRatings;
 
   const sortedRatings = useMemo(() => {
     const sorted = [...ratings];
