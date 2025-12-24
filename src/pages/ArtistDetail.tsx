@@ -374,7 +374,7 @@ const ArtistDetail = () => {
                   <p className="text-sm text-primary font-medium uppercase tracking-wider">
                     {artist.type || "Artist"} {artist.country && `· ${artist.country}`}
                   </p>
-                  <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center justify-center md:justify-start gap-4 mt-2">
                     <h1 className="font-serif text-5xl md:text-6xl text-foreground">
                       {artist.name}
                     </h1>
@@ -393,38 +393,45 @@ const ArtistDetail = () => {
                     <span><strong className="text-foreground">{releases.length}</strong> releases</span>
                   </div>
 
-                  <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
-                    <button
-                      onClick={handleFollow}
-                      disabled={followMutation.isPending}
-                      className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
-                        following
-                          ? "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                          : "bg-primary text-primary-foreground hover:opacity-90"
-                      } disabled:opacity-50`}
-                    >
-                      {following ? (
-                        <>
-                          <UserCheck className="h-4 w-4" />
-                          Following
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-4 w-4" />
-                          Follow
-                        </>
-                      )}
-                    </button>
-                    <ShareButton 
-                      title={artist.name}
-                      text={`Check out ${artist.name}`}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg"
-                    />
-                  </div>
+                  {/* Rating & Actions Card */}
+                  <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      {/* Personal Rating */}
+                      <ArtistRating artistId={artistId} artistName={artist.name} />
 
-                  {/* Personal Artist Rating */}
-                  <div className="mt-4">
-                    <ArtistRating artistId={artistId} artistName={artist.name} />
+                      {/* Divider */}
+                      <div className="hidden sm:block w-px h-8 bg-border/50" />
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleFollow}
+                          disabled={followMutation.isPending}
+                          className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
+                            following
+                              ? "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                              : "bg-primary text-primary-foreground hover:opacity-90"
+                          } disabled:opacity-50`}
+                        >
+                          {following ? (
+                            <>
+                              <UserCheck className="h-4 w-4" />
+                              Following
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="h-4 w-4" />
+                              Follow
+                            </>
+                          )}
+                        </button>
+                        <ShareButton 
+                          title={artist.name}
+                          text={`Check out ${artist.name}`}
+                          className="flex h-10 w-10 items-center justify-center rounded-lg"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               </div>
