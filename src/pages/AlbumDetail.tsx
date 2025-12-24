@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/ui/StarRating";
+import { AverageAlbumRating } from "@/components/AverageAlbumRating";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
+import { ArrowLeft, Heart, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown, Star } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -428,9 +429,15 @@ const AlbumDetail = () => {
                 <p className="text-sm text-primary font-medium uppercase tracking-wider">
                   {releaseGroup["primary-type"] || "Album"} · {year || "Unknown"}
                 </p>
-                <h1 className="font-serif text-4xl md:text-5xl text-foreground mt-2">
-                  {releaseGroup.title}
-                </h1>
+                <div className="flex items-center gap-4 mt-2">
+                  <h1 className="font-serif text-4xl md:text-5xl text-foreground">
+                    {releaseGroup.title}
+                  </h1>
+                  <AverageAlbumRating 
+                    rating={rating} 
+                    voteCount={releaseGroup.rating?.["votes-count"] || 0} 
+                  />
+                </div>
                 <button 
                   onClick={() => {
                     const artistId = releaseGroup["artist-credit"]?.[0]?.artist?.id;
@@ -441,36 +448,18 @@ const AlbumDetail = () => {
                   {artistName}
                 </button>
 
-                {rating > 0 && (
-                  <div className="flex items-center justify-center md:justify-start gap-4 mt-6">
-                    <div className="flex items-center gap-2">
-                      <StarRating rating={Math.round(rating)} size="lg" />
-                      <span className="text-lg font-semibold text-foreground">
-                        {rating.toFixed(1)}
-                      </span>
-                    </div>
-                    <span className="text-muted-foreground">•</span>
-                    <span className="text-muted-foreground">
-                      {releaseGroup.rating?.["votes-count"] || 0} ratings
-                    </span>
-                  </div>
-                )}
-
-                <div className="mt-8">
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm text-muted-foreground">Your Rating</p>
-                    {userRating > 0 && (
-                      <span className="text-sm font-medium text-foreground">{userRating.toFixed(1)}</span>
-                    )}
-                  </div>
-                  <div className="mt-2">
-                    <StarRating
-                      rating={userRating}
-                      size="lg"
-                      interactive
-                      onRatingChange={handleRatingChange}
-                    />
-                  </div>
+                {/* Personal Rating */}
+                <div className="flex items-center gap-3 mt-6">
+                  <span className="text-sm text-muted-foreground">Your rating:</span>
+                  <StarRating
+                    rating={userRating}
+                    size="lg"
+                    interactive
+                    onRatingChange={handleRatingChange}
+                  />
+                  {userRating > 0 && (
+                    <span className="text-sm font-medium text-foreground">{userRating.toFixed(1)}</span>
+                  )}
                 </div>
 
                 <div className="mt-8">
