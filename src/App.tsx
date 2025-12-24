@@ -18,7 +18,6 @@ const Search = lazy(() => import("./pages/Search"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProfileAlbums = lazy(() => import("./pages/profile/Albums"));
 const ProfileToListen = lazy(() => import("./pages/profile/ToListen"));
-const ProfileReviews = lazy(() => import("./pages/profile/Reviews"));
 const ProfileLists = lazy(() => import("./pages/profile/Lists"));
 const ProfileArtists = lazy(() => import("./pages/profile/Artists"));
 const ProfileFriends = lazy(() => import("./pages/profile/Friends"));
@@ -50,7 +49,6 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/profile/albums" element={<ProfileAlbums />} />
               <Route path="/profile/to-listen" element={<ProfileToListen />} />
-              <Route path="/profile/reviews" element={<ProfileReviews />} />
               <Route path="/profile/lists" element={<ProfileLists />} />
               <Route path="/profile/artists" element={<ProfileArtists />} />
               <Route path="/profile/friends" element={<ProfileFriends />} />

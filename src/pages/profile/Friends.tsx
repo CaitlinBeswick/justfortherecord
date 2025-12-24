@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { FriendsSection } from "@/components/FriendsSection";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { ProfileNav } from "@/components/profile/ProfileNav";
 
 const Friends = () => {
   const navigate = useNavigate();
@@ -35,7 +36,12 @@ const Friends = () => {
       <main className="pt-16">
         <ProfileHeader />
         <div className="container mx-auto px-4 py-8 pb-20">
-          <FriendsSection />
+          <div className="flex gap-8">
+            <ProfileNav activeTab="friends" />
+            <section className="flex-1 min-w-0">
+              <FriendsSection />
+            </section>
+          </div>
         </div>
       </main>
     </div>
