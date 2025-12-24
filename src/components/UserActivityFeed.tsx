@@ -1,52 +1,15 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { User, Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus } from "lucide-react";
+import { Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useFriendships } from "@/hooks/useFriendships";
+import { useAuth } from "@/hooks/useAuth";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { formatDistanceToNow } from "date-fns";
-
-interface DiaryEntry {
-  id: string;
-  user_id: string;
-  release_group_id: string;
-  album_title: string;
-  artist_name: string;
-  listened_on: string;
-  is_relisten: boolean;
-  created_at: string;
-}
-
-interface AlbumRating {
-  id: string;
-  user_id: string;
-  release_group_id: string;
-  album_title: string;
-  artist_name: string;
-  rating: number;
-  review_text: string | null;
-  created_at: string;
-}
-
-interface ArtistFollow {
-  id: string;
-  user_id: string;
-  artist_id: string;
-  artist_name: string;
-  created_at: string;
-}
 
 interface ActivityItem {
   id: string;
   type: 'listen' | 'review' | 'rating' | 'follow';
-  userId: string;
-  userProfile: {
-    id: string;
-    username: string | null;
-    display_name: string | null;
-    avatar_url: string | null;
-  } | null;
   albumId?: string;
   albumTitle?: string;
   artistId?: string;
@@ -57,93 +20,81 @@ interface ActivityItem {
   reviewText?: string;
 }
 
-export function ActivityFeed() {
+export function UserActivityFeed() {
   const navigate = useNavigate();
-  const { friends } = useFriendships();
+  const { user } = useAuth();
 
-  // Get all friend user IDs
-  const friendIds = friends.map(f => f.friend_profile?.id).filter(Boolean) as string[];
-
-  // Fetch friends' diary entries
-  const { data: friendDiaryEntries = [], isLoading: diaryLoading } = useQuery({
-    queryKey: ['friends-diary', friendIds],
+  // Fetch user's diary entries
+  const { data: diaryEntries = [], isLoading: diaryLoading } = useQuery({
+    queryKey: ['user-diary', user?.id],
     queryFn: async () => {
-      if (friendIds.length === 0) return [];
+      if (!user?.id) return [];
       
       const { data, error } = await supabase
         .from('diary_entries')
         .select('*')
-        .in('user_id', friendIds)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(20);
       
       if (error) throw error;
-      return data as DiaryEntry[];
+      return data;
     },
-    enabled: friendIds.length > 0,
+    enabled: !!user?.id,
   });
 
-  // Fetch friends' ratings (all ratings)
-  const { data: friendRatings = [], isLoading: ratingsLoading } = useQuery({
-    queryKey: ['friends-ratings', friendIds],
+  // Fetch user's ratings
+  const { data: ratings = [], isLoading: ratingsLoading } = useQuery({
+    queryKey: ['user-ratings-activity', user?.id],
     queryFn: async () => {
-      if (friendIds.length === 0) return [];
+      if (!user?.id) return [];
       
       const { data, error } = await supabase
         .from('album_ratings')
         .select('*')
-        .in('user_id', friendIds)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(20);
       
       if (error) throw error;
-      return data as AlbumRating[];
+      return data;
     },
-    enabled: friendIds.length > 0,
+    enabled: !!user?.id,
   });
 
-  // Fetch friends' artist follows
-  const { data: friendFollows = [], isLoading: followsLoading } = useQuery({
-    queryKey: ['friends-follows', friendIds],
+  // Fetch user's artist follows
+  const { data: follows = [], isLoading: followsLoading } = useQuery({
+    queryKey: ['user-follows-activity', user?.id],
     queryFn: async () => {
-      if (friendIds.length === 0) return [];
+      if (!user?.id) return [];
       
       const { data, error } = await supabase
         .from('artist_follows')
         .select('*')
-        .in('user_id', friendIds)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(20);
       
       if (error) throw error;
-      return data as ArtistFollow[];
+      return data;
     },
-    enabled: friendIds.length > 0,
+    enabled: !!user?.id,
   });
-
-  // Create profile map from friends
-  const profileMap = new Map(
-    friends.map(f => [f.friend_profile?.id, f.friend_profile])
-  );
 
   // Combine and sort activities
   const activities: ActivityItem[] = [
-    ...friendDiaryEntries.map(entry => ({
+    ...diaryEntries.map(entry => ({
       id: `diary-${entry.id}`,
       type: 'listen' as const,
-      userId: entry.user_id,
-      userProfile: profileMap.get(entry.user_id) || null,
       albumId: entry.release_group_id,
       albumTitle: entry.album_title,
       artistName: entry.artist_name,
       timestamp: entry.created_at,
       isRelisten: entry.is_relisten,
     })),
-    ...friendRatings.map(rating => ({
+    ...ratings.map(rating => ({
       id: `rating-${rating.id}`,
       type: rating.review_text ? 'review' as const : 'rating' as const,
-      userId: rating.user_id,
-      userProfile: profileMap.get(rating.user_id) || null,
       albumId: rating.release_group_id,
       albumTitle: rating.album_title,
       artistName: rating.artist_name,
@@ -151,11 +102,9 @@ export function ActivityFeed() {
       rating: rating.rating,
       reviewText: rating.review_text || undefined,
     })),
-    ...friendFollows.map(follow => ({
+    ...follows.map(follow => ({
       id: `follow-${follow.id}`,
       type: 'follow' as const,
-      userId: follow.user_id,
-      userProfile: profileMap.get(follow.user_id) || null,
       artistId: follow.artist_id,
       artistName: follow.artist_name,
       timestamp: follow.created_at,
@@ -163,6 +112,15 @@ export function ActivityFeed() {
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const isLoading = diaryLoading || ratingsLoading || followsLoading;
+
+  if (!user) {
+    return (
+      <div className="text-center py-12">
+        <Disc3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+        <p className="text-muted-foreground">Sign in to see your activity</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -172,33 +130,51 @@ export function ActivityFeed() {
     );
   }
 
-  if (friends.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <User className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-        <p className="text-muted-foreground">Add friends to see their activity</p>
-        <p className="text-sm text-muted-foreground/60 mt-2">
-          Go to the Friends tab to search and add friends
-        </p>
-      </div>
-    );
-  }
-
   if (activities.length === 0) {
     return (
       <div className="text-center py-12">
         <Disc3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-        <p className="text-muted-foreground">No recent activity from friends</p>
+        <p className="text-muted-foreground">No activity yet</p>
         <p className="text-sm text-muted-foreground/60 mt-2">
-          When your friends listen to albums or write reviews, you'll see them here
+          Start logging albums and following artists to see your activity here
         </p>
       </div>
     );
   }
 
+  const getActivityIcon = (activity: ActivityItem) => {
+    switch (activity.type) {
+      case 'listen':
+        return activity.isRelisten ? (
+          <RotateCcw className="h-4 w-4 text-primary" />
+        ) : (
+          <Disc3 className="h-4 w-4 text-muted-foreground" />
+        );
+      case 'review':
+        return <PenLine className="h-4 w-4 text-primary" />;
+      case 'rating':
+        return <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />;
+      case 'follow':
+        return <UserPlus className="h-4 w-4 text-primary" />;
+    }
+  };
+
+  const getActivityText = (activity: ActivityItem) => {
+    switch (activity.type) {
+      case 'listen':
+        return activity.isRelisten ? 're-listened to' : 'listened to';
+      case 'review':
+        return 'reviewed';
+      case 'rating':
+        return 'rated';
+      case 'follow':
+        return 'started following';
+    }
+  };
+
   return (
     <div className="space-y-3">
-      {activities.slice(0, 30).map((activity, index) => (
+      {activities.slice(0, 20).map((activity, index) => (
         <motion.div
           key={activity.id}
           initial={{ opacity: 0, y: 10 }}
@@ -206,46 +182,13 @@ export function ActivityFeed() {
           transition={{ delay: index * 0.02 }}
           className="flex gap-3 p-3 rounded-lg bg-card/30 hover:bg-card/60 transition-colors"
         >
-          {/* User Avatar */}
-          <div 
-            className="shrink-0 cursor-pointer"
-            onClick={() => navigate(`/user/${activity.userId}`)}
-          >
-            {activity.userProfile?.avatar_url ? (
-              <img
-                src={activity.userProfile.avatar_url}
-                alt=""
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                <User className="h-5 w-5 text-muted-foreground" />
-              </div>
-            )}
-          </div>
-
           {/* Activity Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
                 <p className="text-sm">
-                  <span 
-                    className="font-medium text-foreground hover:text-primary cursor-pointer transition-colors"
-                    onClick={() => navigate(`/user/${activity.userId}`)}
-                  >
-                    {activity.userProfile?.display_name || activity.userProfile?.username || 'User'}
-                  </span>
-                  {activity.type === 'listen' ? (
-                    <span className="text-muted-foreground">
-                      {activity.isRelisten ? ' re-listened to ' : ' listened to '}
-                    </span>
-                  ) : activity.type === 'follow' ? (
-                    <span className="text-muted-foreground"> started following </span>
-                  ) : activity.type === 'rating' ? (
-                    <span className="text-muted-foreground"> rated </span>
-                  ) : (
-                    <span className="text-muted-foreground"> reviewed </span>
-                  )}
+                  <span className="text-muted-foreground">You </span>
+                  <span className="text-muted-foreground">{getActivityText(activity)} </span>
                   {activity.type === 'follow' ? (
                     <span 
                       className="font-medium text-foreground hover:text-primary cursor-pointer transition-colors"
@@ -316,19 +259,7 @@ export function ActivityFeed() {
 
           {/* Activity Type Icon */}
           <div className="shrink-0">
-            {activity.type === 'listen' ? (
-              activity.isRelisten ? (
-                <RotateCcw className="h-4 w-4 text-primary" />
-              ) : (
-                <Disc3 className="h-4 w-4 text-muted-foreground" />
-              )
-            ) : activity.type === 'follow' ? (
-              <UserPlus className="h-4 w-4 text-primary" />
-            ) : activity.type === 'rating' ? (
-              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-            ) : (
-              <PenLine className="h-4 w-4 text-primary" />
-            )}
+            {getActivityIcon(activity)}
           </div>
         </motion.div>
       ))}
