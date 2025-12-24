@@ -81,7 +81,7 @@ export function LogListenDialog({
 
     setSaving(true);
 
-    // Insert diary entry
+    // Insert diary entry with rating
     const { error: diaryError } = await supabase.from("diary_entries").insert({
       user_id: user.id,
       release_group_id: releaseGroupId,
@@ -90,10 +90,11 @@ export function LogListenDialog({
       listened_on: format(date, "yyyy-MM-dd"),
       is_relisten: isRelisten,
       notes: review || null,
+      rating: rating > 0 ? rating : null,
     });
 
-    // Upsert rating and review if rating provided
-    if (rating > 0) {
+    // Also sync to album_ratings (keeps latest rating/review for album profile)
+    if (rating > 0 || review) {
       const { error: ratingError } = await supabase
         .from("album_ratings")
         .upsert({
@@ -101,28 +102,12 @@ export function LogListenDialog({
           release_group_id: releaseGroupId,
           album_title: albumTitle,
           artist_name: artistName,
-          rating: rating,
+          rating: rating > 0 ? rating : (existingRatingData?.rating || 0),
           review_text: review || null,
         }, { onConflict: "user_id,release_group_id" });
 
       if (ratingError) {
-        console.error("Error saving rating:", ratingError);
-      }
-    } else if (review) {
-      // If only review is provided without rating, still save/update the review
-      const { error: reviewError } = await supabase
-        .from("album_ratings")
-        .upsert({
-          user_id: user.id,
-          release_group_id: releaseGroupId,
-          album_title: albumTitle,
-          artist_name: artistName,
-          rating: existingRatingData?.rating || 0,
-          review_text: review,
-        }, { onConflict: "user_id,release_group_id" });
-
-      if (reviewError) {
-        console.error("Error saving review:", reviewError);
+        console.error("Error syncing rating:", ratingError);
       }
     }
 
