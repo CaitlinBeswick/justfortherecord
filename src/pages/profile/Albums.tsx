@@ -19,15 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface AlbumRating {
-  id: string;
+interface ListenedAlbum {
   release_group_id: string;
   album_title: string;
   artist_name: string;
-  rating: number;
-  loved: boolean;
   created_at: string;
-  release_date: string | null;
+  // From rating (optional)
+  rating?: number;
+  loved?: boolean;
+  release_date?: string | null;
 }
 
 type SortOption = 
@@ -60,42 +60,53 @@ const Albums = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // First get listened albums, then get their ratings
-  const { data: listenedAlbums = [], isLoading: isLoadingListened } = useQuery({
+  // Get all listened albums with their status info
+  const { data: listenedStatuses = [], isLoading: isLoadingListened } = useQuery({
     queryKey: ['user-listened-albums', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('listening_status')
-        .select('release_group_id')
+        .select('release_group_id, album_title, artist_name, created_at')
         .eq('user_id', user!.id)
         .eq('is_listened', true);
       if (error) throw error;
-      return data.map(d => d.release_group_id);
+      return data;
     },
     enabled: !!user,
   });
 
+  // Get ratings for listened albums
   const { data: ratings = [], isLoading: isLoadingRatings } = useQuery({
-    queryKey: ['user-ratings', user?.id, listenedAlbums],
+    queryKey: ['user-ratings', user?.id],
     queryFn: async () => {
-      if (listenedAlbums.length === 0) return [];
-      
       const { data, error } = await supabase
         .from('album_ratings')
-        .select('*')
-        .eq('user_id', user!.id)
-        .in('release_group_id', listenedAlbums)
-        .order('created_at', { ascending: false });
+        .select('release_group_id, rating, loved, release_date')
+        .eq('user_id', user!.id);
       if (error) throw error;
-      return data as AlbumRating[];
+      return data;
     },
-    enabled: !!user && listenedAlbums.length > 0,
+    enabled: !!user,
   });
 
   const isLoading = isLoadingListened || isLoadingRatings;
 
-  const sortedRatings = useMemo(() => {
-    const sorted = [...ratings];
+  // Merge listened albums with their ratings
+  const albums: ListenedAlbum[] = useMemo(() => {
+    const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
+    return listenedStatuses.map(status => {
+      const rating = ratingsMap.get(status.release_group_id);
+      return {
+        ...status,
+        rating: rating?.rating,
+        loved: rating?.loved,
+        release_date: rating?.release_date,
+      };
+    });
+  }, [listenedStatuses, ratings]);
+
+  const sortedAlbums = useMemo(() => {
+    const sorted = [...albums];
     switch (sortBy) {
       case 'artist-asc':
         return sorted.sort((a, b) => (a.artist_name || '').localeCompare(b.artist_name || ''));
@@ -112,9 +123,9 @@ const Albums = () => {
       default:
         return sorted;
     }
-  }, [ratings, sortBy]);
+  }, [albums, sortBy]);
 
-  const ratingsWithoutReleaseDates = ratings.filter(r => !r.release_date).length;
+  const albumsWithoutReleaseDates = albums.filter(a => !a.release_date).length;
 
   const handleBackfill = async () => {
     setIsBackfilling(true);
@@ -166,10 +177,10 @@ const Albums = () => {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                   <h2 className="font-serif text-xl text-foreground">
-                    Rated Albums ({ratings.length})
+                    Albums ({albums.length})
                   </h2>
                   <div className="flex items-center gap-3">
-                    {ratingsWithoutReleaseDates > 0 && (
+                    {albumsWithoutReleaseDates > 0 && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -181,10 +192,10 @@ const Albums = () => {
                         ) : (
                           <RefreshCw className="h-4 w-4 mr-2" />
                         )}
-                        Backfill Dates ({ratingsWithoutReleaseDates})
+                        Backfill Dates ({albumsWithoutReleaseDates})
                       </Button>
                     )}
-                    {ratings.length > 0 && (
+                    {albums.length > 0 && (
                       <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
                         <SelectTrigger className="w-[180px]">
                           <ArrowUpDown className="h-4 w-4 mr-2" />
@@ -201,21 +212,21 @@ const Albums = () => {
                     )}
                   </div>
                 </div>
-                {sortedRatings.length > 0 ? (
+                {sortedAlbums.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {sortedRatings.map((rating, index) => (
+                    {sortedAlbums.map((album, index) => (
                       <motion.div
-                        key={rating.id}
+                        key={album.release_group_id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.03 }}
                         className="group cursor-pointer"
-                        onClick={() => navigate(`/album/${rating.release_group_id}`)}
+                        onClick={() => navigate(`/album/${album.release_group_id}`)}
                       >
                         <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
                           <img
-                            src={getCoverArtUrl(rating.release_group_id)}
-                            alt={rating.album_title}
+                            src={getCoverArtUrl(album.release_group_id)}
+                            alt={album.album_title}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = '/placeholder.svg';
@@ -224,11 +235,17 @@ const Albums = () => {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                           <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <div className="flex items-center gap-1 text-white text-sm">
-                              <span className="text-yellow-400">★</span>
-                              <span className="font-medium">{rating.rating}</span>
+                              {album.rating ? (
+                                <>
+                                  <span className="text-yellow-400">★</span>
+                                  <span className="font-medium">{album.rating}</span>
+                                </>
+                              ) : (
+                                <span className="text-gray-400">★</span>
+                              )}
                             </div>
                           </div>
-                          {rating.loved && (
+                          {album.loved && (
                             <div className="absolute top-2 right-2">
                               <Heart className="h-4 w-4 text-red-500 fill-red-500" />
                             </div>
@@ -236,9 +253,9 @@ const Albums = () => {
                         </div>
                         <div className="mt-2">
                           <h3 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                            {rating.album_title}
+                            {album.album_title}
                           </h3>
-                          <p className="text-xs text-muted-foreground truncate">{rating.artist_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{album.artist_name}</p>
                         </div>
                       </motion.div>
                     ))}
@@ -246,7 +263,7 @@ const Albums = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Music className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No albums rated yet</p>
+                    <p className="text-muted-foreground">No albums listened yet</p>
                     <button 
                       onClick={() => navigate('/search')}
                       className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
