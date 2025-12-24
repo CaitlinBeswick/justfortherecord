@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CalendarIcon, RotateCcw, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CalendarIcon, RotateCcw, Plus, Star } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { StarRating } from "@/components/ui/StarRating";
 
 interface LogListenDialogProps {
   releaseGroupId: string;
@@ -45,7 +46,31 @@ export function LogListenDialog({
   const [date, setDate] = useState<Date>(new Date());
   const [isRelisten, setIsRelisten] = useState(hasListenedBefore);
   const [notes, setNotes] = useState("");
+  const [rating, setRating] = useState<number>(0);
   const [saving, setSaving] = useState(false);
+
+  // Fetch existing rating for this album
+  const { data: existingRating } = useQuery({
+    queryKey: ["album-rating", releaseGroupId, user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("album_ratings")
+        .select("rating")
+        .eq("release_group_id", releaseGroupId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data?.rating ?? null;
+    },
+    enabled: !!user && open,
+  });
+
+  // Set initial rating when dialog opens and existing rating is loaded
+  useEffect(() => {
+    if (existingRating !== undefined && existingRating !== null) {
+      setRating(existingRating);
+    }
+  }, [existingRating]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -55,7 +80,8 @@ export function LogListenDialog({
 
     setSaving(true);
 
-    const { error } = await supabase.from("diary_entries").insert({
+    // Insert diary entry
+    const { error: diaryError } = await supabase.from("diary_entries").insert({
       user_id: user.id,
       release_group_id: releaseGroupId,
       album_title: albumTitle,
@@ -65,17 +91,37 @@ export function LogListenDialog({
       notes: notes || null,
     });
 
+    // Upsert rating if provided
+    if (rating > 0) {
+      const { error: ratingError } = await supabase
+        .from("album_ratings")
+        .upsert({
+          user_id: user.id,
+          release_group_id: releaseGroupId,
+          album_title: albumTitle,
+          artist_name: artistName,
+          rating: rating,
+        }, { onConflict: "user_id,release_group_id" });
+
+      if (ratingError) {
+        console.error("Error saving rating:", ratingError);
+      }
+    }
+
     setSaving(false);
 
-    if (error) {
-      console.error("Error logging listen:", error);
+    if (diaryError) {
+      console.error("Error logging listen:", diaryError);
       toast.error("Failed to log listen");
     } else {
       toast.success(isRelisten ? "Re-listen logged!" : "Listen logged!");
       queryClient.invalidateQueries({ queryKey: ["diary-entries"] });
       queryClient.invalidateQueries({ queryKey: ["album-diary-entries", releaseGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["album-rating", releaseGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["user-ratings"] });
       setOpen(false);
       setNotes("");
+      setRating(0);
       setDate(new Date());
     }
   };
@@ -150,6 +196,43 @@ export function LogListenDialog({
                 Check if you've listened to this album before
               </p>
             </div>
+          </div>
+
+          {/* Rating */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Star className="h-4 w-4 text-primary" />
+              Rating
+            </Label>
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card/50">
+              <StarRating
+                rating={rating}
+                size="lg"
+                interactive
+                onRatingChange={setRating}
+              />
+              {rating > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {rating} / 5
+                </span>
+              )}
+              {rating > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-7 text-xs"
+                  onClick={() => setRating(0)}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+            {existingRating && existingRating !== rating && (
+              <p className="text-xs text-muted-foreground">
+                Current rating: {existingRating}/5 — this will update it
+              </p>
+            )}
           </div>
 
           {/* Notes */}
