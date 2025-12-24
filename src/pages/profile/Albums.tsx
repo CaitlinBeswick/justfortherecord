@@ -73,13 +73,13 @@ const Albums = () => {
     const sorted = [...ratings];
     switch (sortBy) {
       case 'artist-asc':
-        return sorted.sort((a, b) => a.artist_name.localeCompare(b.artist_name));
+        return sorted.sort((a, b) => (a.artist_name || '').localeCompare(b.artist_name || ''));
       case 'artist-desc':
-        return sorted.sort((a, b) => b.artist_name.localeCompare(a.artist_name));
+        return sorted.sort((a, b) => (b.artist_name || '').localeCompare(a.artist_name || ''));
       case 'album-asc':
-        return sorted.sort((a, b) => a.album_title.localeCompare(b.album_title));
+        return sorted.sort((a, b) => (a.album_title || '').localeCompare(b.album_title || ''));
       case 'album-desc':
-        return sorted.sort((a, b) => b.album_title.localeCompare(a.album_title));
+        return sorted.sort((a, b) => (b.album_title || '').localeCompare(a.album_title || ''));
       case 'date-asc':
         return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       case 'date-desc':
