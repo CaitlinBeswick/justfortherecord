@@ -110,6 +110,11 @@ serve(async (req) => {
         url = `${MUSICBRAINZ_BASE}/release?query=${encodeURIComponent(query)}&fmt=json&limit=25`;
         break;
       
+      case 'search-release-group':
+        // Search release-groups (albums) directly - better for finding iconic albums
+        url = `${MUSICBRAINZ_BASE}/release-group?query=${encodeURIComponent(query)}&fmt=json&limit=25`;
+        break;
+      
       case 'search-recording':
         url = `${MUSICBRAINZ_BASE}/recording?query=${encodeURIComponent(query)}&fmt=json&limit=25`;
         break;
