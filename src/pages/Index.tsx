@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
-import { ReviewCard } from "@/components/ReviewCard";
-import { recentReviews } from "@/data/mockData";
-import { ArrowRight, Clock, Activity } from "lucide-react";
+import { ArrowRight, Activity, User } from "lucide-react";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { UserActivityFeed } from "@/components/UserActivityFeed";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -16,13 +16,9 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
-
 const Index = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,8 +61,27 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Your Recent Activity */}
+      {user && (
+        <section className="container mx-auto px-4 py-12">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={containerVariants}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <User className="h-5 w-5 text-primary" />
+              <h2 className="font-serif text-2xl text-foreground">Your Recent Activity</h2>
+            </div>
+            
+            <UserActivityFeed />
+          </motion.div>
+        </section>
+      )}
+
       {/* Friends Activity */}
-      <section className="container mx-auto px-4 py-12">
+      <section className="container mx-auto px-4 py-12 pb-20">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -79,34 +94,6 @@ const Index = () => {
           </div>
           
           <ActivityFeed />
-        </motion.div>
-      </section>
-
-      {/* Recent Reviews */}
-      <section className="container mx-auto px-4 py-12 pb-20">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={containerVariants}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-primary" />
-              <h2 className="font-serif text-2xl text-foreground">Recent Reviews</h2>
-            </div>
-          </div>
-          
-          <motion.div 
-            variants={containerVariants}
-            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
-          >
-            {recentReviews.map((review) => (
-              <motion.div key={review.id} variants={itemVariants}>
-                <ReviewCard {...review} />
-              </motion.div>
-            ))}
-          </motion.div>
         </motion.div>
       </section>
     </div>
