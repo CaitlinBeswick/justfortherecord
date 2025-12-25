@@ -227,6 +227,7 @@ export type Database = {
           created_at: string
           id: string
           is_listened: boolean
+          is_loved: boolean
           is_to_listen: boolean
           release_group_id: string
           updated_at: string
@@ -238,6 +239,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_listened?: boolean
+          is_loved?: boolean
           is_to_listen?: boolean
           release_group_id: string
           updated_at?: string
@@ -249,6 +251,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_listened?: boolean
+          is_loved?: boolean
           is_to_listen?: boolean
           release_group_id?: string
           updated_at?: string

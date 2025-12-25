@@ -1,4 +1,4 @@
-import { Check, Clock, Loader2 } from "lucide-react";
+import { Check, Clock, Heart, Loader2 } from "lucide-react";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -18,9 +18,9 @@ export function ListeningStatusButtons({
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isListened, isToListen, toggleStatus, isPending } = useListeningStatus(releaseGroupId);
+  const { isListened, isToListen, isLoved, toggleStatus, isPending } = useListeningStatus(releaseGroupId);
 
-  const handleToggle = (field: 'is_listened' | 'is_to_listen') => {
+  const handleToggle = (field: 'is_listened' | 'is_to_listen' | 'is_loved') => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -30,7 +30,7 @@ export function ListeningStatusButtons({
       return;
     }
 
-    const currentValue = field === 'is_listened' ? isListened : isToListen;
+    const currentValue = field === 'is_listened' ? isListened : field === 'is_to_listen' ? isToListen : isLoved;
     toggleStatus({ 
       releaseGroupId, 
       albumTitle, 
@@ -73,6 +73,22 @@ export function ListeningStatusButtons({
           <Clock className="h-4 w-4" />
         )}
         To Listen
+      </button>
+      <button
+        onClick={() => handleToggle('is_loved')}
+        disabled={isPending}
+        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+          isLoved
+            ? "bg-red-500 text-white"
+            : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+        }`}
+      >
+        {isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Heart className={`h-4 w-4 ${isLoved ? "fill-current" : ""}`} />
+        )}
+        Love
       </button>
     </div>
   );
