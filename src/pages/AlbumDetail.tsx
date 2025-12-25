@@ -363,7 +363,7 @@ const AlbumDetail = () => {
         <div className="container mx-auto px-4 pt-24 text-center">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <h1 className="font-serif text-2xl text-foreground mb-2">Album Not Found</h1>
-          <p className="text-muted-foreground mb-4">This album couldn't be loaded from MusicBrainz.</p>
+          <p className="text-muted-foreground mb-4">This album couldn't be loaded.</p>
           <button onClick={() => navigate(-1)} className="text-primary hover:underline">
             Go Back
           </button>
