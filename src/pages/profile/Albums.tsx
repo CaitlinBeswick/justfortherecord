@@ -285,8 +285,7 @@ const Albums = () => {
                       checked={filters.loved}
                       onCheckedChange={(checked) => setFilters(f => ({ ...f, loved: !!checked }))}
                     />
-                    <label htmlFor="filter-loved" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1">
-                      <Heart className="h-3 w-3 text-red-500" />
+                    <label htmlFor="filter-loved" className="text-sm text-muted-foreground cursor-pointer">
                       Loved
                     </label>
                   </div>
