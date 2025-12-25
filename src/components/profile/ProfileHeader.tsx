@@ -33,15 +33,31 @@ export const ProfileHeader = () => {
     enabled: !!user,
   });
 
-  const { data: ratings = [] } = useQuery({
-    queryKey: ['user-album-ratings-summary', user?.id],
+  // Get count of all albums (merged listened + rated)
+  const { data: albumCount = 0 } = useQuery({
+    queryKey: ['user-album-count', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get listened albums
+      const { data: listened, error: listenedError } = await supabase
+        .from('listening_status')
+        .select('release_group_id')
+        .eq('user_id', user!.id)
+        .eq('is_listened', true);
+      if (listenedError) throw listenedError;
+
+      // Get rated albums  
+      const { data: rated, error: ratedError } = await supabase
         .from('album_ratings')
-        .select('id')
+        .select('release_group_id')
         .eq('user_id', user!.id);
-      if (error) throw error;
-      return data;
+      if (ratedError) throw ratedError;
+
+      // Merge and deduplicate by release_group_id
+      const uniqueIds = new Set([
+        ...(listened?.map(l => l.release_group_id) || []),
+        ...(rated?.map(r => r.release_group_id) || [])
+      ]);
+      return uniqueIds.size;
     },
     enabled: !!user,
   });
@@ -74,7 +90,6 @@ export const ProfileHeader = () => {
   });
 
   const displayName = profile?.display_name || profile?.username || user?.email?.split('@')[0] || 'User';
-  const ratingsCount = ratings.length;
   const artistsCount = followedArtists.length;
   const friendsCount = friendships.length;
 
@@ -126,7 +141,7 @@ export const ProfileHeader = () => {
             
             <div className="flex items-center justify-center md:justify-start gap-6 mt-6">
               <div className="text-center">
-                <p className="text-2xl font-semibold text-foreground">{ratingsCount}</p>
+                <p className="text-2xl font-semibold text-foreground">{albumCount}</p>
                 <p className="text-xs text-muted-foreground">Albums</p>
               </div>
               <div className="text-center">
