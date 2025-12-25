@@ -76,7 +76,7 @@ const Albums = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('listening_status')
-        .select('release_group_id, album_title, artist_name, created_at')
+        .select('release_group_id, album_title, artist_name, created_at, is_loved')
         .eq('user_id', user!.id)
         .eq('is_listened', true);
       if (error) throw error;
@@ -110,7 +110,7 @@ const Albums = () => {
       albumsMap.set(status.release_group_id, {
         ...status,
         rating: undefined,
-        loved: undefined,
+        loved: status.is_loved || undefined,
         release_date: undefined,
       });
     });
@@ -120,7 +120,8 @@ const Albums = () => {
       const existing = albumsMap.get(r.release_group_id);
       if (existing) {
         existing.rating = r.rating;
-        existing.loved = r.loved;
+        // Loved is true if either source says it's loved
+        existing.loved = existing.loved || r.loved;
         existing.release_date = r.release_date;
       } else {
         // Album was rated but not in listening_status - include it

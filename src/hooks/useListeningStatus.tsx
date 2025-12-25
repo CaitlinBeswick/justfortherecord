@@ -11,6 +11,7 @@ interface ListeningStatus {
   artist_name: string;
   is_listened: boolean;
   is_to_listen: boolean;
+  is_loved: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -66,7 +67,7 @@ export function useListeningStatus(releaseGroupId?: string) {
       releaseGroupId: string; 
       albumTitle: string; 
       artistName: string; 
-      field: 'is_listened' | 'is_to_listen';
+      field: 'is_listened' | 'is_to_listen' | 'is_loved';
       value: boolean;
     }) => {
       if (!user) throw new Error("Not authenticated");
@@ -82,9 +83,10 @@ export function useListeningStatus(releaseGroupId?: string) {
       if (existing) {
         const newIsListened = field === 'is_listened' ? value : existing.is_listened;
         const newIsToListen = field === 'is_to_listen' ? value : existing.is_to_listen;
+        const newIsLoved = field === 'is_loved' ? value : existing.is_loved;
 
-        // If both are false, delete the record
-        if (!newIsListened && !newIsToListen) {
+        // If all are false, delete the record
+        if (!newIsListened && !newIsToListen && !newIsLoved) {
           const { error } = await supabase
             .from('listening_status')
             .delete()
@@ -113,6 +115,7 @@ export function useListeningStatus(releaseGroupId?: string) {
             artist_name: artistName,
             is_listened: field === 'is_listened' ? value : false,
             is_to_listen: field === 'is_to_listen' ? value : false,
+            is_loved: field === 'is_loved' ? value : false,
           });
         if (error) throw error;
       }
@@ -121,7 +124,7 @@ export function useListeningStatus(releaseGroupId?: string) {
       queryClient.invalidateQueries({ queryKey: ['listening-status', user?.id, variables.releaseGroupId] });
       queryClient.invalidateQueries({ queryKey: ['listening-statuses', user?.id] });
       
-      const label = variables.field === 'is_listened' ? 'Listened' : 'To Listen';
+      const label = variables.field === 'is_listened' ? 'Listened' : variables.field === 'is_to_listen' ? 'To Listen' : 'Loved';
       toast({
         title: variables.value ? `Marked as ${label}` : `Removed from ${label}`,
         description: variables.albumTitle,
@@ -141,12 +144,14 @@ export function useListeningStatus(releaseGroupId?: string) {
     return {
       isListened: found?.is_listened ?? false,
       isToListen: found?.is_to_listen ?? false,
+      isLoved: found?.is_loved ?? false,
     };
   };
 
   return {
     isListened: status?.is_listened ?? false,
     isToListen: status?.is_to_listen ?? false,
+    isLoved: status?.is_loved ?? false,
     isLoading,
     isLoadingAll,
     allStatuses,
