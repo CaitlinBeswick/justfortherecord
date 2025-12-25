@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Music, Heart, ArrowUpDown, Search } from "lucide-react";
+import { Loader2, Plus, Music, Heart, ArrowUpDown, Search, Filter } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +58,11 @@ const Albums = () => {
   const [sortBy, setSortBy] = useState<SortOption>('release-desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [hasTriggeredBackfill, setHasTriggeredBackfill] = useState(false);
+  const [filters, setFilters] = useState({
+    unrated: false,
+    rated: false,
+    loved: false,
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -134,13 +140,30 @@ const Albums = () => {
   }, [listenedStatuses, ratings]);
 
   const filteredAlbums = useMemo(() => {
-    if (!searchQuery.trim()) return albums;
-    const query = searchQuery.toLowerCase();
-    return albums.filter(a => 
-      a.album_title.toLowerCase().includes(query) ||
-      a.artist_name.toLowerCase().includes(query)
-    );
-  }, [albums, searchQuery]);
+    let result = albums;
+    
+    // Apply checkbox filters
+    const hasActiveFilters = filters.unrated || filters.rated || filters.loved;
+    if (hasActiveFilters) {
+      result = result.filter(a => {
+        if (filters.unrated && !a.rating) return true;
+        if (filters.rated && a.rating) return true;
+        if (filters.loved && a.loved) return true;
+        return false;
+      });
+    }
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(a => 
+        a.album_title.toLowerCase().includes(query) ||
+        a.artist_name.toLowerCase().includes(query)
+      );
+    }
+    
+    return result;
+  }, [albums, searchQuery, filters]);
 
   const sortedAlbums = useMemo(() => {
     const sorted = [...filteredAlbums];
@@ -202,7 +225,7 @@ const Albums = () => {
             <ProfileNav activeTab="albums" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                   <h2 className="font-serif text-xl text-foreground">
                     Albums ({albums.length})
                   </h2>
@@ -232,6 +255,46 @@ const Albums = () => {
                       </Select>
                     )}
                   </div>
+                </div>
+
+                {/* Filter checkboxes */}
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="filter-unrated"
+                      checked={filters.unrated}
+                      onCheckedChange={(checked) => setFilters(f => ({ ...f, unrated: !!checked }))}
+                    />
+                    <label htmlFor="filter-unrated" className="text-sm text-muted-foreground cursor-pointer">
+                      Unrated
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="filter-rated"
+                      checked={filters.rated}
+                      onCheckedChange={(checked) => setFilters(f => ({ ...f, rated: !!checked }))}
+                    />
+                    <label htmlFor="filter-rated" className="text-sm text-muted-foreground cursor-pointer">
+                      Rated
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="filter-loved"
+                      checked={filters.loved}
+                      onCheckedChange={(checked) => setFilters(f => ({ ...f, loved: !!checked }))}
+                    />
+                    <label htmlFor="filter-loved" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1">
+                      <Heart className="h-3 w-3 text-red-500" />
+                      Loved
+                    </label>
+                  </div>
+                  {(filters.unrated || filters.rated || filters.loved) && (
+                    <span className="text-xs text-muted-foreground">
+                      ({filteredAlbums.length} shown)
+                    </span>
+                  )}
                 </div>
                 {sortedAlbums.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
