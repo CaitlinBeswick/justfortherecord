@@ -4,7 +4,7 @@ import { StarRating } from "@/components/ui/StarRating";
 import { AverageAlbumRating } from "@/components/AverageAlbumRating";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown, Star } from "lucide-react";
+import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown, Star } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -42,7 +42,6 @@ const AlbumDetail = () => {
   const queryClient = useQueryClient();
   
   const [userRating, setUserRating] = useState(0);
-  const [liked, setLiked] = useState(false);
   const [coverError, setCoverError] = useState(false);
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
 
@@ -135,11 +134,10 @@ const AlbumDetail = () => {
 
   const hasListenedBefore = diaryEntries.length > 0;
 
-  // Set initial values from existing rating
+  // Set initial rating from existing rating
   useEffect(() => {
     if (existingRating) {
       setUserRating(existingRating.rating);
-      setLiked(existingRating.loved || false);
     }
   }, [existingRating]);
 
@@ -240,44 +238,6 @@ const AlbumDetail = () => {
     },
   });
 
-  // Toggle loved status mutation
-  const toggleLovedMutation = useMutation({
-    mutationFn: async (newLovedStatus: boolean) => {
-      if (!user || !id) throw new Error("Not authenticated");
-      
-      // Check if a rating exists - we can only love rated albums
-      if (!existingRating) {
-        throw new Error("You must rate the album first before loving it");
-      }
-      
-      const { error } = await supabase
-        .from('album_ratings')
-        .update({ loved: newLovedStatus })
-        .eq('user_id', user.id)
-        .eq('release_group_id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-album-rating', user?.id, id] });
-      queryClient.invalidateQueries({ queryKey: ['user-album-ratings', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['user-album-ratings-basic', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['user-album-ratings-summary', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['user-album-loved', user?.id] });
-      toast({
-        title: liked ? "Added to loved" : "Removed from loved",
-        description: liked ? "Album added to your loved albums!" : "Album removed from your loved albums.",
-      });
-    },
-    onError: (error) => {
-      setLiked(!liked); // Revert optimistic update
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   const handleRatingChange = (rating: number) => {
     setUserRating(rating);
@@ -295,32 +255,7 @@ const AlbumDetail = () => {
   const handleRemoveRating = () => {
     if (user) {
       removeRatingMutation.mutate();
-      setLiked(false); // Also reset loved state when removing rating
     }
-  };
-
-  const handleToggleLoved = () => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to love albums.",
-      });
-      navigate('/auth');
-      return;
-    }
-    
-    if (!existingRating) {
-      toast({
-        title: "Rating required",
-        description: "Please rate the album first before loving it.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const newLovedStatus = !liked;
-    setLiked(newLovedStatus); // Optimistic update
-    toggleLovedMutation.mutate(newLovedStatus);
   };
 
   // Get all tracks from all media (supports multi-disc albums)
@@ -493,18 +428,6 @@ const AlbumDetail = () => {
                       }
                     />
                   )}
-                  <button
-                    onClick={handleToggleLoved}
-                    disabled={toggleLovedMutation.isPending}
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
-                      liked
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                    } ${toggleLovedMutation.isPending ? "opacity-50 cursor-not-allowed" : ""}`}
-                    title={existingRating ? (liked ? "Remove from loved albums" : "Add to loved albums") : "Rate album first to love it"}
-                  >
-                    <Heart className={`h-5 w-5 ${liked ? "fill-current" : ""}`} />
-                  </button>
                   <ShareButton 
                     title={releaseGroup.title}
                     text={`Check out ${releaseGroup.title} by ${artistName}`}
