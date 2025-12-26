@@ -120,6 +120,13 @@ export function useFriendships() {
     mutationFn: async (addresseeId: string) => {
       if (!user) throw new Error("Not authenticated");
       
+      // Get the current user's profile for the notification
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('username, display_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      
       const { error } = await supabase
         .from('friendships')
         .insert({
@@ -129,6 +136,18 @@ export function useFriendships() {
         });
       
       if (error) throw error;
+      
+      // Create a notification for the addressee
+      const senderName = senderProfile?.display_name || senderProfile?.username || 'Someone';
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: addresseeId,
+          type: 'friend_request',
+          title: 'New Friend Request',
+          message: `${senderName} wants to be your friend`,
+          data: { requester_id: user.id }
+        });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friendships'] });
