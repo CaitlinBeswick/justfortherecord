@@ -134,6 +134,35 @@ const UserProfile = () => {
     enabled: !!userId,
   });
 
+  // Get count of all albums (merged listened + rated) - same logic as ProfileHeader
+  const { data: albumCount = 0 } = useQuery({
+    queryKey: ['user-album-count', userId],
+    queryFn: async () => {
+      // Get listened albums
+      const { data: listened, error: listenedError } = await supabase
+        .from('listening_status')
+        .select('release_group_id')
+        .eq('user_id', userId!)
+        .eq('is_listened', true);
+      if (listenedError) throw listenedError;
+
+      // Get rated albums  
+      const { data: rated, error: ratedError } = await supabase
+        .from('album_ratings')
+        .select('release_group_id')
+        .eq('user_id', userId!);
+      if (ratedError) throw ratedError;
+
+      // Merge and deduplicate by release_group_id
+      const uniqueIds = new Set([
+        ...(listened?.map(l => l.release_group_id) || []),
+        ...(rated?.map(r => r.release_group_id) || [])
+      ]);
+      return uniqueIds.size;
+    },
+    enabled: !!userId,
+  });
+
   // Fetch user's diary entries
   const { data: diaryEntries = [] } = useQuery({
     queryKey: ['user-diary', userId],
@@ -392,12 +421,12 @@ const UserProfile = () => {
                 
                 <div className="flex items-center justify-center md:justify-start gap-6 mt-6">
                   <div className="text-center">
-                    <p className="text-2xl font-semibold text-foreground">{ratings.length}</p>
+                    <p className="text-2xl font-semibold text-foreground">{albumCount}</p>
                     <p className="text-xs text-muted-foreground">Albums</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-semibold text-foreground">{diaryEntries.length}</p>
-                    <p className="text-xs text-muted-foreground">Listens</p>
+                    <p className="text-2xl font-semibold text-foreground">{followedArtists.length}</p>
+                    <p className="text-xs text-muted-foreground">Artists</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-semibold text-foreground">{userFriends.length}</p>
@@ -419,30 +448,51 @@ const UserProfile = () => {
           </div>
         </div>
 
-        {/* Tabs Navigation */}
-        <div className="border-b border-border sticky top-16 bg-background/80 backdrop-blur-xl z-40">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center gap-1 overflow-x-auto">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-4 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Content with sidebar layout matching Profile */}
+        <div className="container mx-auto px-4 py-8 pb-20">
+          <div className="flex flex-col md:flex-row md:gap-8">
+            {/* Desktop sidebar */}
+            <aside className="hidden md:block w-56 shrink-0">
+              <nav className="sticky top-24 space-y-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </aside>
 
-        {/* Content */}
-        <section className="container mx-auto px-4 py-8 pb-20">
+            {/* Mobile grid navigation */}
+            <aside className="md:hidden w-full mb-6">
+              <nav className="grid grid-cols-2 gap-2">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </aside>
+
+            {/* Tab Content */}
+            <section className="flex-1 min-w-0">
           {/* Diary Tab */}
           {activeTab === "diary" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -715,7 +765,9 @@ const UserProfile = () => {
               )}
             </motion.div>
           )}
-        </section>
+            </section>
+          </div>
+        </div>
       </main>
     </div>
   );
