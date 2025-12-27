@@ -2,8 +2,10 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus } from "lucide-react";
-import { useState, useEffect } from "react";
+import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +13,13 @@ import { getCoverArtUrl, getArtistImage } from "@/services/musicbrainz";
 import { useFriendships } from "@/hooks/useFriendships";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Profile {
   id: string;
@@ -29,6 +38,7 @@ interface AlbumRating {
   artist_name: string;
   rating: number;
   loved: boolean;
+  release_date: string | null;
   created_at: string;
 }
 
@@ -79,6 +89,13 @@ interface UserFriend {
 
 type ProfileTab = "diary" | "albums" | "to_listen" | "friends" | "lists" | "artists";
 
+// Sort options for each tab
+type AlbumSortOption = 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc' | 'release-desc' | 'release-asc' | 'rating-high' | 'rating-low';
+type DiarySortOption = 'date-desc' | 'date-asc' | 'rating-desc' | 'rating-asc' | 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc';
+type ToListenSortOption = 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc' | 'date-added-desc' | 'date-added-asc';
+type ArtistSortOption = 'name-asc' | 'name-desc';
+type FriendSortOption = 'name-asc' | 'name-desc';
+
 const tabs: { id: ProfileTab; label: string; icon: React.ReactNode }[] = [
   { id: "diary", label: "Diary", icon: <Calendar className="h-4 w-4" /> },
   { id: "albums", label: "Albums", icon: <Music className="h-4 w-4" /> },
@@ -93,8 +110,25 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>("diary");
-  const { sendRequest, acceptRequest, getFriendshipStatus, pendingRequests, friends } = useFriendships();
+  const { sendRequest, acceptRequest, getFriendshipStatus, pendingRequests } = useFriendships();
   const [artistImages, setArtistImages] = useState<Record<string, string | null>>({});
+
+  // Search and filter states
+  const [diarySearch, setDiarySearch] = useState('');
+  const [diarySort, setDiarySort] = useState<DiarySortOption>('date-desc');
+  
+  const [albumSearch, setAlbumSearch] = useState('');
+  const [albumSort, setAlbumSort] = useState<AlbumSortOption>('release-desc');
+  const [albumFilters, setAlbumFilters] = useState({ unrated: false, rated: false, loved: false });
+  
+  const [toListenSearch, setToListenSearch] = useState('');
+  const [toListenSort, setToListenSort] = useState<ToListenSortOption>('date-added-desc');
+  
+  const [friendSearch, setFriendSearch] = useState('');
+  const [friendSort, setFriendSort] = useState<FriendSortOption>('name-asc');
+  
+  const [artistSearch, setArtistSearch] = useState('');
+  const [artistSort, setArtistSort] = useState<ArtistSortOption>('name-asc');
 
   // Redirect to own profile if viewing self
   if (user && userId === user.id) {
@@ -118,13 +152,39 @@ const UserProfile = () => {
     enabled: !!userId,
   });
 
+  // Get count of all albums (merged listened + rated)
+  const { data: albumCount = 0 } = useQuery({
+    queryKey: ['user-album-count', userId],
+    queryFn: async () => {
+      const { data: listened, error: listenedError } = await supabase
+        .from('listening_status')
+        .select('release_group_id')
+        .eq('user_id', userId!)
+        .eq('is_listened', true);
+      if (listenedError) throw listenedError;
+
+      const { data: rated, error: ratedError } = await supabase
+        .from('album_ratings')
+        .select('release_group_id')
+        .eq('user_id', userId!);
+      if (ratedError) throw ratedError;
+
+      const uniqueIds = new Set([
+        ...(listened?.map(l => l.release_group_id) || []),
+        ...(rated?.map(r => r.release_group_id) || [])
+      ]);
+      return uniqueIds.size;
+    },
+    enabled: !!userId,
+  });
+
   // Fetch user's album ratings
   const { data: ratings = [] } = useQuery({
     queryKey: ['public-user-album-ratings', userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')
-        .select('id, release_group_id, album_title, artist_name, rating, loved, created_at')
+        .select('id, release_group_id, album_title, artist_name, rating, loved, release_date, created_at')
         .eq('user_id', userId!)
         .order('created_at', { ascending: false });
       
@@ -134,31 +194,17 @@ const UserProfile = () => {
     enabled: !!userId,
   });
 
-  // Get count of all albums (merged listened + rated) - same logic as ProfileHeader
-  const { data: albumCount = 0 } = useQuery({
-    queryKey: ['user-album-count', userId],
+  // Fetch user's listening statuses (for albums with is_listened or is_loved)
+  const { data: allListeningStatuses = [] } = useQuery({
+    queryKey: ['user-all-listening-status', userId],
     queryFn: async () => {
-      // Get listened albums
-      const { data: listened, error: listenedError } = await supabase
+      const { data, error } = await supabase
         .from('listening_status')
-        .select('release_group_id')
-        .eq('user_id', userId!)
-        .eq('is_listened', true);
-      if (listenedError) throw listenedError;
-
-      // Get rated albums  
-      const { data: rated, error: ratedError } = await supabase
-        .from('album_ratings')
-        .select('release_group_id')
+        .select('*')
         .eq('user_id', userId!);
-      if (ratedError) throw ratedError;
-
-      // Merge and deduplicate by release_group_id
-      const uniqueIds = new Set([
-        ...(listened?.map(l => l.release_group_id) || []),
-        ...(rated?.map(r => r.release_group_id) || [])
-      ]);
-      return uniqueIds.size;
+      
+      if (error) throw error;
+      return data as ListeningStatus[];
     },
     enabled: !!userId,
   });
@@ -172,7 +218,7 @@ const UserProfile = () => {
         .select('id, release_group_id, album_title, artist_name, listened_on, is_relisten, rating')
         .eq('user_id', userId!)
         .order('listened_on', { ascending: false })
-        .limit(100);
+        .limit(500);
       
       if (error) throw error;
       return data as DiaryEntry[];
@@ -181,21 +227,10 @@ const UserProfile = () => {
   });
 
   // Fetch user's listening statuses (for to-listen queue)
-  const { data: listeningStatuses = [] } = useQuery({
-    queryKey: ['user-listening-status', userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('listening_status')
-        .select('*')
-        .eq('user_id', userId!)
-        .eq('is_to_listen', true)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as ListeningStatus[];
-    },
-    enabled: !!userId,
-  });
+  const toListenAlbums = useMemo(() => 
+    allListeningStatuses.filter(s => s.is_to_listen), 
+    [allListeningStatuses]
+  );
 
   // Fetch user's public lists
   const { data: userLists = [] } = useQuery({
@@ -242,14 +277,12 @@ const UserProfile = () => {
       
       if (error) throw error;
       
-      // Get friend IDs
       const friendIds = data.map(f => 
         f.requester_id === userId ? f.addressee_id : f.requester_id
       );
       
       if (friendIds.length === 0) return [];
       
-      // Fetch friend profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url')
@@ -267,6 +300,181 @@ const UserProfile = () => {
     },
     enabled: !!userId,
   });
+
+  // Merge albums for display (listened + rated)
+  const mergedAlbums = useMemo(() => {
+    const albumsMap = new Map<string, {
+      release_group_id: string;
+      album_title: string;
+      artist_name: string;
+      created_at: string;
+      rating?: number;
+      loved?: boolean;
+      release_date?: string | null;
+    }>();
+    
+    allListeningStatuses.filter(s => s.is_listened).forEach(status => {
+      albumsMap.set(status.release_group_id, {
+        release_group_id: status.release_group_id,
+        album_title: status.album_title,
+        artist_name: status.artist_name,
+        created_at: status.created_at,
+        loved: status.is_loved,
+      });
+    });
+    
+    ratings.forEach(r => {
+      const existing = albumsMap.get(r.release_group_id);
+      if (existing) {
+        existing.rating = r.rating;
+        existing.release_date = r.release_date;
+      } else {
+        albumsMap.set(r.release_group_id, {
+          release_group_id: r.release_group_id,
+          album_title: r.album_title,
+          artist_name: r.artist_name,
+          created_at: r.created_at,
+          rating: r.rating,
+          loved: false,
+          release_date: r.release_date,
+        });
+      }
+    });
+    
+    return Array.from(albumsMap.values());
+  }, [allListeningStatuses, ratings]);
+
+  // Filtered and sorted diary entries
+  const sortedDiaryEntries = useMemo(() => {
+    let result = diaryEntries;
+    
+    if (diarySearch.trim()) {
+      const query = diarySearch.toLowerCase();
+      result = result.filter(e => 
+        e.album_title.toLowerCase().includes(query) ||
+        e.artist_name.toLowerCase().includes(query)
+      );
+    }
+    
+    const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r.rating]));
+    
+    return [...result].sort((a, b) => {
+      switch (diarySort) {
+        case 'date-desc': return new Date(b.listened_on).getTime() - new Date(a.listened_on).getTime();
+        case 'date-asc': return new Date(a.listened_on).getTime() - new Date(b.listened_on).getTime();
+        case 'rating-desc': return (ratingsMap.get(b.release_group_id) ?? -1) - (ratingsMap.get(a.release_group_id) ?? -1);
+        case 'rating-asc': return (ratingsMap.get(a.release_group_id) ?? -1) - (ratingsMap.get(b.release_group_id) ?? -1);
+        case 'artist-asc': return a.artist_name.localeCompare(b.artist_name);
+        case 'artist-desc': return b.artist_name.localeCompare(a.artist_name);
+        case 'album-asc': return a.album_title.localeCompare(b.album_title);
+        case 'album-desc': return b.album_title.localeCompare(a.album_title);
+        default: return 0;
+      }
+    });
+  }, [diaryEntries, diarySearch, diarySort, ratings]);
+
+  // Filtered and sorted albums
+  const sortedAlbums = useMemo(() => {
+    let result = mergedAlbums;
+    
+    const hasActiveFilters = albumFilters.unrated || albumFilters.rated || albumFilters.loved;
+    if (hasActiveFilters) {
+      result = result.filter(a => {
+        if (albumFilters.unrated && !a.rating) return true;
+        if (albumFilters.rated && a.rating) return true;
+        if (albumFilters.loved && a.loved) return true;
+        return false;
+      });
+    }
+    
+    if (albumSearch.trim()) {
+      const query = albumSearch.toLowerCase();
+      result = result.filter(a => 
+        a.album_title.toLowerCase().includes(query) ||
+        a.artist_name.toLowerCase().includes(query)
+      );
+    }
+    
+    return [...result].sort((a, b) => {
+      switch (albumSort) {
+        case 'artist-asc': return a.artist_name.localeCompare(b.artist_name);
+        case 'artist-desc': return b.artist_name.localeCompare(a.artist_name);
+        case 'album-asc': return a.album_title.localeCompare(b.album_title);
+        case 'album-desc': return b.album_title.localeCompare(a.album_title);
+        case 'release-desc': return (b.release_date || '').localeCompare(a.release_date || '');
+        case 'release-asc': return (a.release_date || '').localeCompare(b.release_date || '');
+        case 'rating-high': return (b.rating ?? 0) - (a.rating ?? 0);
+        case 'rating-low': return (a.rating ?? 0) - (b.rating ?? 0);
+        default: return 0;
+      }
+    });
+  }, [mergedAlbums, albumSearch, albumSort, albumFilters]);
+
+  // Filtered and sorted to-listen albums
+  const sortedToListen = useMemo(() => {
+    let result = toListenAlbums;
+    
+    if (toListenSearch.trim()) {
+      const query = toListenSearch.toLowerCase();
+      result = result.filter(a => 
+        a.album_title.toLowerCase().includes(query) ||
+        a.artist_name.toLowerCase().includes(query)
+      );
+    }
+    
+    return [...result].sort((a, b) => {
+      switch (toListenSort) {
+        case 'artist-asc': return a.artist_name.localeCompare(b.artist_name);
+        case 'artist-desc': return b.artist_name.localeCompare(a.artist_name);
+        case 'album-asc': return a.album_title.localeCompare(b.album_title);
+        case 'album-desc': return b.album_title.localeCompare(a.album_title);
+        case 'date-added-desc': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'date-added-asc': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        default: return 0;
+      }
+    });
+  }, [toListenAlbums, toListenSearch, toListenSort]);
+
+  // Filtered and sorted friends
+  const sortedFriends = useMemo(() => {
+    let result = userFriends;
+    
+    if (friendSearch.trim()) {
+      const query = friendSearch.toLowerCase();
+      result = result.filter(f => 
+        (f.display_name || '').toLowerCase().includes(query) ||
+        (f.username || '').toLowerCase().includes(query)
+      );
+    }
+    
+    return [...result].sort((a, b) => {
+      const nameA = a.display_name || a.username || '';
+      const nameB = b.display_name || b.username || '';
+      switch (friendSort) {
+        case 'name-asc': return nameA.localeCompare(nameB);
+        case 'name-desc': return nameB.localeCompare(nameA);
+        default: return 0;
+      }
+    });
+  }, [userFriends, friendSearch, friendSort]);
+
+  // Filtered and sorted artists
+  const sortedArtists = useMemo(() => {
+    let result = followedArtists;
+    
+    if (artistSearch.trim()) {
+      const query = artistSearch.toLowerCase();
+      result = result.filter(a => a.artist_name.toLowerCase().includes(query));
+    }
+    
+    return [...result].sort((a, b) => {
+      switch (artistSort) {
+        case 'name-asc': return a.artist_name.localeCompare(b.artist_name);
+        case 'name-desc': return b.artist_name.localeCompare(a.artist_name);
+        default: return 0;
+      }
+    });
+  }, [followedArtists, artistSearch, artistSort]);
 
   // Fetch artist images
   useEffect(() => {
@@ -338,6 +546,7 @@ const UserProfile = () => {
   }
 
   const displayName = profile.display_name || profile.username || 'User';
+  const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
   return (
     <div className="min-h-screen bg-background">
@@ -493,278 +702,502 @@ const UserProfile = () => {
 
             {/* Tab Content */}
             <section className="flex-1 min-w-0">
-          {/* Diary Tab */}
-          {activeTab === "diary" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {diaryEntries.length > 0 ? (
-                <div className="space-y-2">
-                  {diaryEntries.map((entry, index) => (
-                    <motion.div
-                      key={entry.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                      className="flex items-center gap-3 p-2 rounded-lg bg-card/30 hover:bg-card/60 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/album/${entry.release_group_id}`)}
-                    >
-                      <div className="w-12 text-center shrink-0">
-                        <p className="text-lg font-semibold text-foreground leading-none">
-                          {format(new Date(entry.listened_on), 'd')}
-                        </p>
-                        <p className="text-xs text-muted-foreground uppercase">
-                          {format(new Date(entry.listened_on), 'MMM')}
-                        </p>
-                      </div>
-                      <div className="w-10 h-10 rounded overflow-hidden shrink-0">
-                        <img 
-                          src={getCoverArtUrl(entry.release_group_id, '250')}
-                          alt={entry.album_title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder.svg';
-                          }}
+              {/* Diary Tab */}
+              {activeTab === "diary" && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <h2 className="font-serif text-xl text-foreground">Diary ({diaryEntries.length})</h2>
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search diary..."
+                          value={diarySearch}
+                          onChange={(e) => setDiarySearch(e.target.value)}
+                          className="pl-9 w-[180px]"
                         />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-foreground truncate">
-                          {entry.album_title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
-                      </div>
-                      {entry.rating && (
-                        <div className="flex items-center gap-1 text-sm shrink-0">
-                          <span className="text-yellow-400">★</span>
-                          <span className="font-medium text-foreground">{entry.rating}</span>
-                        </div>
-                      )}
-                      {entry.is_relisten && (
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded shrink-0">Re-listen</span>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Calendar className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No listens logged yet</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* Albums Tab */}
-          {activeTab === "albums" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {ratings.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {ratings.map((rating, index) => (
-                    <motion.div
-                      key={rating.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="group cursor-pointer"
-                      onClick={() => navigate(`/album/${rating.release_group_id}`)}
-                    >
-                      <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
-                        <img
-                          src={getCoverArtUrl(rating.release_group_id)}
-                          alt={rating.album_title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder.svg';
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="flex items-center gap-1 text-white text-sm">
-                            <span className="text-yellow-400">★</span>
-                            <span className="font-medium">{rating.rating}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-2">
-                        <h3 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                          {rating.album_title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground truncate">{rating.artist_name}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Music className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No albums rated yet</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* To Listen Tab */}
-          {activeTab === "to_listen" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {listeningStatuses.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {listeningStatuses.map((item, index) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="group cursor-pointer"
-                      onClick={() => navigate(`/album/${item.release_group_id}`)}
-                    >
-                      <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
-                        <img
-                          src={getCoverArtUrl(item.release_group_id)}
-                          alt={item.album_title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder.svg';
-                          }}
-                        />
-                      </div>
-                      <div className="mt-2">
-                        <h3 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                          {item.album_title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground truncate">{item.artist_name}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Clock className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">{displayName}'s listening queue is empty</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* Friends Tab */}
-          {activeTab === "friends" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {userFriends.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                  {userFriends.map((friend, index) => (
-                    <motion.div
-                      key={friend.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="group text-center cursor-pointer"
-                      onClick={() => navigate(`/user/${friend.friend_id}`)}
-                    >
-                      <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50 bg-secondary flex items-center justify-center">
-                        {friend.avatar_url ? (
-                          <img 
-                            src={friend.avatar_url} 
-                            alt={friend.display_name || friend.username || 'User'}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="h-8 w-8 text-muted-foreground" />
-                        )}
-                      </div>
-                      <h3 className="mt-3 font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                        {friend.display_name || friend.username || 'User'}
-                      </h3>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">{displayName} hasn't added any friends yet</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* Lists Tab */}
-          {activeTab === "lists" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {userLists.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {userLists.map((list) => (
-                    <div key={list.id} className="rounded-xl bg-card p-4 hover:bg-surface-elevated transition-colors">
-                      <h3 className="font-semibold text-foreground">{list.name}</h3>
-                      {list.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{list.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-3">
-                        {list.is_ranked && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Ranked</span>
-                        )}
-                      </div>
+                      <Select value={diarySort} onValueChange={(v) => setDiarySort(v as DiarySortOption)}>
+                        <SelectTrigger className="w-[160px]">
+                          <ArrowUpDown className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                          <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+                          <SelectItem value="rating-desc">Rating (High-Low)</SelectItem>
+                          <SelectItem value="rating-asc">Rating (Low-High)</SelectItem>
+                          <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
+                          <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
+                          <SelectItem value="album-asc">Album (A-Z)</SelectItem>
+                          <SelectItem value="album-desc">Album (Z-A)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <List className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">{displayName} hasn't created any public lists</p>
-                </div>
+                  </div>
+                  {sortedDiaryEntries.length > 0 ? (
+                    <div className="space-y-2">
+                      {sortedDiaryEntries.map((entry, index) => {
+                        const rating = ratingsMap.get(entry.release_group_id);
+                        return (
+                          <motion.div
+                            key={entry.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.02 }}
+                            className="flex items-center gap-3 p-2 rounded-lg bg-card/30 hover:bg-card/60 transition-colors cursor-pointer"
+                            onClick={() => navigate(`/album/${entry.release_group_id}`)}
+                          >
+                            <div className="w-12 text-center shrink-0">
+                              <p className="text-lg font-semibold text-foreground leading-none">
+                                {format(new Date(entry.listened_on), 'd')}
+                              </p>
+                              <p className="text-xs text-muted-foreground uppercase">
+                                {format(new Date(entry.listened_on), 'MMM')}
+                              </p>
+                            </div>
+                            <div className="w-10 h-10 rounded overflow-hidden shrink-0">
+                              <img 
+                                src={getCoverArtUrl(entry.release_group_id, '250')}
+                                alt={entry.album_title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-medium text-foreground truncate">{entry.album_title}</h3>
+                              <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
+                            </div>
+                            <div className="shrink-0" title={entry.is_relisten ? "Re-listen" : "First listen"}>
+                              {entry.is_relisten ? (
+                                <RotateCcw className="h-4 w-4 text-primary" />
+                              ) : (
+                                <Play className="h-4 w-4 text-green-500" />
+                              )}
+                            </div>
+                            {rating && (
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const ratingValue = rating.rating;
+                                  const isFull = star <= Math.floor(ratingValue);
+                                  const isHalf = !isFull && star === Math.ceil(ratingValue) && ratingValue % 1 >= 0.5;
+                                  
+                                  if (isFull) {
+                                    return <Star key={star} className="h-3 w-3 text-yellow-400 fill-yellow-400" />;
+                                  } else if (isHalf) {
+                                    return (
+                                      <div key={star} className="relative h-3 w-3">
+                                        <Star className="absolute h-3 w-3 text-muted-foreground/30" />
+                                        <div className="absolute overflow-hidden w-1/2 h-3">
+                                          <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                                        </div>
+                                      </div>
+                                    );
+                                  } else {
+                                    return <Star key={star} className="h-3 w-3 text-muted-foreground/30" />;
+                                  }
+                                })}
+                                {rating.loved && (
+                                  <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 ml-1" />
+                                )}
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Calendar className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No listens logged yet</p>
+                    </div>
+                  )}
+                </motion.div>
               )}
-            </motion.div>
-          )}
 
-          {/* Artists Tab */}
-          {activeTab === "artists" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {followedArtists.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                  {followedArtists.map((artist, index) => {
-                    const imageUrl = artistImages[artist.artist_id];
-                    const initials = (artist.artist_name || 'Unknown')
-                      .split(' ')
-                      .map(w => w[0])
-                      .join('')
-                      .slice(0, 2)
-                      .toUpperCase();
+              {/* Albums Tab */}
+              {activeTab === "albums" && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <h2 className="font-serif text-xl text-foreground">Albums ({mergedAlbums.length})</h2>
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search albums..."
+                          value={albumSearch}
+                          onChange={(e) => setAlbumSearch(e.target.value)}
+                          className="pl-9 w-[200px]"
+                        />
+                      </div>
+                      <Select value={albumSort} onValueChange={(v) => setAlbumSort(v as AlbumSortOption)}>
+                        <SelectTrigger className="w-[180px]">
+                          <ArrowUpDown className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
+                          <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
+                          <SelectItem value="album-asc">Album (A-Z)</SelectItem>
+                          <SelectItem value="album-desc">Album (Z-A)</SelectItem>
+                          <SelectItem value="release-desc">Release Date (Newest)</SelectItem>
+                          <SelectItem value="release-asc">Release Date (Oldest)</SelectItem>
+                          <SelectItem value="rating-high">Rating (High-Low)</SelectItem>
+                          <SelectItem value="rating-low">Rating (Low-High)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-                    return (
-                      <motion.div
-                        key={artist.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="group text-center cursor-pointer"
-                        onClick={() => navigate(`/artist/${artist.artist_id}`)}
-                      >
-                        <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50 bg-secondary flex items-center justify-center">
-                          {imageUrl ? (
-                            <img 
-                              src={imageUrl} 
-                              alt={artist.artist_name}
-                              className="w-full h-full object-cover"
+                  {/* Filter checkboxes */}
+                  <div className="flex items-center gap-6 mb-6">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="filter-unrated"
+                        checked={albumFilters.unrated}
+                        onCheckedChange={(checked) => setAlbumFilters(f => ({ ...f, unrated: !!checked }))}
+                      />
+                      <label htmlFor="filter-unrated" className="text-sm text-muted-foreground cursor-pointer">Unrated</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="filter-rated"
+                        checked={albumFilters.rated}
+                        onCheckedChange={(checked) => setAlbumFilters(f => ({ ...f, rated: !!checked }))}
+                      />
+                      <label htmlFor="filter-rated" className="text-sm text-muted-foreground cursor-pointer">Rated</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="filter-loved"
+                        checked={albumFilters.loved}
+                        onCheckedChange={(checked) => setAlbumFilters(f => ({ ...f, loved: !!checked }))}
+                      />
+                      <label htmlFor="filter-loved" className="text-sm text-muted-foreground cursor-pointer">Loved</label>
+                    </div>
+                    {(albumFilters.unrated || albumFilters.rated || albumFilters.loved) && (
+                      <span className="text-xs text-muted-foreground">({sortedAlbums.length} shown)</span>
+                    )}
+                  </div>
+
+                  {sortedAlbums.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {sortedAlbums.map((album, index) => (
+                        <motion.div
+                          key={album.release_group_id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.03 }}
+                          className="group cursor-pointer"
+                          onClick={() => navigate(`/album/${album.release_group_id}`)}
+                        >
+                          <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
+                            <img
+                              src={getCoverArtUrl(album.release_group_id)}
+                              alt={album.album_title}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).src = '/placeholder.svg';
                               }}
                             />
-                          ) : (
-                            <span className="text-foreground font-bold text-2xl sm:text-3xl">
-                              {initials}
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="mt-3 font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                          {artist.artist_name || 'Unknown Artist'}
-                        </h3>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <UserCheck className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">{displayName} isn't following any artists</p>
-                </div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-1 text-white text-sm">
+                                {album.rating ? (
+                                  <>
+                                    <span className="text-yellow-400">★</span>
+                                    <span className="font-medium">{album.rating}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-gray-400">★</span>
+                                )}
+                              </div>
+                            </div>
+                            {album.loved && (
+                              <div className="absolute top-2 right-2">
+                                <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-2">
+                            <h3 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                              {album.album_title}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">{album.artist_name}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Music className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No albums found</p>
+                    </div>
+                  )}
+                </motion.div>
               )}
-            </motion.div>
-          )}
+
+              {/* To Listen Tab */}
+              {activeTab === "to_listen" && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                    <h2 className="font-serif text-xl text-foreground">Listening Queue ({toListenAlbums.length})</h2>
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search queue..."
+                          value={toListenSearch}
+                          onChange={(e) => setToListenSearch(e.target.value)}
+                          className="pl-9 w-[180px]"
+                        />
+                      </div>
+                      <Select value={toListenSort} onValueChange={(v) => setToListenSort(v as ToListenSortOption)}>
+                        <SelectTrigger className="w-[160px]">
+                          <ArrowUpDown className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
+                          <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
+                          <SelectItem value="album-asc">Album (A-Z)</SelectItem>
+                          <SelectItem value="album-desc">Album (Z-A)</SelectItem>
+                          <SelectItem value="date-added-desc">Date Added (Newest)</SelectItem>
+                          <SelectItem value="date-added-asc">Date Added (Oldest)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {sortedToListen.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {sortedToListen.map((item, index) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.03 }}
+                          className="group cursor-pointer"
+                          onClick={() => navigate(`/album/${item.release_group_id}`)}
+                        >
+                          <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
+                            <img
+                              src={getCoverArtUrl(item.release_group_id)}
+                              alt={item.album_title}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/placeholder.svg';
+                              }}
+                            />
+                          </div>
+                          <div className="mt-2">
+                            <h3 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                              {item.album_title}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">{item.artist_name}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : toListenAlbums.length > 0 ? (
+                    <div className="text-center py-12">
+                      <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No albums match your search</p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Clock className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">{displayName}'s listening queue is empty</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Friends Tab */}
+              {activeTab === "friends" && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <h2 className="font-serif text-xl text-foreground">Friends ({userFriends.length})</h2>
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search friends..."
+                          value={friendSearch}
+                          onChange={(e) => setFriendSearch(e.target.value)}
+                          className="pl-9 w-[180px]"
+                        />
+                      </div>
+                      {userFriends.length > 0 && (
+                        <Select value={friendSort} onValueChange={(v) => setFriendSort(v as FriendSortOption)}>
+                          <SelectTrigger className="w-[140px]">
+                            <ArrowUpDown className="h-4 w-4 mr-2" />
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                            <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </div>
+                  {sortedFriends.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                      {sortedFriends.map((friend, index) => (
+                        <motion.div
+                          key={friend.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="group text-center cursor-pointer"
+                          onClick={() => navigate(`/user/${friend.friend_id}`)}
+                        >
+                          <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50 bg-secondary flex items-center justify-center">
+                            {friend.avatar_url ? (
+                              <img 
+                                src={friend.avatar_url} 
+                                alt={friend.display_name || friend.username || 'User'}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <User className="h-8 w-8 text-muted-foreground" />
+                            )}
+                          </div>
+                          <h3 className="mt-3 font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                            {friend.display_name || friend.username || 'User'}
+                          </h3>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : userFriends.length > 0 ? (
+                    <div className="text-center py-12">
+                      <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No friends match your search</p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">{displayName} hasn't added any friends yet</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Lists Tab */}
+              {activeTab === "lists" && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <h2 className="font-serif text-xl text-foreground mb-4">Public Lists ({userLists.length})</h2>
+                  {userLists.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {userLists.map((list) => (
+                        <div key={list.id} className="rounded-xl bg-card p-4 hover:bg-surface-elevated transition-colors">
+                          <h3 className="font-semibold text-foreground">{list.name}</h3>
+                          {list.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{list.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-3">
+                            {list.is_ranked && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Ranked</span>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(list.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <List className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">{displayName} hasn't created any public lists</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Artists Tab */}
+              {activeTab === "artists" && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                    <h2 className="font-serif text-xl text-foreground">Artists ({followedArtists.length})</h2>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Select value={artistSort} onValueChange={(v) => setArtistSort(v as ArtistSortOption)}>
+                        <SelectTrigger className="w-[160px]">
+                          <ArrowUpDown className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                          <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search artists..."
+                          value={artistSearch}
+                          onChange={(e) => setArtistSearch(e.target.value)}
+                          className="pl-9 w-[180px]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  {sortedArtists.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                      {sortedArtists.map((artist, index) => {
+                        const imageUrl = artistImages[artist.artist_id];
+                        const initials = (artist.artist_name || 'Unknown')
+                          .split(' ')
+                          .map(w => w[0])
+                          .join('')
+                          .slice(0, 2)
+                          .toUpperCase();
+
+                        return (
+                          <motion.div
+                            key={artist.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="group text-center cursor-pointer"
+                            onClick={() => navigate(`/artist/${artist.artist_id}`)}
+                          >
+                            <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-2 border-border/50 transition-all duration-300 group-hover:border-primary/50 bg-secondary flex items-center justify-center">
+                              {imageUrl ? (
+                                <img 
+                                  src={imageUrl} 
+                                  alt={artist.artist_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-foreground font-bold text-2xl sm:text-3xl">
+                                  {initials}
+                                </span>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                            </div>
+                            <h3 className="mt-3 font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                              {artist.artist_name || 'Unknown Artist'}
+                            </h3>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  ) : followedArtists.length > 0 ? (
+                    <div className="text-center py-12">
+                      <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No artists match your search</p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <UserCheck className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">{displayName} isn't following any artists</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </section>
           </div>
         </div>
