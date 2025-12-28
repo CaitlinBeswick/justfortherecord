@@ -135,6 +135,95 @@ export function useFavoriteAlbums(userId?: string) {
     },
   });
 
+  const reorderFavoritesMutation = useMutation({
+    mutationFn: async (
+      updates: { releaseGroupId: string; albumTitle: string; artistName: string; newPosition: number }[]
+    ) => {
+      if (!user) throw new Error("Not authenticated");
+
+      // Delete all current favorites
+      const { error: deleteError } = await supabase
+        .from('favorite_albums')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (deleteError) throw deleteError;
+
+      // Re-insert with new positions
+      const inserts = updates.map(u => ({
+        user_id: user.id,
+        release_group_id: u.releaseGroupId,
+        album_title: u.albumTitle,
+        artist_name: u.artistName,
+        position: u.newPosition,
+      }));
+
+      // Also include unchanged favorites
+      favorites.forEach(fav => {
+        const updated = updates.find(u => u.releaseGroupId === fav.release_group_id);
+        if (!updated) {
+          // Find new position based on order
+          const newPos = updates.length > 0 
+            ? Math.max(...updates.map(u => u.newPosition)) + 1 
+            : fav.position;
+          inserts.push({
+            user_id: user.id,
+            release_group_id: fav.release_group_id,
+            album_title: fav.album_title,
+            artist_name: fav.artist_name,
+            position: fav.position,
+          });
+        }
+      });
+
+      // Deduplicate by release_group_id, keeping the one with updated position
+      const deduped = new Map<string, typeof inserts[0]>();
+      updates.forEach(u => {
+        deduped.set(u.releaseGroupId, {
+          user_id: user.id,
+          release_group_id: u.releaseGroupId,
+          album_title: u.albumTitle,
+          artist_name: u.artistName,
+          position: u.newPosition,
+        });
+      });
+      favorites.forEach(fav => {
+        if (!deduped.has(fav.release_group_id)) {
+          deduped.set(fav.release_group_id, {
+            user_id: user.id,
+            release_group_id: fav.release_group_id,
+            album_title: fav.album_title,
+            artist_name: fav.artist_name,
+            position: fav.position,
+          });
+        }
+      });
+
+      const finalInserts = Array.from(deduped.values());
+
+      if (finalInserts.length > 0) {
+        const { error: insertError } = await supabase
+          .from('favorite_albums')
+          .insert(finalInserts);
+        
+        if (insertError) throw insertError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorite-albums', user?.id] });
+      toast({
+        title: "Favorites reordered",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error reordering",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Get favorite by position (1-5)
   const getFavoriteAtPosition = (position: number): FavoriteAlbum | undefined => {
     return favorites.find(f => f.position === position);
@@ -146,7 +235,8 @@ export function useFavoriteAlbums(userId?: string) {
     isOwner,
     setFavorite: setFavoriteMutation.mutate,
     removeFavorite: removeFavoriteMutation.mutate,
-    isPending: setFavoriteMutation.isPending || removeFavoriteMutation.isPending,
+    reorderFavorites: reorderFavoritesMutation.mutate,
+    isPending: setFavoriteMutation.isPending || removeFavoriteMutation.isPending || reorderFavoritesMutation.isPending,
     getFavoriteAtPosition,
   };
 }
