@@ -13,6 +13,7 @@ import { getCoverArtUrl, getArtistImage } from "@/services/musicbrainz";
 import { useFriendships } from "@/hooks/useFriendships";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { FavoriteAlbums } from "@/components/profile/FavoriteAlbums";
 import {
   Select,
   SelectContent,
@@ -652,6 +653,8 @@ const UserProfile = () => {
                     ))}
                   </div>
                 )}
+
+                <FavoriteAlbums userId={userId} />
               </div>
             </motion.div>
           </div>

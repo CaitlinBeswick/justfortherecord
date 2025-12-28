@@ -152,6 +152,39 @@ export type Database = {
         }
         Relationships: []
       }
+      favorite_albums: {
+        Row: {
+          album_title: string
+          artist_name: string
+          created_at: string
+          id: string
+          position: number
+          release_group_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          album_title: string
+          artist_name: string
+          created_at?: string
+          id?: string
+          position: number
+          release_group_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          album_title?: string
+          artist_name?: string
+          created_at?: string
+          id?: string
+          position?: number
+          release_group_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       friendships: {
         Row: {
           addressee_id: string
