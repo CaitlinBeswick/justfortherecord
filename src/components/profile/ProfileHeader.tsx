@@ -4,6 +4,7 @@ import { Settings, User, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { FavoriteAlbums } from "@/components/profile/FavoriteAlbums";
 
 interface Profile {
   id: string;
@@ -163,6 +164,8 @@ export const ProfileHeader = () => {
                 ))}
               </div>
             )}
+
+            <FavoriteAlbums />
           </div>
         </motion.div>
       </div>
