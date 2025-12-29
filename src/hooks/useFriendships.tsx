@@ -165,12 +165,43 @@ export function useFriendships() {
   // Accept friend request
   const acceptRequest = useMutation({
     mutationFn: async (friendshipId: string) => {
+      if (!user) throw new Error("Not authenticated");
+      
+      // Get the friendship to find the requester
+      const { data: friendship, error: fetchError } = await supabase
+        .from('friendships')
+        .select('requester_id')
+        .eq('id', friendshipId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Update the friendship status
       const { error } = await supabase
         .from('friendships')
         .update({ status: 'accepted' })
         .eq('id', friendshipId);
       
       if (error) throw error;
+      
+      // Get current user's profile for the notification
+      const { data: accepterProfile } = await supabase
+        .from('profiles')
+        .select('username, display_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      // Notify the original requester that their request was accepted
+      const accepterName = accepterProfile?.display_name || accepterProfile?.username || 'Someone';
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: friendship.requester_id,
+          type: 'friend_request_accepted',
+          title: 'Friend Request Accepted',
+          message: `${accepterName} accepted your friend request`,
+          data: { accepter_id: user.id }
+        });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friendships'] });
