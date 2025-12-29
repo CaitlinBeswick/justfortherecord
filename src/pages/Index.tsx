@@ -61,9 +61,26 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Friends Activity */}
+      <section className="container mx-auto px-4 py-12">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={containerVariants}
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <Activity className="h-5 w-5 text-primary" />
+            <h2 className="font-serif text-2xl text-foreground">Friends Activity</h2>
+          </div>
+          
+          <ActivityFeed />
+        </motion.div>
+      </section>
+
       {/* Your Recent Activity */}
       {user && (
-        <section className="container mx-auto px-4 py-12">
+        <section className="container mx-auto px-4 py-12 pb-20">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -79,23 +96,6 @@ const Index = () => {
           </motion.div>
         </section>
       )}
-
-      {/* Friends Activity */}
-      <section className="container mx-auto px-4 py-12 pb-20">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={containerVariants}
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <Activity className="h-5 w-5 text-primary" />
-            <h2 className="font-serif text-2xl text-foreground">Friends Activity</h2>
-          </div>
-          
-          <ActivityFeed />
-        </motion.div>
-      </section>
     </div>
   );
 };
