@@ -409,8 +409,8 @@ const ArtistDetail = () => {
                           disabled={followMutation.isPending}
                           className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
                             following
-                              ? "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                              : "bg-primary text-primary-foreground hover:opacity-90"
+                              ? "bg-red-500 text-white hover:bg-red-600"
+                              : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
                           } disabled:opacity-50`}
                         >
                           {following ? (
