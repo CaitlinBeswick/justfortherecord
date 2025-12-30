@@ -152,18 +152,51 @@ export async function getArtistImage(id: string): Promise<string | null> {
   }
 }
 
+// Preferred countries for original/English releases (ordered by preference)
+const PREFERRED_COUNTRIES = ['US', 'GB', 'XW', 'XE', 'AU', 'CA', 'NZ', 'IE'];
+
+// Get the best title for a release group by preferring releases from English-speaking countries
+function getBestTitle(rg: any): string {
+  const releases = rg.releases || [];
+  
+  if (releases.length === 0) {
+    return rg.title;
+  }
+  
+  // Find a release from a preferred country
+  for (const country of PREFERRED_COUNTRIES) {
+    const preferredRelease = releases.find((r: any) => r.country === country);
+    if (preferredRelease && preferredRelease.title) {
+      return preferredRelease.title;
+    }
+  }
+  
+  // Fall back to the release group's original title
+  return rg.title;
+}
+
 export async function getArtistReleases(artistId: string, type?: string): Promise<MBReleaseGroup[]> {
   if (!isValidId(artistId)) {
     throw new Error('Invalid artist ID');
   }
   const data = await callMusicBrainz({ action: 'get-artist-releases', id: artistId, type });
-  const releaseGroups: MBReleaseGroup[] = data["release-groups"] || [];
+  const releaseGroups: any[] = data["release-groups"] || [];
+  
+  // Process release groups to use preferred titles from English-speaking regions
+  const processedGroups: MBReleaseGroup[] = releaseGroups.map((rg) => ({
+    id: rg.id,
+    title: getBestTitle(rg),
+    "primary-type": rg["primary-type"],
+    "first-release-date": rg["first-release-date"],
+    "artist-credit": rg["artist-credit"],
+    rating: rg.rating,
+  }));
   
   // Deduplicate release groups by title (case-insensitive)
   // Keep the one with the earliest release date (original release)
   const uniqueByTitle = new Map<string, MBReleaseGroup>();
   
-  for (const rg of releaseGroups) {
+  for (const rg of processedGroups) {
     const normalizedTitle = rg.title.toLowerCase().trim();
     const existing = uniqueByTitle.get(normalizedTitle);
     

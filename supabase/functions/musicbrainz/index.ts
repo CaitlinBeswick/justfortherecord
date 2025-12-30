@@ -296,11 +296,13 @@ serve(async (req) => {
         url = `${MUSICBRAINZ_BASE}/release/${id}?inc=artists+recordings+genres+ratings&fmt=json`;
         break;
       
-      case 'get-artist-releases':
+      case 'get-artist-releases': {
         // Fetch all release types by default, or specific type if provided
         const releaseType = type || 'album|single|ep|compilation|live|remix';
-        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=${encodeURIComponent(releaseType)}&fmt=json&limit=100`;
+        // Include releases to get country/region info for preferring original titles
+        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=${encodeURIComponent(releaseType)}&inc=releases&fmt=json&limit=100`;
         break;
+      }
       
       case 'get-release-tracks':
         // Get tracks from a release
