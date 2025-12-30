@@ -4,6 +4,7 @@ import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistRating } from "@/components/ArtistRating";
 import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { ShareButton } from "@/components/ShareButton";
+import { RelatedArtists } from "@/components/RelatedArtists";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
@@ -544,6 +545,9 @@ const ArtistDetail = () => {
               No releases found in the database.
             </p>
           )}
+
+          {/* Related Artists Section */}
+          <RelatedArtists artistId={artistId} artistName={artist.name} />
         </section>
       </main>
     </div>

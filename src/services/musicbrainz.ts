@@ -17,6 +17,15 @@ export interface MBArtist {
   genres?: Array<{ name: string; count: number }>;
   rating?: { value: number; "votes-count": number };
   "release-groups"?: MBReleaseGroup[];
+  relations?: MBArtistRelation[];
+}
+
+export interface MBArtistRelation {
+  type: string;
+  "type-id": string;
+  direction: string;
+  attributes?: string[];
+  artist: MBArtist;
 }
 
 export interface MBReleaseGroup {
@@ -138,6 +147,76 @@ export async function getArtist(id: string): Promise<MBArtist> {
     throw new Error('Invalid artist ID');
   }
   return await callMusicBrainz({ action: 'get-artist', id });
+}
+
+export interface RelatedArtist {
+  id: string;
+  name: string;
+  type: string;
+  relationshipType: string;
+}
+
+export async function getRelatedArtists(id: string): Promise<RelatedArtist[]> {
+  if (!isValidId(id)) {
+    return [];
+  }
+  try {
+    const data = await callMusicBrainz({ action: 'get-artist', id });
+    const relations: MBArtistRelation[] = data.relations || [];
+    
+    // Filter to artist-to-artist relations that are interesting for discovery
+    const relevantTypes = new Set([
+      'member of band',
+      'is person',
+      'collaboration',
+      'vocal supporting musician',
+      'instrumental supporting musician',
+      'supporting musician',
+      'tribute',
+    ]);
+    
+    const relatedArtists: RelatedArtist[] = [];
+    const seenIds = new Set<string>();
+    
+    for (const rel of relations) {
+      if (!rel.artist || seenIds.has(rel.artist.id)) continue;
+      
+      // Skip self-references
+      if (rel.artist.id === id) continue;
+      
+      seenIds.add(rel.artist.id);
+      
+      // Determine relationship description
+      let relationshipType = '';
+      
+      if (rel.type === 'member of band') {
+        relationshipType = rel.direction === 'backward' ? 'Member' : 'Band';
+      } else if (rel.type === 'is person') {
+        relationshipType = rel.direction === 'backward' ? 'Also known as' : 'Also performs as';
+      } else if (rel.type === 'collaboration') {
+        relationshipType = 'Collaborator';
+      } else if (rel.type.includes('supporting musician')) {
+        relationshipType = 'Supporting musician';
+      } else if (rel.type === 'tribute') {
+        relationshipType = 'Tribute to';
+      } else {
+        // Include other relations with a generic label
+        relationshipType = rel.type.replace(/_/g, ' ');
+      }
+      
+      relatedArtists.push({
+        id: rel.artist.id,
+        name: rel.artist.name,
+        type: rel.artist.type || 'Artist',
+        relationshipType,
+      });
+    }
+    
+    return relatedArtists;
+  } catch (error) {
+    console.error('Failed to fetch related artists:', error);
+    return [];
+  }
 }
 
 export async function getArtistImage(id: string): Promise<string | null> {

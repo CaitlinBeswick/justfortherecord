@@ -86,6 +86,7 @@ serve(async (req) => {
     const actionsRequiringId = new Set([
       'get-artist',
       'get-artist-image',
+      'get-artist-relations',
       'get-release-group',
       'get-release',
       'get-artist-releases',
@@ -121,7 +122,13 @@ serve(async (req) => {
       
       case 'get-artist':
         // Include artist-credits in release-groups so we can filter primary artist releases
-        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+genres+ratings+url-rels+artist-credits&fmt=json`;
+        // Include artist-rels for related artists
+        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+genres+ratings+url-rels+artist-credits+artist-rels&fmt=json`;
+        break;
+      
+      case 'get-artist-relations':
+        // Get artist relations for "also performs as" / "related artists" section
+        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=artist-rels&fmt=json`;
         break;
       
       case 'get-artist-image': {
