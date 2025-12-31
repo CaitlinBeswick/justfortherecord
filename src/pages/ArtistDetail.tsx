@@ -9,7 +9,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getArtist, getArtistImage, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
+import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +60,14 @@ const ArtistDetail = () => {
     enabled: isValidArtistId,
     retry: 3,
     staleTime: 1000 * 60 * 5,
+  });
+
+  // Fetch ALL releases separately to avoid the default limit in get-artist
+  const { data: allReleases = [], isLoading: isLoadingReleases } = useQuery({
+    queryKey: ['artist-releases', artistId],
+    queryFn: () => getArtistReleases(artistId),
+    enabled: isValidArtistId,
+    staleTime: 1000 * 60 * 30,
   });
 
   const { data: artistImage } = useQuery({
@@ -158,11 +166,8 @@ const ArtistDetail = () => {
     followMutation.mutate();
   };
 
-  // Use release-groups from the artist response (already included in getArtist)
   // Filter to only include releases where this artist is the PRIMARY artist
   // This excludes featured appearances, compilations where they're just one of many artists, etc.
-  const allReleases: MBReleaseGroup[] = artist?.["release-groups"] || [];
-  
   const releases = allReleases.filter(release => {
     const artistCredits = release["artist-credit"];
     if (!artistCredits || artistCredits.length === 0) return true; // Include if no credits info
@@ -298,7 +303,7 @@ const ArtistDetail = () => {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingReleases) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />

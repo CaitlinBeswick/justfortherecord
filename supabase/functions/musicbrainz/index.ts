@@ -121,8 +121,8 @@ serve(async (req) => {
         break;
       
       case 'get-artist':
-        // Include artist-credits and secondary types in release-groups so we can filter properly
-        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+release-group-secondary-type-ids+genres+ratings+url-rels+artist-credits&fmt=json`;
+        // MusicBrainz returns secondary-types in release-groups by default
+        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+genres+ratings+url-rels+artist-credits&fmt=json`;
         break;
       
       case 'get-artist-relations':
@@ -305,8 +305,8 @@ serve(async (req) => {
       case 'get-artist-releases': {
         // Fetch all release types by default, or specific type if provided
         const releaseType = type || 'album|single|ep|compilation|live|remix';
-        // Include releases to get country/region info for preferring original titles
-        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=${encodeURIComponent(releaseType)}&inc=releases&fmt=json&limit=100`;
+        // Secondary-types are included by default; releases inc is not supported on browse endpoint
+        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=${encodeURIComponent(releaseType)}&fmt=json&limit=100`;
         break;
       }
       
