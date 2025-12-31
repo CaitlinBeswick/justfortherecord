@@ -4,7 +4,7 @@ import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistRating } from "@/components/ArtistRating";
 import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { ShareButton } from "@/components/ShareButton";
-import { RelatedArtists } from "@/components/RelatedArtists";
+
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
@@ -175,10 +175,24 @@ const ArtistDetail = () => {
     return firstArtist.id === artistId;
   });
 
-  // Filter out Broadcasts, Singles, and Other
+  // Filter out Broadcasts, Singles, Other, and exclude karaoke/remix/DJ-mix/soundtrack albums
+  const EXCLUDED_SECONDARY_TYPES = ['Karaoke', 'Remix', 'DJ-mix', 'Mixtape/Street'];
+  
   const filteredReleases = releases.filter(release => {
     const type = release["primary-type"] || "Other";
-    return type !== "Broadcast" && type !== "Single" && type !== "Other";
+    const secondaryTypes: string[] = (release as any)["secondary-types"] || [];
+    
+    // Exclude certain primary types
+    if (type === "Broadcast" || type === "Single" || type === "Other") {
+      return false;
+    }
+    
+    // Exclude releases with unwanted secondary types (karaoke, etc.)
+    if (secondaryTypes.some(st => EXCLUDED_SECONDARY_TYPES.includes(st))) {
+      return false;
+    }
+    
+    return true;
   });
 
   // Group releases by custom categories
@@ -546,8 +560,6 @@ const ArtistDetail = () => {
             </p>
           )}
 
-          {/* Related Artists Section */}
-          <RelatedArtists artistId={artistId} artistName={artist.name} />
         </section>
       </main>
     </div>
