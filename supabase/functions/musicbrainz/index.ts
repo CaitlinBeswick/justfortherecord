@@ -121,9 +121,8 @@ serve(async (req) => {
         break;
       
       case 'get-artist':
-        // Include artist-credits in release-groups so we can filter primary artist releases
-        // Include artist-rels for related artists
-        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+genres+ratings+url-rels+artist-credits+artist-rels&fmt=json`;
+        // Include artist-credits and secondary types in release-groups so we can filter properly
+        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=release-groups+release-group-secondary-type-ids+genres+ratings+url-rels+artist-credits&fmt=json`;
         break;
       
       case 'get-artist-relations':
