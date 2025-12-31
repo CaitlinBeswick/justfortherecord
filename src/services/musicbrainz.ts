@@ -188,6 +188,7 @@ export async function getArtistReleases(artistId: string, type?: string): Promis
     id: rg.id,
     title: getBestTitle(rg),
     "primary-type": rg["primary-type"],
+    "secondary-types": rg["secondary-types"] || [],
     "first-release-date": rg["first-release-date"],
     "artist-credit": rg["artist-credit"],
     rating: rg.rating,
