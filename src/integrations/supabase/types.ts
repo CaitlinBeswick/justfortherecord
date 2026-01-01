@@ -361,6 +361,27 @@ export type Database = {
         }
         Relationships: []
       }
+      release_group_official_cache: {
+        Row: {
+          checked_at: string
+          created_at: string
+          is_official: boolean
+          release_group_id: string
+        }
+        Insert: {
+          checked_at?: string
+          created_at?: string
+          is_official: boolean
+          release_group_id: string
+        }
+        Update: {
+          checked_at?: string
+          created_at?: string
+          is_official?: boolean
+          release_group_id?: string
+        }
+        Relationships: []
+      }
       release_overrides: {
         Row: {
           artist_id: string
