@@ -184,7 +184,7 @@ const ArtistDetail = () => {
 
   // Filter out Broadcasts, Singles, Other, and exclude karaoke/remix/DJ-mix/video/demo/spokenword albums
   const EXCLUDED_SECONDARY_TYPES = ['Karaoke', 'Remix', 'DJ-mix', 'Mixtape/Street', 'Video', 'Demo', 'Spokenword', 'Interview'];
-  
+
   // Helper function to detect bootleg/unofficial releases by title patterns
   const isLikelyBootleg = (title: string): boolean => {
     const bootlegPatterns = [
@@ -198,25 +198,25 @@ const ArtistDetail = () => {
       /\bFM\b/i,
       /\bRadio\b/i,
     ];
-    return bootlegPatterns.some(pattern => pattern.test(title));
+    return bootlegPatterns.some((pattern) => pattern.test(title));
   };
 
-  const heuristicFilteredReleases = releases.filter(release => {
-    const type = release["primary-type"] || "Other";
-    const secondaryTypes: string[] = (release as any)["secondary-types"] || [];
-    const title = release.title || "";
+  const heuristicFilteredReleases = releases.filter((release) => {
+    const type = release['primary-type'] || 'Other';
+    const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
+    const title = release.title || '';
 
     // Exclude certain primary types
-    if (type === "Broadcast" || type === "Single" || type === "Other") {
+    if (type === 'Broadcast' || type === 'Single' || type === 'Other') {
       return false;
     }
 
     // Exclude releases with unwanted secondary types (karaoke, etc.)
-    if (secondaryTypes.some(st => EXCLUDED_SECONDARY_TYPES.includes(st))) {
+    if (secondaryTypes.some((st) => EXCLUDED_SECONDARY_TYPES.includes(st))) {
       return false;
     }
 
-    // Exclude bootleg/unofficial releases entirely
+    // Exclude bootleg/unofficial releases by title
     if (isLikelyBootleg(title)) {
       return false;
     }
@@ -224,102 +224,70 @@ const ArtistDetail = () => {
     return true;
   });
 
-  // Use the official release filter hook to progressively check each release-group
-  const { 
-    filteredReleases, 
-    isChecking: isCheckingOfficial, 
+  // Strict mode: ONLY include release-groups confirmed as "Official".
+  // (No pending/unknown items in the list.)
+  const {
+    filteredReleases: officialReleases,
+    isChecking: isCheckingOfficial,
     progress: officialCheckProgress,
-    filteredOutCount 
-  } = useOfficialReleaseFilter(heuristicFilteredReleases, !isLoadingReleases);
+    filteredOutCount,
+  } = useOfficialReleaseFilter(heuristicFilteredReleases, !isLoadingReleases, false);
 
-  // Group releases by custom categories
-  const groupedReleases = filteredReleases.reduce((acc, release) => {
-    const primaryType = release["primary-type"] || "";
-    const secondaryTypes = release["secondary-types"] || [];
-    
-    let category: string | null = null;
-    
-    if (primaryType === "Album") {
-      if (secondaryTypes.includes("Compilation")) {
-        category = "Compilations";
-      } else if (secondaryTypes.includes("Live")) {
-        category = "Live Albums";
-      } else {
-        category = "Studio Albums";
-      }
-    } else if (primaryType === "EP") {
-      // Exclude EPs with Live secondary type (unofficial live EPs)
-      if (secondaryTypes.includes("Live")) {
-        category = null;
-      } else {
-        category = "EPs";
-      }
-    } else if (primaryType === "Compilation") {
-      category = "Compilations";
-    } else if (primaryType === "Live") {
-      category = "Live Albums";
-    }
-    
-    // Skip items that don't fit into our categories
-    if (category) {
-      if (!acc[category]) acc[category] = [];
-      acc[category].push(release);
-    }
-    return acc;
-  }, {} as Record<string, typeof releases>);
+  // For now (all artists): limit the discography to OFFICIAL STUDIO ALBUMS only.
+  const studioAlbums = officialReleases.filter((release) => {
+    const primaryType = release['primary-type'] || '';
+    const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
 
-  // Sort each group by date (newest first)
-  Object.values(groupedReleases).forEach(group => {
-    group.sort((a, b) => {
-      const dateA = a["first-release-date"] || "";
-      const dateB = b["first-release-date"] || "";
-      return dateB.localeCompare(dateA);
-    });
+    if (primaryType !== 'Album') return false;
+    if (secondaryTypes.includes('Live')) return false;
+    if (secondaryTypes.includes('Compilation')) return false;
+
+    return true;
   });
 
-  // Debug (Oasis only): log categorized titles to see what inflates counts
-  if (artistId === "39ab1aed-75e0-4140-bd47-540276886b60") {
+  const groupedReleases: Record<string, MBReleaseGroup[]> = {
+    'Studio Albums': studioAlbums,
+  };
+
+  // Sort by date (newest first)
+  groupedReleases['Studio Albums'].sort((a, b) => {
+    const dateA = a['first-release-date'] || '';
+    const dateB = b['first-release-date'] || '';
+    return dateB.localeCompare(dateA);
+  });
+
+  // Debug (Oasis only)
+  if (artistId === '39ab1aed-75e0-4140-bd47-540276886b60') {
     const summarize = (items: MBReleaseGroup[]) =>
       items.map((r) => ({
         title: r.title,
-        primary: r["primary-type"],
-        secondary: (r["secondary-types"] || []).join(", "),
-        date: r["first-release-date"],
+        primary: r['primary-type'],
+        secondary: (r['secondary-types'] || []).join(', '),
+        date: r['first-release-date'],
         hasOfficial:
           !r.releases || r.releases.length === 0
-            ? "unknown"
-            : r.releases.some((x) => (x.status ?? "").toLowerCase() === "official"),
+            ? 'unknown'
+            : r.releases.some((x) => (x.status ?? '').toLowerCase() === 'official'),
       }));
 
     // eslint-disable-next-line no-console
-    console.groupCollapsed("[discography-debug] Oasis categorized release-groups");
+    console.groupCollapsed('[discography-debug] Oasis studio albums (official-only)');
     // eslint-disable-next-line no-console
-    console.log({
-      studio: groupedReleases["Studio Albums"]?.length ?? 0,
-      eps: groupedReleases["EPs"]?.length ?? 0,
-      live: groupedReleases["Live Albums"]?.length ?? 0,
-      compilations: groupedReleases["Compilations"]?.length ?? 0,
-      totalShown: Object.values(groupedReleases).reduce((n, g) => n + g.length, 0),
-    });
+    console.log({ studio: groupedReleases['Studio Albums']?.length ?? 0 });
     // eslint-disable-next-line no-console
-    console.table({
-      studio: summarize(groupedReleases["Studio Albums"] || []),
-      eps: summarize(groupedReleases["EPs"] || []),
-      live: summarize(groupedReleases["Live Albums"] || []),
-      compilations: summarize(groupedReleases["Compilations"] || []),
-    });
+    console.table({ studio: summarize(groupedReleases['Studio Albums'] || []) });
     // eslint-disable-next-line no-console
     console.groupEnd();
   }
 
-  // Order of display (no "Other")
-  const typeOrder = ["Studio Albums", "EPs", "Live Albums", "Compilations"];
+  // Order of display
+  const typeOrder = ['Studio Albums'];
   const sortedTypes = Object.keys(groupedReleases).sort(
     (a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b)
   );
 
-  // Calculate discography completion (based on filtered releases only)
-  const listenedCount = filteredReleases.filter(release => {
+  // Calculate discography completion (based on OFFICIAL STUDIO ALBUMS only)
+  const listenedCount = studioAlbums.filter((release) => {
     const normalized = (v: string) => v.trim().toLowerCase();
     const statusForAlbum = getStatusForAlbum(release.id);
     const listenedById = statusForAlbum.isListened;
@@ -327,15 +295,19 @@ const ArtistDetail = () => {
       (s) =>
         s.is_listened &&
         normalized(s.album_title) === normalized(release.title) &&
-        artist && normalized(s.artist_name) === normalized(artist.name)
+        artist &&
+        normalized(s.artist_name) === normalized(artist.name)
     );
     return listenedById || listenedByMetadata;
   }).length;
-  const completionPercentage = filteredReleases.length > 0 ? Math.round((listenedCount / filteredReleases.length) * 100) : 0;
+  const completionPercentage =
+    studioAlbums.length > 0
+      ? Math.round((listenedCount / studioAlbums.length) * 100)
+      : 0;
 
   // Calculate per-category completion
   const getCategoryProgress = (categoryReleases: MBReleaseGroup[]) => {
-    const listenedInCategory = categoryReleases.filter(release => {
+    const listenedInCategory = categoryReleases.filter((release) => {
       const normalized = (v: string) => v.trim().toLowerCase();
       const statusForAlbum = getStatusForAlbum(release.id);
       const listenedById = statusForAlbum.isListened;
@@ -343,7 +315,8 @@ const ArtistDetail = () => {
         (s) =>
           s.is_listened &&
           normalized(s.album_title) === normalized(release.title) &&
-          artist && normalized(s.artist_name) === normalized(artist.name)
+          artist &&
+          normalized(s.artist_name) === normalized(artist.name)
       );
       return listenedById || listenedByMetadata;
     }).length;
@@ -534,7 +507,7 @@ const ArtistDetail = () => {
         {/* Discography */}
         <section className="container mx-auto px-4 py-8 pb-20">
           {/* Overall Completion Progress */}
-          {user && filteredReleases.length > 0 && (
+          {user && studioAlbums.length > 0 && (
             <div className="mb-6 p-4 rounded-xl bg-secondary/50 border border-border">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -542,7 +515,8 @@ const ArtistDetail = () => {
                   <span className="text-sm font-medium text-foreground">Overall Discography Progress</span>
                 </div>
                 <span className="text-sm font-semibold text-foreground">
-                  {listenedCount} / {filteredReleases.length} <span className="text-muted-foreground font-normal">({completionPercentage}%)</span>
+                  {listenedCount} / {studioAlbums.length}{' '}
+                  <span className="text-muted-foreground font-normal">({completionPercentage}%)</span>
                 </span>
               </div>
               <Progress value={completionPercentage} className="h-2" />
@@ -552,7 +526,7 @@ const ArtistDetail = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <h2 className="font-serif text-2xl text-foreground">
-                Discography {filteredReleases.length > 0 && `(${filteredReleases.length} releases)`}
+                Discography {studioAlbums.length > 0 && `(${studioAlbums.length} releases)`}
               </h2>
               {isCheckingOfficial && (
                 <Tooltip>
@@ -565,7 +539,7 @@ const ArtistDetail = () => {
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Checking each release for official status</p>
-                    <p className="text-xs text-muted-foreground">This filters out bootleg/promo-only releases</p>
+                    <p className="text-xs text-muted-foreground">Only official studio albums will be shown</p>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -598,7 +572,7 @@ const ArtistDetail = () => {
             )}
           </div>
           
-          {filteredReleases.length > 0 ? (
+          {studioAlbums.length > 0 ? (
             <div className="space-y-10">
               {sortedTypes.map((type) => {
                 const categoryProgress = getCategoryProgress(groupedReleases[type]);
