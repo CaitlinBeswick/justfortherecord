@@ -543,19 +543,6 @@ const ArtistDetail = () => {
                   </TooltipContent>
                 </Tooltip>
               )}
-              {!isCheckingOfficial && filteredOutCount > 0 && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                      <Shield className="h-3 w-3" />
-                      <span>{filteredOutCount} unofficial filtered</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{filteredOutCount} bootleg/promo-only releases hidden</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
             </div>
             {user && (
               <div className="flex items-center gap-2">
