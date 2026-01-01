@@ -6,7 +6,7 @@ import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Shield } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
-import { useOfficialReleaseFilter } from "@/hooks/useOfficialReleaseFilter";
+
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -224,17 +224,8 @@ const ArtistDetail = () => {
     return true;
   });
 
-  // Strict mode: ONLY include release-groups confirmed as "Official".
-  // (No pending/unknown items in the list.)
-  const {
-    filteredReleases: officialReleases,
-    isChecking: isCheckingOfficial,
-    progress: officialCheckProgress,
-    filteredOutCount,
-  } = useOfficialReleaseFilter(heuristicFilteredReleases, !isLoadingReleases, false);
-
-  // For now (all artists): limit the discography to OFFICIAL STUDIO ALBUMS only.
-  const studioAlbums = officialReleases.filter((release) => {
+  // Filter to studio albums only (primary-type = Album, no Live/Compilation secondary types)
+  const studioAlbums = heuristicFilteredReleases.filter((release) => {
     const primaryType = release['primary-type'] || '';
     const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
 
@@ -528,21 +519,6 @@ const ArtistDetail = () => {
               <h2 className="font-serif text-2xl text-foreground">
                 Discography {studioAlbums.length > 0 && `(${studioAlbums.length} releases)`}
               </h2>
-              {isCheckingOfficial && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span>Verifying...</span>
-                      <span className="font-medium">{officialCheckProgress.checked}/{officialCheckProgress.total}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Checking each release for official status</p>
-                    <p className="text-xs text-muted-foreground">Only official studio albums will be shown</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
             </div>
             {user && (
               <div className="flex items-center gap-2">
