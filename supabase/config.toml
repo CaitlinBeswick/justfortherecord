@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.check-new-releases]
 verify_jwt = false
+
+[functions.wikidata-discography]
+verify_jwt = false
