@@ -26,6 +26,13 @@ export interface MBReleaseGroup {
   "first-release-date"?: string;
   "artist-credit"?: Array<{ artist: MBArtist }>;
   rating?: { value: number; "votes-count": number };
+  disambiguation?: string;
+  releases?: Array<{
+    id?: string;
+    title?: string;
+    country?: string;
+    status?: string;
+  }>;
 }
 
 export interface MBRelease {
@@ -192,6 +199,8 @@ export async function getArtistReleases(artistId: string, type?: string): Promis
     "first-release-date": rg["first-release-date"],
     "artist-credit": rg["artist-credit"],
     rating: rg.rating,
+    disambiguation: rg.disambiguation,
+    releases: rg.releases || [],
   }));
   
   // Deduplicate release groups by title (case-insensitive)
