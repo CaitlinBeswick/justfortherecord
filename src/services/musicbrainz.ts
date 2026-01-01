@@ -258,8 +258,8 @@ export async function checkOfficialStatus(releaseGroupId: string): Promise<boole
     return releases.some(r => r.status?.toLowerCase() === 'official');
   } catch (error) {
     console.error('Failed to check official status for', releaseGroupId, error);
-    // On error, assume it's official to avoid filtering out valid releases
-    return true;
+    // IMPORTANT: don't cache/assume on transient failures; let callers decide retry behavior
+    throw error instanceof Error ? error : new Error(String(error));
   }
 }
 
