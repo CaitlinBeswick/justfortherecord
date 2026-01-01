@@ -323,6 +323,68 @@ serve(async (req) => {
 
     console.log(`Fetching: ${url}`);
 
+    // Special handling: MusicBrainz "browse" endpoints are paginated and many artists exceed 100 release groups.
+    // We page a few times to avoid missing important releases while keeping requests bounded.
+    if (action === 'get-artist-releases') {
+      const limit = 100;
+      const maxPages = 5; // up to 500 release-groups (good balance vs rate limits)
+
+      const allGroups: any[] = [];
+      let count = 0;
+      let offset = 0;
+      let pages = 0;
+
+      while (pages < maxPages) {
+        const pageUrl = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits&fmt=json&limit=${limit}&offset=${offset}`;
+        console.log(`Fetching page: ${pageUrl}`);
+
+        const pageResp = await fetchWithRetry(pageUrl, {
+          headers: {
+            'User-Agent': USER_AGENT,
+            'Accept': 'application/json',
+          },
+        });
+
+        if (!pageResp.ok) {
+          console.error(`MusicBrainz error: ${pageResp.status} ${pageResp.statusText}`);
+          return new Response(
+            JSON.stringify({ error: `Music data provider error: ${pageResp.status}` }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
+        const pageData = await pageResp.json();
+        count = typeof pageData['release-group-count'] === 'number' ? pageData['release-group-count'] : count;
+
+        const groups = Array.isArray(pageData['release-groups']) ? pageData['release-groups'] : [];
+        allGroups.push(...groups);
+
+        console.log(
+          `MusicBrainz page received: offset=${offset}, groups=${groups.length}, totalSoFar=${allGroups.length}, totalCount=${count}`
+        );
+
+        if (groups.length === 0) break;
+
+        offset += limit;
+        pages += 1;
+
+        if (count > 0 && offset >= count) break;
+      }
+
+      return new Response(
+        JSON.stringify({
+          'release-group-count': count || allGroups.length,
+          'release-group-offset': 0,
+          'release-groups': allGroups,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     let response: Response;
     try {
       response = await fetchWithRetry(url, {
