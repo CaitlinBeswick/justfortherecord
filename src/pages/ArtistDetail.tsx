@@ -182,50 +182,10 @@ const ArtistDetail = () => {
     return firstArtist.id === artistId;
   });
 
-  // Filter out Broadcasts, Singles, Other, and exclude karaoke/remix/DJ-mix/video/demo/spokenword albums
-  const EXCLUDED_SECONDARY_TYPES = ['Karaoke', 'Remix', 'DJ-mix', 'Mixtape/Street', 'Video', 'Demo', 'Spokenword', 'Interview'];
-
-  // Helper function to detect bootleg/unofficial releases by title patterns
-  const isLikelyBootleg = (title: string): boolean => {
-    const bootlegPatterns = [
-      /\d{4}-\d{2}-\d{2}/, // Date pattern YYYY-MM-DD (common in bootleg titles)
-      /Tour\s*-?\s*\d{4}/i, // Tour with year
-      /\bBootleg\b/i,
-      /\bUnreleased\b/i,
-      /\bDemo\b/i,
-      /\bSoundboard\b/i,
-      /\bAudience\b/i,
-      /\bFM\b/i,
-      /\bRadio\b/i,
-    ];
-    return bootlegPatterns.some((pattern) => pattern.test(title));
-  };
-
-  const heuristicFilteredReleases = releases.filter((release) => {
-    const type = release['primary-type'] || 'Other';
-    const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
-    const title = release.title || '';
-
-    // Exclude certain primary types
-    if (type === 'Broadcast' || type === 'Single' || type === 'Other') {
-      return false;
-    }
-
-    // Exclude releases with unwanted secondary types (karaoke, etc.)
-    if (secondaryTypes.some((st) => EXCLUDED_SECONDARY_TYPES.includes(st))) {
-      return false;
-    }
-
-    // Exclude bootleg/unofficial releases by title
-    if (isLikelyBootleg(title)) {
-      return false;
-    }
-
-    return true;
-  });
-
-  // Filter to studio albums only (primary-type = Album, no Live/Compilation secondary types)
-  const studioAlbums = heuristicFilteredReleases.filter((release) => {
+  // Studio albums-only filter (global): rely strictly on MusicBrainz types.
+  // NOTE: We intentionally do NOT apply bootleg heuristics here because they can hide real studio albums
+  // (e.g. edge-case metadata). Studio albums = primary-type "Album" and not marked Live/Compilation.
+  const studioAlbums = releases.filter((release) => {
     const primaryType = release['primary-type'] || '';
     const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
 
@@ -235,7 +195,6 @@ const ArtistDetail = () => {
 
     return true;
   });
-
   const groupedReleases: Record<string, MBReleaseGroup[]> = {
     'Studio Albums': studioAlbums,
   };
