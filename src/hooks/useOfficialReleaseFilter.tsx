@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { MBReleaseGroup, checkOfficialStatus } from '@/services/musicbrainz';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OfficialStatusCache {
   [releaseGroupId: string]: boolean | 'pending' | 'checking';
@@ -21,31 +22,52 @@ export function useOfficialReleaseFilter(releases: MBReleaseGroup[], enabled: bo
     // Reset abort flag
     abortRef.current = false;
 
-    // Get release IDs that haven't been checked yet
-    const uncheckedIds = releases
-      .map(r => r.id)
-      .filter(id => !(id in statusCache));
+    const checkWithCache = async () => {
+      const releaseIds = releases.map(r => r.id);
+      
+      // First, fetch cached results from Supabase
+      const { data: cachedResults } = await supabase
+        .from('release_group_official_cache')
+        .select('release_group_id, is_official')
+        .in('release_group_id', releaseIds);
 
-    if (uncheckedIds.length === 0) {
-      return;
-    }
+      // Apply cached results to state
+      const cachedMap: OfficialStatusCache = {};
+      if (cachedResults) {
+        cachedResults.forEach(row => {
+          cachedMap[row.release_group_id] = row.is_official;
+        });
+      }
 
-    setIsChecking(true);
-    setProgress({ checked: 0, total: uncheckedIds.length });
+      // Find IDs that still need checking (not in cache and not already in local state)
+      const uncheckedIds = releaseIds.filter(
+        id => !(id in cachedMap) && !(id in statusCache)
+      );
 
-    // Mark all as pending
-    setStatusCache(prev => {
-      const next = { ...prev };
-      uncheckedIds.forEach(id => {
-        if (!(id in next)) {
-          next[id] = 'pending';
-        }
+      // Update state with cached results
+      if (Object.keys(cachedMap).length > 0) {
+        setStatusCache(prev => ({ ...prev, ...cachedMap }));
+      }
+
+      if (uncheckedIds.length === 0) {
+        return;
+      }
+
+      setIsChecking(true);
+      setProgress({ checked: 0, total: uncheckedIds.length });
+
+      // Mark unchecked as pending
+      setStatusCache(prev => {
+        const next = { ...prev, ...cachedMap };
+        uncheckedIds.forEach(id => {
+          if (!(id in next)) {
+            next[id] = 'pending';
+          }
+        });
+        return next;
       });
-      return next;
-    });
 
-    // Process releases one at a time with rate limiting
-    const checkAll = async () => {
+      // Process releases one at a time with rate limiting
       for (let i = 0; i < uncheckedIds.length; i++) {
         if (abortRef.current) break;
 
@@ -57,6 +79,16 @@ export function useOfficialReleaseFilter(releases: MBReleaseGroup[], enabled: bo
         try {
           const isOfficial = await checkOfficialStatus(id);
           setStatusCache(prev => ({ ...prev, [id]: isOfficial }));
+
+          // Save to Supabase cache (fire and forget)
+          supabase
+            .from('release_group_official_cache')
+            .upsert({ 
+              release_group_id: id, 
+              is_official: isOfficial,
+              checked_at: new Date().toISOString()
+            }, { onConflict: 'release_group_id' })
+            .then(() => {});
         } catch (error) {
           // On error, assume official to avoid false negatives
           console.error('Failed to check official status:', id, error);
@@ -74,7 +106,7 @@ export function useOfficialReleaseFilter(releases: MBReleaseGroup[], enabled: bo
       setIsChecking(false);
     };
 
-    checkAll();
+    checkWithCache();
 
     return () => {
       abortRef.current = true;
