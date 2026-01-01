@@ -159,11 +159,11 @@ const PREFERRED_COUNTRIES = ['US', 'GB', 'XW', 'XE', 'AU', 'CA', 'NZ', 'IE'];
 // Get the best title for a release group by preferring releases from English-speaking countries
 function getBestTitle(rg: any): string {
   const releases = rg.releases || [];
-
+  
   if (releases.length === 0) {
     return rg.title;
   }
-
+  
   // Find a release from a preferred country
   for (const country of PREFERRED_COUNTRIES) {
     const preferredRelease = releases.find((r: any) => r.country === country);
@@ -171,19 +171,9 @@ function getBestTitle(rg: any): string {
       return preferredRelease.title;
     }
   }
-
+  
   // Fall back to the release group's original title
   return rg.title;
-}
-
-function normalizeReleaseGroupTitle(title: string): string {
-  // Collapse common edition suffixes so "(Remastered)", "(Deluxe Edition)", etc. don't appear as separate albums.
-  // This helps artists like Oasis / Beatles where MB has multiple release-groups with near-identical names.
-  return title
-    .replace(/\s*\((?:[^)]*?)(deluxe|expanded|remaster(?:ed)?|anniversary|edition|reissue|mono|stereo)(?:[^)]*?)\)\s*/gi, ' ')
-    .replace(/\s*[-–—]\s*(deluxe|expanded|remaster(?:ed)?|anniversary|edition|reissue|mono|stereo).*$/i, '')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 export async function getArtistReleases(artistId: string, type?: string): Promise<MBReleaseGroup[]> {
@@ -192,7 +182,7 @@ export async function getArtistReleases(artistId: string, type?: string): Promis
   }
   const data = await callMusicBrainz({ action: 'get-artist-releases', id: artistId, type });
   const releaseGroups: any[] = data["release-groups"] || [];
-
+  
   // Process release groups to use preferred titles from English-speaking regions
   const processedGroups: MBReleaseGroup[] = releaseGroups.map((rg) => ({
     id: rg.id,
@@ -203,33 +193,32 @@ export async function getArtistReleases(artistId: string, type?: string): Promis
     "artist-credit": rg["artist-credit"],
     rating: rg.rating,
   }));
-
-  // Deduplicate release groups by normalized title (case-insensitive)
+  
+  // Deduplicate release groups by title (case-insensitive)
   // Keep the one with the earliest release date (original release)
   const uniqueByTitle = new Map<string, MBReleaseGroup>();
-
+  
   for (const rg of processedGroups) {
-    const normalizedTitle = normalizeReleaseGroupTitle(rg.title).toLowerCase();
+    const normalizedTitle = rg.title.toLowerCase().trim();
     const existing = uniqueByTitle.get(normalizedTitle);
-
+    
     if (!existing) {
       uniqueByTitle.set(normalizedTitle, rg);
     } else {
       // Keep the one with the earlier release date
       const existingYear = getYear(existing["first-release-date"]) ?? 9999;
       const currentYear = getYear(rg["first-release-date"]) ?? 9999;
-
+      
       if (currentYear < existingYear) {
         uniqueByTitle.set(normalizedTitle, rg);
       }
     }
   }
-
+  
   // Convert back to array and sort by release date (newest first)
   return Array.from(uniqueByTitle.values()).sort((a, b) => {
     const yearA = getYear(a["first-release-date"]) ?? 0;
     const yearB = getYear(b["first-release-date"]) ?? 0;
-
     return yearB - yearA;
   });
 }

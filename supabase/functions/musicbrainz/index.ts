@@ -305,11 +305,7 @@ serve(async (req) => {
       case 'get-artist-releases': {
         // Browse endpoint for release-groups - returns ALL release groups for an artist
         // Include artist-credits so we can filter by primary artist in the frontend
-        // Use type filter to exclude singles upfront - makes pagination much more efficient
-        // MusicBrainz accepts type=album|ep to include multiple types
-        // CRITICAL: Use release-group-status=website-default to exclude bootleg/promotional/pseudo-release
-        // This mirrors what MusicBrainz shows on artist pages (official releases only)
-        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=album|ep&release-group-status=website-default&inc=artist-credits&fmt=json&limit=100`;
+        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits&fmt=json&limit=100`;
         break;
       }
       
@@ -326,69 +322,6 @@ serve(async (req) => {
     }
 
     console.log(`Fetching: ${url}`);
-
-    // Special handling: MusicBrainz "browse" endpoints are paginated and many artists exceed 100 release groups.
-    // We page a few times to avoid missing important releases while keeping requests bounded.
-    if (action === 'get-artist-releases') {
-      const limit = 100;
-      const maxPages = 5; // up to 500 release-groups (good balance vs rate limits)
-
-      const allGroups: any[] = [];
-      let count = 0;
-      let offset = 0;
-      let pages = 0;
-
-      while (pages < maxPages) {
-        // Use release-group-status=website-default to filter out bootlegs/promos at API level
-        const pageUrl = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=album|ep&release-group-status=website-default&inc=artist-credits&fmt=json&limit=${limit}&offset=${offset}`;
-        console.log(`Fetching page: ${pageUrl}`);
-
-        const pageResp = await fetchWithRetry(pageUrl, {
-          headers: {
-            'User-Agent': USER_AGENT,
-            'Accept': 'application/json',
-          },
-        });
-
-        if (!pageResp.ok) {
-          console.error(`MusicBrainz error: ${pageResp.status} ${pageResp.statusText}`);
-          return new Response(
-            JSON.stringify({ error: `Music data provider error: ${pageResp.status}` }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          );
-        }
-
-        const pageData = await pageResp.json();
-        count = typeof pageData['release-group-count'] === 'number' ? pageData['release-group-count'] : count;
-
-        const groups = Array.isArray(pageData['release-groups']) ? pageData['release-groups'] : [];
-        allGroups.push(...groups);
-
-        console.log(
-          `MusicBrainz page received: offset=${offset}, groups=${groups.length}, totalSoFar=${allGroups.length}, totalCount=${count}`
-        );
-
-        if (groups.length === 0) break;
-
-        offset += limit;
-        pages += 1;
-
-        if (count > 0 && offset >= count) break;
-      }
-
-      return new Response(
-        JSON.stringify({
-          'release-group-count': count || allGroups.length,
-          'release-group-offset': 0,
-          'release-groups': allGroups,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
 
     let response: Response;
     try {

@@ -6,7 +6,7 @@ import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
@@ -75,24 +75,6 @@ const ArtistDetail = () => {
     queryFn: () => getArtistImage(artistId),
     enabled: isValidArtistId,
     staleTime: 1000 * 60 * 60,
-  });
-
-  // Fetch Wikidata discography counts for cross-reference
-  const { data: wikidataCounts } = useQuery({
-    queryKey: ['wikidata-discography', artistId],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('wikidata-discography', {
-        body: { musicbrainzArtistId: artistId },
-      });
-      if (error) throw error;
-      return data as { 
-        counts: { studio: number; live: number; compilation: number; ep: number } | null; 
-        wikidataEntityId: string | null;
-        source: string;
-      };
-    },
-    enabled: isValidArtistId,
-    staleTime: 1000 * 60 * 60 * 24, // Cache for 24 hours
   });
 
   // Check if user follows this artist
@@ -199,9 +181,7 @@ const ArtistDetail = () => {
   });
 
   // Filter out Broadcasts, Singles, Other, and exclude karaoke/remix/DJ-mix/soundtrack albums
-  // Note: MusicBrainz API now uses release-group-status=website-default which excludes
-  // bootlegs, promos, and pseudo-releases automatically at the API level
-  const EXCLUDED_SECONDARY_TYPES = ['Karaoke', 'Remix', 'DJ-mix', 'Mixtape/Street', 'Demo', 'Spokenword'];
+  const EXCLUDED_SECONDARY_TYPES = ['Karaoke', 'Remix', 'DJ-mix', 'Mixtape/Street'];
   
   const filteredReleases = releases.filter(release => {
     const type = release["primary-type"] || "Other";
@@ -430,15 +410,7 @@ const ArtistDetail = () => {
                     {beginYear && (
                       <span>Active since <strong className="text-foreground">{beginYear}</strong></span>
                     )}
-                    <span>
-                      <strong className="text-foreground">{groupedReleases["Studio Albums"]?.length ?? 0}</strong> studio ·{" "}
-                      <strong className="text-foreground">{groupedReleases["Live Albums"]?.length ?? 0}</strong> live ·{" "}
-                      <strong className="text-foreground">{groupedReleases["Compilations"]?.length ?? 0}</strong> comps ·{" "}
-                      <strong className="text-foreground">{groupedReleases["EPs"]?.length ?? 0}</strong> EPs
-                    </span>
-                    <span>
-                      <strong className="text-foreground">{filteredReleases.length}</strong> total (official)
-                    </span>
+                    <span><strong className="text-foreground">{releases.length}</strong> releases</span>
                   </div>
 
                   {/* Rating & Actions Card */}
@@ -506,22 +478,9 @@ const ArtistDetail = () => {
           )}
 
           <div className="flex items-center justify-between mb-6">
-            <div className="flex flex-col gap-1">
-              <h2 className="font-serif text-2xl text-foreground">
-                Discography {filteredReleases.length > 0 && `(${filteredReleases.length} releases)`}
-              </h2>
-              {wikidataCounts?.wikidataEntityId && (
-                <a 
-                  href={`https://www.wikidata.org/wiki/${wikidataCounts.wikidataEntityId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Wikidata reference: {wikidataCounts.counts?.studio || 0} albums, {wikidataCounts.counts?.live || 0} live, {wikidataCounts.counts?.compilation || 0} compilations, {wikidataCounts.counts?.ep || 0} EPs
-                </a>
-              )}
-            </div>
+            <h2 className="font-serif text-2xl text-foreground">
+              Discography {filteredReleases.length > 0 && `(${filteredReleases.length} releases)`}
+            </h2>
             {user && (
               <div className="flex items-center gap-2">
                 <Switch
