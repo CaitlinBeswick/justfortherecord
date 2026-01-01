@@ -188,20 +188,15 @@ const ArtistDetail = () => {
   // Helper function to detect bootleg/unofficial releases by title patterns
   const isLikelyBootleg = (title: string): boolean => {
     const bootlegPatterns = [
-      /\d{4}-\d{2}-\d{2}/, // Date pattern YYYY-MM-DD
-      /Tour\s*-?\s*\d{4}/, // Tour with year
-      /live\s+(at|from|in)\s+/i, // "live at", "live from", "live in"
-      /\(live\)/i, // "(live)" in title
-      /\d{1,2}(st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i,
-      /Festival/i, // Festival recordings
-      /Sessions?$/i, // "Session" or "Sessions" at end
-      /iTunes Festival/i,
-      /BBC\s+(Radio|Session)/i, // BBC recordings
-      /\bBlues\b/i, // Demo/bootleg EPs often have "Blues" in title (e.g., "Boy with the Blues")
-      /\bDemo/i, // Explicit demo releases
-      /\bBootleg/i, // Explicit bootleg releases
-      /\bUnreleased/i, // Unreleased material
-      /\bRare\b/i, // Rare compilations often bootleg
+      /\d{4}-\d{2}-\d{2}/, // Date pattern YYYY-MM-DD (common in bootleg titles)
+      /Tour\s*-?\s*\d{4}/i, // Tour with year
+      /\bBootleg\b/i,
+      /\bUnreleased\b/i,
+      /\bDemo\b/i,
+      /\bSoundboard\b/i,
+      /\bAudience\b/i,
+      /\bFM\b/i,
+      /\bRadio\b/i,
     ];
     return bootlegPatterns.some(pattern => pattern.test(title));
   };
