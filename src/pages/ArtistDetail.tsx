@@ -183,8 +183,7 @@ const ArtistDetail = () => {
   });
 
   // Studio albums-only filter (global): rely strictly on MusicBrainz types.
-  // NOTE: We intentionally do NOT apply bootleg heuristics here because they can hide real studio albums
-  // (e.g. edge-case metadata). Studio albums = primary-type "Album" and not marked Live/Compilation.
+  // Studio albums = primary-type "Album" and not marked Live/Compilation.
   const studioAlbums = releases.filter((release) => {
     const primaryType = release['primary-type'] || '';
     const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
@@ -195,6 +194,22 @@ const ArtistDetail = () => {
 
     return true;
   });
+
+  // Diagnostic: albums that are primary-type "Album" but excluded due to secondary types.
+  // This answers "which studio albums are missing" when MusicBrainz tags them as Compilation/Live.
+  const excludedAlbumCandidates = releases
+    .filter((release) => {
+      const primaryType = release['primary-type'] || '';
+      const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
+      if (primaryType !== 'Album') return false;
+      return secondaryTypes.includes('Live') || secondaryTypes.includes('Compilation');
+    })
+    .sort((a, b) => {
+      const dateA = a['first-release-date'] || '';
+      const dateB = b['first-release-date'] || '';
+      return dateA.localeCompare(dateB);
+    });
+
   const groupedReleases: Record<string, MBReleaseGroup[]> = {
     'Studio Albums': studioAlbums,
   };
@@ -493,6 +508,29 @@ const ArtistDetail = () => {
               </div>
             )}
           </div>
+
+          {excludedAlbumCandidates.length > 0 && (
+            <details className="mb-6 rounded-xl border border-border bg-secondary/30 p-4">
+              <summary className="cursor-pointer select-none text-sm font-medium text-foreground">
+                Missing albums? {excludedAlbumCandidates.length} “Album” release(s) excluded by MusicBrainz tags
+              </summary>
+              <div className="mt-3 space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  These are tagged as <span className="font-medium">Compilation</span> or <span className="font-medium">Live</span> in MusicBrainz, so they don’t count as “studio albums” in the current rule.
+                </p>
+                <ul className="grid gap-1 text-sm text-foreground">
+                  {excludedAlbumCandidates.map((r) => (
+                    <li key={r.id} className="flex items-baseline justify-between gap-3">
+                      <span className="truncate">{r.title}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {getYear(r['first-release-date']) ?? '—'} • {(r['secondary-types'] || []).join(', ')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </details>
+          )}
           
           {studioAlbums.length > 0 ? (
             <div className="space-y-10">
