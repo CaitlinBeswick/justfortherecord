@@ -204,14 +204,8 @@ const ArtistDetail = () => {
     const secondaryTypes: string[] = (release as any)["secondary-types"] || [];
     const title = release.title || "";
 
-    // Prefer canonical discographies: only include release-groups that have at least one Official release.
-    // (MusicBrainz often includes promotional/unofficial/bootleg release-groups otherwise.)
-    const hasOfficialRelease =
-      !release.releases || release.releases.length === 0
-        ? true
-        : release.releases.some((r) => (r.status ?? "").toLowerCase() === "official");
-
-    if (!hasOfficialRelease) return false;
+    // NOTE: We cannot reliably filter by "Official" status here because the artist browse endpoint
+    // doesn't include release status without additional per-release-group lookups.
 
     // Exclude certain primary types
     if (type === "Broadcast" || type === "Single" || type === "Other") {
