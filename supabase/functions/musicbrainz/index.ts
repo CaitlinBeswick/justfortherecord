@@ -304,11 +304,9 @@ serve(async (req) => {
       
       case 'get-artist-releases': {
         // Browse endpoint for release-groups - returns release groups for an artist.
-        // Include:
-        // - artist-credits: frontend filters out non-primary credited appearances
-        // - releases: allows frontend to keep only release-groups that have at least one Official release
-        //   (this helps avoid bootleg/promotional/other non-canonical groups inflating discography counts)
-        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits+releases&fmt=json&limit=100`;
+        // Include artist-credits so the frontend can filter out non-primary credited appearances.
+        // NOTE: The browse endpoint does NOT support including `releases` (it can cause 400s).
+        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits&fmt=json&limit=100`;
         break;
       }
       
