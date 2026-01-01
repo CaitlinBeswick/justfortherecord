@@ -91,6 +91,7 @@ serve(async (req) => {
       'get-release',
       'get-artist-releases',
       'get-release-tracks',
+      'check-official-status',
     ]);
 
     if (actionsRequiringId.has(action) && !isMusicBrainzId(id)) {
@@ -314,6 +315,13 @@ serve(async (req) => {
         // Get tracks from a release
         url = `${MUSICBRAINZ_BASE}/release/${id}?inc=recordings+artist-credits&fmt=json`;
         break;
+
+      case 'check-official-status': {
+        // Fetch a release-group with its releases to check if any are "Official"
+        // This is used to filter out bootleg/promo-only release-groups
+        url = `${MUSICBRAINZ_BASE}/release-group/${id}?inc=releases&fmt=json`;
+        break;
+      }
 
       default:
         return new Response(JSON.stringify({ error: 'Invalid action' }), {
