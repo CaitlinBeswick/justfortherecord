@@ -200,10 +200,26 @@ const ArtistDetail = () => {
     return true;
   });
 
+  // Helper function to detect bootleg/unofficial live recordings by title patterns
+  const isLikelyBootlegOrLive = (title: string): boolean => {
+    // Patterns that indicate bootleg live recordings:
+    // - Date patterns like "1994-06-24", "2000-03-03"
+    // - Tour names with dates like "SOTSOG Tour - 2000-03-03"
+    // - Venue names with dates
+    const bootlegPatterns = [
+      /\d{4}-\d{2}-\d{2}/, // Date pattern YYYY-MM-DD
+      /Tour\s*-?\s*\d{4}/, // Tour with year
+      /live\s+(at|from|in)\s+/i, // "live at", "live from", "live in"
+      /\d{1,2}(st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i, // Date with month name
+    ];
+    return bootlegPatterns.some(pattern => pattern.test(title));
+  };
+
   // Group releases by custom categories
   const groupedReleases = filteredReleases.reduce((acc, release) => {
     const primaryType = release["primary-type"] || "";
     const secondaryTypes = release["secondary-types"] || [];
+    const title = release.title || "";
     
     let category: string | null = null;
     
@@ -211,6 +227,9 @@ const ArtistDetail = () => {
       if (secondaryTypes.includes("Compilation")) {
         category = "Compilations";
       } else if (secondaryTypes.includes("Live")) {
+        category = "Live Albums";
+      } else if (isLikelyBootlegOrLive(title)) {
+        // Detect bootleg live recordings that don't have proper secondary type
         category = "Live Albums";
       } else {
         category = "Studio Albums";
