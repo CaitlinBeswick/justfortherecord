@@ -303,10 +303,9 @@ serve(async (req) => {
         break;
       
       case 'get-artist-releases': {
-        // Fetch all release types by default, or specific type if provided
-        const releaseType = type || 'album|single|ep|compilation|live|remix';
-        // Secondary-types are included by default; releases inc is not supported on browse endpoint
-        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=${encodeURIComponent(releaseType)}&fmt=json&limit=100`;
+        // Browse endpoint for release-groups - returns ALL release groups for an artist
+        // Include artist-credits so we can filter by primary artist in the frontend
+        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits&fmt=json&limit=100`;
         break;
       }
       
