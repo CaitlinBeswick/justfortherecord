@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { MBReleaseGroup, checkOfficialStatus } from '@/services/musicbrainz';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,6 +13,9 @@ export function useOfficialReleaseFilter(releases: MBReleaseGroup[], enabled: bo
   const [isChecking, setIsChecking] = useState(false);
   const [progress, setProgress] = useState({ checked: 0, total: 0 });
   const abortRef = useRef(false);
+  
+  // Track which release IDs we've already started checking to avoid duplicates
+  const processedIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
     if (!enabled || releases.length === 0) {
@@ -36,12 +39,13 @@ export function useOfficialReleaseFilter(releases: MBReleaseGroup[], enabled: bo
       if (cachedResults) {
         cachedResults.forEach(row => {
           cachedMap[row.release_group_id] = row.is_official;
+          processedIdsRef.current.add(row.release_group_id);
         });
       }
 
-      // Find IDs that still need checking (not in cache and not already in local state)
+      // Find IDs that still need checking (not in DB cache and not already processed)
       const uncheckedIds = releaseIds.filter(
-        id => !(id in cachedMap) && !(id in statusCache)
+        id => !(id in cachedMap) && !processedIdsRef.current.has(id)
       );
 
       // Update state with cached results
@@ -73,8 +77,15 @@ export function useOfficialReleaseFilter(releases: MBReleaseGroup[], enabled: bo
 
         const id = uncheckedIds[i];
         
+        // Skip if already processed (e.g., by a concurrent effect)
+        if (processedIdsRef.current.has(id)) {
+          setProgress({ checked: i + 1, total: uncheckedIds.length });
+          continue;
+        }
+        
         // Mark as checking
         setStatusCache(prev => ({ ...prev, [id]: 'checking' }));
+        processedIdsRef.current.add(id);
 
         try {
           const isOfficial = await checkOfficialStatus(id);
@@ -90,9 +101,10 @@ export function useOfficialReleaseFilter(releases: MBReleaseGroup[], enabled: bo
             }, { onConflict: 'release_group_id' })
             .then(() => {});
         } catch (error) {
-          // On error, assume official to avoid false negatives
+          // On error, mark as unknown (will retry on next visit)
           console.error('Failed to check official status:', id, error);
-          setStatusCache(prev => ({ ...prev, [id]: true }));
+          // Don't cache errors - leave as 'checking' so it can be retried
+          setStatusCache(prev => ({ ...prev, [id]: true })); // Assume official on error to avoid false negatives
         }
 
         setProgress({ checked: i + 1, total: uncheckedIds.length });
@@ -113,18 +125,27 @@ export function useOfficialReleaseFilter(releases: MBReleaseGroup[], enabled: bo
     };
   }, [releases, enabled]);
 
-  // Filter releases to only include those with official status
-  const filteredReleases = releases.filter(release => {
-    const status = statusCache[release.id];
-    // Include if: not yet checked, currently checking, or confirmed official
-    if (status === undefined || status === 'pending' || status === 'checking') {
-      return true; // Show while checking
-    }
-    return status === true;
-  });
+  // Filter releases to only include those confirmed as official
+  // While checking: show releases that are pending/checking OR confirmed official
+  // After checking: only show confirmed official releases
+  const filteredReleases = useMemo(() => {
+    return releases.filter(release => {
+      const status = statusCache[release.id];
+      
+      // If we have a definitive answer, use it
+      if (status === true) return true;
+      if (status === false) return false;
+      
+      // If pending or checking, include it (will be filtered later if unofficial)
+      // This prevents flickering while checking
+      return true;
+    });
+  }, [releases, statusCache]);
 
-  // Count how many have been filtered out
-  const filteredOutCount = releases.length - filteredReleases.length;
+  // Count how many have been confirmed as unofficial (false)
+  const filteredOutCount = useMemo(() => {
+    return releases.filter(release => statusCache[release.id] === false).length;
+  }, [releases, statusCache]);
 
   return {
     filteredReleases,
