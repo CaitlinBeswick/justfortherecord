@@ -203,22 +203,31 @@ const ArtistDetail = () => {
     const type = release["primary-type"] || "Other";
     const secondaryTypes: string[] = (release as any)["secondary-types"] || [];
     const title = release.title || "";
-    
+
+    // Prefer canonical discographies: only include release-groups that have at least one Official release.
+    // (MusicBrainz often includes promotional/unofficial/bootleg release-groups otherwise.)
+    const hasOfficialRelease =
+      !release.releases || release.releases.length === 0
+        ? true
+        : release.releases.some((r) => (r.status ?? "").toLowerCase() === "official");
+
+    if (!hasOfficialRelease) return false;
+
     // Exclude certain primary types
     if (type === "Broadcast" || type === "Single" || type === "Other") {
       return false;
     }
-    
+
     // Exclude releases with unwanted secondary types (karaoke, etc.)
     if (secondaryTypes.some(st => EXCLUDED_SECONDARY_TYPES.includes(st))) {
       return false;
     }
-    
+
     // Exclude bootleg/unofficial releases entirely
     if (isLikelyBootleg(title)) {
       return false;
     }
-    
+
     return true;
   });
 
@@ -266,6 +275,41 @@ const ArtistDetail = () => {
       return dateB.localeCompare(dateA);
     });
   });
+
+  // Debug (Oasis only): log categorized titles to see what inflates counts
+  if (artistId === "39ab1aed-75e0-4140-bd47-540276886b60") {
+    const summarize = (items: MBReleaseGroup[]) =>
+      items.map((r) => ({
+        title: r.title,
+        primary: r["primary-type"],
+        secondary: (r["secondary-types"] || []).join(", "),
+        date: r["first-release-date"],
+        hasOfficial:
+          !r.releases || r.releases.length === 0
+            ? "unknown"
+            : r.releases.some((x) => (x.status ?? "").toLowerCase() === "official"),
+      }));
+
+    // eslint-disable-next-line no-console
+    console.groupCollapsed("[discography-debug] Oasis categorized release-groups");
+    // eslint-disable-next-line no-console
+    console.log({
+      studio: groupedReleases["Studio Albums"]?.length ?? 0,
+      eps: groupedReleases["EPs"]?.length ?? 0,
+      live: groupedReleases["Live Albums"]?.length ?? 0,
+      compilations: groupedReleases["Compilations"]?.length ?? 0,
+      totalShown: Object.values(groupedReleases).reduce((n, g) => n + g.length, 0),
+    });
+    // eslint-disable-next-line no-console
+    console.table({
+      studio: summarize(groupedReleases["Studio Albums"] || []),
+      eps: summarize(groupedReleases["EPs"] || []),
+      live: summarize(groupedReleases["Live Albums"] || []),
+      compilations: summarize(groupedReleases["Compilations"] || []),
+    });
+    // eslint-disable-next-line no-console
+    console.groupEnd();
+  }
 
   // Order of display (no "Other")
   const typeOrder = ["Studio Albums", "EPs", "Live Albums", "Compilations"];
