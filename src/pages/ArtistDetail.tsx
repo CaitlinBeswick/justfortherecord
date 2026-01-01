@@ -181,23 +181,13 @@ const ArtistDetail = () => {
   });
 
   // Filter out Broadcasts, Singles, Other, and exclude karaoke/remix/DJ-mix/soundtrack albums
+  // Note: MusicBrainz API now uses release-group-status=website-default which excludes
+  // bootlegs, promos, and pseudo-releases automatically at the API level
   const EXCLUDED_SECONDARY_TYPES = ['Karaoke', 'Remix', 'DJ-mix', 'Mixtape/Street', 'Demo', 'Spokenword'];
-  
-  // Detect bootleg live recordings by title patterns (MusicBrainz data quality issue)
-  const isLikelyBootleg = (title: string): boolean => {
-    // Date-based patterns like "1994-12-18:" or "1996-08-23:"
-    if (/^\d{4}-\d{2}-\d{2}[:\s]/.test(title)) return true;
-    // Titles ending with venue/location patterns
-    if (/,\s*(UK|USA|England|Germany|France|Japan|Australia|Netherlands|Ireland)\s*$/i.test(title)) return true;
-    // Titles containing "Tour -" with date
-    if (/Tour\s*[-–]\s*\d{4}/.test(title)) return true;
-    return false;
-  };
   
   const filteredReleases = releases.filter(release => {
     const type = release["primary-type"] || "Other";
     const secondaryTypes: string[] = (release as any)["secondary-types"] || [];
-    const title = release.title || "";
     
     // Exclude certain primary types
     if (type === "Broadcast" || type === "Single" || type === "Other") {
@@ -206,11 +196,6 @@ const ArtistDetail = () => {
     
     // Exclude releases with unwanted secondary types (karaoke, etc.)
     if (secondaryTypes.some(st => EXCLUDED_SECONDARY_TYPES.includes(st))) {
-      return false;
-    }
-    
-    // Exclude likely bootleg live recordings that aren't properly tagged
-    if (secondaryTypes.length === 0 && isLikelyBootleg(title)) {
       return false;
     }
     

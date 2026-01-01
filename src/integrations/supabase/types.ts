@@ -361,6 +361,39 @@ export type Database = {
         }
         Relationships: []
       }
+      release_overrides: {
+        Row: {
+          artist_id: string
+          created_at: string
+          id: string
+          is_hidden: boolean
+          reason: string | null
+          release_group_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artist_id: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          reason?: string | null
+          release_group_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artist_id?: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          reason?: string | null
+          release_group_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_lists: {
         Row: {
           created_at: string
