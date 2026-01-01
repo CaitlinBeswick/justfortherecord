@@ -195,6 +195,11 @@ const ArtistDetail = () => {
       /Sessions?$/i, // "Session" or "Sessions" at end
       /iTunes Festival/i,
       /BBC\s+(Radio|Session)/i, // BBC recordings
+      /\bBlues\b/i, // Demo/bootleg EPs often have "Blues" in title (e.g., "Boy with the Blues")
+      /\bDemo/i, // Explicit demo releases
+      /\bBootleg/i, // Explicit bootleg releases
+      /\bUnreleased/i, // Unreleased material
+      /\bRare\b/i, // Rare compilations often bootleg
     ];
     return bootlegPatterns.some(pattern => pattern.test(title));
   };
