@@ -430,7 +430,15 @@ const ArtistDetail = () => {
                     {beginYear && (
                       <span>Active since <strong className="text-foreground">{beginYear}</strong></span>
                     )}
-                    <span><strong className="text-foreground">{releases.length}</strong> releases</span>
+                    <span>
+                      <strong className="text-foreground">{groupedReleases["Studio Albums"]?.length ?? 0}</strong> studio ·{" "}
+                      <strong className="text-foreground">{groupedReleases["Live Albums"]?.length ?? 0}</strong> live ·{" "}
+                      <strong className="text-foreground">{groupedReleases["Compilations"]?.length ?? 0}</strong> comps ·{" "}
+                      <strong className="text-foreground">{groupedReleases["EPs"]?.length ?? 0}</strong> EPs
+                    </span>
+                    <span>
+                      <strong className="text-foreground">{filteredReleases.length}</strong> total (official)
+                    </span>
                   </div>
 
                   {/* Rating & Actions Card */}
