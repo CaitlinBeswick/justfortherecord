@@ -305,7 +305,9 @@ serve(async (req) => {
       case 'get-artist-releases': {
         // Browse endpoint for release-groups - returns ALL release groups for an artist
         // Include artist-credits so we can filter by primary artist in the frontend
-        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits&fmt=json&limit=100`;
+        // Use type filter to exclude singles upfront - makes pagination much more efficient
+        // MusicBrainz accepts type=album|ep to include multiple types
+        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=album|ep&inc=artist-credits&fmt=json&limit=100`;
         break;
       }
       
@@ -335,7 +337,7 @@ serve(async (req) => {
       let pages = 0;
 
       while (pages < maxPages) {
-        const pageUrl = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits&fmt=json&limit=${limit}&offset=${offset}`;
+        const pageUrl = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&type=album|ep&inc=artist-credits&fmt=json&limit=${limit}&offset=${offset}`;
         console.log(`Fetching page: ${pageUrl}`);
 
         const pageResp = await fetchWithRetry(pageUrl, {
