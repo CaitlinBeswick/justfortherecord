@@ -180,8 +180,8 @@ const ArtistDetail = () => {
     return firstArtist.id === artistId;
   });
 
-  // Filter out Broadcasts, Singles, Other, and exclude karaoke/remix/DJ-mix/soundtrack albums
-  const EXCLUDED_SECONDARY_TYPES = ['Karaoke', 'Remix', 'DJ-mix', 'Mixtape/Street'];
+  // Filter out Broadcasts, Singles, Other, and exclude karaoke/remix/DJ-mix/video albums
+  const EXCLUDED_SECONDARY_TYPES = ['Karaoke', 'Remix', 'DJ-mix', 'Mixtape/Street', 'Video'];
   
   const filteredReleases = releases.filter(release => {
     const type = release["primary-type"] || "Other";
