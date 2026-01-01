@@ -6,7 +6,7 @@ import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Shield } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
@@ -14,10 +14,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
+import { useOfficialReleaseFilter } from "@/hooks/useOfficialReleaseFilter";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { VinylCelebration } from "@/components/VinylCelebration";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -204,13 +206,10 @@ const ArtistDetail = () => {
     return bootlegPatterns.some(pattern => pattern.test(title));
   };
 
-  const filteredReleases = releases.filter(release => {
+  const heuristicFilteredReleases = releases.filter(release => {
     const type = release["primary-type"] || "Other";
     const secondaryTypes: string[] = (release as any)["secondary-types"] || [];
     const title = release.title || "";
-
-    // NOTE: We cannot reliably filter by "Official" status here because the artist browse endpoint
-    // doesn't include release status without additional per-release-group lookups.
 
     // Exclude certain primary types
     if (type === "Broadcast" || type === "Single" || type === "Other") {
@@ -229,6 +228,14 @@ const ArtistDetail = () => {
 
     return true;
   });
+
+  // Use the official release filter hook to progressively check each release-group
+  const { 
+    filteredReleases, 
+    isChecking: isCheckingOfficial, 
+    progress: officialCheckProgress,
+    filteredOutCount 
+  } = useOfficialReleaseFilter(heuristicFilteredReleases, !isLoadingReleases);
 
   // Group releases by custom categories
   const groupedReleases = filteredReleases.reduce((acc, release) => {
@@ -548,9 +555,39 @@ const ArtistDetail = () => {
           )}
 
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-serif text-2xl text-foreground">
-              Discography {filteredReleases.length > 0 && `(${filteredReleases.length} releases)`}
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="font-serif text-2xl text-foreground">
+                Discography {filteredReleases.length > 0 && `(${filteredReleases.length} releases)`}
+              </h2>
+              {isCheckingOfficial && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Verifying...</span>
+                      <span className="font-medium">{officialCheckProgress.checked}/{officialCheckProgress.total}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Checking each release for official status</p>
+                    <p className="text-xs text-muted-foreground">This filters out bootleg/promo-only releases</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {!isCheckingOfficial && filteredOutCount > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                      <Shield className="h-3 w-3" />
+                      <span>{filteredOutCount} unofficial filtered</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{filteredOutCount} bootleg/promo-only releases hidden</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
             {user && (
               <div className="flex items-center gap-2">
                 <Switch

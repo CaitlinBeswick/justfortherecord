@@ -246,6 +246,23 @@ export async function getReleaseTracks(releaseId: string): Promise<MBRelease> {
   return await callMusicBrainz({ action: 'get-release-tracks', id: releaseId });
 }
 
+// Check if a release-group has at least one Official release
+export async function checkOfficialStatus(releaseGroupId: string): Promise<boolean> {
+  if (!isValidId(releaseGroupId)) {
+    return false;
+  }
+  try {
+    const data = await callMusicBrainz({ action: 'check-official-status', id: releaseGroupId });
+    const releases: Array<{ status?: string }> = data.releases || [];
+    // Check if any release has status "Official"
+    return releases.some(r => r.status?.toLowerCase() === 'official');
+  } catch (error) {
+    console.error('Failed to check official status for', releaseGroupId, error);
+    // On error, assume it's official to avoid filtering out valid releases
+    return true;
+  }
+}
+
 export function getCoverArtUrl(releaseGroupId: string, size: 'small' | 'large' | '250' | '500' | '1200' = '500'): string {
   return `${COVER_ART_BASE}/release-group/${releaseGroupId}/front-${size}`;
 }
