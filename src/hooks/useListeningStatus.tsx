@@ -80,10 +80,18 @@ export function useListeningStatus(releaseGroupId?: string) {
         .eq('release_group_id', releaseGroupId)
         .maybeSingle();
 
+      // When loving an album, also mark it as listened
+      const autoListenOnLove = field === 'is_loved' && value === true;
+
       if (existing) {
-        const newIsListened = field === 'is_listened' ? value : existing.is_listened;
+        let newIsListened = field === 'is_listened' ? value : existing.is_listened;
         const newIsToListen = field === 'is_to_listen' ? value : existing.is_to_listen;
         const newIsLoved = field === 'is_loved' ? value : existing.is_loved;
+
+        // Auto-set listened when loving
+        if (autoListenOnLove) {
+          newIsListened = true;
+        }
 
         // If all are false, delete the record
         if (!newIsListened && !newIsToListen && !newIsLoved) {
@@ -95,11 +103,13 @@ export function useListeningStatus(releaseGroupId?: string) {
           if (error) throw error;
         } else {
           // Update the record
+          const updateData: Record<string, boolean> = { [field]: value };
+          if (autoListenOnLove) {
+            updateData.is_listened = true;
+          }
           const { error } = await supabase
             .from('listening_status')
-            .update({
-              [field]: value,
-            })
+            .update(updateData)
             .eq('user_id', user.id)
             .eq('release_group_id', releaseGroupId);
           if (error) throw error;
@@ -113,7 +123,7 @@ export function useListeningStatus(releaseGroupId?: string) {
             release_group_id: releaseGroupId,
             album_title: albumTitle,
             artist_name: artistName,
-            is_listened: field === 'is_listened' ? value : false,
+            is_listened: field === 'is_listened' ? value : autoListenOnLove,
             is_to_listen: field === 'is_to_listen' ? value : false,
             is_loved: field === 'is_loved' ? value : false,
           });
