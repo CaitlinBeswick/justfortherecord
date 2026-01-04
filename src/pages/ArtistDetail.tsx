@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { VinylCelebration } from "@/components/VinylCelebration";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ReleaseManager } from "@/components/ReleaseManager";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -507,6 +508,15 @@ const ArtistDetail = () => {
               <h2 className="font-serif text-2xl text-foreground">
                 Discography {totalDisplayedReleases > 0 && `(${totalDisplayedReleases} releases)`}
               </h2>
+              {user && (
+                <ReleaseManager 
+                  artistId={artistId}
+                  artistName={artist.name}
+                  currentReleases={primaryReleases}
+                  hiddenReleaseIds={hiddenReleases}
+                  userId={user.id}
+                />
+              )}
             </div>
             {user && (
               <div className="flex items-center gap-2">
