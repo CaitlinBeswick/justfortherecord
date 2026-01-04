@@ -30,17 +30,29 @@ export function ReleaseManager({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [browseAll, setBrowseAll] = useState(false);
   const queryClient = useQueryClient();
 
   // Search for releases by this artist (filtered by artist ID)
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
     queryKey: ['release-search', artistId, debouncedSearch],
     queryFn: () => searchReleasesByArtist(artistId, debouncedSearch),
-    enabled: debouncedSearch.length >= 2 && open,
+    enabled: debouncedSearch.length >= 2 && open && !browseAll,
   });
 
-  // Filter search results to only show ones not currently displayed or ones that were manually added
-  const missingReleases = searchResults.filter(
+  // Browse all releases by this artist
+  const { data: allReleases = [], isLoading: isBrowsing } = useQuery({
+    queryKey: ['release-browse-all', artistId],
+    queryFn: () => searchReleasesByArtist(artistId, ""),
+    enabled: browseAll && open,
+  });
+
+  // Use browse results or search results depending on mode
+  const activeResults = browseAll ? allReleases : searchResults;
+  const isLoadingResults = browseAll ? isBrowsing : isSearching;
+
+  // Filter results to only show ones not currently displayed or ones that were manually added
+  const missingReleases = activeResults.filter(
     (release) => !currentReleases.some((r) => r.id === release.id) || hiddenReleaseIds.includes(release.id) || includedReleaseIds.includes(release.id)
   );
 
@@ -238,30 +250,46 @@ export function ReleaseManager({
 
           {/* Add missing releases */}
           <TabsContent value="add" className="mt-4">
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search for missing releases..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setTimeout(() => setDebouncedSearch(e.target.value), 400);
+            <div className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search for missing releases..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setBrowseAll(false);
+                    setTimeout(() => setDebouncedSearch(e.target.value), 400);
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant={browseAll ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setBrowseAll(true);
+                  setSearchQuery("");
+                  setDebouncedSearch("");
                 }}
-                className="pl-10"
-              />
+                disabled={isBrowsing}
+                className="whitespace-nowrap"
+              >
+                {isBrowsing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Browse All"}
+              </Button>
             </div>
             <ScrollArea className="h-[350px] pr-4">
-              {searchQuery.length < 2 ? (
+              {!browseAll && searchQuery.length < 2 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  Type at least 2 characters to search for releases
+                  Type at least 2 characters to search, or click "Browse All"
                 </p>
-              ) : isSearching ? (
+              ) : isLoadingResults ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : missingReleases.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  No additional releases found matching "{searchQuery}"
+                  {browseAll ? "No additional releases found" : `No additional releases found matching "${searchQuery}"`}
                 </p>
               ) : (
                 <div className="space-y-2">
