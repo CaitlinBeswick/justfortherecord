@@ -135,8 +135,8 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
 export async function searchReleasesByArtist(
   artistId: string, 
   query: string, 
-  options?: { typeFilter?: string; limit?: number }
-): Promise<MBReleaseGroup[]> {
+  options?: { typeFilter?: string; limit?: number; offset?: number }
+): Promise<{ releases: MBReleaseGroup[]; totalCount: number }> {
   // Build MusicBrainz Lucene query with artist ID filter
   let searchQuery = `arid:${artistId}`;
   
@@ -152,12 +152,17 @@ export async function searchReleasesByArtist(
   
   // Use higher limit for browse all (max 100 per MusicBrainz API)
   const limit = options?.limit || 100;
+  const offset = options?.offset || 0;
   
   const data = await callMusicBrainz({ 
     action: 'search-release-group', 
     query: searchQuery,
     limit: String(limit),
+    offset: String(offset),
   });
+  
+  // Get total count from response for pagination
+  const totalCount = data.count || 0;
   
   // Map release-groups to our structure
   const rawReleases: MBReleaseGroup[] = (data["release-groups"] || []).map((rg: any) => ({
@@ -184,7 +189,7 @@ export async function searchReleasesByArtist(
     uniqueReleases.push(rg);
   }
   
-  return uniqueReleases;
+  return { releases: uniqueReleases, totalCount };
 }
 
 export async function searchRecordings(query: string): Promise<MBRecording[]> {
