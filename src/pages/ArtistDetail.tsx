@@ -286,8 +286,11 @@ const ArtistDetail = () => {
   // Total displayed releases count (only categories we actually show)
   const totalDisplayedReleases = sortedTypes.reduce((sum, type) => sum + groupedReleases[type].length, 0);
 
-  // Calculate discography completion (based on ALL official releases)
-  const listenedCount = officialReleases.filter((release) => {
+  // Get all displayed releases (combined from all shown categories)
+  const allDisplayedReleases = sortedTypes.flatMap(type => groupedReleases[type]);
+
+  // Calculate discography completion (based on displayed releases only)
+  const listenedCount = allDisplayedReleases.filter((release) => {
     const normalized = (v: string) => v.trim().toLowerCase();
     const statusForAlbum = getStatusForAlbum(release.id);
     const listenedById = statusForAlbum.isListened;
@@ -301,8 +304,8 @@ const ArtistDetail = () => {
     return listenedById || listenedByMetadata;
   }).length;
   const completionPercentage =
-    officialReleases.length > 0
-      ? Math.round((listenedCount / officialReleases.length) * 100)
+    totalDisplayedReleases > 0
+      ? Math.round((listenedCount / totalDisplayedReleases) * 100)
       : 0;
 
   // Calculate per-category completion
@@ -517,7 +520,7 @@ const ArtistDetail = () => {
           )}
 
           {/* Overall Completion Progress */}
-          {user && officialReleases.length > 0 && (
+          {user && totalDisplayedReleases > 0 && (
             <div className="mb-6 p-4 rounded-xl bg-secondary/50 border border-border">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -525,7 +528,7 @@ const ArtistDetail = () => {
                   <span className="text-sm font-medium text-foreground">Discography Progress</span>
                 </div>
                 <span className="text-sm font-semibold text-foreground">
-                  {listenedCount} / {officialReleases.length}{' '}
+                  {listenedCount} / {totalDisplayedReleases}{' '}
                   <span className="text-muted-foreground font-normal">({completionPercentage}%)</span>
                 </span>
               </div>
