@@ -154,6 +154,7 @@ export function ReleaseManager({
         release_title: release.title,
         release_type: release['primary-type'] || 'Album',
         release_date: release['first-release-date'] || null,
+        secondary_types: release['secondary-types'] || [],
       });
       if (error) throw error;
     },

@@ -221,6 +221,7 @@ const ArtistDetail = () => {
     id: r.release_group_id,
     title: r.release_title,
     'primary-type': r.release_type || 'Album',
+    'secondary-types': (r as any).secondary_types || [],
     'first-release-date': r.release_date || undefined,
   }));
   
