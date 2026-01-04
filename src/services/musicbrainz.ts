@@ -139,17 +139,25 @@ export async function searchReleasesByArtist(
 ): Promise<{ releases: MBReleaseGroup[]; totalCount: number }> {
   // Build MusicBrainz Lucene query with artist ID filter
   let searchQuery = `arid:${artistId}`;
-  
-  // Add type filter if specified (MusicBrainz uses "primarytype" field)
+
+  // Add type filter if specified.
+  // IMPORTANT: "Live" and "Compilation" are *secondary* types in MusicBrainz.
   if (options?.typeFilter && options.typeFilter !== 'all') {
-    searchQuery += ` AND primarytype:${options.typeFilter}`;
+    if (options.typeFilter === 'Live') {
+      searchQuery += ` AND primarytype:Album AND secondarytype:Live`;
+    } else if (options.typeFilter === 'Compilation') {
+      searchQuery += ` AND primarytype:Album AND secondarytype:Compilation`;
+    } else {
+      // Primary types (case-sensitive): Album, EP, Single
+      searchQuery += ` AND primarytype:${options.typeFilter}`;
+    }
   }
-  
+
   // Add text search if provided
   if (query.trim()) {
     searchQuery += ` AND ${query}`;
   }
-  
+
   // Use higher limit for browse all (max 100 per MusicBrainz API)
   const limit = options?.limit || 100;
   const offset = options?.offset || 0;
