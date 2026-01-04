@@ -110,6 +110,22 @@ const ArtistDetail = () => {
     enabled: !!user,
   });
 
+  // Fetch user's hidden releases for this artist
+  const { data: hiddenReleases = [] } = useQuery({
+    queryKey: ['release-overrides', user?.id, artistId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('release_overrides')
+        .select('release_group_id')
+        .eq('user_id', user!.id)
+        .eq('artist_id', artistId)
+        .eq('is_hidden', true);
+      if (error) throw error;
+      return data.map(r => r.release_group_id);
+    },
+    enabled: !!user && isValidArtistId,
+  });
+
   // Helper to check if an album is loved
   const isAlbumLoved = (releaseGroupId: string): boolean => {
     const rating = userRatings.find(r => r.release_group_id === releaseGroupId);
@@ -171,7 +187,7 @@ const ArtistDetail = () => {
 
   // Filter to only include releases where this artist is the PRIMARY artist
   // This excludes featured appearances, compilations where they're just one of many artists, etc.
-  const releases = allReleases.filter(release => {
+  const primaryReleases = allReleases.filter(release => {
     const artistCredits = release["artist-credit"];
     if (!artistCredits || artistCredits.length === 0) return true; // Include if no credits info
     
@@ -182,6 +198,9 @@ const ArtistDetail = () => {
     // Match by ID - the current artist should be the first credited artist
     return firstArtist.id === artistId;
   });
+
+  // Filter out user's hidden releases
+  const releases = primaryReleases.filter(release => !hiddenReleases.includes(release.id));
 
   // Filter releases to only official ones using the hook
   const { filteredReleases: officialReleases, isChecking: isCheckingOfficial, progress: officialProgress, filteredOutCount } = useOfficialReleaseFilter(releases, true, false);
