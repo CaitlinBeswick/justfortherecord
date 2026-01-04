@@ -310,9 +310,9 @@ serve(async (req) => {
       case 'get-artist-releases': {
         // Browse endpoint for release-groups - returns release groups for an artist.
         // Include artist-credits so the frontend can filter out non-primary credited appearances.
-        // Include secondary-type-ids to get secondary-types for proper categorization (Live, Compilation, etc.)
         // NOTE: The browse endpoint does NOT support including `releases` (it can cause 400s).
-        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits+secondary-type-ids&fmt=json&limit=100`;
+        // secondary-types are included by default in the response for release-groups
+        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits&type=album|ep|live|compilation&fmt=json&limit=100`;
         break;
       }
       
