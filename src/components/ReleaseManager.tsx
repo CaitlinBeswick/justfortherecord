@@ -11,13 +11,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+// MusicBrainz primarytype values are case-sensitive (must be capitalized)
 const RELEASE_TYPES = [
   { value: 'all', label: 'All Types' },
-  { value: 'album', label: 'Albums' },
-  { value: 'ep', label: 'EPs' },
-  { value: 'single', label: 'Singles' },
-  { value: 'live', label: 'Live' },
-  { value: 'compilation', label: 'Compilations' },
+  { value: 'Album', label: 'Albums' },
+  { value: 'EP', label: 'EPs' },
+  { value: 'Single', label: 'Singles' },
+  { value: 'Live', label: 'Live' },
+  { value: 'Compilation', label: 'Compilations' },
 ] as const;
 
 interface ReleaseManagerProps {
