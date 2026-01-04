@@ -130,6 +130,40 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
   return Array.from(uniqueByTitleArtist.values());
 }
 
+// Search for releases by a specific artist using their MusicBrainz artist ID
+export async function searchReleasesByArtist(artistId: string, query: string): Promise<MBReleaseGroup[]> {
+  // Use MusicBrainz Lucene query syntax to filter by artist ID
+  const searchQuery = query.trim() 
+    ? `arid:${artistId} AND ${query}`
+    : `arid:${artistId}`;
+  
+  const data = await callMusicBrainz({ action: 'search-release-group', query: searchQuery });
+  
+  // Map release-groups to our structure
+  const rawReleases: MBReleaseGroup[] = (data["release-groups"] || []).map((rg: any) => ({
+    id: rg.id,
+    title: rg.title,
+    "primary-type": rg["primary-type"],
+    "first-release-date": rg["first-release-date"],
+    "artist-credit": rg["artist-credit"],
+  }));
+
+  // Filter out Singles
+  const filteredReleases = rawReleases.filter((rg) => rg["primary-type"] !== 'Single');
+  
+  // Deduplicate by release group ID
+  const seenIds = new Set<string>();
+  const uniqueReleases: MBReleaseGroup[] = [];
+  
+  for (const rg of filteredReleases) {
+    if (seenIds.has(rg.id)) continue;
+    seenIds.add(rg.id);
+    uniqueReleases.push(rg);
+  }
+  
+  return uniqueReleases;
+}
+
 export async function searchRecordings(query: string): Promise<MBRecording[]> {
   const data = await callMusicBrainz({ action: 'search-recording', query });
   return data.recordings || [];

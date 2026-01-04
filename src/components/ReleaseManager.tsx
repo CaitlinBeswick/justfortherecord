@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Settings2, Search, EyeOff, Eye, Plus, Loader2, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { searchReleases, MBReleaseGroup } from "@/services/musicbrainz";
+import { searchReleasesByArtist, MBReleaseGroup } from "@/services/musicbrainz";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,10 +32,10 @@ export function ReleaseManager({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const queryClient = useQueryClient();
 
-  // Search for releases by this artist
+  // Search for releases by this artist (filtered by artist ID)
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
     queryKey: ['release-search', artistId, debouncedSearch],
-    queryFn: () => searchReleases(`${artistName} ${debouncedSearch}`),
+    queryFn: () => searchReleasesByArtist(artistId, debouncedSearch),
     enabled: debouncedSearch.length >= 2 && open,
   });
 
