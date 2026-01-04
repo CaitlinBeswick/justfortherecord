@@ -507,18 +507,6 @@ const ArtistDetail = () => {
               <h2 className="font-serif text-2xl text-foreground">
                 Discography {totalOfficialReleases > 0 && `(${totalOfficialReleases} official releases)`}
               </h2>
-              {filteredOutCount > 0 && (
-                <Tooltip>
-                  <TooltipTrigger>
-                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
-                      {filteredOutCount} unofficial hidden
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Unofficial or bootleg releases are hidden</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
             </div>
             {user && (
               <div className="flex items-center gap-2">
