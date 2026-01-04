@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
+import { useOfficialReleaseFilter } from "@/hooks/useOfficialReleaseFilter";
 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -182,74 +183,58 @@ const ArtistDetail = () => {
     return firstArtist.id === artistId;
   });
 
-  // Studio albums-only filter (global): rely strictly on MusicBrainz types.
-  // Studio albums = primary-type "Album" and not marked Live/Compilation.
-  const studioAlbums = releases.filter((release) => {
+  // Filter releases to only official ones using the hook
+  const { filteredReleases: officialReleases, isChecking: isCheckingOfficial, progress: officialProgress, filteredOutCount } = useOfficialReleaseFilter(releases, true, false);
+
+  // Categorize releases by type
+  const studioAlbums = officialReleases.filter((release) => {
     const primaryType = release['primary-type'] || '';
     const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
-
     if (primaryType !== 'Album') return false;
     if (secondaryTypes.includes('Live')) return false;
     if (secondaryTypes.includes('Compilation')) return false;
-
     return true;
   });
 
-  // Diagnostic: albums that are primary-type "Album" but excluded due to secondary types.
-  // This answers "which studio albums are missing" when MusicBrainz tags them as Compilation/Live.
-  const excludedAlbumCandidates = releases
-    .filter((release) => {
-      const primaryType = release['primary-type'] || '';
-      const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
-      if (primaryType !== 'Album') return false;
-      return secondaryTypes.includes('Live') || secondaryTypes.includes('Compilation');
-    })
-    .sort((a, b) => {
-      const dateA = a['first-release-date'] || '';
-      const dateB = b['first-release-date'] || '';
-      return dateA.localeCompare(dateB);
-    });
+  const eps = officialReleases.filter((release) => {
+    const primaryType = release['primary-type'] || '';
+    return primaryType === 'EP';
+  });
+
+  const liveAlbums = officialReleases.filter((release) => {
+    const primaryType = release['primary-type'] || '';
+    const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
+    return primaryType === 'Album' && secondaryTypes.includes('Live');
+  });
+
+  const compilations = officialReleases.filter((release) => {
+    const primaryType = release['primary-type'] || '';
+    const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
+    return primaryType === 'Album' && secondaryTypes.includes('Compilation') && !secondaryTypes.includes('Live');
+  });
 
   const groupedReleases: Record<string, MBReleaseGroup[]> = {
     'Studio Albums': studioAlbums,
+    'EPs': eps,
+    'Live Albums': liveAlbums,
+    'Compilations': compilations,
   };
 
-  // Sort by date (newest first)
-  groupedReleases['Studio Albums'].sort((a, b) => {
-    const dateA = a['first-release-date'] || '';
-    const dateB = b['first-release-date'] || '';
-    return dateB.localeCompare(dateA);
+  // Sort each category by date (newest first)
+  Object.keys(groupedReleases).forEach((type) => {
+    groupedReleases[type].sort((a, b) => {
+      const dateA = a['first-release-date'] || '';
+      const dateB = b['first-release-date'] || '';
+      return dateB.localeCompare(dateA);
+    });
   });
 
-  // Debug (Oasis only)
-  if (artistId === '39ab1aed-75e0-4140-bd47-540276886b60') {
-    const summarize = (items: MBReleaseGroup[]) =>
-      items.map((r) => ({
-        title: r.title,
-        primary: r['primary-type'],
-        secondary: (r['secondary-types'] || []).join(', '),
-        date: r['first-release-date'],
-        hasOfficial:
-          !r.releases || r.releases.length === 0
-            ? 'unknown'
-            : r.releases.some((x) => (x.status ?? '').toLowerCase() === 'official'),
-      }));
+  // Order of display - only show categories with releases
+  const typeOrder = ['Studio Albums', 'EPs', 'Live Albums', 'Compilations'];
+  const sortedTypes = typeOrder.filter((type) => groupedReleases[type]?.length > 0);
 
-    // eslint-disable-next-line no-console
-    console.groupCollapsed('[discography-debug] Oasis studio albums (official-only)');
-    // eslint-disable-next-line no-console
-    console.log({ studio: groupedReleases['Studio Albums']?.length ?? 0 });
-    // eslint-disable-next-line no-console
-    console.table({ studio: summarize(groupedReleases['Studio Albums'] || []) });
-    // eslint-disable-next-line no-console
-    console.groupEnd();
-  }
-
-  // Order of display
-  const typeOrder = ['Studio Albums'];
-  const sortedTypes = Object.keys(groupedReleases).sort(
-    (a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b)
-  );
+  // Total official releases count
+  const totalOfficialReleases = officialReleases.length;
 
   // Calculate discography completion (based on OFFICIAL STUDIO ALBUMS only)
   const listenedCount = studioAlbums.filter((release) => {
@@ -471,13 +456,23 @@ const ArtistDetail = () => {
 
         {/* Discography */}
         <section className="container mx-auto px-4 py-8 pb-20">
+          {/* Official status checking indicator */}
+          {isCheckingOfficial && (
+            <div className="mb-4 p-3 rounded-lg bg-secondary/50 border border-border flex items-center gap-3">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">
+                Checking official release status... ({officialProgress.checked}/{officialProgress.total})
+              </span>
+            </div>
+          )}
+
           {/* Overall Completion Progress */}
           {user && studioAlbums.length > 0 && (
             <div className="mb-6 p-4 rounded-xl bg-secondary/50 border border-border">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">Overall Discography Progress</span>
+                  <span className="text-sm font-medium text-foreground">Studio Albums Progress</span>
                 </div>
                 <span className="text-sm font-semibold text-foreground">
                   {listenedCount} / {studioAlbums.length}{' '}
@@ -491,8 +486,20 @@ const ArtistDetail = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <h2 className="font-serif text-2xl text-foreground">
-                Discography {studioAlbums.length > 0 && `(${studioAlbums.length} releases)`}
+                Discography {totalOfficialReleases > 0 && `(${totalOfficialReleases} official releases)`}
               </h2>
+              {filteredOutCount > 0 && (
+                <Tooltip>
+                  <TooltipTrigger>
+                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
+                      {filteredOutCount} unofficial hidden
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Unofficial or bootleg releases are hidden</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
             {user && (
               <div className="flex items-center gap-2">
@@ -508,31 +515,8 @@ const ArtistDetail = () => {
               </div>
             )}
           </div>
-
-          {excludedAlbumCandidates.length > 0 && (
-            <details className="mb-6 rounded-xl border border-border bg-secondary/30 p-4">
-              <summary className="cursor-pointer select-none text-sm font-medium text-foreground">
-                Missing albums? {excludedAlbumCandidates.length} “Album” release(s) excluded by MusicBrainz tags
-              </summary>
-              <div className="mt-3 space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  These are tagged as <span className="font-medium">Compilation</span> or <span className="font-medium">Live</span> in MusicBrainz, so they don’t count as “studio albums” in the current rule.
-                </p>
-                <ul className="grid gap-1 text-sm text-foreground">
-                  {excludedAlbumCandidates.map((r) => (
-                    <li key={r.id} className="flex items-baseline justify-between gap-3">
-                      <span className="truncate">{r.title}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {getYear(r['first-release-date']) ?? '—'} • {(r['secondary-types'] || []).join(', ')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </details>
-          )}
           
-          {studioAlbums.length > 0 ? (
+          {sortedTypes.length > 0 ? (
             <div className="space-y-10">
               {sortedTypes.map((type) => {
                 const categoryProgress = getCategoryProgress(groupedReleases[type]);
