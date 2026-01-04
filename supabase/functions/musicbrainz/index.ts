@@ -80,8 +80,8 @@ serve(async (req) => {
   }
 
   try {
-    const { action, query, id, type } = await req.json();
-    console.log(`MusicBrainz request: action=${action}, query=${query}, id=${id}, type=${type}`);
+    const { action, query, id, type, limit } = await req.json();
+    console.log(`MusicBrainz request: action=${action}, query=${query}, id=${id}, type=${type}, limit=${limit}`);
 
     const actionsRequiringId = new Set([
       'get-artist',
@@ -112,10 +112,13 @@ serve(async (req) => {
         url = `${MUSICBRAINZ_BASE}/release?query=${encodeURIComponent(query)}&fmt=json&limit=25`;
         break;
       
-      case 'search-release-group':
+      case 'search-release-group': {
         // Search release-groups (albums) directly - better for finding iconic albums
-        url = `${MUSICBRAINZ_BASE}/release-group?query=${encodeURIComponent(query)}&fmt=json&limit=25`;
+        // Support custom limit (max 100 per MusicBrainz API limits)
+        const searchLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
+        url = `${MUSICBRAINZ_BASE}/release-group?query=${encodeURIComponent(query)}&fmt=json&limit=${searchLimit}`;
         break;
+      }
       
       case 'search-recording':
         url = `${MUSICBRAINZ_BASE}/recording?query=${encodeURIComponent(query)}&fmt=json&limit=25`;

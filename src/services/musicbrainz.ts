@@ -131,25 +131,48 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
 }
 
 // Search for releases by a specific artist using their MusicBrainz artist ID
-export async function searchReleasesByArtist(artistId: string, query: string): Promise<MBReleaseGroup[]> {
-  // Use MusicBrainz Lucene query syntax to filter by artist ID
-  const searchQuery = query.trim() 
-    ? `arid:${artistId} AND ${query}`
-    : `arid:${artistId}`;
+// typeFilter can be: 'album', 'ep', 'single', 'live', 'compilation', 'other' or undefined for all
+export async function searchReleasesByArtist(
+  artistId: string, 
+  query: string, 
+  options?: { typeFilter?: string; limit?: number }
+): Promise<MBReleaseGroup[]> {
+  // Build MusicBrainz Lucene query with artist ID filter
+  let searchQuery = `arid:${artistId}`;
   
-  const data = await callMusicBrainz({ action: 'search-release-group', query: searchQuery });
+  // Add type filter if specified (MusicBrainz uses "primarytype" field)
+  if (options?.typeFilter && options.typeFilter !== 'all') {
+    searchQuery += ` AND primarytype:${options.typeFilter}`;
+  }
+  
+  // Add text search if provided
+  if (query.trim()) {
+    searchQuery += ` AND ${query}`;
+  }
+  
+  // Use higher limit for browse all (max 100 per MusicBrainz API)
+  const limit = options?.limit || 100;
+  
+  const data = await callMusicBrainz({ 
+    action: 'search-release-group', 
+    query: searchQuery,
+    limit: String(limit),
+  });
   
   // Map release-groups to our structure
   const rawReleases: MBReleaseGroup[] = (data["release-groups"] || []).map((rg: any) => ({
     id: rg.id,
     title: rg.title,
     "primary-type": rg["primary-type"],
+    "secondary-types": rg["secondary-types"] || [],
     "first-release-date": rg["first-release-date"],
     "artist-credit": rg["artist-credit"],
   }));
 
-  // Filter out Singles
-  const filteredReleases = rawReleases.filter((rg) => rg["primary-type"] !== 'Single');
+  // Only filter out Singles if no specific type filter is set
+  const filteredReleases = options?.typeFilter 
+    ? rawReleases 
+    : rawReleases.filter((rg) => rg["primary-type"] !== 'Single');
   
   // Deduplicate by release group ID
   const seenIds = new Set<string>();
