@@ -382,6 +382,39 @@ export type Database = {
         }
         Relationships: []
       }
+      release_inclusions: {
+        Row: {
+          artist_id: string
+          created_at: string
+          id: string
+          release_date: string | null
+          release_group_id: string
+          release_title: string
+          release_type: string | null
+          user_id: string
+        }
+        Insert: {
+          artist_id: string
+          created_at?: string
+          id?: string
+          release_date?: string | null
+          release_group_id: string
+          release_title: string
+          release_type?: string | null
+          user_id: string
+        }
+        Update: {
+          artist_id?: string
+          created_at?: string
+          id?: string
+          release_date?: string | null
+          release_group_id?: string
+          release_title?: string
+          release_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       release_overrides: {
         Row: {
           artist_id: string
