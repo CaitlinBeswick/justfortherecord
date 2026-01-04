@@ -127,6 +127,21 @@ const ArtistDetail = () => {
     enabled: !!user && isValidArtistId,
   });
 
+  // Fetch user's manually added releases for this artist
+  const { data: includedReleases = [] } = useQuery({
+    queryKey: ['release-inclusions', user?.id, artistId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('release_inclusions')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('artist_id', artistId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && isValidArtistId,
+  });
+
   // Helper to check if an album is loved
   const isAlbumLoved = (releaseGroupId: string): boolean => {
     const rating = userRatings.find(r => r.release_group_id === releaseGroupId);
@@ -200,8 +215,23 @@ const ArtistDetail = () => {
     return firstArtist.id === artistId;
   });
 
+  // Convert user's included releases to MBReleaseGroup format and merge with primary releases
+  const includedReleaseIds = includedReleases.map(r => r.release_group_id);
+  const includedAsReleaseGroups: MBReleaseGroup[] = includedReleases.map(r => ({
+    id: r.release_group_id,
+    title: r.release_title,
+    'primary-type': r.release_type || 'Album',
+    'first-release-date': r.release_date || undefined,
+  }));
+  
+  // Merge primary releases with manually added ones (avoid duplicates)
+  const allPrimaryReleases = [
+    ...primaryReleases,
+    ...includedAsReleaseGroups.filter(inc => !primaryReleases.some(p => p.id === inc.id)),
+  ];
+
   // Filter out user's hidden releases
-  const releases = primaryReleases.filter(release => !hiddenReleases.includes(release.id));
+  const releases = allPrimaryReleases.filter(release => !hiddenReleases.includes(release.id));
 
   // Filter releases to only official ones using the hook
   const { filteredReleases: officialReleases, isChecking: isCheckingOfficial, progress: officialProgress, filteredOutCount } = useOfficialReleaseFilter(releases, true, false);
@@ -512,8 +542,9 @@ const ArtistDetail = () => {
                 <ReleaseManager 
                   artistId={artistId}
                   artistName={artist.name}
-                  currentReleases={primaryReleases}
+                  currentReleases={allPrimaryReleases}
                   hiddenReleaseIds={hiddenReleases}
+                  includedReleaseIds={includedReleaseIds}
                   userId={user.id}
                 />
               )}

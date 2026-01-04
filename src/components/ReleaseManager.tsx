@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings2, Search, EyeOff, Eye, Plus, Loader2 } from "lucide-react";
+import { Settings2, Search, EyeOff, Eye, Plus, Loader2, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { searchReleases, MBReleaseGroup } from "@/services/musicbrainz";
@@ -15,6 +15,7 @@ interface ReleaseManagerProps {
   artistName: string;
   currentReleases: MBReleaseGroup[];
   hiddenReleaseIds: string[];
+  includedReleaseIds: string[];
   userId: string;
 }
 
@@ -23,18 +24,13 @@ export function ReleaseManager({
   artistName, 
   currentReleases, 
   hiddenReleaseIds,
+  includedReleaseIds,
   userId 
 }: ReleaseManagerProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const queryClient = useQueryClient();
-
-  // Debounce search
-  useState(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
-    return () => clearTimeout(timer);
-  });
 
   // Search for releases by this artist
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
@@ -43,9 +39,9 @@ export function ReleaseManager({
     enabled: debouncedSearch.length >= 2 && open,
   });
 
-  // Filter search results to only show ones not currently displayed (or hidden)
+  // Filter search results to only show ones not currently displayed or ones that were manually added
   const missingReleases = searchResults.filter(
-    (release) => !currentReleases.some((r) => r.id === release.id) || hiddenReleaseIds.includes(release.id)
+    (release) => !currentReleases.some((r) => r.id === release.id) || hiddenReleaseIds.includes(release.id) || includedReleaseIds.includes(release.id)
   );
 
   // Mutation to hide a release
@@ -84,6 +80,49 @@ export function ReleaseManager({
     onError: () => toast.error('Failed to restore release'),
   });
 
+  // Mutation to add a missing release to discography
+  const addReleaseMutation = useMutation({
+    mutationFn: async (release: MBReleaseGroup) => {
+      const { error } = await supabase.from('release_inclusions').insert({
+        user_id: userId,
+        artist_id: artistId,
+        release_group_id: release.id,
+        release_title: release.title,
+        release_type: release['primary-type'] || 'Album',
+        release_date: release['first-release-date'] || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['release-inclusions', userId, artistId] });
+      toast.success('Release added to discography');
+    },
+    onError: (err: any) => {
+      if (err?.message?.includes('duplicate')) {
+        toast.error('Release already added');
+      } else {
+        toast.error('Failed to add release');
+      }
+    },
+  });
+
+  // Mutation to remove a manually added release
+  const removeInclusionMutation = useMutation({
+    mutationFn: async (releaseGroupId: string) => {
+      const { error } = await supabase
+        .from('release_inclusions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('release_group_id', releaseGroupId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['release-inclusions', userId, artistId] });
+      toast.success('Release removed from discography');
+    },
+    onError: () => toast.error('Failed to remove release'),
+  });
+
   const hiddenReleases = currentReleases.filter((r) => hiddenReleaseIds.includes(r.id));
   const visibleReleases = currentReleases.filter((r) => !hiddenReleaseIds.includes(r.id));
 
@@ -114,28 +153,50 @@ export function ReleaseManager({
                 <p className="text-muted-foreground text-center py-8">No releases currently shown</p>
               ) : (
                 <div className="space-y-2">
-                  {visibleReleases.map((release) => (
-                    <div 
-                      key={release.id} 
-                      className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{release.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {release['primary-type'] || 'Unknown'} • {release['first-release-date']?.split('-')[0] || 'Unknown year'}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => hideReleaseMutation.mutate(release)}
-                        disabled={hideReleaseMutation.isPending}
-                        className="text-muted-foreground hover:text-destructive"
+                  {visibleReleases.map((release) => {
+                    const isManuallyAdded = includedReleaseIds.includes(release.id);
+                    return (
+                      <div 
+                        key={release.id} 
+                        className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                       >
-                        <EyeOff className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground truncate">{release.title}</p>
+                            {isManuallyAdded && (
+                              <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">Added</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {release['primary-type'] || 'Unknown'} • {release['first-release-date']?.split('-')[0] || 'Unknown year'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {isManuallyAdded ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeInclusionMutation.mutate(release.id)}
+                              disabled={removeInclusionMutation.isPending}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => hideReleaseMutation.mutate(release)}
+                              disabled={hideReleaseMutation.isPending}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <EyeOff className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </ScrollArea>
@@ -206,6 +267,9 @@ export function ReleaseManager({
                 <div className="space-y-2">
                   {missingReleases.map((release) => {
                     const isHidden = hiddenReleaseIds.includes(release.id);
+                    const isAlreadyAdded = includedReleaseIds.includes(release.id);
+                    const isInDiscography = currentReleases.some((r) => r.id === release.id) && !isHidden;
+                    
                     return (
                       <div 
                         key={release.id} 
@@ -228,8 +292,19 @@ export function ReleaseManager({
                             <Eye className="h-4 w-4 mr-1" />
                             Restore
                           </Button>
+                        ) : isAlreadyAdded || isInDiscography ? (
+                          <span className="text-xs text-muted-foreground px-2">Already added</span>
                         ) : (
-                          <span className="text-xs text-muted-foreground px-2">Not in discography</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => addReleaseMutation.mutate(release)}
+                            disabled={addReleaseMutation.isPending}
+                            className="text-muted-foreground hover:text-primary"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                          </Button>
                         )}
                       </div>
                     );
