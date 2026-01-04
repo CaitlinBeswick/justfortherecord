@@ -391,6 +391,7 @@ export type Database = {
           release_group_id: string
           release_title: string
           release_type: string | null
+          secondary_types: string[] | null
           user_id: string
         }
         Insert: {
@@ -401,6 +402,7 @@ export type Database = {
           release_group_id: string
           release_title: string
           release_type?: string | null
+          secondary_types?: string[] | null
           user_id: string
         }
         Update: {
@@ -411,6 +413,7 @@ export type Database = {
           release_group_id?: string
           release_title?: string
           release_type?: string | null
+          secondary_types?: string[] | null
           user_id?: string
         }
         Relationships: []
