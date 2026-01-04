@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,31 +42,65 @@ export function ReleaseManager({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [browseAll, setBrowseAll] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [loadedReleases, setLoadedReleases] = useState<MBReleaseGroup[]>([]);
+  const [offset, setOffset] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const queryClient = useQueryClient();
 
+  const BATCH_SIZE = 100;
+
+  // Reset pagination when filters change
+  const resetPagination = () => {
+    setLoadedReleases([]);
+    setOffset(0);
+    setTotalCount(0);
+  };
+
   // Search for releases by this artist (filtered by artist ID)
-  const { data: searchResults = [], isLoading: isSearching } = useQuery({
+  const { data: searchData, isLoading: isSearching } = useQuery({
     queryKey: ['release-search', artistId, debouncedSearch, typeFilter],
     queryFn: () => searchReleasesByArtist(artistId, debouncedSearch, { 
       typeFilter: typeFilter !== 'all' ? typeFilter : undefined,
-      limit: 100 
+      limit: BATCH_SIZE 
     }),
     enabled: debouncedSearch.length >= 2 && open && !browseAll,
   });
 
-  // Browse all releases by this artist (searches entire MusicBrainz database)
-  const { data: allReleases = [], isLoading: isBrowsing } = useQuery({
-    queryKey: ['release-browse-all', artistId, typeFilter],
+  // Browse all releases by this artist with pagination
+  const { data: browseData, isLoading: isBrowsing, isFetching: isFetchingMore } = useQuery({
+    queryKey: ['release-browse-all', artistId, typeFilter, offset],
     queryFn: () => searchReleasesByArtist(artistId, "", { 
       typeFilter: typeFilter !== 'all' ? typeFilter : undefined,
-      limit: 100 // MusicBrainz API max is 100 per request
+      limit: BATCH_SIZE,
+      offset: offset,
     }),
     enabled: browseAll && open,
   });
 
+  // Effect to accumulate browse results when new data arrives
+  useEffect(() => {
+    if (browseData) {
+      if (offset === 0) {
+        setLoadedReleases(browseData.releases);
+      } else {
+        setLoadedReleases(prev => {
+          const existingIds = new Set(prev.map(r => r.id));
+          const newReleases = browseData.releases.filter(r => !existingIds.has(r.id));
+          return [...prev, ...newReleases];
+        });
+      }
+      setTotalCount(browseData.totalCount);
+    }
+  }, [browseData, offset]);
+
   // Use browse results or search results depending on mode
-  const activeResults = browseAll ? allReleases : searchResults;
-  const isLoadingResults = browseAll ? isBrowsing : isSearching;
+  const activeResults = browseAll ? loadedReleases : (searchData?.releases || []);
+  const isLoadingResults = browseAll ? (isBrowsing && offset === 0) : isSearching;
+  const hasMoreResults = browseAll && totalCount > loadedReleases.length;
+
+  const loadMore = () => {
+    setOffset(prev => prev + BATCH_SIZE);
+  };
 
   // Filter results to only show ones not currently displayed or ones that were manually added
   const missingReleases = activeResults.filter(
@@ -286,19 +320,20 @@ export function ReleaseManager({
                   variant={browseAll ? "default" : "outline"}
                   size="sm"
                   onClick={() => {
+                    resetPagination();
                     setBrowseAll(true);
                     setSearchQuery("");
                     setDebouncedSearch("");
                   }}
-                  disabled={isBrowsing}
+                  disabled={isBrowsing && offset === 0}
                   className="whitespace-nowrap"
                 >
-                  {isBrowsing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Browse All"}
+                  {(isBrowsing && offset === 0) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Browse All"}
                 </Button>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Filter by type:</span>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <Select value={typeFilter} onValueChange={(value) => { resetPagination(); setTypeFilter(value); }}>
                   <SelectTrigger className="w-[140px] h-8">
                     <SelectValue />
                   </SelectTrigger>
@@ -312,7 +347,10 @@ export function ReleaseManager({
                 </Select>
                 {browseAll && (
                   <span className="text-xs text-muted-foreground ml-auto">
-                    Showing up to 100 results from MusicBrainz
+                    {totalCount > 0 
+                      ? `Showing ${loadedReleases.length} of ${totalCount} releases`
+                      : `Loading releases...`
+                    }
                   </span>
                 )}
               </div>
@@ -377,6 +415,28 @@ export function ReleaseManager({
                       </div>
                     );
                   })}
+                  
+                  {/* Load More button for pagination */}
+                  {browseAll && hasMoreResults && (
+                    <div className="pt-4 flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadMore}
+                        disabled={isFetchingMore}
+                        className="w-full"
+                      >
+                        {isFetchingMore ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Loading more...
+                          </>
+                        ) : (
+                          `Load More (${totalCount - loadedReleases.length} remaining)`
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </ScrollArea>
