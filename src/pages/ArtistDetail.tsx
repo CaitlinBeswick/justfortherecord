@@ -252,8 +252,8 @@ const ArtistDetail = () => {
   const typeOrder = ['Studio Albums', 'EPs', 'Live Albums', 'Compilations'];
   const sortedTypes = typeOrder.filter((type) => groupedReleases[type]?.length > 0);
 
-  // Total official releases count
-  const totalOfficialReleases = officialReleases.length;
+  // Total displayed releases count (only categories we actually show)
+  const totalDisplayedReleases = sortedTypes.reduce((sum, type) => sum + groupedReleases[type].length, 0);
 
   // Calculate discography completion (based on ALL official releases)
   const listenedCount = officialReleases.filter((release) => {
@@ -505,7 +505,7 @@ const ArtistDetail = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <h2 className="font-serif text-2xl text-foreground">
-                Discography {totalOfficialReleases > 0 && `(${totalOfficialReleases} releases)`}
+                Discography {totalDisplayedReleases > 0 && `(${totalDisplayedReleases} releases)`}
               </h2>
             </div>
             {user && (
