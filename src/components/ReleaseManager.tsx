@@ -9,6 +9,16 @@ import { searchReleasesByArtist, MBReleaseGroup } from "@/services/musicbrainz";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const RELEASE_TYPES = [
+  { value: 'all', label: 'All Types' },
+  { value: 'album', label: 'Albums' },
+  { value: 'ep', label: 'EPs' },
+  { value: 'single', label: 'Singles' },
+  { value: 'live', label: 'Live' },
+  { value: 'compilation', label: 'Compilations' },
+] as const;
 
 interface ReleaseManagerProps {
   artistId: string;
@@ -31,19 +41,26 @@ export function ReleaseManager({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [browseAll, setBrowseAll] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const queryClient = useQueryClient();
 
   // Search for releases by this artist (filtered by artist ID)
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
-    queryKey: ['release-search', artistId, debouncedSearch],
-    queryFn: () => searchReleasesByArtist(artistId, debouncedSearch),
+    queryKey: ['release-search', artistId, debouncedSearch, typeFilter],
+    queryFn: () => searchReleasesByArtist(artistId, debouncedSearch, { 
+      typeFilter: typeFilter !== 'all' ? typeFilter : undefined,
+      limit: 100 
+    }),
     enabled: debouncedSearch.length >= 2 && open && !browseAll,
   });
 
-  // Browse all releases by this artist
+  // Browse all releases by this artist (searches entire MusicBrainz database)
   const { data: allReleases = [], isLoading: isBrowsing } = useQuery({
-    queryKey: ['release-browse-all', artistId],
-    queryFn: () => searchReleasesByArtist(artistId, ""),
+    queryKey: ['release-browse-all', artistId, typeFilter],
+    queryFn: () => searchReleasesByArtist(artistId, "", { 
+      typeFilter: typeFilter !== 'all' ? typeFilter : undefined,
+      limit: 100 // MusicBrainz API max is 100 per request
+    }),
     enabled: browseAll && open,
   });
 
@@ -250,42 +267,65 @@ export function ReleaseManager({
 
           {/* Add missing releases */}
           <TabsContent value="add" className="mt-4">
-            <div className="flex gap-2 mb-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search for missing releases..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setBrowseAll(false);
-                    setTimeout(() => setDebouncedSearch(e.target.value), 400);
+            <div className="space-y-3 mb-4">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search for missing releases..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setBrowseAll(false);
+                      setTimeout(() => setDebouncedSearch(e.target.value), 400);
+                    }}
+                    className="pl-10"
+                  />
+                </div>
+                <Button
+                  variant={browseAll ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setBrowseAll(true);
+                    setSearchQuery("");
+                    setDebouncedSearch("");
                   }}
-                  className="pl-10"
-                />
+                  disabled={isBrowsing}
+                  className="whitespace-nowrap"
+                >
+                  {isBrowsing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Browse All"}
+                </Button>
               </div>
-              <Button
-                variant={browseAll ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setBrowseAll(true);
-                  setSearchQuery("");
-                  setDebouncedSearch("");
-                }}
-                disabled={isBrowsing}
-                className="whitespace-nowrap"
-              >
-                {isBrowsing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Browse All"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Filter by type:</span>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-[140px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RELEASE_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {browseAll && (
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    Showing up to 100 results from MusicBrainz
+                  </span>
+                )}
+              </div>
             </div>
-            <ScrollArea className="h-[350px] pr-4">
+            <ScrollArea className="h-[320px] pr-4">
               {!browseAll && searchQuery.length < 2 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  Type at least 2 characters to search, or click "Browse All"
+                  Type at least 2 characters to search, or click "Browse All" to see all releases
                 </p>
               ) : isLoadingResults ? (
-                <div className="flex items-center justify-center py-8">
+                <div className="flex flex-col items-center justify-center py-8 gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Searching MusicBrainz database...</span>
                 </div>
               ) : missingReleases.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
