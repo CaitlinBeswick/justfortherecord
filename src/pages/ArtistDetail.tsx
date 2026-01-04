@@ -255,8 +255,8 @@ const ArtistDetail = () => {
   // Total official releases count
   const totalOfficialReleases = officialReleases.length;
 
-  // Calculate discography completion (based on OFFICIAL STUDIO ALBUMS only)
-  const listenedCount = studioAlbums.filter((release) => {
+  // Calculate discography completion (based on ALL official releases)
+  const listenedCount = officialReleases.filter((release) => {
     const normalized = (v: string) => v.trim().toLowerCase();
     const statusForAlbum = getStatusForAlbum(release.id);
     const listenedById = statusForAlbum.isListened;
@@ -270,8 +270,8 @@ const ArtistDetail = () => {
     return listenedById || listenedByMetadata;
   }).length;
   const completionPercentage =
-    studioAlbums.length > 0
-      ? Math.round((listenedCount / studioAlbums.length) * 100)
+    officialReleases.length > 0
+      ? Math.round((listenedCount / officialReleases.length) * 100)
       : 0;
 
   // Calculate per-category completion
@@ -486,15 +486,15 @@ const ArtistDetail = () => {
           )}
 
           {/* Overall Completion Progress */}
-          {user && studioAlbums.length > 0 && (
+          {user && officialReleases.length > 0 && (
             <div className="mb-6 p-4 rounded-xl bg-secondary/50 border border-border">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">Studio Albums Progress</span>
+                  <span className="text-sm font-medium text-foreground">Discography Progress</span>
                 </div>
                 <span className="text-sm font-semibold text-foreground">
-                  {listenedCount} / {studioAlbums.length}{' '}
+                  {listenedCount} / {officialReleases.length}{' '}
                   <span className="text-muted-foreground font-normal">({completionPercentage}%)</span>
                 </span>
               </div>
@@ -505,7 +505,7 @@ const ArtistDetail = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <h2 className="font-serif text-2xl text-foreground">
-                Discography {totalOfficialReleases > 0 && `(${totalOfficialReleases} official releases)`}
+                Discography {totalOfficialReleases > 0 && `(${totalOfficialReleases} releases)`}
               </h2>
             </div>
             {user && (
