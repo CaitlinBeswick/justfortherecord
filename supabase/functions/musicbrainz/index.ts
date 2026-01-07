@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,34 @@ const USER_AGENT = "JustForTheRecord/1.0.0 (contact@example.com)";
 function isMusicBrainzId(value: unknown): value is string {
   // MusicBrainz IDs are UUIDs
   return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+// Verify authenticated user via JWT
+async function verifyAuth(req: Request): Promise<{ authenticated: boolean; userId?: string; error?: string }> {
+  const authHeader = req.headers.get('Authorization');
+  
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { authenticated: false, error: 'Missing or invalid authorization header' };
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data, error } = await supabase.auth.getClaims(token);
+    
+    if (error || !data?.claims) {
+      return { authenticated: false, error: 'Invalid token' };
+    }
+
+    return { authenticated: true, userId: data.claims.sub as string };
+  } catch (error) {
+    return { authenticated: false, error: 'Authentication failed' };
+  }
 }
 
 // MusicBrainz is strict about traffic. Be a good citizen:
@@ -77,6 +106,16 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 4)
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Verify authentication
+  const authResult = await verifyAuth(req);
+  if (!authResult.authenticated) {
+    console.log(`Authentication failed: ${authResult.error}`);
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {

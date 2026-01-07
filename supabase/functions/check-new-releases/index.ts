@@ -23,6 +23,25 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Verify request is from authorized source (cron job or admin)
+  // This function should only be called by pg_cron or authorized services
+  const authHeader = req.headers.get('Authorization');
+  const expectedKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  
+  // Accept either service role key or a matching CRON_SECRET
+  const cronSecret = Deno.env.get('CRON_SECRET');
+  const isAuthorized = 
+    authHeader === `Bearer ${expectedKey}` || 
+    (cronSecret && authHeader === `Bearer ${cronSecret}`);
+
+  if (!isAuthorized) {
+    console.log('Unauthorized request to check-new-releases');
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
