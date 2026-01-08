@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { VinylCelebration } from "@/components/VinylCelebration";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ReleaseManager } from "@/components/ReleaseManager";
 
 // Generate a consistent color based on the artist name
@@ -599,43 +599,39 @@ const ArtistDetail = () => {
                     userId={user.id}
                     visibleTypes={visibleTypes}
                   />
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="text-muted-foreground cursor-help"
-                          aria-label="Discography display info"
-                          title="Default albums display studio releases only. To customise which albums you would like to display, use the Manage Releases feature."
-                        >
-                          <Info className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Default albums display studio releases only. To customise which albums you would like to display, use the Manage Releases feature.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Discography display info"
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                        <span>Studio albums only</span>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="max-w-xs text-sm" side="bottom" align="start">
+                      <p>Default albums display studio releases only. To customise which albums you would like to display, use the Manage Releases feature.</p>
+                    </PopoverContent>
+                  </Popover>
                 </>
               )}
               {!user && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        className="text-muted-foreground cursor-help"
-                        aria-label="Discography display info"
-                        title="Default albums display studio releases only. To customise which albums you would like to display, use the Manage Releases feature."
-                      >
-                        <Info className="h-4 w-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Default albums display studio releases only. Sign in to customise which albums you would like to display using the Manage Releases feature.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Discography display info"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                      <span>Studio albums only</span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="max-w-xs text-sm" side="bottom" align="start">
+                    <p>Default albums display studio releases only. Sign in to customise which albums you would like to display using the Manage Releases feature.</p>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
             {user && (
