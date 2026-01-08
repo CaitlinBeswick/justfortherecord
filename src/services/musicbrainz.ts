@@ -61,8 +61,14 @@ export interface MBRecording {
 }
 
 async function callMusicBrainz(body: Record<string, string | undefined>) {
+  // Normalize query-ish fields to avoid space/case sensitivity issues and improve caching.
+  const normalizedBody = { ...body };
+  if (typeof normalizedBody.query === 'string') {
+    normalizedBody.query = normalizedBody.query.trim().replace(/\s+/g, ' ');
+  }
+
   const { data, error } = await supabase.functions.invoke('musicbrainz', {
-    body,
+    body: normalizedBody,
   });
 
   if (error) {
