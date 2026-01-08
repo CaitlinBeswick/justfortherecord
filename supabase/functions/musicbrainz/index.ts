@@ -103,18 +103,27 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 4)
   throw lastError;
 }
 
-async function artistHasAnyReleaseGroup(artistId: string): Promise<boolean> {
+async function artistHasAnyReleaseGroup(artistId: string): Promise<boolean | null> {
   try {
+    // Add small delay to respect MusicBrainz rate limits
+    await new Promise(resolve => setTimeout(resolve, 150));
+    
     const url = `${MUSICBRAINZ_BASE}/release-group?artist=${encodeURIComponent(artistId)}&fmt=json&limit=1`;
     const resp = await fetchWithRetry(url, {
       headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
     }, 2);
 
-    if (!resp.ok) return false;
+    if (!resp.ok) {
+      console.log(`Release check failed for ${artistId}: status ${resp.status}`);
+      return null; // Unknown - don't exclude
+    }
     const data = await resp.json();
-    return Number(data?.count || 0) > 0;
-  } catch {
-    return false;
+    const count = Number(data?.count || 0);
+    console.log(`Artist ${artistId} has ${count} release groups`);
+    return count > 0;
+  } catch (err) {
+    console.log(`Release check error for ${artistId}:`, err);
+    return null; // Unknown - don't exclude
   }
 }
 
@@ -451,15 +460,26 @@ serve(async (req) => {
       const sorted = [...data.artists].sort((a: any, b: any) => Number(b?.score || 0) - Number(a?.score || 0));
 
       const checked: any[] = [];
-      const maxToCheck = 20;
+      const maxToCheck = 10; // Reduced to avoid rate limiting
+      
+      console.log(`Checking releases for top ${maxToCheck} of ${sorted.length} artists`);
+      
       for (const artist of sorted.slice(0, maxToCheck)) {
         const id = artist?.id;
         if (!isMusicBrainzId(id)) continue;
+        
         const hasReleases = await artistHasAnyReleaseGroup(id);
-        if (hasReleases) {
+        // Include if has releases OR if check failed (null = unknown, don't exclude)
+        if (hasReleases === true) {
           checked.push({ ...artist, has_releases: true });
+        } else if (hasReleases === null) {
+          // Rate limited or error - include with unknown status
+          checked.push({ ...artist, has_releases: undefined });
         }
+        // hasReleases === false means confirmed no releases - exclude
       }
+      
+      console.log(`Filtered to ${checked.length} artists with releases`);
 
       data = {
         ...data,
