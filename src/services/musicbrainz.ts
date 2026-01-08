@@ -217,6 +217,28 @@ export async function getArtist(id: string): Promise<MBArtist> {
   return await callMusicBrainz({ action: 'get-artist', id });
 }
 
+export async function getSimilarArtists(artistId: string, artistName: string, genres: string[]): Promise<MBArtist[]> {
+  if (!isValidId(artistId) || genres.length === 0) {
+    return [];
+  }
+  
+  try {
+    // Search for artists with similar genres
+    // Use the first 2 genres for better matching
+    const genreQuery = genres.slice(0, 2).map(g => `tag:"${g}"`).join(' AND ');
+    const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery });
+    const artists: MBArtist[] = data.artists || [];
+    
+    // Filter out the current artist and return top matches
+    return artists
+      .filter(a => a.id !== artistId && a.name.toLowerCase() !== artistName.toLowerCase())
+      .slice(0, 8);
+  } catch (error) {
+    console.error('Failed to fetch similar artists:', error);
+    return [];
+  }
+}
+
 
 export async function getArtistImage(id: string): Promise<string | null> {
   if (!isValidId(id)) {
