@@ -63,6 +63,7 @@ export function ReleaseManager({
   const [offset, setOffset] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedVisibleTypes, setSelectedVisibleTypes] = useState<string[]>(initialVisibleTypes);
+  const [includeCollaborations, setIncludeCollaborations] = useState(false);
   const queryClient = useQueryClient();
 
   const BATCH_SIZE = 100;
@@ -76,21 +77,25 @@ export function ReleaseManager({
 
   // Search for releases by this artist (filtered by artist ID)
   const { data: searchData, isLoading: isSearching } = useQuery({
-    queryKey: ['release-search', artistId, debouncedSearch, typeFilter],
+    queryKey: ['release-search', artistId, debouncedSearch, typeFilter, includeCollaborations],
     queryFn: () => searchReleasesByArtist(artistId, debouncedSearch, { 
       typeFilter: typeFilter !== 'all' ? typeFilter : undefined,
-      limit: BATCH_SIZE 
+      limit: BATCH_SIZE,
+      includeCollaborations,
+      artistName,
     }),
     enabled: debouncedSearch.length >= 2 && open && !browseAll,
   });
 
   // Browse all releases by this artist with pagination
   const { data: browseData, isLoading: isBrowsing, isFetching: isFetchingMore } = useQuery({
-    queryKey: ['release-browse-all', artistId, typeFilter, offset],
+    queryKey: ['release-browse-all', artistId, typeFilter, offset, includeCollaborations],
     queryFn: () => searchReleasesByArtist(artistId, "", { 
       typeFilter: typeFilter !== 'all' ? typeFilter : undefined,
       limit: BATCH_SIZE,
       offset: offset,
+      includeCollaborations,
+      artistName,
     }),
     enabled: browseAll && open,
   });
@@ -512,7 +517,7 @@ export function ReleaseManager({
                   {(isBrowsing && offset === 0) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Browse All"}
                 </Button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-muted-foreground">Filter by type:</span>
                 <Select value={typeFilter} onValueChange={(value) => { resetPagination(); setTypeFilter(value); }}>
                   <SelectTrigger className="w-[140px] h-8">
@@ -526,6 +531,30 @@ export function ReleaseManager({
                     ))}
                   </SelectContent>
                 </Select>
+                <div className="flex items-center gap-2 ml-2">
+                  <Checkbox
+                    id="include-collaborations"
+                    checked={includeCollaborations}
+                    onCheckedChange={(checked) => {
+                      resetPagination();
+                      setIncludeCollaborations(checked === true);
+                    }}
+                  />
+                  <Label 
+                    htmlFor="include-collaborations"
+                    className="text-sm cursor-pointer flex items-center gap-1"
+                  >
+                    Include collaborations
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[200px]">
+                        <p className="text-xs">Search for albums where {artistName} appears as a featured artist or collaborator</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </Label>
+                </div>
                 {browseAll && (
                   <span className="text-xs text-muted-foreground ml-auto">
                     {totalCount > 0 
