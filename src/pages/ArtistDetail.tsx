@@ -9,7 +9,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
+import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup, getSimilarArtists } from "@/services/musicbrainz";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -79,6 +79,15 @@ const ArtistDetail = () => {
     queryFn: () => getArtistImage(artistId),
     enabled: isValidArtistId,
     staleTime: 1000 * 60 * 60,
+  });
+
+  // Fetch similar artists based on genres
+  const artistGenres = artist?.genres?.map(g => g.name) || [];
+  const { data: similarArtists = [] } = useQuery({
+    queryKey: ['similar-artists', artistId, artistGenres.join(',')],
+    queryFn: () => getSimilarArtists(artistId, artist?.name || '', artistGenres),
+    enabled: isValidArtistId && !!artist && artistGenres.length > 0,
+    staleTime: 1000 * 60 * 30,
   });
 
   // Check if user follows this artist
@@ -737,6 +746,32 @@ const ArtistDetail = () => {
           )}
 
         </section>
+
+        {/* Similar Artists Section */}
+        {similarArtists.length > 0 && (
+          <section className="container mx-auto px-4 py-8 border-t border-border">
+            <h2 className="font-serif text-2xl text-foreground mb-6">Similar Artists</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+              {similarArtists.map((similarArtist) => (
+                <Link
+                  key={similarArtist.id}
+                  to={`/artist/${similarArtist.id}`}
+                  className="group flex flex-col items-center text-center p-3 rounded-lg hover:bg-secondary/50 transition-colors"
+                >
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2 ${getArtistColor(similarArtist.name)}`}>
+                    {getInitials(similarArtist.name)}
+                  </div>
+                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                    {similarArtist.name}
+                  </span>
+                  {similarArtist.type && (
+                    <span className="text-xs text-muted-foreground">{similarArtist.type}</span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
