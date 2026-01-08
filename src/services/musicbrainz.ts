@@ -90,11 +90,40 @@ export async function searchArtists(query: string): Promise<MBArtist[]> {
   const data = await callMusicBrainz({ action: 'search-artist', query });
   const artists: MBArtist[] = data.artists || [];
 
+  const normalizeForMatch = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const queryNorm = normalizeForMatch(query);
+
   // Backend already filters to artists that have at least one release-group when possible.
-  // Still sort by relevance score for safety.
+  // Sort by: exact name match first, then prefix match, then by relevance score (popularity).
   return artists
     .filter((a) => a.has_releases !== false)
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    .sort((a, b) => {
+      const nameANorm = normalizeForMatch(a.name);
+      const nameBNorm = normalizeForMatch(b.name);
+
+      // Exact match gets highest priority
+      const exactA = nameANorm === queryNorm;
+      const exactB = nameBNorm === queryNorm;
+      if (exactA && !exactB) return -1;
+      if (exactB && !exactA) return 1;
+
+      // Prefix match (starts with query) gets next priority
+      const prefixA = nameANorm.startsWith(queryNorm);
+      const prefixB = nameBNorm.startsWith(queryNorm);
+      if (prefixA && !prefixB) return -1;
+      if (prefixB && !prefixA) return 1;
+
+      // Otherwise sort by relevance score (popularity)
+      return (b.score ?? 0) - (a.score ?? 0);
+    });
 }
 
 export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
