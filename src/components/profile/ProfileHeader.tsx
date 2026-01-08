@@ -65,7 +65,7 @@ export const ProfileHeader = () => {
   });
 
   const { data: followedArtists = [] } = useQuery({
-    queryKey: ['user-followed-artists-count', user?.id],
+    queryKey: ['user-followed-artists-ids', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('artist_follows')
@@ -78,7 +78,7 @@ export const ProfileHeader = () => {
   });
 
   const { data: friendships = [] } = useQuery({
-    queryKey: ['user-friendships-count', user?.id],
+    queryKey: ['user-friendships-ids', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('friendships')
