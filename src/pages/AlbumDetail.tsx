@@ -31,6 +31,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ListeningStatusButtons } from "@/components/ListeningStatusButtons";
 import { LogListenDialog } from "@/components/LogListenDialog";
 
@@ -42,6 +52,8 @@ const AlbumDetail = () => {
   const queryClient = useQueryClient();
   
   const [userRating, setUserRating] = useState(0);
+  const [pendingRatingBeforeRemove, setPendingRatingBeforeRemove] = useState<number | null>(null);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [coverError, setCoverError] = useState(false);
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
 
@@ -240,7 +252,6 @@ const AlbumDetail = () => {
 
 
   const handleRatingChange = (rating: number) => {
-    setUserRating(rating);
     if (!user) {
       toast({
         title: "Sign in required",
@@ -250,14 +261,32 @@ const AlbumDetail = () => {
       return;
     }
     
-    // Rating of 0 means "remove rating"
+    // Rating of 0 means "remove rating" - show confirmation if there's an existing rating
     if (rating === 0) {
       if (existingRating) {
-        removeRatingMutation.mutate();
+        setPendingRatingBeforeRemove(userRating);
+        setShowRemoveConfirm(true);
       }
-    } else {
-      saveRatingMutation.mutate({ rating });
+      return;
     }
+    
+    setUserRating(rating);
+    saveRatingMutation.mutate({ rating });
+  };
+
+  const handleConfirmRemoveRating = () => {
+    removeRatingMutation.mutate();
+    setShowRemoveConfirm(false);
+    setPendingRatingBeforeRemove(null);
+  };
+
+  const handleCancelRemoveRating = () => {
+    // Restore the previous rating visually
+    if (pendingRatingBeforeRemove !== null) {
+      setUserRating(pendingRatingBeforeRemove);
+    }
+    setShowRemoveConfirm(false);
+    setPendingRatingBeforeRemove(null);
   };
 
   const handleRemoveRating = () => {
@@ -508,6 +537,21 @@ const AlbumDetail = () => {
           )}
         </section>
       </main>
+      {/* Remove Rating Confirmation Dialog */}
+      <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove your rating?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove your {pendingRatingBeforeRemove?.toFixed(1)} star rating for this album.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelRemoveRating}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRemoveRating}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
