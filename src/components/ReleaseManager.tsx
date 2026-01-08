@@ -284,17 +284,7 @@ export function ReleaseManager({
         
         {/* Release Type Visibility Section */}
         <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-medium text-foreground">Visible Release Types</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>Choose which release types to display in this artist's discography. By default, only studio albums are shown.</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          <span className="text-sm font-medium text-foreground mb-3">Visible Release Types</span>
           <div className="flex flex-wrap gap-4">
             {VISIBILITY_TYPES.map((type) => (
               <div key={type.value} className="flex items-center gap-2">
