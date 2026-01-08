@@ -3,11 +3,12 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Users, Clock, X } from "lucide-react";
+import { Users, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { searchArtists, MBArtist } from "@/services/musicbrainz";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
+import { SearchAutocomplete, AutocompleteItem } from "@/components/SearchAutocomplete";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -27,7 +28,7 @@ const Artists = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get("q") || "";
   const debouncedSearch = useDebounce(search, 400);
-  const { recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
+  const { recentSearches, addSearch } = useRecentSearches();
 
   const handleSearchChange = (value: string) => {
     if (value) {
@@ -37,8 +38,26 @@ const Artists = () => {
     }
   };
 
-  const handleRecentClick = (query: string) => {
+  const handleSearch = (query: string) => {
     handleSearchChange(query);
+  };
+
+  const handleSelect = (item: AutocompleteItem) => {
+    if (item.type === "artist") {
+      navigate(`/artist/${item.id}`);
+    }
+  };
+
+  const fetchSuggestions = async (query: string): Promise<AutocompleteItem[]> => {
+    if (query.length < 2) return [];
+    
+    const artists = await searchArtists(query);
+    return artists.slice(0, 8).map((a) => ({
+      id: a.id,
+      label: a.name,
+      sublabel: a.type || (a.country ? `From ${a.country}` : undefined),
+      type: "artist" as const,
+    }));
   };
 
   const { data: artists = [], isLoading, isError, error } = useQuery({
@@ -59,10 +78,9 @@ const Artists = () => {
   const didYouMeanSuggestion = useMemo(() => {
     if (isLoading || artists.length > 0 || debouncedSearch.length < 2) return null;
     
-    // Clean up the query for suggestions
     const cleaned = debouncedSearch
-      .replace(/[^\w\s]/g, '') // Remove special characters
-      .replace(/\s+/g, ' ')    // Normalize spaces
+      .replace(/[^\w\s]/g, '')
+      .replace(/\s+/g, ' ')
       .trim();
     
     if (cleaned !== debouncedSearch && cleaned.length >= 2) {
@@ -76,65 +94,49 @@ const Artists = () => {
       <Navbar />
       <main className="container mx-auto px-4 pt-24 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="flex flex-col gap-4 mb-8">
             <div>
               <h1 className="font-serif text-4xl text-foreground">Artists</h1>
               <p className="text-muted-foreground mt-1">Search millions of artists</p>
             </div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input type="text" placeholder="Search artists..." value={search} onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full sm:w-64 rounded-lg bg-secondary pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground border-none focus:ring-2 focus:ring-primary focus:outline-none" />
+            <div className="max-w-md">
+              <SearchAutocomplete
+                value={search}
+                onChange={handleSearchChange}
+                onSelect={handleSelect}
+                onSearch={handleSearch}
+                fetchSuggestions={fetchSuggestions}
+                placeholder="Search artists..."
+                type="artist"
+              />
             </div>
           </div>
 
           {search.length < 2 && (
             <div className="py-8">
               {recentSearches.length > 0 ? (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-sm font-medium">Recent Searches</span>
-                    </div>
-                    <button
-                      onClick={clearSearches}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      Clear all
-                    </button>
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm font-medium">Recent Searches</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {recentSearches.map((query) => (
-                      <div
+                    {recentSearches.slice(0, 8).map((query) => (
+                      <button
                         key={query}
-                        className="group flex items-center gap-1 bg-secondary hover:bg-surface-hover rounded-full px-3 py-1.5 transition-colors"
+                        onClick={() => handleSearchChange(query)}
+                        className="bg-secondary hover:bg-surface-hover rounded-full px-3 py-1.5 text-sm text-foreground transition-colors"
                       >
-                        <button
-                          onClick={() => handleRecentClick(query)}
-                          className="text-sm text-foreground"
-                        >
-                          {query}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeSearch(query);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
+                        {query}
+                      </button>
                     ))}
                   </div>
                 </div>
-              ) : (
-                <div className="text-center py-4">
-                  <Users className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
-                  <p className="text-muted-foreground">Type at least 2 characters to search artists</p>
-                </div>
-              )}
+              ) : null}
+              <div className="text-center py-4">
+                <Users className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">Type at least 2 characters to search artists</p>
+              </div>
             </div>
           )}
 

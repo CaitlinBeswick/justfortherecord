@@ -1,11 +1,14 @@
+import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Loader2, AlertCircle, Disc3 } from "lucide-react";
+import { Loader2, AlertCircle, Disc3, Clock, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { searchReleases, getCoverArtUrl, getArtistNames, getYear, MBReleaseGroup } from "@/services/musicbrainz";
+import { searchReleases, searchArtists, getCoverArtUrl, getArtistNames, getYear, MBReleaseGroup } from "@/services/musicbrainz";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useRecentSearches } from "@/hooks/useRecentSearches";
+import { SearchAutocomplete, AutocompleteItem } from "@/components/SearchAutocomplete";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -25,6 +28,7 @@ const Albums = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
   const debouncedSearch = useDebounce(searchQuery, 400);
+  const { recentSearches, addSearch } = useRecentSearches();
 
   const handleSearchChange = (value: string) => {
     if (value) {
@@ -32,6 +36,30 @@ const Albums = () => {
     } else {
       setSearchParams({}, { replace: true });
     }
+  };
+
+  const handleSearch = (query: string) => {
+    handleSearchChange(query);
+  };
+
+  const handleSelect = (item: AutocompleteItem) => {
+    if (item.type === "album") {
+      navigate(`/album/${item.id}`);
+    } else if (item.type === "artist") {
+      navigate(`/artist/${item.id}`);
+    }
+  };
+
+  const fetchSuggestions = async (query: string): Promise<AutocompleteItem[]> => {
+    if (query.length < 2) return [];
+    
+    const releases = await searchReleases(query);
+    return releases.slice(0, 8).map((r) => ({
+      id: r.id,
+      label: r.title,
+      sublabel: getArtistNames(r["artist-credit"]),
+      type: "album" as const,
+    }));
   };
 
   const {
@@ -46,6 +74,28 @@ const Albums = () => {
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });
+
+  // Add successful searches to recent
+  useEffect(() => {
+    if (releases.length > 0 && debouncedSearch.length >= 2) {
+      addSearch(debouncedSearch);
+    }
+  }, [releases.length, debouncedSearch, addSearch]);
+
+  // Generate "Did you mean" suggestion when no results
+  const didYouMeanSuggestion = useMemo(() => {
+    if (isLoading || releases.length > 0 || debouncedSearch.length < 2) return null;
+    
+    const cleaned = debouncedSearch
+      .replace(/[^\w\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    if (cleaned !== debouncedSearch && cleaned.length >= 2) {
+      return cleaned;
+    }
+    return null;
+  }, [debouncedSearch, releases.length, isLoading]);
 
   // Dedupe by release group ID
   const uniqueReleases = releases.reduce((acc, release) => {
@@ -73,27 +123,49 @@ const Albums = () => {
               </p>
             </div>
             
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <input
-                type="text"
+            <div className="max-w-md">
+              <SearchAutocomplete
                 value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
+                onChange={handleSearchChange}
+                onSelect={handleSelect}
+                onSearch={handleSearch}
+                fetchSuggestions={fetchSuggestions}
                 placeholder="Search for albums, EPs..."
-                className="w-full rounded-lg bg-secondary pl-10 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                type="album"
               />
             </div>
           </div>
 
           {!debouncedSearch || debouncedSearch.length < 2 ? (
-            <div className="text-center py-12">
-              <Disc3 className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg">
-                Start typing to search for millions of releases
-              </p>
-              <p className="text-muted-foreground/70 text-sm mt-2">
-                Albums, EPs, compilations, live recordings & more
-              </p>
+            <div className="py-8">
+              {recentSearches.length > 0 ? (
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm font-medium">Recent Searches</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {recentSearches.slice(0, 8).map((query) => (
+                      <button
+                        key={query}
+                        onClick={() => handleSearchChange(query)}
+                        className="bg-secondary hover:bg-surface-hover rounded-full px-3 py-1.5 text-sm text-foreground transition-colors"
+                      >
+                        {query}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <div className="text-center py-8">
+                <Disc3 className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                <p className="text-muted-foreground text-lg">
+                  Start typing to search for millions of releases
+                </p>
+                <p className="text-muted-foreground/70 text-sm mt-2">
+                  Albums, EPs, compilations, live recordings & more
+                </p>
+              </div>
             </div>
           ) : isLoading ? (
             <div className="flex flex-col items-center justify-center py-20">
@@ -114,6 +186,14 @@ const Albums = () => {
               <p className="text-muted-foreground">
                 No releases found for "{debouncedSearch}"
               </p>
+              {didYouMeanSuggestion && (
+                <button
+                  onClick={() => handleSearchChange(didYouMeanSuggestion)}
+                  className="mt-3 text-primary hover:underline"
+                >
+                  Did you mean "{didYouMeanSuggestion}"?
+                </button>
+              )}
             </div>
           ) : (
             <>
