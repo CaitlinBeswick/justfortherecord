@@ -100,14 +100,15 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
   // Search release-groups directly for better album discovery
   const data = await callMusicBrainz({ action: 'search-release-group', query });
   
-  // Map release-groups to our structure, including score for sorting
+  // Map release-groups to our structure, including score and rating for sorting
   const rawReleases: MBReleaseGroup[] = (data["release-groups"] || []).map((rg: any) => ({
     id: rg.id,
     title: rg.title,
     "primary-type": rg["primary-type"],
     "first-release-date": rg["first-release-date"],
     "artist-credit": rg["artist-credit"],
-    score: rg.score, // MusicBrainz relevance score
+    score: rg.score, // MusicBrainz relevance score (0-100)
+    rating: rg.rating, // { value, votes-count } - votes indicate popularity
   }));
 
   // This app's "Albums" search should not be dominated by Singles.
@@ -144,9 +145,42 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
     }
   }
   
-  // Sort by relevance score (highest first)
+  const queryLower = query.toLowerCase().trim();
+  
+  // Sort by: exact/prefix title match first, then by combined relevance + popularity
   const sorted = Array.from(uniqueByTitleArtist.values())
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    .sort((a, b) => {
+      const titleA = a.title.toLowerCase();
+      const titleB = b.title.toLowerCase();
+      
+      // Exact match gets highest priority
+      const exactA = titleA === queryLower;
+      const exactB = titleB === queryLower;
+      if (exactA && !exactB) return -1;
+      if (exactB && !exactA) return 1;
+      
+      // Prefix match (starts with query) gets next priority
+      const prefixA = titleA.startsWith(queryLower);
+      const prefixB = titleB.startsWith(queryLower);
+      if (prefixA && !prefixB) return -1;
+      if (prefixB && !prefixA) return 1;
+      
+      // For similar relevance scores (within 10 points), prefer more popular albums
+      const scoreA = a.score ?? 0;
+      const scoreB = b.score ?? 0;
+      const votesA = a.rating?.["votes-count"] ?? 0;
+      const votesB = b.rating?.["votes-count"] ?? 0;
+      
+      // If scores are close, use popularity (vote count) as tiebreaker
+      if (Math.abs(scoreA - scoreB) <= 10) {
+        if (votesA !== votesB) {
+          return votesB - votesA; // More votes = more popular
+        }
+      }
+      
+      // Otherwise sort by relevance score
+      return scoreB - scoreA;
+    });
   
   return sorted;
 }
