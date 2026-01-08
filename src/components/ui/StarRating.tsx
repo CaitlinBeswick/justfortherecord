@@ -71,12 +71,12 @@ export function StarRating({
   }, [interactive, onRatingChange, calculateRating]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!interactive) return;
+    if (!interactive || !isDragging) return;
     
     const newRating = calculateRating(e.clientX);
     setHoverRating(newRating);
     
-    if (isDragging && onRatingChange && newRating !== null) {
+    if (onRatingChange && newRating !== null) {
       onRatingChange(newRating);
     }
   }, [interactive, isDragging, onRatingChange, calculateRating]);
