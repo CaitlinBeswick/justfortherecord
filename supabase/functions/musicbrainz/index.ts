@@ -415,7 +415,8 @@ serve(async (req) => {
       // For search endpoints, avoid hard-failing the UI during transient upstream outages.
       // Return cached results if available; otherwise return empty results.
       if (typeof action === 'string' && action.startsWith('search-')) {
-        const cacheKey = `${action}:${String(query || '')}`;
+        const normalizedQuery = String(query || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        const cacheKey = `${action}:${normalizedQuery}`;
         const cached = searchCache.get(cacheKey);
         const fresh = cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS;
 
@@ -492,7 +493,8 @@ serve(async (req) => {
 
     // Cache successful search responses (best-effort)
     if (typeof action === 'string' && action.startsWith('search-')) {
-      const cacheKey = `${action}:${String(query || '')}`;
+      const normalizedQuery = String(query || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const cacheKey = `${action}:${normalizedQuery}`;
       searchCache.set(cacheKey, { ts: Date.now(), data });
     }
 

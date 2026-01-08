@@ -24,11 +24,13 @@ const Artists = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get("q") || "";
-  const debouncedSearch = useDebounce(search, 400);
+  const normalizedSearch = search.trim().replace(/\s+/g, " ");
+  const debouncedSearch = useDebounce(normalizedSearch, 400);
 
   const handleSearchChange = (value: string) => {
-    if (value) {
-      setSearchParams({ q: value }, { replace: true });
+    const normalized = value.trim().replace(/\s+/g, " ");
+    if (normalized) {
+      setSearchParams({ q: normalized }, { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }

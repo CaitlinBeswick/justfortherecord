@@ -77,12 +77,14 @@ const Search = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
+  const normalizedQuery = query.trim().replace(/\s+/g, " ");
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
-  const debouncedQuery = useDebounce(query, 500);
+  const debouncedQuery = useDebounce(normalizedQuery, 500);
 
   const handleSearchChange = (value: string) => {
-    if (value) {
-      setSearchParams({ q: value }, { replace: true });
+    const normalized = value.trim().replace(/\s+/g, " ");
+    if (normalized) {
+      setSearchParams({ q: normalized }, { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }
