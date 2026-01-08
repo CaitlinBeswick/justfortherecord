@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { StarRating } from "./ui/StarRating";
 import { useState } from "react";
-import { Disc3, Heart, BookOpen } from "lucide-react";
+import { Disc3, Heart, BookOpen, Users } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AlbumCardProps {
   id: string;
@@ -12,6 +13,7 @@ interface AlbumCardProps {
   year?: number;
   loved?: boolean;
   hasEntries?: boolean;
+  collabArtist?: string; // If set, shows a collab badge with this credited artist name
   onClick?: () => void;
 }
 
@@ -23,6 +25,7 @@ export function AlbumCard({
   year,
   loved,
   hasEntries,
+  collabArtist,
   onClick,
 }: AlbumCardProps) {
   const [imageError, setImageError] = useState(false);
@@ -51,6 +54,18 @@ export function AlbumCard({
         
         {/* Indicators */}
         <div className="absolute top-2 right-2 flex items-center gap-1">
+          {collabArtist && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/90 shadow-md">
+                  <Users className="h-3.5 w-3.5 text-accent-foreground" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px]">
+                <p className="text-xs">{collabArtist}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           {hasEntries && (
             <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/90 shadow-md">
               <BookOpen className="h-3.5 w-3.5 text-accent-foreground" />
@@ -75,7 +90,7 @@ export function AlbumCard({
           {title}
         </h3>
         <p className="text-xs text-muted-foreground truncate mt-0.5">
-          {artist} {year && `· ${year}`}
+          {collabArtist || artist} {year && `· ${year}`}
         </p>
       </div>
     </motion.div>
