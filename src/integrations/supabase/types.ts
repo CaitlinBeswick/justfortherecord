@@ -357,6 +357,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          default_release_types: string[]
           display_name: string | null
           favorite_genres: string[] | null
           id: string
@@ -368,6 +369,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          default_release_types?: string[]
           display_name?: string | null
           favorite_genres?: string[] | null
           id: string
@@ -379,6 +381,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          default_release_types?: string[]
           display_name?: string | null
           favorite_genres?: string[] | null
           id?: string

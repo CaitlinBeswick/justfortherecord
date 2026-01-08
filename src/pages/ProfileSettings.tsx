@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Info } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Profile {
   id: string;
@@ -21,7 +22,15 @@ interface Profile {
   bio: string | null;
   location: string | null;
   favorite_genres: string[] | null;
+  default_release_types: string[];
 }
+
+const RELEASE_TYPE_OPTIONS = [
+  { value: 'Album', label: 'Studio Albums' },
+  { value: 'EP', label: 'EPs' },
+  { value: 'Live', label: 'Live Albums' },
+  { value: 'Compilation', label: 'Compilations' },
+];
 
 const GENRE_SUGGESTIONS = [
   // Popular / Mainstream
@@ -61,6 +70,7 @@ const ProfileSettings = () => {
   const [location, setLocation] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [favoriteGenres, setFavoriteGenres] = useState<string[]>([]);
+  const [defaultReleaseTypes, setDefaultReleaseTypes] = useState<string[]>(['Album']);
   const [newGenre, setNewGenre] = useState("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
@@ -97,6 +107,7 @@ const ProfileSettings = () => {
       setLocation(profile.location || "");
       setAvatarUrl(profile.avatar_url || "");
       setFavoriteGenres(profile.favorite_genres || []);
+      setDefaultReleaseTypes(profile.default_release_types || ['Album']);
     }
   }, [profile]);
 
@@ -112,6 +123,7 @@ const ProfileSettings = () => {
           location: location.trim() || null,
           avatar_url: avatarUrl.trim() || null,
           favorite_genres: favoriteGenres.length > 0 ? favoriteGenres : null,
+          default_release_types: defaultReleaseTypes.length > 0 ? defaultReleaseTypes : ['Album'],
         })
         .eq('id', user!.id);
       
@@ -489,6 +501,43 @@ const ProfileSettings = () => {
                         + {genre}
                       </button>
                     ))}
+                </div>
+              </div>
+
+              {/* Default Release Types */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Label>Default Discography Display</Label>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Choose which release types to show by default on all artist pages. You can override this per artist using Manage Releases.
+                </p>
+                <div className="space-y-2">
+                  {RELEASE_TYPE_OPTIONS.map((option) => (
+                    <div key={option.value} className="flex items-center gap-3">
+                      <Checkbox
+                        id={`release-type-${option.value}`}
+                        checked={defaultReleaseTypes.includes(option.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setDefaultReleaseTypes([...defaultReleaseTypes, option.value]);
+                          } else {
+                            // Ensure at least one type is selected
+                            if (defaultReleaseTypes.length > 1) {
+                              setDefaultReleaseTypes(defaultReleaseTypes.filter(t => t !== option.value));
+                            }
+                          }
+                        }}
+                      />
+                      <Label 
+                        htmlFor={`release-type-${option.value}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {option.label}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
 
