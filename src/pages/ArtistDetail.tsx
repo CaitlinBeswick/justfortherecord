@@ -6,7 +6,7 @@ import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup, getSimilarArtists } from "@/services/musicbrainz";
@@ -22,6 +22,8 @@ import { Progress } from "@/components/ui/progress";
 import { VinylCelebration } from "@/components/VinylCelebration";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ReleaseManager } from "@/components/ReleaseManager";
+import { SimilarArtistCard } from "@/components/SimilarArtistCard";
+import { Button } from "@/components/ui/button";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -750,24 +752,21 @@ const ArtistDetail = () => {
         {/* Similar Artists Section */}
         {similarArtists.length > 0 && (
           <section className="container mx-auto px-4 py-8 border-t border-border">
-            <h2 className="font-serif text-2xl text-foreground mb-6">Similar Artists</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-serif text-2xl text-foreground">Similar Artists</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/artist/${artistId}/similar`)}
+                className="gap-1"
+              >
+                View More
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-              {similarArtists.map((similarArtist) => (
-                <Link
-                  key={similarArtist.id}
-                  to={`/artist/${similarArtist.id}`}
-                  className="group flex flex-col items-center text-center p-3 rounded-lg hover:bg-secondary/50 transition-colors"
-                >
-                  <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2 ${getArtistColor(similarArtist.name)}`}>
-                    {getInitials(similarArtist.name)}
-                  </div>
-                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                    {similarArtist.name}
-                  </span>
-                  {similarArtist.type && (
-                    <span className="text-xs text-muted-foreground">{similarArtist.type}</span>
-                  )}
-                </Link>
+              {similarArtists.slice(0, 8).map((similarArtist) => (
+                <SimilarArtistCard key={similarArtist.id} artist={similarArtist} />
               ))}
             </div>
           </section>
