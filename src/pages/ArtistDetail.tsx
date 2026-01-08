@@ -602,9 +602,14 @@ const ArtistDetail = () => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-muted-foreground cursor-help">
+                        <button
+                          type="button"
+                          className="text-muted-foreground cursor-help"
+                          aria-label="Discography display info"
+                          title="Default albums display studio releases only. To customise which albums you would like to display, use the Manage Releases feature."
+                        >
                           <Info className="h-4 w-4" />
-                        </span>
+                        </button>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
                         <p>Default albums display studio releases only. To customise which albums you would like to display, use the Manage Releases feature.</p>
@@ -617,9 +622,14 @@ const ArtistDetail = () => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-muted-foreground cursor-help">
+                      <button
+                        type="button"
+                        className="text-muted-foreground cursor-help"
+                        aria-label="Discography display info"
+                        title="Default albums display studio releases only. To customise which albums you would like to display, use the Manage Releases feature."
+                      >
                         <Info className="h-4 w-4" />
-                      </span>
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <p>Default albums display studio releases only. Sign in to customise which albums you would like to display using the Manage Releases feature.</p>
