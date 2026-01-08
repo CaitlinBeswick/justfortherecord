@@ -53,7 +53,8 @@ const Albums = () => {
   const fetchSuggestions = async (query: string): Promise<AutocompleteItem[]> => {
     if (query.length < 2) return [];
     
-    const releases = await searchReleases(query);
+    // Use smaller limit (10) for autocomplete - faster response
+    const releases = await searchReleases(query, 10);
     return releases.slice(0, 8).map((r) => ({
       id: r.id,
       label: r.title,

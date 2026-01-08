@@ -51,7 +51,8 @@ const Artists = () => {
   const fetchSuggestions = async (query: string): Promise<AutocompleteItem[]> => {
     if (query.length < 2) return [];
     
-    const artists = await searchArtists(query);
+    // Use smaller limit (10) for autocomplete - faster response
+    const artists = await searchArtists(query, 10);
     return artists.slice(0, 8).map((a) => ({
       id: a.id,
       label: a.name,

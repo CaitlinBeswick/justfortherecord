@@ -169,10 +169,12 @@ serve(async (req) => {
     let url: string;
     
     switch (action) {
-      case 'search-artist':
-        // Include release-group count to filter artists with no releases
-        url = `${MUSICBRAINZ_BASE}/artist?query=${encodeURIComponent(query)}&fmt=json&limit=50`;
+      case 'search-artist': {
+        // Support custom limit for autocomplete (smaller = faster)
+        const searchLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+        url = `${MUSICBRAINZ_BASE}/artist?query=${encodeURIComponent(query)}&fmt=json&limit=${searchLimit}`;
         break;
+      }
       
       case 'search-release':
         url = `${MUSICBRAINZ_BASE}/release?query=${encodeURIComponent(query)}&fmt=json&limit=25`;
