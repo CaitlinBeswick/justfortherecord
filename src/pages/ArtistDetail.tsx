@@ -9,7 +9,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup, getSimilarArtists } from "@/services/musicbrainz";
+import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup, getSimilarArtists, getArtistNames } from "@/services/musicbrainz";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -732,6 +732,13 @@ const ArtistDetail = () => {
                       );
                       const isListened = listenedById || listenedByMetadata;
 
+                      // Check if this is a collaboration (different credited artist)
+                      const creditedArtists = release['artist-credit'];
+                      const creditedName = creditedArtists && creditedArtists.length > 0
+                        ? getArtistNames(creditedArtists)
+                        : null;
+                      const isCollab = creditedName && creditedName.toLowerCase() !== artist.name.toLowerCase();
+
                       return (
                         <motion.div
                           key={release.id}
@@ -748,6 +755,7 @@ const ArtistDetail = () => {
                             year={getYear(release["first-release-date"])}
                             loved={isAlbumLoved(release.id)}
                             hasEntries={userDiaryEntries.includes(release.id)}
+                            collabArtist={isCollab ? creditedName : undefined}
                             onClick={() => navigate(`/album/${release.id}`)}
                           />
                         </motion.div>
