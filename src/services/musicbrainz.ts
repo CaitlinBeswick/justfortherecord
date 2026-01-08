@@ -86,6 +86,33 @@ async function callMusicBrainz(body: Record<string, string | number | undefined>
   return data;
 }
 
+type MBArtistRelation = {
+  type?: string;
+  artist?: { id: string; name?: string; type?: string };
+};
+
+async function getArtistMemberGroupIds(artistId: string): Promise<string[]> {
+  const data = await callMusicBrainz({ action: 'get-artist-relations', id: artistId });
+  const relations: MBArtistRelation[] = data?.relations || [];
+
+  // Most “group project” cases (Kids See Ghosts, etc.) show up as artist relationships.
+  // We include relations that point at a Group and are membership/collaboration flavored.
+  const groupIds = relations
+    .filter((r) => {
+      const relType = (r.type || '').toLowerCase();
+      const isGroup = (r.artist?.type || '').toLowerCase() === 'group';
+      if (!isGroup) return false;
+      return (
+        relType.includes('member') ||
+        relType.includes('collaboration') ||
+        relType.includes('band')
+      );
+    })
+    .map((r) => r.artist!.id);
+
+  return Array.from(new Set(groupIds));
+}
+
 export async function searchArtists(query: string, limit?: number): Promise<MBArtist[]> {
   const data = await callMusicBrainz({ action: 'search-artist', query, limit });
   const artists: MBArtist[] = data.artists || [];
@@ -199,20 +226,34 @@ export async function searchReleases(query: string, limit?: number): Promise<MBR
 
 // Search for releases by a specific artist using their MusicBrainz artist ID
 // typeFilter can be: 'album', 'ep', 'single', 'live', 'compilation', 'other' or undefined for all
-// includeCollaborations: when true, uses arid: which finds ALL releases where the artist is credited
-// (including group projects, collaborations, etc.)
+// includeCollaborations: when true (default), also includes release-groups from any groups the artist is a member of
+// (e.g. Kanye West  Kids See Ghosts).
 export async function searchReleasesByArtist(
-  artistId: string, 
-  query: string, 
-  options?: { typeFilter?: string; limit?: number; offset?: number; includeCollaborations?: boolean; artistName?: string }
+  artistId: string,
+  query: string,
+  options?: { typeFilter?: string; limit?: number; offset?: number; includeCollaborations?: boolean }
 ): Promise<{ releases: MBReleaseGroup[]; totalCount: number }> {
+  const includeCollaborations = options?.includeCollaborations !== false;
+
+  // 1) Always include release-groups where this artist is directly credited
+  const artistIds: string[] = [artistId];
+
+  // 2) Also include group projects by expanding to groups the artist is a member of
+  if (includeCollaborations) {
+    try {
+      const groupIds = await getArtistMemberGroupIds(artistId);
+      for (const gid of groupIds) artistIds.push(gid);
+    } catch (e) {
+      // Non-fatal: fall back to direct credits only
+      console.warn('Failed to load artist group memberships', e);
+    }
+  }
+
+  const uniqueArtistIds = Array.from(new Set(artistIds));
+  const artistClause = uniqueArtistIds.map((id) => `arid:${id}`).join(' OR ');
+
   // Build MusicBrainz Lucene query
-  // arid: (artist ID) finds ALL releases where this artist is credited, including:
-  // - Solo albums
-  // - Group projects (e.g., Kids See Ghosts where Kanye is a member)
-  // - Featured appearances
-  // - Collaborations
-  let searchQuery = `arid:${artistId}`;
+  let searchQuery = uniqueArtistIds.length > 1 ? `(${artistClause})` : artistClause;
 
   // Add type filter if specified.
   // IMPORTANT: "Live" and "Compilation" are *secondary* types in MusicBrainz.
@@ -235,9 +276,9 @@ export async function searchReleasesByArtist(
   // Use higher limit for browse all (max 100 per MusicBrainz API)
   const limit = options?.limit || 100;
   const offset = options?.offset || 0;
-  
-  const data = await callMusicBrainz({ 
-    action: 'search-release-group', 
+
+  const data = await callMusicBrainz({
+    action: 'search-release-group',
     query: searchQuery,
     limit: String(limit),
     offset: String(offset),
