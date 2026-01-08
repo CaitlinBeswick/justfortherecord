@@ -1,12 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Users } from "lucide-react";
+import { Search, Users, Clock, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { searchArtists, MBArtist } from "@/services/musicbrainz";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useRecentSearches } from "@/hooks/useRecentSearches";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -26,6 +27,7 @@ const Artists = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get("q") || "";
   const debouncedSearch = useDebounce(search, 400);
+  const { recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
 
   const handleSearchChange = (value: string) => {
     if (value) {
@@ -35,12 +37,23 @@ const Artists = () => {
     }
   };
 
+  const handleRecentClick = (query: string) => {
+    handleSearchChange(query);
+  };
+
   const { data: artists = [], isLoading, isError, error } = useQuery({
     queryKey: ['artists-search', debouncedSearch],
     queryFn: () => searchArtists(debouncedSearch),
     enabled: debouncedSearch.length >= 2,
     retry: 2,
   });
+
+  // Add successful searches to recent
+  useEffect(() => {
+    if (artists.length > 0 && debouncedSearch.length >= 2) {
+      addSearch(debouncedSearch);
+    }
+  }, [artists.length, debouncedSearch, addSearch]);
 
   // Generate "Did you mean" suggestion when no results
   const didYouMeanSuggestion = useMemo(() => {
@@ -76,9 +89,52 @@ const Artists = () => {
           </div>
 
           {search.length < 2 && (
-            <div className="text-center py-12">
-              <Users className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
-              <p className="text-muted-foreground">Type at least 2 characters to search artists</p>
+            <div className="py-8">
+              {recentSearches.length > 0 ? (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm font-medium">Recent Searches</span>
+                    </div>
+                    <button
+                      onClick={clearSearches}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {recentSearches.map((query) => (
+                      <div
+                        key={query}
+                        className="group flex items-center gap-1 bg-secondary hover:bg-surface-hover rounded-full px-3 py-1.5 transition-colors"
+                      >
+                        <button
+                          onClick={() => handleRecentClick(query)}
+                          className="text-sm text-foreground"
+                        >
+                          {query}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSearch(query);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Users className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+                  <p className="text-muted-foreground">Type at least 2 characters to search artists</p>
+                </div>
+              )}
             </div>
           )}
 
