@@ -119,9 +119,13 @@ export function StarRating({
     <div
       ref={containerRef}
       className={cn(
-        "flex items-center gap-0.5 select-none",
-        interactive && "cursor-pointer touch-none"
+        "flex items-center gap-0.5 select-none transition-transform duration-150",
+        interactive && "cursor-pointer touch-none",
+        isDragging && "scale-110"
       )}
+      style={{
+        filter: isDragging ? 'drop-shadow(0 0 6px hsl(var(--primary) / 0.5))' : undefined,
+      }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
