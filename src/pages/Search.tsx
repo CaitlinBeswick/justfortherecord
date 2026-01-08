@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistCard } from "@/components/ArtistCard";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search as SearchIcon, Disc3, Users, Loader2, Trophy, Star, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useDebounce } from "@/hooks/use-debounce";
 
 type SearchTab = "all" | "albums" | "artists";
 
@@ -74,17 +75,17 @@ function AlbumCoverSquare({ releaseGroupId, title }: { releaseGroupId: string; t
 const Search = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get("q") || "";
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 500);
 
-  // Debounce search
-  const handleSearch = (value: string) => {
-    setQuery(value);
-    clearTimeout((window as any).searchTimeout);
-    (window as any).searchTimeout = setTimeout(() => {
-      setDebouncedQuery(value);
-    }, 500);
+  const handleSearchChange = (value: string) => {
+    if (value) {
+      setSearchParams({ q: value }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
   };
 
   const { data: artists = [], isLoading: loadingArtists } = useQuery({
@@ -203,7 +204,7 @@ const Search = () => {
               type="text"
               placeholder="Search for albums, artists..."
               value={query}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full rounded-xl bg-secondary pl-12 pr-4 py-4 text-lg text-foreground placeholder:text-muted-foreground border-none focus:ring-2 focus:ring-primary focus:outline-none"
               autoFocus
             />
