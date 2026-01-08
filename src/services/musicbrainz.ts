@@ -81,12 +81,28 @@ export async function searchArtists(query: string): Promise<MBArtist[]> {
   const data = await callMusicBrainz({ action: 'search-artist', query });
   const artists: MBArtist[] = data.artists || [];
   
-  // Sort by MusicBrainz relevance score (highest first) - this puts the famous artist at the top
-  // Then filter to only keep artists that have a reasonable score (likely to have releases)
+  // Filter and sort to show the most relevant, well-catalogued artists first
+  // Artists with no releases typically have minimal metadata (no country, type, or disambiguation)
   return artists
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    .filter(artist => (artist.score ?? 0) >= 50) // Filter low-relevance results
-    .slice(0, 25); // Limit to top 25 after filtering
+    .filter(artist => {
+      const score = artist.score ?? 0;
+      const hasMetadata = artist.country || artist.type || artist["life-span"]?.begin;
+      
+      // Keep high-scoring artists with metadata (likely have releases)
+      // Or very high scoring artists even without full metadata
+      return (score >= 80) || (score >= 50 && hasMetadata);
+    })
+    .sort((a, b) => {
+      // Primary sort by score
+      const scoreDiff = (b.score ?? 0) - (a.score ?? 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      
+      // Secondary sort: prefer artists with more metadata (better catalogued)
+      const aMetadata = (a.country ? 1 : 0) + (a.type ? 1 : 0) + (a["life-span"]?.begin ? 1 : 0);
+      const bMetadata = (b.country ? 1 : 0) + (b.type ? 1 : 0) + (b["life-span"]?.begin ? 1 : 0);
+      return bMetadata - aMetadata;
+    })
+    .slice(0, 20);
 }
 
 export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
