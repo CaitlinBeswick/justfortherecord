@@ -9,6 +9,7 @@ export interface MBArtist {
   "sort-name"?: string;
   type?: string;
   country?: string;
+  score?: number; // MusicBrainz search relevance score (0-100)
   "life-span"?: {
     begin?: string;
     end?: string;
@@ -16,6 +17,7 @@ export interface MBArtist {
   };
   genres?: Array<{ name: string; count: number }>;
   rating?: { value: number; "votes-count": number };
+  "release-groups"?: MBReleaseGroup[]; // May be present from browse/lookup
 }
 
 export interface MBReleaseGroup {
@@ -77,7 +79,14 @@ async function callMusicBrainz(body: Record<string, string | undefined>) {
 
 export async function searchArtists(query: string): Promise<MBArtist[]> {
   const data = await callMusicBrainz({ action: 'search-artist', query });
-  return data.artists || [];
+  const artists: MBArtist[] = data.artists || [];
+  
+  // Sort by MusicBrainz relevance score (highest first) - this puts the famous artist at the top
+  // Then filter to only keep artists that have a reasonable score (likely to have releases)
+  return artists
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .filter(artist => (artist.score ?? 0) >= 50) // Filter low-relevance results
+    .slice(0, 25); // Limit to top 25 after filtering
 }
 
 export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
