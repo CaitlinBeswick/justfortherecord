@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ArtistCard } from "@/components/ArtistCard";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Users } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { searchArtists, MBArtist } from "@/services/musicbrainz";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -22,15 +22,17 @@ const itemVariants = {
 
 const Artists = () => {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get("q") || "";
+  const debouncedSearch = useDebounce(search, 400);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [search]);
+  const handleSearchChange = (value: string) => {
+    if (value) {
+      setSearchParams({ q: value }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
 
   const { data: artists = [], isLoading, isError, error } = useQuery({
     queryKey: ['artists-search', debouncedSearch],
@@ -51,7 +53,7 @@ const Artists = () => {
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input type="text" placeholder="Search artists..." value={search} onChange={(e) => setSearch(e.target.value)}
+              <input type="text" placeholder="Search artists..." value={search} onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full sm:w-64 rounded-lg bg-secondary pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground border-none focus:ring-2 focus:ring-primary focus:outline-none" />
             </div>
           </div>
