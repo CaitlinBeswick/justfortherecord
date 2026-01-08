@@ -273,6 +273,17 @@ const ArtistDetail = () => {
     if (!firstArtist) return true;
     
     // Match by ID - the current artist should be the first credited artist
+    // Debug logging for known collab albums
+    const title = release.title.toLowerCase();
+    if (title.includes('kids') || title.includes('ghost') || title.includes('throne') || title.includes('vultures')) {
+      console.log('Primary filter for', release.title, ':', {
+        artistCredits: artistCredits.map(c => ({ id: c.artist?.id, name: c.artist?.name })),
+        firstArtistId: firstArtist.id,
+        pageArtistId: artistId,
+        matches: firstArtist.id === artistId
+      });
+    }
+    
     return firstArtist.id === artistId;
   });
 
@@ -741,6 +752,11 @@ const ArtistDetail = () => {
                         creditedArtists.length > 1 ||
                         (creditedArtists[0]?.artist?.name?.toLowerCase() || "") !== artist.name.toLowerCase()
                       );
+                      
+                      // Debug: log collab detection
+                      if (release.title.toLowerCase().includes('kids') || release.title.toLowerCase().includes('ghost') || release.title.toLowerCase().includes('throne') || release.title.toLowerCase().includes('vultures')) {
+                        console.log('Collab check for', release.title, ':', { creditedArtists, creditedName, isCollab, artistName: artist.name });
+                      }
 
                       return (
                         <motion.div
