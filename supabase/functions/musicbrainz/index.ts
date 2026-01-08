@@ -118,7 +118,9 @@ async function artistHasAnyReleaseGroup(artistId: string): Promise<boolean | nul
       return null; // Unknown - don't exclude
     }
     const data = await resp.json();
-    const count = Number(data?.count || 0);
+    // Browse endpoint returns `release-group-count`; search endpoints return `count`.
+    const rawCount = data?.['release-group-count'] ?? data?.count ?? 0;
+    const count = Number(rawCount || 0);
     console.log(`Artist ${artistId} has ${count} release groups`);
     return count > 0;
   } catch (err) {
