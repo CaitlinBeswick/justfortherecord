@@ -589,15 +589,29 @@ const ArtistDetail = () => {
                 Discography {totalDisplayedReleases > 0 && `(${totalDisplayedReleases} releases)`}
               </h2>
               {user && (
-                <ReleaseManager 
-                  artistId={artistId}
-                  artistName={artist.name}
-                  currentReleases={allPrimaryReleases}
-                  hiddenReleaseIds={hiddenReleases}
-                  includedReleaseIds={includedReleaseIds}
-                  userId={user.id}
-                  visibleTypes={visibleTypes}
-                />
+                <>
+                  <ReleaseManager 
+                    artistId={artistId}
+                    artistName={artist.name}
+                    currentReleases={allPrimaryReleases}
+                    hiddenReleaseIds={hiddenReleases}
+                    includedReleaseIds={includedReleaseIds}
+                    userId={user.id}
+                    visibleTypes={visibleTypes}
+                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-muted-foreground cursor-help">
+                          <Info className="h-4 w-4" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Only studio albums are shown by default. Use "Manage Releases" to show EPs, live albums, compilations, or hide specific releases.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
               )}
               {!user && (
                 <TooltipProvider>
