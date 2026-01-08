@@ -95,6 +95,13 @@ export function SearchAutocomplete({
       {isLoading && value.length >= 2 && (
         <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
       )}
+      
+      {/* Tab hint */}
+      {ghostText && !isLoading && (
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60 pointer-events-none">
+          Tab to complete
+        </span>
+      )}
     </div>
   );
 }
