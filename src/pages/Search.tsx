@@ -3,8 +3,8 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search as SearchIcon, Disc3, Users, Loader2, Trophy, Star, ArrowRight } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Search as SearchIcon, Disc3, Users, Loader2, Trophy, Star, ArrowRight, Clock, X } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   searchArtists, 
@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useRecentSearches } from "@/hooks/useRecentSearches";
 
 type SearchTab = "all" | "albums" | "artists";
 
@@ -80,12 +81,18 @@ const Search = () => {
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
   const debouncedQuery = useDebounce(query, 500);
 
+  const { recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
+
   const handleSearchChange = (value: string) => {
     if (value) {
       setSearchParams({ q: value }, { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }
+  };
+
+  const handleRecentClick = (query: string) => {
+    handleSearchChange(query);
   };
 
   const { data: artists = [], isLoading: loadingArtists } = useQuery({
@@ -121,6 +128,14 @@ const Search = () => {
     }
     return null;
   }, [debouncedQuery, artists.length, releases.length, loadingArtists, loadingReleases, showArtists, showAlbums]);
+
+  // Add successful searches to recent
+  useEffect(() => {
+    const hasResults = artists.length > 0 || releases.length > 0;
+    if (hasResults && debouncedQuery.length >= 2) {
+      addSearch(debouncedQuery);
+    }
+  }, [artists.length, releases.length, debouncedQuery, addSearch]);
 
   // Fetch top rated albums
   const { data: topAlbums = [], isLoading: topAlbumsLoading } = useQuery({
@@ -253,6 +268,47 @@ const Search = () => {
           {/* Results or Top Rated Sections */}
           {!debouncedQuery || debouncedQuery.length < 2 ? (
             <div className="space-y-12">
+              {/* Recent Searches */}
+              {recentSearches.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm font-medium">Recent Searches</span>
+                    </div>
+                    <button
+                      onClick={clearSearches}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {recentSearches.map((q) => (
+                      <div
+                        key={q}
+                        className="group flex items-center gap-1 bg-secondary hover:bg-surface-hover rounded-full px-3 py-1.5 transition-colors"
+                      >
+                        <button
+                          onClick={() => handleRecentClick(q)}
+                          className="text-sm text-foreground"
+                        >
+                          {q}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSearch(q);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {/* Top Rated Albums - show on "all" and "albums" tabs */}
               {showAlbums && (
                 <div>
