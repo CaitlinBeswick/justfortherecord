@@ -44,7 +44,9 @@ export function ReleaseManager({
   const [browseAll, setBrowseAll] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [currentTypeFilter, setCurrentTypeFilter] = useState<string>("all");
+  const [currentSearchQuery, setCurrentSearchQuery] = useState("");
   const [hiddenTypeFilter, setHiddenTypeFilter] = useState<string>("all");
+  const [hiddenSearchQuery, setHiddenSearchQuery] = useState("");
   const [loadedReleases, setLoadedReleases] = useState<MBReleaseGroup[]>([]);
   const [offset, setOffset] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -205,8 +207,15 @@ export function ReleaseManager({
     });
   };
 
-  const filteredVisibleReleases = filterByType(visibleReleases, currentTypeFilter);
-  const filteredHiddenReleases = filterByType(hiddenReleases, hiddenTypeFilter);
+  // Filter helper for search
+  const filterBySearch = (releases: MBReleaseGroup[], query: string) => {
+    if (!query.trim()) return releases;
+    const lowerQuery = query.toLowerCase();
+    return releases.filter((r) => r.title.toLowerCase().includes(lowerQuery));
+  };
+
+  const filteredVisibleReleases = filterBySearch(filterByType(visibleReleases, currentTypeFilter), currentSearchQuery);
+  const filteredHiddenReleases = filterBySearch(filterByType(hiddenReleases, hiddenTypeFilter), hiddenSearchQuery);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -230,28 +239,39 @@ export function ReleaseManager({
 
           {/* Current releases - can hide */}
           <TabsContent value="current" className="mt-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm text-muted-foreground">Filter:</span>
-              <Select value={currentTypeFilter} onValueChange={setCurrentTypeFilter}>
-                <SelectTrigger className="w-[140px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RELEASE_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-xs text-muted-foreground ml-auto">
-                {filteredVisibleReleases.length} of {visibleReleases.length}
-              </span>
+            <div className="space-y-3 mb-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search current releases..."
+                  value={currentSearchQuery}
+                  onChange={(e) => setCurrentSearchQuery(e.target.value)}
+                  className="pl-10 h-9"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Type:</span>
+                <Select value={currentTypeFilter} onValueChange={setCurrentTypeFilter}>
+                  <SelectTrigger className="w-[140px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RELEASE_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {filteredVisibleReleases.length} of {visibleReleases.length}
+                </span>
+              </div>
             </div>
-            <ScrollArea className="h-[360px] pr-4">
+            <ScrollArea className="h-[320px] pr-4">
               {filteredVisibleReleases.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  {visibleReleases.length === 0 ? "No releases currently shown" : "No releases match this filter"}
+                  {visibleReleases.length === 0 ? "No releases currently shown" : "No releases match your filters"}
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -306,28 +326,39 @@ export function ReleaseManager({
 
           {/* Hidden releases - can restore */}
           <TabsContent value="hidden" className="mt-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm text-muted-foreground">Filter:</span>
-              <Select value={hiddenTypeFilter} onValueChange={setHiddenTypeFilter}>
-                <SelectTrigger className="w-[140px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RELEASE_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-xs text-muted-foreground ml-auto">
-                {filteredHiddenReleases.length} of {hiddenReleases.length}
-              </span>
+            <div className="space-y-3 mb-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search hidden releases..."
+                  value={hiddenSearchQuery}
+                  onChange={(e) => setHiddenSearchQuery(e.target.value)}
+                  className="pl-10 h-9"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Type:</span>
+                <Select value={hiddenTypeFilter} onValueChange={setHiddenTypeFilter}>
+                  <SelectTrigger className="w-[140px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RELEASE_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {filteredHiddenReleases.length} of {hiddenReleases.length}
+                </span>
+              </div>
             </div>
-            <ScrollArea className="h-[360px] pr-4">
+            <ScrollArea className="h-[320px] pr-4">
               {filteredHiddenReleases.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  {hiddenReleases.length === 0 ? "No hidden releases" : "No releases match this filter"}
+                  {hiddenReleases.length === 0 ? "No hidden releases" : "No releases match your filters"}
                 </p>
               ) : (
                 <div className="space-y-2">
