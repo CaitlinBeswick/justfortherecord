@@ -217,17 +217,17 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
   const handleTwitterShare = () => {
     const tweetText = encodeURIComponent(shareText);
     const tweetUrl = encodeURIComponent(url);
-    window.open(`https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`, "_blank", "width=550,height=420");
+    window.location.href = `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`;
   };
 
   const handleFacebookShare = () => {
     const fbUrl = encodeURIComponent(url);
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${fbUrl}`, "_blank", "width=550,height=420");
+    window.location.href = `https://www.facebook.com/sharer/sharer.php?u=${fbUrl}`;
   };
 
   const handleWhatsAppShare = () => {
     const waText = encodeURIComponent(`${shareText} ${url}`);
-    window.open(`https://wa.me/?text=${waText}`, "_blank");
+    window.location.href = `https://api.whatsapp.com/send?text=${waText}`;
   };
 
   const handleEmailShare = () => {
@@ -260,7 +260,8 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
         }
       }
     } else {
-      toast.error("AirDrop/Share not supported on this device");
+      handleCopyLink();
+      toast.info("Share sheet not available - link copied instead");
     }
   };
 
@@ -278,71 +279,93 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
 
       const file = new File([blob], `${displayName}-profile-card.png`, { type: 'image/png' });
 
-      switch (method) {
-        case 'airdrop':
-          if (navigator.share && navigator.canShare({ files: [file] })) {
+      // For AirDrop, use native share if available
+      if (method === 'airdrop') {
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          try {
             await navigator.share({
               files: [file],
               title: `${displayName}'s Music Profile`,
               text: shareText,
             });
             toast.success("Shared successfully!");
-          } else {
-            // Fallback: copy image to clipboard
-            try {
-              await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-              toast.success("Image copied to clipboard!");
-            } catch {
-              // Final fallback: download
-              handleDownload();
+          } catch (err) {
+            if ((err as Error).name !== "AbortError") {
+              // User didn't cancel, try clipboard
+              await copyImageToClipboard(blob);
             }
           }
-          break;
-          
-        case 'copy':
-          try {
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            setCopied(true);
-            toast.success("Image copied to clipboard!");
-            setTimeout(() => setCopied(false), 2000);
-          } catch {
-            toast.error("Failed to copy image. Try downloading instead.");
-          }
-          break;
-          
-        case 'instagram':
-          try {
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            toast.success("Image copied! Open Instagram and paste in your story or DM");
-          } catch {
-            handleDownload();
-            toast.info("Image downloaded! Upload it to Instagram");
-          }
-          break;
-          
-        case 'twitter':
-        case 'facebook':
-        case 'whatsapp':
-        case 'messages':
-        case 'email':
-          // For these platforms, try native share with file, fallback to download
-          if (navigator.share && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: `${displayName}'s Music Profile`,
-              text: shareText,
-            });
-          } else {
-            handleDownload();
-            toast.info("Image downloaded! Share it manually");
-          }
-          break;
+        } else {
+          await copyImageToClipboard(blob);
+          toast.info("Share sheet not available - image copied to clipboard");
+        }
+        setIsGenerating(false);
+        return;
       }
+
+      // For Copy, just copy to clipboard
+      if (method === 'copy') {
+        await copyImageToClipboard(blob);
+        setIsGenerating(false);
+        return;
+      }
+
+      // For Instagram, copy to clipboard with message
+      if (method === 'instagram') {
+        await copyImageToClipboard(blob);
+        toast.success("Image copied! Open Instagram and paste in your story or DM");
+        setIsGenerating(false);
+        return;
+      }
+
+      // For other platforms, copy image to clipboard and open the share URL with the profile link
+      await copyImageToClipboard(blob);
+      
+      // Small delay to ensure clipboard is ready, then open the platform
+      setTimeout(() => {
+        switch (method) {
+          case 'twitter':
+            window.location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText + " " + url)}`;
+            break;
+          case 'facebook':
+            window.location.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+            break;
+          case 'whatsapp':
+            window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + url)}`;
+            break;
+          case 'messages':
+            window.location.href = `sms:?body=${encodeURIComponent(shareText + " " + url)}`;
+            break;
+          case 'email':
+            window.location.href = `mailto:?subject=${encodeURIComponent(`${displayName}'s Music Profile`)}&body=${encodeURIComponent(shareText + "\n\n" + url)}`;
+            break;
+        }
+      }, 100);
+      
+      toast.success("Image copied! Paste it in your message after the app opens");
     } catch (error) {
       console.error("Error sharing:", error);
       toast.error("Failed to share");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const copyImageToClipboard = async (blob: Blob) => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      setCopied(true);
+      toast.success("Image copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: create a temporary download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `${displayName}-profile-card.png`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.info("Image downloaded to your device");
     }
   };
 
