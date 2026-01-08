@@ -10,6 +10,7 @@ export interface MBArtist {
   type?: string;
   country?: string;
   score?: number; // MusicBrainz search relevance score (0-100)
+  has_releases?: boolean; // Added by backend search post-processing
   "life-span"?: {
     begin?: string;
     end?: string;
@@ -80,29 +81,12 @@ async function callMusicBrainz(body: Record<string, string | undefined>) {
 export async function searchArtists(query: string): Promise<MBArtist[]> {
   const data = await callMusicBrainz({ action: 'search-artist', query });
   const artists: MBArtist[] = data.artists || [];
-  
-  // Filter and sort to show the most relevant, well-catalogued artists first
-  // Artists with no releases typically have minimal metadata (no country, type, or disambiguation)
+
+  // Backend already filters to artists that have at least one release-group when possible.
+  // Still sort by relevance score for safety.
   return artists
-    .filter(artist => {
-      const score = artist.score ?? 0;
-      const hasMetadata = artist.country || artist.type || artist["life-span"]?.begin;
-      
-      // Keep high-scoring artists with metadata (likely have releases)
-      // Or very high scoring artists even without full metadata
-      return (score >= 80) || (score >= 50 && hasMetadata);
-    })
-    .sort((a, b) => {
-      // Primary sort by score
-      const scoreDiff = (b.score ?? 0) - (a.score ?? 0);
-      if (scoreDiff !== 0) return scoreDiff;
-      
-      // Secondary sort: prefer artists with more metadata (better catalogued)
-      const aMetadata = (a.country ? 1 : 0) + (a.type ? 1 : 0) + (a["life-span"]?.begin ? 1 : 0);
-      const bMetadata = (b.country ? 1 : 0) + (b.type ? 1 : 0) + (b["life-span"]?.begin ? 1 : 0);
-      return bMetadata - aMetadata;
-    })
-    .slice(0, 20);
+    .filter((a) => a.has_releases !== false)
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 }
 
 export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
