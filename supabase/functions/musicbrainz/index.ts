@@ -103,6 +103,21 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 4)
   throw lastError;
 }
 
+async function artistHasAnyReleaseGroup(artistId: string): Promise<boolean> {
+  try {
+    const url = `${MUSICBRAINZ_BASE}/release-group?artist=${encodeURIComponent(artistId)}&fmt=json&limit=1`;
+    const resp = await fetchWithRetry(url, {
+      headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
+    }, 2);
+
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    return Number(data?.count || 0) > 0;
+  } catch {
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -427,8 +442,31 @@ serve(async (req) => {
       );
     }
 
-    const data = await response.json();
+    let data = await response.json();
     console.log(`MusicBrainz response received, keys: ${Object.keys(data).join(', ')}`);
+
+    // Post-process artist search results: filter to artists that have at least one release-group.
+    // MusicBrainz search can return many same-name entries with zero discography.
+    if (action === 'search-artist' && Array.isArray(data?.artists)) {
+      const sorted = [...data.artists].sort((a: any, b: any) => Number(b?.score || 0) - Number(a?.score || 0));
+
+      const checked: any[] = [];
+      const maxToCheck = 20;
+      for (const artist of sorted.slice(0, maxToCheck)) {
+        const id = artist?.id;
+        if (!isMusicBrainzId(id)) continue;
+        const hasReleases = await artistHasAnyReleaseGroup(id);
+        if (hasReleases) {
+          checked.push({ ...artist, has_releases: true });
+        }
+      }
+
+      data = {
+        ...data,
+        artists: checked,
+        count: checked.length,
+      };
+    }
 
     // Cache successful search responses (best-effort)
     if (typeof action === 'string' && action.startsWith('search-')) {
