@@ -53,12 +53,12 @@ export function SearchAutocomplete({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && value.length >= 2) {
-      onSearch(value);
-    }
-    // Right arrow to accept the suggestion
-    if (e.key === "ArrowRight" && ghostText) {
-      e.preventDefault();
-      onChange(inlineSuggestion!);
+      // If there's a suggestion, search with the completed text
+      const searchTerm = ghostText ? inlineSuggestion! : value;
+      onSearch(searchTerm);
+      if (ghostText) {
+        onChange(inlineSuggestion!);
+      }
     }
     if (e.key === "Escape") {
       inputRef.current?.blur();
@@ -99,7 +99,7 @@ export function SearchAutocomplete({
       {/* Tab hint */}
       {ghostText && !isLoading && (
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60 pointer-events-none">
-          → to complete
+          ↵ to complete
         </span>
       )}
     </div>
