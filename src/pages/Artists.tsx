@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ArtistCard } from "@/components/ArtistCard";
@@ -24,13 +25,11 @@ const Artists = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get("q") || "";
-  const normalizedSearch = search.trim().replace(/\s+/g, " ");
-  const debouncedSearch = useDebounce(normalizedSearch, 400);
+  const debouncedSearch = useDebounce(search, 400);
 
   const handleSearchChange = (value: string) => {
-    const normalized = value.trim().replace(/\s+/g, " ");
-    if (normalized) {
-      setSearchParams({ q: normalized }, { replace: true });
+    if (value) {
+      setSearchParams({ q: value }, { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }
@@ -42,6 +41,22 @@ const Artists = () => {
     enabled: debouncedSearch.length >= 2,
     retry: 2,
   });
+
+  // Generate "Did you mean" suggestion when no results
+  const didYouMeanSuggestion = useMemo(() => {
+    if (isLoading || artists.length > 0 || debouncedSearch.length < 2) return null;
+    
+    // Clean up the query for suggestions
+    const cleaned = debouncedSearch
+      .replace(/[^\w\s]/g, '') // Remove special characters
+      .replace(/\s+/g, ' ')    // Normalize spaces
+      .trim();
+    
+    if (cleaned !== debouncedSearch && cleaned.length >= 2) {
+      return cleaned;
+    }
+    return null;
+  }, [debouncedSearch, artists.length, isLoading]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,7 +89,19 @@ const Artists = () => {
               {artists.map((artist: MBArtist, index: number) => (<motion.div key={artist.id} variants={itemVariants}><ArtistCard id={artist.id} name={artist.name} genres={artist.genres?.slice(0, 2).map((g) => g.name) || []} onClick={() => navigate(`/artist/${artist.id}`)} fetchDelay={index * 150} /></motion.div>))}
             </motion.div>
           )}
-          {!isLoading && !isError && search.length >= 2 && artists.length === 0 && <div className="text-center py-12"><p className="text-muted-foreground">No artists found matching "{search}"</p></div>}
+          {!isLoading && !isError && search.length >= 2 && artists.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No artists found matching "{search}"</p>
+              {didYouMeanSuggestion && (
+                <button
+                  onClick={() => handleSearchChange(didYouMeanSuggestion)}
+                  className="mt-3 text-primary hover:underline"
+                >
+                  Did you mean "{didYouMeanSuggestion}"?
+                </button>
+              )}
+            </div>
+          )}
         </motion.div>
       </main>
     </div>
