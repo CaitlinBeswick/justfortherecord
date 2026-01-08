@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Share2, Disc3, Music2, Link, Twitter, Facebook, Check, Image } from "lucide-react";
+import { Download, Share2, Disc3, Music2, Link, Check, Image, Copy, Mail, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +24,66 @@ interface ProfileCardDialogProps {
   displayName: string;
 }
 
+// Share button component for reuse
+const ShareOptions = ({ 
+  onCopyLink, 
+  onTwitter, 
+  onFacebook, 
+  onWhatsApp, 
+  onEmail, 
+  onMessages,
+  onInstagram,
+  copied 
+}: { 
+  onCopyLink: () => void;
+  onTwitter: () => void;
+  onFacebook: () => void;
+  onWhatsApp: () => void;
+  onEmail: () => void;
+  onMessages: () => void;
+  onInstagram: () => void;
+  copied: boolean;
+}) => (
+  <div className="grid grid-cols-4 gap-2">
+    <Button onClick={onCopyLink} variant="outline" className="flex flex-col items-center gap-1 h-auto py-3">
+      {copied ? <Check className="h-5 w-5 text-green-500" /> : <Copy className="h-5 w-5" />}
+      <span className="text-xs">{copied ? "Copied" : "Copy"}</span>
+    </Button>
+    <Button onClick={onInstagram} variant="outline" className="flex flex-col items-center gap-1 h-auto py-3">
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+      </svg>
+      <span className="text-xs">Instagram</span>
+    </Button>
+    <Button onClick={onTwitter} variant="outline" className="flex flex-col items-center gap-1 h-auto py-3">
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+      <span className="text-xs">X</span>
+    </Button>
+    <Button onClick={onFacebook} variant="outline" className="flex flex-col items-center gap-1 h-auto py-3">
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+      <span className="text-xs">Facebook</span>
+    </Button>
+    <Button onClick={onWhatsApp} variant="outline" className="flex flex-col items-center gap-1 h-auto py-3">
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      <span className="text-xs">WhatsApp</span>
+    </Button>
+    <Button onClick={onMessages} variant="outline" className="flex flex-col items-center gap-1 h-auto py-3">
+      <MessageCircle className="h-5 w-5" />
+      <span className="text-xs">Messages</span>
+    </Button>
+    <Button onClick={onEmail} variant="outline" className="flex flex-col items-center gap-1 h-auto py-3">
+      <Mail className="h-5 w-5" />
+      <span className="text-xs">Email</span>
+    </Button>
+  </div>
+);
+
 export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogProps) => {
   const { user } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -31,6 +91,7 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
   const [coverUrls, setCoverUrls] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   const url = window.location.href;
+  const shareText = `Check out ${displayName}'s music profile on JustForTheRecord`;
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -101,14 +162,15 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
     const loadCovers = async () => {
       const urls: Record<string, string> = {};
       for (const fav of favorites.slice(0, 5)) {
-        const url = await getCoverArtUrl(fav.release_group_id);
-        if (url) urls[fav.release_group_id] = url;
+        const coverUrl = await getCoverArtUrl(fav.release_group_id);
+        if (coverUrl) urls[fav.release_group_id] = coverUrl;
       }
       setCoverUrls(urls);
     };
     if (favorites.length > 0) loadCovers();
   }, [favorites]);
 
+  // Share handlers
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -121,22 +183,36 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
   };
 
   const handleTwitterShare = () => {
-    const tweetText = encodeURIComponent(`Check out ${displayName}'s music profile`);
+    const tweetText = encodeURIComponent(shareText);
     const tweetUrl = encodeURIComponent(url);
-    window.open(
-      `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`,
-      "_blank",
-      "width=550,height=420"
-    );
+    window.open(`https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`, "_blank", "width=550,height=420");
   };
 
   const handleFacebookShare = () => {
     const fbUrl = encodeURIComponent(url);
-    window.open(
-      `https://www.facebook.com/sharer/sharer.php?u=${fbUrl}`,
-      "_blank",
-      "width=550,height=420"
-    );
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${fbUrl}`, "_blank", "width=550,height=420");
+  };
+
+  const handleWhatsAppShare = () => {
+    const waText = encodeURIComponent(`${shareText} ${url}`);
+    window.open(`https://wa.me/?text=${waText}`, "_blank");
+  };
+
+  const handleEmailShare = () => {
+    const subject = encodeURIComponent(`${displayName}'s Music Profile`);
+    const body = encodeURIComponent(`${shareText}\n\n${url}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+  const handleMessagesShare = () => {
+    const smsText = encodeURIComponent(`${shareText} ${url}`);
+    window.location.href = `sms:?body=${smsText}`;
+  };
+
+  const handleInstagramShare = () => {
+    // Instagram doesn't support direct URL sharing, so copy link and notify user
+    handleCopyLink();
+    toast.info("Link copied! Open Instagram and paste in your story or DM");
   };
 
   const handleDownload = async () => {
@@ -189,7 +265,7 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
           await navigator.share({
             files: [file],
             title: `${displayName}'s Music Profile`,
-            text: `Check out my music profile!`,
+            text: shareText,
           });
           toast.success("Shared successfully!");
         } else {
@@ -216,7 +292,7 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Share Profile</DialogTitle>
         </DialogHeader>
@@ -235,22 +311,16 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
           
           <TabsContent value="link" className="space-y-4 mt-4">
             <p className="text-sm text-muted-foreground">Share your profile link with others</p>
-            <div className="flex gap-2">
-              <Button onClick={handleCopyLink} variant="outline" className="flex-1">
-                {copied ? <Check className="h-4 w-4 mr-2 text-green-500" /> : <Link className="h-4 w-4 mr-2" />}
-                {copied ? "Copied!" : "Copy Link"}
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleTwitterShare} variant="outline" className="flex-1">
-                <Twitter className="h-4 w-4 mr-2" />
-                Share on X
-              </Button>
-              <Button onClick={handleFacebookShare} variant="outline" className="flex-1">
-                <Facebook className="h-4 w-4 mr-2" />
-                Facebook
-              </Button>
-            </div>
+            <ShareOptions
+              onCopyLink={handleCopyLink}
+              onTwitter={handleTwitterShare}
+              onFacebook={handleFacebookShare}
+              onWhatsApp={handleWhatsAppShare}
+              onEmail={handleEmailShare}
+              onMessages={handleMessagesShare}
+              onInstagram={handleInstagramShare}
+              copied={copied}
+            />
           </TabsContent>
           
           <TabsContent value="card" className="space-y-4 mt-4">
@@ -338,10 +408,12 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
                   </div>
                 )}
 
-                {/* Branding */}
-                <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-center gap-2">
-                  <Disc3 className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-medium text-muted-foreground">JustForTheRecord</span>
+                {/* Branding - Made bigger and more noticeable */}
+                <div className="mt-6 pt-4 border-t border-border flex items-center justify-center gap-3 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 -mx-6 px-6 pb-0 -mb-6 rounded-b-xl">
+                  <div className="flex items-center gap-2 py-3">
+                    <Disc3 className="h-6 w-6 text-primary" />
+                    <span className="text-base font-semibold text-foreground tracking-wide">JustForTheRecord</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -363,8 +435,22 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
                 disabled={isGenerating}
               >
                 <Share2 className="h-4 w-4 mr-2" />
-                Share
+                Share Image
               </Button>
+            </div>
+
+            <div className="pt-2 border-t border-border">
+              <p className="text-sm text-muted-foreground mb-3">Or share via</p>
+              <ShareOptions
+                onCopyLink={handleCopyLink}
+                onTwitter={handleTwitterShare}
+                onFacebook={handleFacebookShare}
+                onWhatsApp={handleWhatsAppShare}
+                onEmail={handleEmailShare}
+                onMessages={handleMessagesShare}
+                onInstagram={handleInstagramShare}
+                copied={copied}
+              />
             </div>
           </TabsContent>
         </Tabs>
