@@ -100,7 +100,7 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
   // Search release-groups directly for better album discovery
   const data = await callMusicBrainz({ action: 'search-release-group', query });
   
-  // Map release-groups to our structure, including score and rating for sorting
+  // Map release-groups to our structure, including score for sorting
   const rawReleases: MBReleaseGroup[] = (data["release-groups"] || []).map((rg: any) => ({
     id: rg.id,
     title: rg.title,
@@ -108,7 +108,6 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
     "first-release-date": rg["first-release-date"],
     "artist-credit": rg["artist-credit"],
     score: rg.score, // MusicBrainz relevance score (0-100)
-    rating: rg.rating, // { value, votes-count } - votes indicate popularity
   }));
 
   // This app's "Albums" search should not be dominated by Singles.
@@ -116,71 +115,47 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
   const filteredReleases = rawReleases.filter((rg) => rg["primary-type"] !== 'Single');
   
   // Deduplicate by release group ID first (exact duplicates)
-  // Then by normalized title + artist combination (same album, different releases)
   const seenIds = new Set<string>();
-  const uniqueByTitleArtist = new Map<string, MBReleaseGroup>();
+  const uniqueReleases: MBReleaseGroup[] = [];
   
   for (const rg of filteredReleases) {
-    // Skip if we've already seen this exact release group ID
     if (seenIds.has(rg.id)) continue;
     seenIds.add(rg.id);
-    
-    // Create a key from normalized title + artist
-    const artistName = getArtistNames(rg["artist-credit"]).toLowerCase().trim();
-    const normalizedTitle = rg.title.toLowerCase().trim();
-    const key = `${artistName}::${normalizedTitle}`;
-    
-    const existing = uniqueByTitleArtist.get(key);
-    
-    if (!existing) {
-      uniqueByTitleArtist.set(key, rg);
-    } else {
-      // Keep the one with the earlier release date (original release)
-      const existingYear = getYear(existing["first-release-date"]) ?? 9999;
-      const currentYear = getYear(rg["first-release-date"]) ?? 9999;
-      
-      if (currentYear < existingYear) {
-        uniqueByTitleArtist.set(key, rg);
-      }
-    }
+    uniqueReleases.push(rg);
   }
   
   const queryLower = query.toLowerCase().trim();
   
-  // Sort by: exact/prefix title match first, then by combined relevance + popularity
-  const sorted = Array.from(uniqueByTitleArtist.values())
-    .sort((a, b) => {
-      const titleA = a.title.toLowerCase();
-      const titleB = b.title.toLowerCase();
-      
-      // Exact match gets highest priority
-      const exactA = titleA === queryLower;
-      const exactB = titleB === queryLower;
-      if (exactA && !exactB) return -1;
-      if (exactB && !exactA) return 1;
-      
-      // Prefix match (starts with query) gets next priority
-      const prefixA = titleA.startsWith(queryLower);
-      const prefixB = titleB.startsWith(queryLower);
-      if (prefixA && !prefixB) return -1;
-      if (prefixB && !prefixA) return 1;
-      
-      // For similar relevance scores (within 10 points), prefer more popular albums
-      const scoreA = a.score ?? 0;
-      const scoreB = b.score ?? 0;
-      const votesA = a.rating?.["votes-count"] ?? 0;
-      const votesB = b.rating?.["votes-count"] ?? 0;
-      
-      // If scores are close, use popularity (vote count) as tiebreaker
-      if (Math.abs(scoreA - scoreB) <= 10) {
-        if (votesA !== votesB) {
-          return votesB - votesA; // More votes = more popular
-        }
-      }
-      
-      // Otherwise sort by relevance score
-      return scoreB - scoreA;
-    });
+  // Sort by: exact title match first, then relevance score (which accounts for popularity)
+  const sorted = uniqueReleases.sort((a, b) => {
+    const titleA = a.title.toLowerCase();
+    const titleB = b.title.toLowerCase();
+    
+    // Exact match gets highest priority
+    const exactA = titleA === queryLower;
+    const exactB = titleB === queryLower;
+    if (exactA && !exactB) return -1;
+    if (exactB && !exactA) return 1;
+    
+    // Both exact matches - sort by score (popularity)
+    if (exactA && exactB) {
+      return (b.score ?? 0) - (a.score ?? 0);
+    }
+    
+    // Prefix match (starts with query) gets next priority
+    const prefixA = titleA.startsWith(queryLower);
+    const prefixB = titleB.startsWith(queryLower);
+    if (prefixA && !prefixB) return -1;
+    if (prefixB && !prefixA) return 1;
+    
+    // Both prefix matches - sort by score
+    if (prefixA && prefixB) {
+      return (b.score ?? 0) - (a.score ?? 0);
+    }
+    
+    // Otherwise sort by relevance score (MusicBrainz already factors in popularity)
+    return (b.score ?? 0) - (a.score ?? 0);
+  });
   
   return sorted;
 }
