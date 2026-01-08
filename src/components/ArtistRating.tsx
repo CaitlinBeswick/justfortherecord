@@ -5,6 +5,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ArtistRatingProps {
   artistId: string;
@@ -18,6 +28,8 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [isDragging, setIsDragging] = useState(false);
   const [existingRatingId, setExistingRatingId] = useState<string | null>(null);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [pendingRatingBeforeRemove, setPendingRatingBeforeRemove] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Fetch user's existing rating
@@ -51,6 +63,11 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
     const rect = containerRef.current.getBoundingClientRect();
     const x = clientX - rect.left;
     const starWidth = rect.width / 5;
+    
+    // Allow clearing to 0 if in the first 20% of the first star
+    const clearThreshold = starWidth * 0.2;
+    if (x <= clearThreshold) return 0;
+    
     const starIndex = Math.floor(x / starWidth);
     const withinStar = (x % starWidth) / starWidth;
     
@@ -100,6 +117,26 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
     }
   };
 
+  const removeRating = async () => {
+    if (!user || !existingRatingId) return;
+
+    const { error } = await supabase
+      .from("artist_ratings")
+      .delete()
+      .eq("id", existingRatingId);
+
+    if (error) {
+      console.error("Error removing artist rating:", error);
+      toast.error("Failed to remove rating");
+    } else {
+      setRating(0);
+      setExistingRatingId(null);
+      toast.success("Rating removed");
+      queryClient.invalidateQueries({ queryKey: ['artist-community-ratings', artistId] });
+      queryClient.invalidateQueries({ queryKey: ['artist-user-rating', artistId, user.id] });
+    }
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!user) return;
     setIsDragging(true);
@@ -108,7 +145,7 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!user) return;
+    if (!user || !isDragging) return;
     const newRating = calculateRating(e.clientX);
     setHoverRating(newRating);
   };
@@ -116,6 +153,15 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
   const handleMouseUp = () => {
     if (!user || !isDragging) return;
     setIsDragging(false);
+    
+    // If scrubbing to 0 and there's an existing rating, show confirmation
+    if (hoverRating === 0 && existingRatingId) {
+      setPendingRatingBeforeRemove(rating);
+      setShowRemoveConfirm(true);
+      setHoverRating(0);
+      return;
+    }
+    
     if (hoverRating > 0) {
       setRating(hoverRating);
       saveRating(hoverRating);
@@ -132,8 +178,18 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
   const handleClick = (e: React.MouseEvent) => {
     if (!user) return;
     const newRating = calculateRating(e.clientX);
-    setRating(newRating);
-    saveRating(newRating);
+    
+    // If clicking to 0 and there's an existing rating, show confirmation
+    if (newRating === 0 && existingRatingId) {
+      setPendingRatingBeforeRemove(rating);
+      setShowRemoveConfirm(true);
+      return;
+    }
+    
+    if (newRating > 0) {
+      setRating(newRating);
+      saveRating(newRating);
+    }
   };
 
   // Touch support
@@ -155,11 +211,34 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
   const handleTouchEnd = () => {
     if (!user || !isDragging) return;
     setIsDragging(false);
+    
+    // If scrubbing to 0 and there's an existing rating, show confirmation
+    if (hoverRating === 0 && existingRatingId) {
+      setPendingRatingBeforeRemove(rating);
+      setShowRemoveConfirm(true);
+      setHoverRating(0);
+      return;
+    }
+    
     if (hoverRating > 0) {
       setRating(hoverRating);
       saveRating(hoverRating);
     }
     setHoverRating(0);
+  };
+
+  const handleConfirmRemoveRating = () => {
+    removeRating();
+    setShowRemoveConfirm(false);
+    setPendingRatingBeforeRemove(null);
+  };
+
+  const handleCancelRemoveRating = () => {
+    if (pendingRatingBeforeRemove !== null) {
+      setRating(pendingRatingBeforeRemove);
+    }
+    setShowRemoveConfirm(false);
+    setPendingRatingBeforeRemove(null);
   };
 
   useEffect(() => {
@@ -175,7 +254,6 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
   const displayRating = hoverRating || rating;
 
   const renderStar = (index: number) => {
-    const starValue = index + 1;
     const fillPercentage = Math.min(1, Math.max(0, displayRating - index));
     
     return (
@@ -203,28 +281,49 @@ export function ArtistRating({ artistId, artistName }: ArtistRatingProps) {
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm text-muted-foreground">Your rating:</span>
-      <div
-        ref={containerRef}
-        className={cn(
-          "flex items-center gap-0.5 cursor-pointer select-none",
-          isDragging && "cursor-grabbing"
+    <>
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-muted-foreground">Your rating:</span>
+        <div
+          ref={containerRef}
+          className={cn(
+            "flex items-center gap-0.5 cursor-pointer select-none transition-transform duration-150",
+            isDragging && "cursor-grabbing scale-110"
+          )}
+          style={{
+            filter: isDragging ? 'drop-shadow(0 0 6px hsl(var(--primary) / 0.5))' : undefined,
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          onClick={handleClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {[0, 1, 2, 3, 4].map(renderStar)}
+        </div>
+        {rating > 0 && (
+          <span className="text-sm font-medium text-foreground">{rating.toFixed(1)}</span>
         )}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        onClick={handleClick}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {[0, 1, 2, 3, 4].map(renderStar)}
       </div>
-      {rating > 0 && (
-        <span className="text-sm font-medium text-foreground">{rating.toFixed(1)}</span>
-      )}
-    </div>
+
+      {/* Remove Rating Confirmation Dialog */}
+      <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove rating?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove your rating for this artist?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelRemoveRating}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRemoveRating}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
