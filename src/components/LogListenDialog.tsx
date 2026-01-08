@@ -114,6 +114,34 @@ export function LogListenDialog({
       }
     }
 
+    // Auto-mark album as "listened" in listening_status
+    const { data: existingStatus } = await supabase
+      .from("listening_status")
+      .select("is_listened")
+      .eq("user_id", user.id)
+      .eq("release_group_id", releaseGroupId)
+      .maybeSingle();
+
+    if (!existingStatus) {
+      // Create new listening status with is_listened = true
+      await supabase.from("listening_status").insert({
+        user_id: user.id,
+        release_group_id: releaseGroupId,
+        album_title: albumTitle,
+        artist_name: artistName,
+        is_listened: true,
+        is_to_listen: false,
+        is_loved: false,
+      });
+    } else if (!existingStatus.is_listened) {
+      // Update existing status to mark as listened
+      await supabase
+        .from("listening_status")
+        .update({ is_listened: true })
+        .eq("user_id", user.id)
+        .eq("release_group_id", releaseGroupId);
+    }
+
     setSaving(false);
 
     if (diaryError) {
@@ -126,6 +154,8 @@ export function LogListenDialog({
       queryClient.invalidateQueries({ queryKey: ["album-rating", releaseGroupId] });
       queryClient.invalidateQueries({ queryKey: ["user-ratings"] });
       queryClient.invalidateQueries({ queryKey: ["user-album-rating", user.id, releaseGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["listening-status", user.id, releaseGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["listening-statuses", user.id] });
       setOpen(false);
       setReview("");
       setRating(0);
