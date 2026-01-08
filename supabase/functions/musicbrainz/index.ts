@@ -144,7 +144,8 @@ serve(async (req) => {
     
     switch (action) {
       case 'search-artist':
-        url = `${MUSICBRAINZ_BASE}/artist?query=${encodeURIComponent(query)}&fmt=json&limit=25`;
+        // Include release-group count to filter artists with no releases
+        url = `${MUSICBRAINZ_BASE}/artist?query=${encodeURIComponent(query)}&fmt=json&limit=50`;
         break;
       
       case 'search-release':
