@@ -4,7 +4,7 @@ import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search as SearchIcon, Disc3, Users, Loader2, Trophy, Star, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   searchArtists, 
@@ -77,14 +77,12 @@ const Search = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
-  const normalizedQuery = query.trim().replace(/\s+/g, " ");
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
-  const debouncedQuery = useDebounce(normalizedQuery, 500);
+  const debouncedQuery = useDebounce(query, 500);
 
   const handleSearchChange = (value: string) => {
-    const normalized = value.trim().replace(/\s+/g, " ");
-    if (normalized) {
-      setSearchParams({ q: normalized }, { replace: true });
+    if (value) {
+      setSearchParams({ q: value }, { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }
@@ -103,6 +101,26 @@ const Search = () => {
     enabled: debouncedQuery.length >= 2 && (activeTab === 'all' || activeTab === 'albums'),
     staleTime: 60000,
   });
+
+  const showAlbums = activeTab === "all" || activeTab === "albums";
+  const showArtists = activeTab === "all" || activeTab === "artists";
+
+  // Generate "Did you mean" suggestion when no results
+  const didYouMeanSuggestion = useMemo(() => {
+    const noResults = (showArtists && artists.length === 0) && (showAlbums && releases.length === 0);
+    if (loadingArtists || loadingReleases || !noResults || debouncedQuery.length < 2) return null;
+    
+    // Clean up the query for suggestions
+    const cleaned = debouncedQuery
+      .replace(/[^\w\s]/g, '') // Remove special characters
+      .replace(/\s+/g, ' ')    // Normalize spaces
+      .trim();
+    
+    if (cleaned !== debouncedQuery && cleaned.length >= 2) {
+      return cleaned;
+    }
+    return null;
+  }, [debouncedQuery, artists.length, releases.length, loadingArtists, loadingReleases, showArtists, showAlbums]);
 
   // Fetch top rated albums
   const { data: topAlbums = [], isLoading: topAlbumsLoading } = useQuery({
@@ -184,8 +202,6 @@ const Search = () => {
     { id: "artists", label: "Artists", icon: <Users className="h-4 w-4" /> },
   ];
 
-  const showAlbums = activeTab === "all" || activeTab === "albums";
-  const showArtists = activeTab === "all" || activeTab === "artists";
 
   return (
     <div className="min-h-screen bg-background">
@@ -453,6 +469,14 @@ const Search = () => {
                   <p className="text-muted-foreground">
                     No results found for "{debouncedQuery}"
                   </p>
+                  {didYouMeanSuggestion && (
+                    <button
+                      onClick={() => handleSearchChange(didYouMeanSuggestion)}
+                      className="mt-3 text-primary hover:underline"
+                    >
+                      Did you mean "{didYouMeanSuggestion}"?
+                    </button>
+                  )}
                 </div>
               )}
             </div>
