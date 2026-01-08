@@ -275,21 +275,27 @@ const ArtistDetail = () => {
     return isArtistCredited;
   });
 
-  // Convert user's included releases to MBReleaseGroup format and merge with primary releases
-  const includedReleaseIds = includedReleases.map(r => r.release_group_id);
-  const includedAsReleaseGroups: MBReleaseGroup[] = includedReleases.map(r => ({
-    id: r.release_group_id,
-    title: r.release_title,
-    'primary-type': r.release_type || 'Album',
-    'secondary-types': (r as any).secondary_types || [],
-    'first-release-date': r.release_date || undefined,
-  }));
+  // Convert user's included releases to MBReleaseGroup format
+  // These are fallbacks for releases not returned by MusicBrainz (e.g., group projects)
+  const includedReleaseIdsList = includedReleases.map(r => r.release_group_id);
+  const includedReleaseIdsSet = new Set(includedReleaseIdsList);
   
-  // Merge primary releases with manually added ones (avoid duplicates)
-  const allPrimaryReleases = [
-    ...primaryReleases,
-    ...includedAsReleaseGroups.filter(inc => !primaryReleases.some(p => p.id === inc.id)),
-  ];
+  // For included releases that ARE in MusicBrainz data, use the MB version (has artist-credit)
+  // For included releases NOT in MusicBrainz data, convert and add them
+  const mbReleaseIds = new Set(primaryReleases.map(r => r.id));
+  
+  const includedAsReleaseGroups: MBReleaseGroup[] = includedReleases
+    .filter(r => !mbReleaseIds.has(r.release_group_id)) // Only include if NOT already in MB data
+    .map(r => ({
+      id: r.release_group_id,
+      title: r.release_title,
+      'primary-type': r.release_type || 'Album',
+      'secondary-types': (r as any).secondary_types || [],
+      'first-release-date': r.release_date || undefined,
+    }));
+  
+  // Merge: MusicBrainz releases first (they have artist-credit), then non-overlapping manual additions
+  const allPrimaryReleases = [...primaryReleases, ...includedAsReleaseGroups];
 
   // Filter out user's hidden releases
   const releases = allPrimaryReleases.filter(release => !hiddenReleases.includes(release.id));
@@ -638,7 +644,7 @@ const ArtistDetail = () => {
                     artistName={artist.name}
                     currentReleases={allPrimaryReleases}
                     hiddenReleaseIds={hiddenReleases}
-                    includedReleaseIds={includedReleaseIds}
+                    includedReleaseIds={includedReleaseIdsList}
                     userId={user.id}
                     visibleTypes={visibleTypes}
                   />
