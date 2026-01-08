@@ -262,29 +262,17 @@ const ArtistDetail = () => {
     followMutation.mutate();
   };
 
-  // Filter to only include releases where this artist is the PRIMARY artist
-  // This excludes featured appearances, compilations where they're just one of many artists, etc.
+  // Filter to only include releases where this artist is credited (primary or collab)
+  // This excludes featured appearances on other artists' albums, compilations where they're just one of many, etc.
   const primaryReleases = allReleases.filter(release => {
     const artistCredits = release["artist-credit"];
     if (!artistCredits || artistCredits.length === 0) return true; // Include if no credits info
     
-    // Check if this artist is the first/primary credited artist
-    const firstArtist = artistCredits[0]?.artist;
-    if (!firstArtist) return true;
+    // Check if this artist is ANY of the credited artists (not just first)
+    // This ensures collabs like "Watch the Throne" (JAY-Z & Ye) appear on Ye's page
+    const isArtistCredited = artistCredits.some(credit => credit.artist?.id === artistId);
     
-    // Match by ID - the current artist should be the first credited artist
-    // Debug logging for known collab albums
-    const title = release.title.toLowerCase();
-    if (title.includes('kids') || title.includes('ghost') || title.includes('throne') || title.includes('vultures')) {
-      console.log('Primary filter for', release.title, ':', {
-        artistCredits: artistCredits.map(c => ({ id: c.artist?.id, name: c.artist?.name })),
-        firstArtistId: firstArtist.id,
-        pageArtistId: artistId,
-        matches: firstArtist.id === artistId
-      });
-    }
-    
-    return firstArtist.id === artistId;
+    return isArtistCredited;
   });
 
   // Convert user's included releases to MBReleaseGroup format and merge with primary releases
@@ -752,11 +740,6 @@ const ArtistDetail = () => {
                         creditedArtists.length > 1 ||
                         (creditedArtists[0]?.artist?.name?.toLowerCase() || "") !== artist.name.toLowerCase()
                       );
-                      
-                      // Debug: log collab detection
-                      if (release.title.toLowerCase().includes('kids') || release.title.toLowerCase().includes('ghost') || release.title.toLowerCase().includes('throne') || release.title.toLowerCase().includes('vultures')) {
-                        console.log('Collab check for', release.title, ':', { creditedArtists, creditedName, isCollab, artistName: artist.name });
-                      }
 
                       return (
                         <motion.div
