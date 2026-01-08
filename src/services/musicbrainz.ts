@@ -31,6 +31,7 @@ export interface MBReleaseGroup {
   rating?: { value: number; "votes-count": number };
   disambiguation?: string;
   score?: number; // MusicBrainz search relevance score (0-100)
+  release_count?: number; // Search response field: "release-count" (proxy for popularity)
   releases?: Array<{
     id?: string;
     title?: string;
@@ -99,7 +100,19 @@ export async function searchArtists(query: string): Promise<MBArtist[]> {
 export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
   // Search release-groups directly for better album discovery
   const data = await callMusicBrainz({ action: 'search-release-group', query });
-  
+
+  const normalizeForMatch = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\([^)]*\)/g, '') // remove parentheticals (e.g. "(Deluxe Edition)")
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const queryNorm = normalizeForMatch(query);
+
   // Map release-groups to our structure, including score for sorting
   const rawReleases: MBReleaseGroup[] = (data["release-groups"] || []).map((rg: any) => ({
     id: rg.id,
@@ -108,55 +121,50 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
     "first-release-date": rg["first-release-date"],
     "artist-credit": rg["artist-credit"],
     score: rg.score, // MusicBrainz relevance score (0-100)
+    release_count: rg["release-count"],
   }));
 
   // This app's "Albums" search should not be dominated by Singles.
   // Keep Albums/EPs/other long-form groups; drop Singles.
   const filteredReleases = rawReleases.filter((rg) => rg["primary-type"] !== 'Single');
-  
+
   // Deduplicate by release group ID first (exact duplicates)
   const seenIds = new Set<string>();
   const uniqueReleases: MBReleaseGroup[] = [];
-  
+
   for (const rg of filteredReleases) {
     if (seenIds.has(rg.id)) continue;
     seenIds.add(rg.id);
     uniqueReleases.push(rg);
   }
-  
-  const queryLower = query.toLowerCase().trim();
-  
-  // Sort by: exact title match first, then relevance score (which accounts for popularity)
+
+  // Sort so: strongest title match first, then popularity proxy, then earliest original release, then MB score.
+  // This makes iconic albums like Fleetwood Mac's "Rumours" float to the top.
   const sorted = uniqueReleases.sort((a, b) => {
-    const titleA = a.title.toLowerCase();
-    const titleB = b.title.toLowerCase();
-    
-    // Exact match gets highest priority
-    const exactA = titleA === queryLower;
-    const exactB = titleB === queryLower;
+    const titleANorm = normalizeForMatch(a.title);
+    const titleBNorm = normalizeForMatch(b.title);
+
+    const exactA = titleANorm === queryNorm;
+    const exactB = titleBNorm === queryNorm;
     if (exactA && !exactB) return -1;
     if (exactB && !exactA) return 1;
-    
-    // Both exact matches - sort by score (popularity)
-    if (exactA && exactB) {
-      return (b.score ?? 0) - (a.score ?? 0);
-    }
-    
-    // Prefix match (starts with query) gets next priority
-    const prefixA = titleA.startsWith(queryLower);
-    const prefixB = titleB.startsWith(queryLower);
+
+    const prefixA = titleANorm.startsWith(queryNorm);
+    const prefixB = titleBNorm.startsWith(queryNorm);
     if (prefixA && !prefixB) return -1;
     if (prefixB && !prefixA) return 1;
-    
-    // Both prefix matches - sort by score
-    if (prefixA && prefixB) {
-      return (b.score ?? 0) - (a.score ?? 0);
-    }
-    
-    // Otherwise sort by relevance score (MusicBrainz already factors in popularity)
+
+    const popA = a.release_count ?? 0;
+    const popB = b.release_count ?? 0;
+    if (popA !== popB) return popB - popA;
+
+    const yearA = getYear(a["first-release-date"]) ?? 9999;
+    const yearB = getYear(b["first-release-date"]) ?? 9999;
+    if (yearA !== yearB) return yearA - yearB; // earlier release = more canonical
+
     return (b.score ?? 0) - (a.score ?? 0);
   });
-  
+
   return sorted;
 }
 
