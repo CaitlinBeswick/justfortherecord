@@ -241,14 +241,22 @@ const AlbumDetail = () => {
 
   const handleRatingChange = (rating: number) => {
     setUserRating(rating);
-    if (user) {
-      saveRatingMutation.mutate({ rating });
-    } else {
+    if (!user) {
       toast({
         title: "Sign in required",
         description: "Please sign in to rate albums.",
       });
       navigate('/auth');
+      return;
+    }
+    
+    // Rating of 0 means "remove rating"
+    if (rating === 0) {
+      if (existingRating) {
+        removeRatingMutation.mutate();
+      }
+    } else {
+      saveRatingMutation.mutate({ rating });
     }
   };
 
