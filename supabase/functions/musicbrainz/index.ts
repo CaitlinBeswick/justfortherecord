@@ -134,19 +134,37 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Verify authentication
-  const authResult = await verifyAuth(req);
-  if (!authResult.authenticated) {
-    console.log(`Authentication failed: ${authResult.error}`);
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
   try {
     const { action, query, id, type, limit, offset } = await req.json();
     console.log(`MusicBrainz request: action=${action}, query=${query}, id=${id}, type=${type}, limit=${limit}, offset=${offset}`);
+
+    // Define which actions are public (no auth required) vs protected
+    const publicActions = new Set([
+      'search-artist',
+      'search-release',
+      'search-release-group',
+      'search-recording',
+      'get-artist',
+      'get-artist-image',
+      'get-artist-relations',
+      'get-release-group',
+      'get-release',
+      'get-artist-releases',
+      'get-release-tracks',
+      'check-official-status',
+    ]);
+
+    // Only require auth for non-public actions (currently all are public, but this is extensible)
+    if (!publicActions.has(action)) {
+      const authResult = await verifyAuth(req);
+      if (!authResult.authenticated) {
+        console.log(`Authentication failed for protected action ${action}: ${authResult.error}`);
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     const actionsRequiringId = new Set([
       'get-artist',
