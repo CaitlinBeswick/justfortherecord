@@ -113,6 +113,33 @@ export type Database = {
         }
         Relationships: []
       }
+      artist_release_type_preferences: {
+        Row: {
+          artist_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          visible_types: string[]
+        }
+        Insert: {
+          artist_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          visible_types?: string[]
+        }
+        Update: {
+          artist_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          visible_types?: string[]
+        }
+        Relationships: []
+      }
       diary_entries: {
         Row: {
           album_title: string

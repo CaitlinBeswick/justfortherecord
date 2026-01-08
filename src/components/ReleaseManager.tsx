@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings2, Search, EyeOff, Eye, Plus, Loader2, Trash2 } from "lucide-react";
+import { Settings2, Search, EyeOff, Eye, Plus, Loader2, Trash2, Info } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { searchReleasesByArtist, MBReleaseGroup } from "@/services/musicbrainz";
@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // MusicBrainz primarytype values are case-sensitive (must be capitalized)
 const RELEASE_TYPES = [
@@ -21,6 +24,13 @@ const RELEASE_TYPES = [
   { value: 'Compilation', label: 'Compilations' },
 ] as const;
 
+const VISIBILITY_TYPES = [
+  { value: 'Album', label: 'Studio Albums' },
+  { value: 'EP', label: 'EPs' },
+  { value: 'Live', label: 'Live Albums' },
+  { value: 'Compilation', label: 'Compilations' },
+] as const;
+
 interface ReleaseManagerProps {
   artistId: string;
   artistName: string;
@@ -28,6 +38,7 @@ interface ReleaseManagerProps {
   hiddenReleaseIds: string[];
   includedReleaseIds: string[];
   userId: string;
+  visibleTypes: string[];
 }
 
 export function ReleaseManager({ 
@@ -36,7 +47,8 @@ export function ReleaseManager({
   currentReleases, 
   hiddenReleaseIds,
   includedReleaseIds,
-  userId 
+  userId,
+  visibleTypes: initialVisibleTypes
 }: ReleaseManagerProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,6 +62,7 @@ export function ReleaseManager({
   const [loadedReleases, setLoadedReleases] = useState<MBReleaseGroup[]>([]);
   const [offset, setOffset] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [selectedVisibleTypes, setSelectedVisibleTypes] = useState<string[]>(initialVisibleTypes);
   const queryClient = useQueryClient();
 
   const BATCH_SIZE = 100;
@@ -97,6 +110,11 @@ export function ReleaseManager({
       setTotalCount(browseData.totalCount);
     }
   }, [browseData, offset]);
+
+  // Sync selectedVisibleTypes when prop changes
+  useEffect(() => {
+    setSelectedVisibleTypes(initialVisibleTypes);
+  }, [initialVisibleTypes]);
 
   // Use browse results or search results depending on mode
   const activeResults = browseAll ? loadedReleases : (searchData?.releases || []);
@@ -192,6 +210,40 @@ export function ReleaseManager({
     onError: () => toast.error('Failed to remove release'),
   });
 
+  // Mutation to update visible release types
+  const updateVisibleTypesMutation = useMutation({
+    mutationFn: async (types: string[]) => {
+      const { error } = await supabase
+        .from('artist_release_type_preferences')
+        .upsert({
+          user_id: userId,
+          artist_id: artistId,
+          visible_types: types,
+        }, { onConflict: 'user_id,artist_id' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['artist-release-type-preferences', userId, artistId] });
+      toast.success('Release type visibility updated');
+    },
+    onError: () => toast.error('Failed to update preferences'),
+  });
+
+  const toggleVisibleType = (type: string) => {
+    const newTypes = selectedVisibleTypes.includes(type)
+      ? selectedVisibleTypes.filter(t => t !== type)
+      : [...selectedVisibleTypes, type];
+    
+    // Ensure at least one type is always selected
+    if (newTypes.length === 0) {
+      toast.error('At least one release type must be visible');
+      return;
+    }
+    
+    setSelectedVisibleTypes(newTypes);
+    updateVisibleTypesMutation.mutate(newTypes);
+  };
+
   const hiddenReleases = currentReleases.filter((r) => hiddenReleaseIds.includes(r.id));
   const visibleReleases = currentReleases.filter((r) => !hiddenReleaseIds.includes(r.id));
 
@@ -229,6 +281,39 @@ export function ReleaseManager({
         <DialogHeader>
           <DialogTitle>Manage Discography for {artistName}</DialogTitle>
         </DialogHeader>
+        
+        {/* Release Type Visibility Section */}
+        <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm font-medium text-foreground">Visible Release Types</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Choose which release types to display in this artist's discography. By default, only studio albums are shown.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            {VISIBILITY_TYPES.map((type) => (
+              <div key={type.value} className="flex items-center gap-2">
+                <Checkbox
+                  id={`visibility-${type.value}`}
+                  checked={selectedVisibleTypes.includes(type.value)}
+                  onCheckedChange={() => toggleVisibleType(type.value)}
+                  disabled={updateVisibleTypesMutation.isPending}
+                />
+                <Label 
+                  htmlFor={`visibility-${type.value}`}
+                  className="text-sm cursor-pointer"
+                >
+                  {type.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
         
         <Tabs defaultValue="current" className="mt-4">
           <TabsList className="grid w-full grid-cols-3">

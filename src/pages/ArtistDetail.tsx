@@ -6,7 +6,7 @@ import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup } from "@/services/musicbrainz";
@@ -156,6 +156,25 @@ const ArtistDetail = () => {
     enabled: !!user && isValidArtistId,
   });
 
+  // Fetch user's release type visibility preferences for this artist
+  const { data: typePreferences } = useQuery({
+    queryKey: ['artist-release-type-preferences', user?.id, artistId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('artist_release_type_preferences')
+        .select('visible_types')
+        .eq('user_id', user!.id)
+        .eq('artist_id', artistId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && isValidArtistId,
+  });
+
+  // Default to only showing studio albums
+  const visibleTypes = typePreferences?.visible_types || ['Album'];
+
   // Helper to check if an album is loved
   const isAlbumLoved = (releaseGroupId: string): boolean => {
     const rating = userRatings.find(r => r.release_group_id === releaseGroupId);
@@ -285,6 +304,14 @@ const ArtistDetail = () => {
     'Compilations': compilations,
   };
 
+  // Map category names to types used in preferences
+  const categoryToType: Record<string, string> = {
+    'Studio Albums': 'Album',
+    'EPs': 'EP',
+    'Live Albums': 'Live',
+    'Compilations': 'Compilation',
+  };
+
   // Sort each category by date (newest first)
   Object.keys(groupedReleases).forEach((type) => {
     groupedReleases[type].sort((a, b) => {
@@ -294,9 +321,14 @@ const ArtistDetail = () => {
     });
   });
 
-  // Order of display - only show categories with releases
+  // Order of display - only show categories with releases AND that are visible per user preferences
   const typeOrder = ['Studio Albums', 'EPs', 'Live Albums', 'Compilations'];
-  const sortedTypes = typeOrder.filter((type) => groupedReleases[type]?.length > 0);
+  const sortedTypes = typeOrder.filter((type) => {
+    const hasReleases = groupedReleases[type]?.length > 0;
+    const typeKey = categoryToType[type];
+    const isVisible = visibleTypes.includes(typeKey);
+    return hasReleases && isVisible;
+  });
 
   // Total displayed releases count (only categories we actually show)
   const totalDisplayedReleases = sortedTypes.reduce((sum, type) => sum + groupedReleases[type].length, 0);
@@ -564,7 +596,20 @@ const ArtistDetail = () => {
                   hiddenReleaseIds={hiddenReleases}
                   includedReleaseIds={includedReleaseIds}
                   userId={user.id}
+                  visibleTypes={visibleTypes}
                 />
+              )}
+              {!user && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-muted-foreground cursor-help">
+                      <Info className="h-4 w-4" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Only studio albums are shown by default. Sign in to customize which release types to display (EPs, live albums, compilations, etc.)</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
             {user && (
