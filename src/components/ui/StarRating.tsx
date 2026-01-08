@@ -43,8 +43,9 @@ export function StarRating({
     
     const x = clientX - rect.left;
     
-    // Allow going to 0 if dragging before the first star
-    if (x <= 0) return 0;
+    // Allow going to 0 if dragging before the first star or in the first ~20% of the first star
+    const clearThreshold = starWidth * 0.2;
+    if (x <= clearThreshold) return 0;
     if (x >= totalWidth) return maxRating;
     
     // Calculate which star and position within it
