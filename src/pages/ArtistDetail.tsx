@@ -172,8 +172,25 @@ const ArtistDetail = () => {
     enabled: !!user && isValidArtistId,
   });
 
-  // Default to only showing studio albums
-  const visibleTypes = typePreferences?.visible_types || ['Album'];
+  // Fetch user's global default release type preferences from profile
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile-release-defaults', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('default_release_types')
+        .eq('id', user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Use artist-specific preference if set, otherwise use global default from profile, fallback to ['Album']
+  const visibleTypes = typePreferences?.visible_types 
+    || userProfile?.default_release_types 
+    || ['Album'];
 
   // Helper to check if an album is loved
   const isAlbumLoved = (releaseGroupId: string): boolean => {
