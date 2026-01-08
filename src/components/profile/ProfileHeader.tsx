@@ -122,15 +122,9 @@ export const ProfileHeader = () => {
               <ShareButton 
                 title={`${displayName}'s Profile`}
                 text={`Check out ${displayName}'s music profile`}
-              />
-              <button 
-                onClick={() => navigate("/profile/friends")}
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
-                title="Friends"
-              >
-                <Users className="h-4 w-4" />
-              </button>
-              <button 
+              />
+              <button
                 onClick={() => navigate("/profile/settings")}
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
                 title="Settings"
