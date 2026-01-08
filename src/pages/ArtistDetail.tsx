@@ -628,7 +628,7 @@ const ArtistDetail = () => {
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="max-w-xs text-sm" side="bottom" align="start">
-                      <p>Default albums display studio releases only. To customise which albums you would like to display, use the Manage Releases feature.</p>
+                      <p>As a default, an artist's page displays studio releases only. To customise which albums you would like to display for this artist, use the Manage Releases feature. To set a global default release type across all artists, head to the settings page.</p>
                     </PopoverContent>
                   </Popover>
                 </>
@@ -646,7 +646,7 @@ const ArtistDetail = () => {
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="max-w-xs text-sm" side="bottom" align="start">
-                    <p>Default albums display studio releases only. Sign in to customise which albums you would like to display using the Manage Releases feature.</p>
+                    <p>As a default, an artist's page displays studio releases only. Sign in to customise which albums you would like to display for this artist using the Manage Releases feature.</p>
                   </PopoverContent>
                 </Popover>
               )}
