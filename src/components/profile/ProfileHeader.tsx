@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { FavoriteAlbums } from "@/components/profile/FavoriteAlbums";
+import { ShareButton } from "@/components/ShareButton";
 
 interface Profile {
   id: string;
@@ -118,6 +119,10 @@ export const ProfileHeader = () => {
           <div className="flex-1 text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-3">
               <h1 className="font-serif text-3xl text-foreground">{displayName}</h1>
+              <ShareButton 
+                title={`${displayName}'s Profile`}
+                text={`Check out ${displayName}'s music profile`}
+              />
               <button 
                 onClick={() => navigate("/profile/friends")}
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
