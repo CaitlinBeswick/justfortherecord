@@ -62,7 +62,7 @@ export interface MBRecording {
   "artist-credit"?: Array<{ artist: MBArtist }>;
 }
 
-async function callMusicBrainz(body: Record<string, string | undefined>) {
+async function callMusicBrainz(body: Record<string, string | number | undefined>) {
   // Normalize query-ish fields to avoid space/case sensitivity issues and improve caching.
   const normalizedBody = { ...body };
   if (typeof normalizedBody.query === 'string') {
@@ -86,8 +86,8 @@ async function callMusicBrainz(body: Record<string, string | undefined>) {
   return data;
 }
 
-export async function searchArtists(query: string): Promise<MBArtist[]> {
-  const data = await callMusicBrainz({ action: 'search-artist', query });
+export async function searchArtists(query: string, limit?: number): Promise<MBArtist[]> {
+  const data = await callMusicBrainz({ action: 'search-artist', query, limit });
   const artists: MBArtist[] = data.artists || [];
 
   const normalizeForMatch = (s: string) =>
@@ -126,9 +126,9 @@ export async function searchArtists(query: string): Promise<MBArtist[]> {
     });
 }
 
-export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
+export async function searchReleases(query: string, limit?: number): Promise<MBReleaseGroup[]> {
   // Search release-groups directly for better album discovery
-  const data = await callMusicBrainz({ action: 'search-release-group', query });
+  const data = await callMusicBrainz({ action: 'search-release-group', query, limit });
 
   const normalizeForMatch = (s: string) =>
     s
