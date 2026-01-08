@@ -9,7 +9,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup, getSimilarArtists, getArtistNames } from "@/services/musicbrainz";
+import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup, getSimilarArtists, getArtistNames, getReleaseGroup } from "@/services/musicbrainz";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -281,20 +281,62 @@ const ArtistDetail = () => {
   const includedReleaseIdsSet = new Set(includedReleaseIdsList);
   
   // For included releases that ARE in MusicBrainz data, use the MB version (has artist-credit)
-  // For included releases NOT in MusicBrainz data, convert and add them
+  // For included releases NOT in MusicBrainz data, we need to fetch their artist credits
   const mbReleaseIds = new Set(primaryReleases.map(r => r.id));
+  const missingFromMB = includedReleases.filter(r => !mbReleaseIds.has(r.release_group_id));
   
-  const includedAsReleaseGroups: MBReleaseGroup[] = includedReleases
-    .filter(r => !mbReleaseIds.has(r.release_group_id)) // Only include if NOT already in MB data
-    .map(r => ({
-      id: r.release_group_id,
-      title: r.release_title,
-      'primary-type': r.release_type || 'Album',
-      'secondary-types': (r as any).secondary_types || [],
-      'first-release-date': r.release_date || undefined,
-    }));
+  // Fetch artist credits for manually included releases that aren't in MusicBrainz results
+  const { data: hydratedReleases = [] } = useQuery({
+    queryKey: ['hydrate-included-releases', missingFromMB.map(r => r.release_group_id).join(',')],
+    queryFn: async () => {
+      if (missingFromMB.length === 0) return [];
+      
+      // Fetch each release group to get artist-credit data
+      const results = await Promise.allSettled(
+        missingFromMB.map(async (r) => {
+          try {
+            const rgData = await getReleaseGroup(r.release_group_id);
+            return {
+              id: r.release_group_id,
+              title: r.release_title,
+              'primary-type': r.release_type || rgData['primary-type'] || 'Album',
+              'secondary-types': (r as any).secondary_types || rgData['secondary-types'] || [],
+              'first-release-date': r.release_date || rgData['first-release-date'],
+              'artist-credit': rgData['artist-credit'], // This is what we need for collab detection!
+            } as MBReleaseGroup;
+          } catch (e) {
+            // If fetch fails, return without artist-credit (fallback to basic info)
+            return {
+              id: r.release_group_id,
+              title: r.release_title,
+              'primary-type': r.release_type || 'Album',
+              'secondary-types': (r as any).secondary_types || [],
+              'first-release-date': r.release_date || undefined,
+            } as MBReleaseGroup;
+          }
+        })
+      );
+      
+      return results
+        .filter((r): r is PromiseFulfilledResult<MBReleaseGroup> => r.status === 'fulfilled')
+        .map(r => r.value);
+    },
+    enabled: missingFromMB.length > 0,
+    staleTime: 1000 * 60 * 30, // Cache for 30 minutes
+  });
   
-  // Merge: MusicBrainz releases first (they have artist-credit), then non-overlapping manual additions
+  // Use hydrated releases (with artist-credit) instead of basic conversion
+  const includedAsReleaseGroups: MBReleaseGroup[] = hydratedReleases.length > 0 
+    ? hydratedReleases 
+    : missingFromMB.map(r => ({
+        id: r.release_group_id,
+        title: r.release_title,
+        'primary-type': r.release_type || 'Album',
+        'secondary-types': (r as any).secondary_types || [],
+        'first-release-date': r.release_date || undefined,
+      }));
+  
+  // Merge: MusicBrainz releases first (they have artist-credit), then hydrated manual additions
   const allPrimaryReleases = [...primaryReleases, ...includedAsReleaseGroups];
 
   // Filter out user's hidden releases
