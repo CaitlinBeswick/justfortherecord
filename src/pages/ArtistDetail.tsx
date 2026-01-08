@@ -5,7 +5,7 @@ import { ArtistRating } from "@/components/ArtistRating";
 import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { ShareButton } from "@/components/ShareButton";
 
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -628,7 +628,7 @@ const ArtistDetail = () => {
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="max-w-xs text-sm" side="bottom" align="start">
-                      <p>As a default, an artist's page displays studio releases only. To customise which albums you would like to display for this artist, use the Manage Releases feature. To set a global default release type across all artists, head to the settings page.</p>
+                      <p>As a default, an artist's page displays studio releases only. To customise which albums you would like to display for this artist, use the Manage Releases feature. To set a global default release type across all artists, head to the <Link to="/profile/settings" className="text-primary hover:underline">settings page</Link>.</p>
                     </PopoverContent>
                   </Popover>
                 </>
