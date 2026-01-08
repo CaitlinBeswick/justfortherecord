@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Share2, Image, Disc3, Users, Music2 } from "lucide-react";
+import { Download, Share2, Disc3, Music2, Link, Twitter, Facebook, Check, Image } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { useFavoriteAlbums } from "@/hooks/useFavoriteAlbums";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Profile {
   id: string;
@@ -20,13 +21,16 @@ interface Profile {
 
 interface ProfileCardDialogProps {
   children: React.ReactNode;
+  displayName: string;
 }
 
-export const ProfileCardDialog = ({ children }: ProfileCardDialogProps) => {
+export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogProps) => {
   const { user } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [coverUrls, setCoverUrls] = useState<Record<string, string>>({});
+  const [copied, setCopied] = useState(false);
+  const url = window.location.href;
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -92,11 +96,11 @@ export const ProfileCardDialog = ({ children }: ProfileCardDialogProps) => {
 
   const { favorites } = useFavoriteAlbums(user?.id);
 
-  // Load cover art URLs
+  // Load cover art URLs for all 5 favorites
   useEffect(() => {
     const loadCovers = async () => {
       const urls: Record<string, string> = {};
-      for (const fav of favorites.slice(0, 4)) {
+      for (const fav of favorites.slice(0, 5)) {
         const url = await getCoverArtUrl(fav.release_group_id);
         if (url) urls[fav.release_group_id] = url;
       }
@@ -105,7 +109,35 @@ export const ProfileCardDialog = ({ children }: ProfileCardDialogProps) => {
     if (favorites.length > 0) loadCovers();
   }, [favorites]);
 
-  const displayName = profile?.display_name || profile?.username || user?.email?.split('@')[0] || 'User';
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Link copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleTwitterShare = () => {
+    const tweetText = encodeURIComponent(`Check out ${displayName}'s music profile`);
+    const tweetUrl = encodeURIComponent(url);
+    window.open(
+      `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`,
+      "_blank",
+      "width=550,height=420"
+    );
+  };
+
+  const handleFacebookShare = () => {
+    const fbUrl = encodeURIComponent(url);
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${fbUrl}`,
+      "_blank",
+      "width=550,height=420"
+    );
+  };
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
@@ -132,7 +164,7 @@ export const ProfileCardDialog = ({ children }: ProfileCardDialogProps) => {
     }
   };
 
-  const handleShare = async () => {
+  const handleShareImage = async () => {
     if (!cardRef.current) return;
     setIsGenerating(true);
     
@@ -161,14 +193,12 @@ export const ProfileCardDialog = ({ children }: ProfileCardDialogProps) => {
           });
           toast.success("Shared successfully!");
         } else {
-          // Fallback: copy to clipboard
           try {
             await navigator.clipboard.write([
               new ClipboardItem({ 'image/png': blob })
             ]);
             toast.success("Image copied to clipboard!");
           } catch {
-            // Final fallback: download
             handleDownload();
           }
         }
@@ -188,120 +218,156 @@ export const ProfileCardDialog = ({ children }: ProfileCardDialogProps) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Share Your Profile Card</DialogTitle>
+          <DialogTitle>Share Profile</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          {/* Profile Card Preview */}
-          <div 
-            ref={cardRef}
-            className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/20 via-background to-secondary/30 p-6 border border-border"
-          >
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-4 right-4 rotate-12">
-                <Disc3 className="h-24 w-24" />
-              </div>
-              <div className="absolute bottom-4 left-4 -rotate-12">
-                <Music2 className="h-16 w-16" />
-              </div>
+        <Tabs defaultValue="link" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="link" className="flex items-center gap-2">
+              <Link className="h-4 w-4" />
+              Link
+            </TabsTrigger>
+            <TabsTrigger value="card" className="flex items-center gap-2">
+              <Image className="h-4 w-4" />
+              Profile Card
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="link" className="space-y-4 mt-4">
+            <p className="text-sm text-muted-foreground">Share your profile link with others</p>
+            <div className="flex gap-2">
+              <Button onClick={handleCopyLink} variant="outline" className="flex-1">
+                {copied ? <Check className="h-4 w-4 mr-2 text-green-500" /> : <Link className="h-4 w-4 mr-2" />}
+                {copied ? "Copied!" : "Copy Link"}
+              </Button>
             </div>
-            
-            <div className="relative z-10">
-              {/* Header */}
-              <div className="flex items-center gap-4 mb-6">
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={displayName}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-primary/30"
-                    crossOrigin="anonymous"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/30">
-                    <span className="text-2xl font-bold text-primary">
-                      {displayName.charAt(0).toUpperCase()}
-                    </span>
+            <div className="flex gap-2">
+              <Button onClick={handleTwitterShare} variant="outline" className="flex-1">
+                <Twitter className="h-4 w-4 mr-2" />
+                Share on X
+              </Button>
+              <Button onClick={handleFacebookShare} variant="outline" className="flex-1">
+                <Facebook className="h-4 w-4 mr-2" />
+                Facebook
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="card" className="space-y-4 mt-4">
+            {/* Profile Card Preview */}
+            <div 
+              ref={cardRef}
+              className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/20 via-background to-secondary/30 p-6 border border-border"
+            >
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-5">
+                <div className="absolute top-4 right-4 rotate-12">
+                  <Disc3 className="h-24 w-24" />
+                </div>
+                <div className="absolute bottom-4 left-4 -rotate-12">
+                  <Music2 className="h-16 w-16" />
+                </div>
+              </div>
+              
+              <div className="relative z-10">
+                {/* Header */}
+                <div className="flex items-center gap-4 mb-6">
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={displayName}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-primary/30"
+                      crossOrigin="anonymous"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/30">
+                      <span className="text-2xl font-bold text-primary">
+                        {displayName.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-serif text-xl font-semibold text-foreground">{displayName}</h3>
+                    {profile?.bio && (
+                      <p className="text-sm text-muted-foreground line-clamp-1">{profile.bio}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="flex justify-around mb-6 py-3 bg-background/50 rounded-lg">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-foreground">{albumCount}</p>
+                    <p className="text-xs text-muted-foreground">Albums</p>
+                  </div>
+                  <div className="text-center border-x border-border px-6">
+                    <p className="text-xl font-bold text-foreground">{artistsCount}</p>
+                    <p className="text-xs text-muted-foreground">Artists</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-foreground">{friendsCount}</p>
+                    <p className="text-xs text-muted-foreground">Friends</p>
+                  </div>
+                </div>
+
+                {/* Favorite Albums - All 5 */}
+                {favorites.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">Favorite Albums</p>
+                    <div className="grid grid-cols-5 gap-2">
+                      {[...Array(5)].map((_, index) => {
+                        const fav = favorites[index];
+                        return (
+                          <div key={fav?.id || index} className="aspect-square rounded-md overflow-hidden bg-secondary">
+                            {fav && coverUrls[fav.release_group_id] ? (
+                              <img
+                                src={coverUrls[fav.release_group_id]}
+                                alt={fav.album_title}
+                                className="w-full h-full object-cover"
+                                crossOrigin="anonymous"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-secondary">
+                                <Disc3 className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
-                <div>
-                  <h3 className="font-serif text-xl font-semibold text-foreground">{displayName}</h3>
-                  {profile?.bio && (
-                    <p className="text-sm text-muted-foreground line-clamp-1">{profile.bio}</p>
-                  )}
-                </div>
-              </div>
 
-              {/* Stats */}
-              <div className="flex justify-around mb-6 py-3 bg-background/50 rounded-lg">
-                <div className="text-center">
-                  <p className="text-xl font-bold text-foreground">{albumCount}</p>
-                  <p className="text-xs text-muted-foreground">Albums</p>
+                {/* Branding */}
+                <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-center gap-2">
+                  <Disc3 className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-medium text-muted-foreground">JustForTheRecord</span>
                 </div>
-                <div className="text-center border-x border-border px-6">
-                  <p className="text-xl font-bold text-foreground">{artistsCount}</p>
-                  <p className="text-xs text-muted-foreground">Artists</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xl font-bold text-foreground">{friendsCount}</p>
-                  <p className="text-xs text-muted-foreground">Friends</p>
-                </div>
-              </div>
-
-              {/* Favorite Albums */}
-              {favorites.length > 0 && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">Favorite Albums</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {favorites.slice(0, 4).map((fav) => (
-                      <div key={fav.id} className="aspect-square rounded-md overflow-hidden bg-secondary">
-                        {coverUrls[fav.release_group_id] ? (
-                          <img
-                            src={coverUrls[fav.release_group_id]}
-                            alt={fav.album_title}
-                            className="w-full h-full object-cover"
-                            crossOrigin="anonymous"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-secondary">
-                            <Disc3 className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Branding */}
-              <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-center gap-2">
-                <Disc3 className="h-4 w-4 text-primary" />
-                <span className="text-xs text-muted-foreground">Created with Vinylbox</span>
               </div>
             </div>
-          </div>
 
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleDownload} 
-              className="flex-1" 
-              variant="outline"
-              disabled={isGenerating}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Download
-            </Button>
-            <Button 
-              onClick={handleShare} 
-              className="flex-1"
-              disabled={isGenerating}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
-            </Button>
-          </div>
-        </div>
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleDownload} 
+                className="flex-1" 
+                variant="outline"
+                disabled={isGenerating}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+              <Button 
+                onClick={handleShareImage} 
+                className="flex-1"
+                disabled={isGenerating}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
