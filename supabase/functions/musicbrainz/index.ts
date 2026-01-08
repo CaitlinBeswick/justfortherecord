@@ -432,7 +432,9 @@ serve(async (req) => {
           ? { created: new Date().toISOString(), count: 0, offset: 0, artists: [] }
           : action === 'search-release'
             ? { created: new Date().toISOString(), count: 0, offset: 0, releases: [] }
-            : { created: new Date().toISOString(), count: 0, offset: 0, recordings: [] };
+            : action === 'search-release-group'
+              ? { created: new Date().toISOString(), count: 0, offset: 0, 'release-groups': [] }
+              : { created: new Date().toISOString(), count: 0, offset: 0, recordings: [] };
 
         return new Response(JSON.stringify(empty), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
