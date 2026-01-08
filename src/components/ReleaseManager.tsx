@@ -248,14 +248,30 @@ export function ReleaseManager({
   const visibleReleases = currentReleases.filter((r) => !hiddenReleaseIds.includes(r.id));
 
   // Filter helper for release type
+  // Mixtapes and Soundtracks are grouped with EPs (unless Live/Compilation)
   const filterByType = (releases: MBReleaseGroup[], filter: string) => {
     if (filter === 'all') return releases;
     return releases.filter((r) => {
       const primaryType = r['primary-type'] || '';
       const secondaryTypes: string[] = (r as any)['secondary-types'] || [];
-      if (filter === 'Live') return secondaryTypes.includes('Live');
-      if (filter === 'Compilation') return secondaryTypes.includes('Compilation') && !secondaryTypes.includes('Live');
-      return primaryType === filter && !secondaryTypes.includes('Live') && !secondaryTypes.includes('Compilation');
+      const isMixtape = secondaryTypes.includes('Mixtape/Street');
+      const isSoundtrack = secondaryTypes.includes('Soundtrack');
+      const isLive = secondaryTypes.includes('Live');
+      const isCompilation = secondaryTypes.includes('Compilation');
+      
+      if (filter === 'Live') return isLive;
+      if (filter === 'Compilation') return isCompilation && !isLive;
+      if (filter === 'EP') {
+        // Include actual EPs plus Mixtapes/Soundtracks that aren't Live/Compilation
+        if (primaryType === 'EP') return true;
+        if (primaryType === 'Album' && (isMixtape || isSoundtrack) && !isLive && !isCompilation) return true;
+        return false;
+      }
+      if (filter === 'Album') {
+        // Exclude Mixtapes/Soundtracks from studio albums
+        return primaryType === 'Album' && !isLive && !isCompilation && !isMixtape && !isSoundtrack;
+      }
+      return primaryType === filter && !isLive && !isCompilation;
     });
   };
 

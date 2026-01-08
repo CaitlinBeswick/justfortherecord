@@ -299,18 +299,34 @@ const ArtistDetail = () => {
   const { filteredReleases: officialReleases, isChecking: isCheckingOfficial, progress: officialProgress, filteredOutCount } = useOfficialReleaseFilter(releases, true, false);
 
   // Categorize releases by type
+  // Mixtapes and Soundtracks go into EPs unless they're Live or Compilation
   const studioAlbums = officialReleases.filter((release) => {
     const primaryType = release['primary-type'] || '';
     const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
     if (primaryType !== 'Album') return false;
     if (secondaryTypes.includes('Live')) return false;
     if (secondaryTypes.includes('Compilation')) return false;
+    if (secondaryTypes.includes('Mixtape/Street')) return false;
+    if (secondaryTypes.includes('Soundtrack')) return false;
     return true;
   });
 
   const eps = officialReleases.filter((release) => {
     const primaryType = release['primary-type'] || '';
-    return primaryType === 'EP';
+    const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
+    // Include actual EPs
+    if (primaryType === 'EP') return true;
+    // Include Albums that are Mixtapes or Soundtracks (unless Live/Compilation)
+    if (primaryType === 'Album') {
+      const isMixtape = secondaryTypes.includes('Mixtape/Street');
+      const isSoundtrack = secondaryTypes.includes('Soundtrack');
+      const isLive = secondaryTypes.includes('Live');
+      const isCompilation = secondaryTypes.includes('Compilation');
+      if ((isMixtape || isSoundtrack) && !isLive && !isCompilation) {
+        return true;
+      }
+    }
+    return false;
   });
 
   const liveAlbums = officialReleases.filter((release) => {
