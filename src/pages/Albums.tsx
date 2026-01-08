@@ -1,9 +1,8 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Loader2, AlertCircle, Disc3 } from "lucide-react";
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { searchReleases, getCoverArtUrl, getArtistNames, getYear, MBReleaseGroup } from "@/services/musicbrainz";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -23,8 +22,17 @@ const itemVariants = {
 
 const Albums = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
   const debouncedSearch = useDebounce(searchQuery, 400);
+
+  const handleSearchChange = (value: string) => {
+    if (value) {
+      setSearchParams({ q: value }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
 
   const {
     data: releases = [],
@@ -70,7 +78,7 @@ const Albums = () => {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search for albums, EPs..."
                 className="w-full rounded-lg bg-secondary pl-10 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
