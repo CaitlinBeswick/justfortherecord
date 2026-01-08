@@ -127,6 +127,20 @@ const ArtistDetail = () => {
     enabled: !!user && isValidArtistId,
   });
 
+  // Fetch user's diary entries to show indicator on albums
+  const { data: userDiaryEntries = [] } = useQuery({
+    queryKey: ['user-diary-entries', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('release_group_id')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return data.map(e => e.release_group_id);
+    },
+    enabled: !!user,
+  });
+
   // Fetch user's manually added releases for this artist
   const { data: includedReleases = [] } = useQuery({
     queryKey: ['release-inclusions', user?.id, artistId],
@@ -622,6 +636,7 @@ const ArtistDetail = () => {
                             coverUrl={getCoverArtUrl(release.id)}
                             year={getYear(release["first-release-date"])}
                             loved={isAlbumLoved(release.id)}
+                            hasEntries={userDiaryEntries.includes(release.id)}
                             onClick={() => navigate(`/album/${release.id}`)}
                           />
                         </motion.div>
