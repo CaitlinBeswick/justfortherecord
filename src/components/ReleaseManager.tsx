@@ -73,27 +73,23 @@ export function ReleaseManager({
     setTotalCount(0);
   };
 
-  // Search for releases by this artist (includes collaborations by default)
+  // Search for releases by this artist (arid: query finds all releases where artist is credited, including collabs)
   const { data: searchData, isLoading: isSearching } = useQuery({
     queryKey: ['release-search', artistId, debouncedSearch, typeFilter],
     queryFn: () => searchReleasesByArtist(artistId, debouncedSearch, { 
       typeFilter: typeFilter !== 'all' ? typeFilter : undefined,
       limit: BATCH_SIZE,
-      includeCollaborations: true,
-      artistName,
     }),
     enabled: debouncedSearch.length >= 2 && open && !browseAll,
   });
 
-  // Browse all releases by this artist with pagination (includes collaborations)
+  // Browse all releases by this artist with pagination (includes collaborations via arid: query)
   const { data: browseData, isLoading: isBrowsing, isFetching: isFetchingMore } = useQuery({
     queryKey: ['release-browse-all', artistId, typeFilter, offset],
     queryFn: () => searchReleasesByArtist(artistId, "", { 
       typeFilter: typeFilter !== 'all' ? typeFilter : undefined,
       limit: BATCH_SIZE,
       offset: offset,
-      includeCollaborations: true,
-      artistName,
     }),
     enabled: browseAll && open,
   });

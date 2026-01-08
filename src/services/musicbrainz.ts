@@ -199,24 +199,20 @@ export async function searchReleases(query: string, limit?: number): Promise<MBR
 
 // Search for releases by a specific artist using their MusicBrainz artist ID
 // typeFilter can be: 'album', 'ep', 'single', 'live', 'compilation', 'other' or undefined for all
-// includeCollaborations: when true, searches by artist name in credits rather than strict artist ID
+// includeCollaborations: when true, uses arid: which finds ALL releases where the artist is credited
+// (including group projects, collaborations, etc.)
 export async function searchReleasesByArtist(
   artistId: string, 
   query: string, 
   options?: { typeFilter?: string; limit?: number; offset?: number; includeCollaborations?: boolean; artistName?: string }
 ): Promise<{ releases: MBReleaseGroup[]; totalCount: number }> {
   // Build MusicBrainz Lucene query
-  // If includeCollaborations is true and we have the artist name, search by artist name in credits
-  // This finds releases where the artist appears as a collaborator, not just the primary artist
-  let searchQuery: string;
-  
-  if (options?.includeCollaborations && options.artistName) {
-    // Use artist: to search for artist name in any credit position
-    searchQuery = `artist:"${options.artistName}"`;
-  } else {
-    // Default: strict artist ID filter (only releases where this artist is credited)
-    searchQuery = `arid:${artistId}`;
-  }
+  // arid: (artist ID) finds ALL releases where this artist is credited, including:
+  // - Solo albums
+  // - Group projects (e.g., Kids See Ghosts where Kanye is a member)
+  // - Featured appearances
+  // - Collaborations
+  let searchQuery = `arid:${artistId}`;
 
   // Add type filter if specified.
   // IMPORTANT: "Live" and "Compilation" are *secondary* types in MusicBrainz.
