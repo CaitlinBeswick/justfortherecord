@@ -53,19 +53,23 @@ export function AlbumCard({
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         
         {/* Indicators */}
-        <div className="absolute top-2 right-2 flex items-center gap-1">
+        <div className="absolute top-2 left-2">
           {collabArtist && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/90 shadow-md">
-                  <Users className="h-3.5 w-3.5 text-accent-foreground" />
+                <div className="inline-flex items-center gap-1 rounded-full bg-secondary/90 px-2 py-1 shadow-md">
+                  <Users className="h-3.5 w-3.5 text-foreground" />
+                  <span className="text-[10px] font-medium text-foreground">Collab</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[200px]">
+              <TooltipContent side="bottom" className="max-w-[240px]">
                 <p className="text-xs">{collabArtist}</p>
               </TooltipContent>
             </Tooltip>
           )}
+        </div>
+
+        <div className="absolute top-2 right-2 flex items-center gap-1">
           {hasEntries && (
             <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/90 shadow-md">
               <BookOpen className="h-3.5 w-3.5 text-accent-foreground" />
