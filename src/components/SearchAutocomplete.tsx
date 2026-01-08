@@ -32,16 +32,45 @@ export function SearchAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const debouncedValue = useDebounce(value, 300);
 
+  // Simple in-component prefix cache to keep autocomplete feeling instant while typing.
+  // If the user keeps typing (query extends previous query), reuse previous suggestions locally.
+  const [prefixCache, setPrefixCache] = useState<{ query: string; items: AutocompleteItem[] }>({
+    query: "",
+    items: [],
+  });
+
+  const canUseCache =
+    prefixCache.query.length >= 2 &&
+    debouncedValue.length >= 2 &&
+    debouncedValue.toLowerCase().startsWith(prefixCache.query.toLowerCase()) &&
+    prefixCache.items.length > 0;
+
+  const cachedSuggestions = canUseCache
+    ? prefixCache.items
+        .filter((s) => s.label.toLowerCase().includes(debouncedValue.toLowerCase()))
+        .slice(0, 10)
+    : [];
+
   const { data: suggestions = [], isLoading } = useQuery({
     queryKey: ["autocomplete", type, debouncedValue],
     queryFn: () => fetchSuggestions(debouncedValue),
-    enabled: debouncedValue.length >= 2,
+    enabled: debouncedValue.length >= 2 && !canUseCache,
     staleTime: 60000,
   });
 
+  useEffect(() => {
+    if (debouncedValue.length < 2) return;
+    if (suggestions.length === 0) return;
+    // Only promote to cache when we actually fetched (not when we're using cache)
+    if (canUseCache) return;
+    setPrefixCache({ query: debouncedValue, items: suggestions });
+  }, [debouncedValue, suggestions, canUseCache]);
+
+  const visibleSuggestions = canUseCache ? cachedSuggestions : suggestions;
+
   // Get the first suggestion that starts with the current value (case-insensitive)
-  const inlineSuggestion = suggestions.length > 0 && value.length >= 2
-    ? suggestions.find((s) => 
+  const inlineSuggestion = visibleSuggestions.length > 0 && value.length >= 2
+    ? visibleSuggestions.find((s) => 
         s.label.toLowerCase().startsWith(value.toLowerCase())
       )?.label
     : null;
