@@ -55,8 +55,8 @@ export function SearchAutocomplete({
     if (e.key === "Enter" && value.length >= 2) {
       onSearch(value);
     }
-    // Tab or Right arrow to accept the suggestion
-    if ((e.key === "Tab" || e.key === "ArrowRight") && ghostText) {
+    // Right arrow to accept the suggestion
+    if (e.key === "ArrowRight" && ghostText) {
       e.preventDefault();
       onChange(inlineSuggestion!);
     }
@@ -99,7 +99,7 @@ export function SearchAutocomplete({
       {/* Tab hint */}
       {ghostText && !isLoading && (
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60 pointer-events-none">
-          Tab to complete
+          → to complete
         </span>
       )}
     </div>
