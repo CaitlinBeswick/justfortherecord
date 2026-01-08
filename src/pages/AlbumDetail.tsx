@@ -541,9 +541,9 @@ const AlbumDetail = () => {
       <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove your rating?</AlertDialogTitle>
+            <AlertDialogTitle>Remove rating?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove your {pendingRatingBeforeRemove?.toFixed(1)} star rating for this album.
+              Are you sure you want to remove your rating for this album?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
