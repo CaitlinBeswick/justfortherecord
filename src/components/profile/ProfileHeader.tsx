@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Settings, User, Users } from "lucide-react";
+import { Settings, User, Image } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { FavoriteAlbums } from "@/components/profile/FavoriteAlbums";
 import { ShareButton } from "@/components/ShareButton";
+import { ProfileCardDialog } from "@/components/profile/ProfileCardDialog";
 
 interface Profile {
   id: string;
@@ -124,6 +125,14 @@ export const ProfileHeader = () => {
                 text={`Check out ${displayName}'s music profile`}
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
               />
+              <ProfileCardDialog>
+                <button 
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+                  title="Share Profile Card"
+                >
+                  <Image className="h-4 w-4" />
+                </button>
+              </ProfileCardDialog>
               <button
                 onClick={() => navigate("/profile/settings")}
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
