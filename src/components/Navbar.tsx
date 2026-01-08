@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -18,9 +18,25 @@ const navItems = [
   { path: "/artists", label: "Artists", icon: Users },
 ];
 
+// Pages that share search query state
+const searchPages = ["/albums", "/artists", "/search"];
+
 export function Navbar() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user, loading, signOut } = useAuth();
+
+  // Get current search query if on a search page
+  const currentQuery = searchParams.get("q");
+  const isOnSearchPage = searchPages.includes(location.pathname);
+
+  // Build path with preserved search query for search pages
+  const getNavPath = (targetPath: string) => {
+    if (isOnSearchPage && currentQuery && searchPages.includes(targetPath)) {
+      return `${targetPath}?q=${encodeURIComponent(currentQuery)}`;
+    }
+    return targetPath;
+  };
 
   return (
     <motion.nav
@@ -44,7 +60,7 @@ export function Navbar() {
             return (
               <Link
                 key={item.path}
-                to={item.path}
+                to={getNavPath(item.path)}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive
