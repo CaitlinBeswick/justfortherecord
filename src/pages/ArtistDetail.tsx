@@ -732,12 +732,15 @@ const ArtistDetail = () => {
                       );
                       const isListened = listenedById || listenedByMetadata;
 
-                      // Check if this is a collaboration (different credited artist)
-                      const creditedArtists = release['artist-credit'];
+                      // Mark as collaboration if multiple artists are credited or if credited name differs
+                      const creditedArtists = release["artist-credit"];
                       const creditedName = creditedArtists && creditedArtists.length > 0
                         ? getArtistNames(creditedArtists)
                         : null;
-                      const isCollab = creditedName && creditedName.toLowerCase() !== artist.name.toLowerCase();
+                      const isCollab = !!creditedArtists && (
+                        creditedArtists.length > 1 ||
+                        (creditedArtists[0]?.artist?.name?.toLowerCase() || "") !== artist.name.toLowerCase()
+                      );
 
                       return (
                         <motion.div
@@ -755,7 +758,7 @@ const ArtistDetail = () => {
                             year={getYear(release["first-release-date"])}
                             loved={isAlbumLoved(release.id)}
                             hasEntries={userDiaryEntries.includes(release.id)}
-                            collabArtist={isCollab ? creditedName : undefined}
+                            collabArtist={isCollab ? (creditedName || "Collaboration") : undefined}
                             onClick={() => navigate(`/album/${release.id}`)}
                           />
                         </motion.div>
