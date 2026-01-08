@@ -607,7 +607,7 @@ const ArtistDetail = () => {
                         </span>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Only studio albums are shown by default. Use "Manage Releases" to show EPs, live albums, compilations, or hide specific releases.</p>
+                        <p>Default albums display studio releases only. To customise which albums you would like to display, use the Manage Releases feature.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -622,7 +622,7 @@ const ArtistDetail = () => {
                       </span>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p>Only studio albums are shown by default. Sign in to customize which release types to display (EPs, live albums, compilations, etc.)</p>
+                      <p>Default albums display studio releases only. Sign in to customise which albums you would like to display using the Manage Releases feature.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
