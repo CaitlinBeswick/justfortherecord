@@ -30,7 +30,7 @@ export function SearchAutocomplete({
 }: SearchAutocompleteProps) {
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const debouncedValue = useDebounce(value, 300);
+  const debouncedValue = useDebounce(value, 150);
 
   // Simple in-component prefix cache to keep autocomplete feeling instant while typing.
   // If the user keeps typing (query extends previous query), reuse previous suggestions locally.
