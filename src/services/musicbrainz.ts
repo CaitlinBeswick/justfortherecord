@@ -30,6 +30,7 @@ export interface MBReleaseGroup {
   "artist-credit"?: Array<{ artist: MBArtist }>;
   rating?: { value: number; "votes-count": number };
   disambiguation?: string;
+  score?: number; // MusicBrainz search relevance score (0-100)
   releases?: Array<{
     id?: string;
     title?: string;
@@ -99,13 +100,14 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
   // Search release-groups directly for better album discovery
   const data = await callMusicBrainz({ action: 'search-release-group', query });
   
-  // Map release-groups to our structure
+  // Map release-groups to our structure, including score for sorting
   const rawReleases: MBReleaseGroup[] = (data["release-groups"] || []).map((rg: any) => ({
     id: rg.id,
     title: rg.title,
     "primary-type": rg["primary-type"],
     "first-release-date": rg["first-release-date"],
     "artist-credit": rg["artist-credit"],
+    score: rg.score, // MusicBrainz relevance score
   }));
 
   // This app's "Albums" search should not be dominated by Singles.
@@ -142,7 +144,11 @@ export async function searchReleases(query: string): Promise<MBReleaseGroup[]> {
     }
   }
   
-  return Array.from(uniqueByTitleArtist.values());
+  // Sort by relevance score (highest first)
+  const sorted = Array.from(uniqueByTitleArtist.values())
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  
+  return sorted;
 }
 
 // Search for releases by a specific artist using their MusicBrainz artist ID
