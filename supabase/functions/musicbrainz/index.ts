@@ -459,37 +459,17 @@ serve(async (req) => {
     let data = await response.json();
     console.log(`MusicBrainz response received, keys: ${Object.keys(data).join(', ')}`);
 
-    // Post-process artist search results: filter to artists that have at least one release-group.
-    // MusicBrainz search can return many same-name entries with zero discography.
+    // Post-process artist search results: sort by relevance score.
+    // Skip the slow release-group checking - MusicBrainz score already prioritizes active artists.
     if (action === 'search-artist' && Array.isArray(data?.artists)) {
-      const sorted = [...data.artists].sort((a: any, b: any) => Number(b?.score || 0) - Number(a?.score || 0));
-
-      const checked: any[] = [];
-      const maxToCheck = 10; // Reduced to avoid rate limiting
+      const sorted = [...data.artists]
+        .sort((a: any, b: any) => Number(b?.score || 0) - Number(a?.score || 0))
+        .slice(0, 15); // Return top 15 results
       
-      console.log(`Checking releases for top ${maxToCheck} of ${sorted.length} artists`);
-      
-      for (const artist of sorted.slice(0, maxToCheck)) {
-        const id = artist?.id;
-        if (!isMusicBrainzId(id)) continue;
-        
-        const hasReleases = await artistHasAnyReleaseGroup(id);
-        // Include if has releases OR if check failed (null = unknown, don't exclude)
-        if (hasReleases === true) {
-          checked.push({ ...artist, has_releases: true });
-        } else if (hasReleases === null) {
-          // Rate limited or error - include with unknown status
-          checked.push({ ...artist, has_releases: undefined });
-        }
-        // hasReleases === false means confirmed no releases - exclude
-      }
-      
-      console.log(`Filtered to ${checked.length} artists with releases`);
-
       data = {
         ...data,
-        artists: checked,
-        count: checked.length,
+        artists: sorted,
+        count: sorted.length,
       };
     }
 
