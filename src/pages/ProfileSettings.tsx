@@ -753,21 +753,21 @@ const ProfileSettings = () => {
                   </div>
                 </div>
 
-                {/* Friends Privacy */}
+                {/* Following Privacy */}
                 <div className="space-y-4 rounded-lg border border-border bg-card p-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <Users className="h-4 w-4" />
-                    Friends Privacy
+                    Following Privacy
                   </div>
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label htmlFor="showFriendsCount" className="text-sm font-normal cursor-pointer">
-                          Show Friends Count
+                          Show Following Count
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                          Display how many friends you have
+                          Display how many people you follow
                         </p>
                       </div>
                       <Switch
@@ -780,10 +780,10 @@ const ProfileSettings = () => {
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label htmlFor="showFriendsList" className="text-sm font-normal cursor-pointer">
-                          Show Friends List
+                          Show Following List
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                          Let others see who your friends are
+                          Let others see who you follow
                         </p>
                       </div>
                       <Switch
@@ -796,10 +796,10 @@ const ProfileSettings = () => {
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label htmlFor="allowFriendRequests" className="text-sm font-normal cursor-pointer">
-                          Allow Friend Requests
+                          Allow Follow Requests
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                          Let others send you friend requests
+                          Let others send you follow requests
                         </p>
                       </div>
                       <Switch

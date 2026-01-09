@@ -37,7 +37,7 @@ const Friends = () => {
         <ProfileHeader />
         <div className="container mx-auto px-4 py-8 pb-20">
           <div className="flex flex-col md:flex-row md:gap-8">
-            <ProfileNav activeTab="friends" />
+            <ProfileNav activeTab="following" />
             <section className="flex-1 min-w-0">
               <FriendsSection />
             </section>

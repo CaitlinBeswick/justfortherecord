@@ -117,22 +117,22 @@ interface UserFriend {
   avatar_url: string | null;
 }
 
-type ProfileTab = "diary" | "albums" | "to_listen" | "friends" | "lists" | "artists";
+type ProfileTab = "diary" | "albums" | "to_listen" | "artists" | "lists" | "following";
 
 // Sort options for each tab
 type AlbumSortOption = 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc' | 'release-desc' | 'release-asc' | 'rating-high' | 'rating-low';
 type DiarySortOption = 'date-desc' | 'date-asc' | 'rating-desc' | 'rating-asc' | 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc';
 type ToListenSortOption = 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc' | 'date-added-desc' | 'date-added-asc';
 type ArtistSortOption = 'name-asc' | 'name-desc';
-type FriendSortOption = 'name-asc' | 'name-desc';
+type FollowingSortOption = 'name-asc' | 'name-desc';
 
 const tabs: { id: ProfileTab; label: string; icon: React.ReactNode }[] = [
   { id: "diary", label: "Diary", icon: <Calendar className="h-4 w-4" /> },
   { id: "albums", label: "Albums", icon: <Music className="h-4 w-4" /> },
   { id: "to_listen", label: "To Listen", icon: <Clock className="h-4 w-4" /> },
-  { id: "friends", label: "Friends", icon: <Users className="h-4 w-4" /> },
-  { id: "lists", label: "Lists", icon: <List className="h-4 w-4" /> },
   { id: "artists", label: "Artists", icon: <UserCheck className="h-4 w-4" /> },
+  { id: "lists", label: "Lists", icon: <List className="h-4 w-4" /> },
+  { id: "following", label: "Following", icon: <Users className="h-4 w-4" /> },
 ];
 
 const UserProfile = () => {
@@ -156,8 +156,8 @@ const UserProfile = () => {
   const [toListenSearch, setToListenSearch] = useState('');
   const [toListenSort, setToListenSort] = useState<ToListenSortOption>('date-added-desc');
   
-  const [friendSearch, setFriendSearch] = useState('');
-  const [friendSort, setFriendSort] = useState<FriendSortOption>('name-asc');
+  const [followingSearch, setFollowingSearch] = useState('');
+  const [followingSort, setFollowingSort] = useState<FollowingSortOption>('name-asc');
   
   const [artistSearch, setArtistSearch] = useState('');
   const [artistSort, setArtistSort] = useState<ArtistSortOption>('name-asc');
@@ -467,12 +467,12 @@ const UserProfile = () => {
     });
   }, [toListenAlbums, toListenSearch, toListenSort]);
 
-  // Filtered and sorted friends
-  const sortedFriends = useMemo(() => {
+  // Filtered and sorted following (friends)
+  const sortedFollowing = useMemo(() => {
     let result = userFriends;
     
-    if (friendSearch.trim()) {
-      const query = friendSearch.toLowerCase();
+    if (followingSearch.trim()) {
+      const query = followingSearch.toLowerCase();
       result = result.filter(f => 
         (f.display_name || '').toLowerCase().includes(query) ||
         (f.username || '').toLowerCase().includes(query)
@@ -482,13 +482,13 @@ const UserProfile = () => {
     return [...result].sort((a, b) => {
       const nameA = a.display_name || a.username || '';
       const nameB = b.display_name || b.username || '';
-      switch (friendSort) {
+      switch (followingSort) {
         case 'name-asc': return nameA.localeCompare(nameB);
         case 'name-desc': return nameB.localeCompare(nameA);
         default: return 0;
       }
     });
-  }, [userFriends, friendSearch, friendSort]);
+  }, [userFriends, followingSearch, followingSort]);
 
   // Filtered and sorted artists
   const sortedArtists = useMemo(() => {
@@ -566,7 +566,7 @@ const UserProfile = () => {
         case 'to_listen': return profile.show_albums; // Part of albums section
         case 'artists': return profile.show_artists;
         case 'lists': return profile.show_lists;
-        case 'friends': return profile.show_friends_list;
+        case 'following': return profile.show_friends_list;
         default: return true;
       }
     });
@@ -1195,23 +1195,23 @@ const UserProfile = () => {
                 </motion.div>
               )}
 
-              {/* Friends Tab */}
-              {activeTab === "friends" && (
+              {/* Following Tab */}
+              {activeTab === "following" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                    <h2 className="font-serif text-xl text-foreground">Friends ({userFriends.length})</h2>
+                    <h2 className="font-serif text-xl text-foreground">Following ({userFriends.length})</h2>
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          placeholder="Search friends..."
-                          value={friendSearch}
-                          onChange={(e) => setFriendSearch(e.target.value)}
+                          placeholder="Search following..."
+                          value={followingSearch}
+                          onChange={(e) => setFollowingSearch(e.target.value)}
                           className="pl-9 w-[180px]"
                         />
                       </div>
                       {userFriends.length > 0 && (
-                        <Select value={friendSort} onValueChange={(v) => setFriendSort(v as FriendSortOption)}>
+                        <Select value={followingSort} onValueChange={(v) => setFollowingSort(v as FollowingSortOption)}>
                           <SelectTrigger className="w-[140px]">
                             <ArrowUpDown className="h-4 w-4 mr-2" />
                             <SelectValue />
@@ -1224,9 +1224,9 @@ const UserProfile = () => {
                       )}
                     </div>
                   </div>
-                  {sortedFriends.length > 0 ? (
+                  {sortedFollowing.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                      {sortedFriends.map((friend, index) => (
+                      {sortedFollowing.map((friend, index) => (
                         <motion.div
                           key={friend.id}
                           initial={{ opacity: 0, y: 20 }}
@@ -1255,12 +1255,12 @@ const UserProfile = () => {
                   ) : userFriends.length > 0 ? (
                     <div className="text-center py-12">
                       <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                      <p className="text-muted-foreground">No friends match your search</p>
+                      <p className="text-muted-foreground">No matches found</p>
                     </div>
                   ) : (
                     <div className="text-center py-12">
                       <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                      <p className="text-muted-foreground">{displayName} hasn't added any friends yet</p>
+                      <p className="text-muted-foreground">{displayName} isn't following anyone yet</p>
                     </div>
                   )}
                 </motion.div>
