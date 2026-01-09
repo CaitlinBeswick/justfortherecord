@@ -26,12 +26,14 @@ interface ProfileCardDialogProps {
 
 // Minimal share UI (requested): copy link + download profile card
 const ShareOptions = ({ onCopyLink, copied }: { onCopyLink: () => void; copied: boolean }) => (
-  <div className="grid grid-cols-2 gap-2">
-    <Button onClick={onCopyLink} variant="outline" className="flex flex-col items-center gap-1 h-auto py-3">
-      {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-      <span className="text-xs">{copied ? "Copied" : "Copy link"}</span>
-    </Button>
-  </div>
+  <Button 
+    onClick={onCopyLink} 
+    variant="outline" 
+    className="w-full h-12 gap-2 text-sm font-medium"
+  >
+    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+    {copied ? "Copied!" : "Copy link"}
+  </Button>
 );
 
 export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogProps) => {
