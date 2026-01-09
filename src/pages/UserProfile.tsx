@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play } from "lucide-react";
+import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play, Lock } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,6 +30,16 @@ interface Profile {
   bio: string | null;
   location: string | null;
   favorite_genres: string[] | null;
+  // Privacy settings
+  is_public: boolean;
+  friends_only: boolean;
+  show_albums: boolean;
+  show_artists: boolean;
+  show_diary: boolean;
+  show_lists: boolean;
+  show_friends_count: boolean;
+  show_friends_list: boolean;
+  allow_friend_requests: boolean;
 }
 
 interface AlbumRating {
@@ -512,6 +522,41 @@ const UserProfile = () => {
 
   const friendshipStatus = userId ? getFriendshipStatus(userId) : 'none';
   const pendingRequest = pendingRequests.find(r => r.requester_id === userId);
+  const isFriend = friendshipStatus === 'friends';
+
+  // Check if viewer can see content based on privacy settings
+  const canViewProfile = profile ? (
+    profile.is_public && !profile.friends_only || 
+    (profile.friends_only && isFriend) ||
+    user?.id === userId
+  ) : false;
+
+  // Filter tabs based on privacy settings
+  const visibleTabs = useMemo(() => {
+    if (!profile) return tabs;
+    if (user?.id === userId) return tabs; // Own profile
+    
+    return tabs.filter(tab => {
+      if (!canViewProfile) return false;
+      
+      switch (tab.id) {
+        case 'diary': return profile.show_diary;
+        case 'albums': return profile.show_albums;
+        case 'to_listen': return profile.show_albums; // Part of albums section
+        case 'artists': return profile.show_artists;
+        case 'lists': return profile.show_lists;
+        case 'friends': return profile.show_friends_list;
+        default: return true;
+      }
+    });
+  }, [profile, canViewProfile, user?.id, userId]);
+
+  // Reset to first visible tab if current tab is hidden
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.find(t => t.id === activeTab)) {
+      setActiveTab(visibleTabs[0].id);
+    }
+  }, [visibleTabs, activeTab]);
 
   const handleFriendAction = () => {
     if (!userId) return;
@@ -586,7 +631,7 @@ const UserProfile = () => {
                   
                   {user && userId !== user.id && (
                     <>
-                      {friendshipStatus === 'none' && (
+                      {friendshipStatus === 'none' && profile.allow_friend_requests && (
                         <Button
                           onClick={handleFriendAction}
                           size="sm"
@@ -630,18 +675,24 @@ const UserProfile = () => {
                 )}
                 
                 <div className="flex items-center justify-center md:justify-start gap-6 mt-6">
-                  <div className="text-center">
-                    <p className="text-2xl font-semibold text-foreground">{albumCount}</p>
-                    <p className="text-xs text-muted-foreground">Albums</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-semibold text-foreground">{followedArtists.length}</p>
-                    <p className="text-xs text-muted-foreground">Artists</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-semibold text-foreground">{userFriends.length}</p>
-                    <p className="text-xs text-muted-foreground">Friends</p>
-                  </div>
+                  {canViewProfile && profile.show_albums && (
+                    <div className="text-center">
+                      <p className="text-2xl font-semibold text-foreground">{albumCount}</p>
+                      <p className="text-xs text-muted-foreground">Albums</p>
+                    </div>
+                  )}
+                  {canViewProfile && profile.show_artists && (
+                    <div className="text-center">
+                      <p className="text-2xl font-semibold text-foreground">{followedArtists.length}</p>
+                      <p className="text-xs text-muted-foreground">Artists</p>
+                    </div>
+                  )}
+                  {profile.show_friends_count && (
+                    <div className="text-center">
+                      <p className="text-2xl font-semibold text-foreground">{userFriends.length}</p>
+                      <p className="text-xs text-muted-foreground">Friends</p>
+                    </div>
+                  )}
                 </div>
 
                 {profile.favorite_genres && profile.favorite_genres.length > 0 && (
@@ -660,51 +711,75 @@ const UserProfile = () => {
           </div>
         </div>
 
+        {/* Private Profile Message */}
+        {!canViewProfile && (
+          <div className="container mx-auto px-4 py-16">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-4">
+                <Lock className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h2 className="font-serif text-xl text-foreground mb-2">This Profile is Private</h2>
+              <p className="text-muted-foreground max-w-md">
+                {profile.friends_only 
+                  ? "This user's profile is only visible to friends. Send a friend request to see their content."
+                  : "This user has set their profile to private."}
+              </p>
+              {user && userId !== user.id && friendshipStatus === 'none' && profile.allow_friend_requests && (
+                <Button onClick={handleFriendAction} className="mt-6" disabled={sendRequest.isPending}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Send Friend Request
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Content with sidebar layout matching Profile */}
-        <div className="container mx-auto px-4 py-8 pb-20">
-          <div className="flex flex-col md:flex-row md:gap-8">
-            {/* Desktop sidebar */}
-            <aside className="hidden md:block w-56 shrink-0">
-              <nav className="sticky top-24 space-y-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === tab.id
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    }`}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
-            </aside>
+        {canViewProfile && visibleTabs.length > 0 && (
+          <div className="container mx-auto px-4 py-8 pb-20">
+            <div className="flex flex-col md:flex-row md:gap-8">
+              {/* Desktop sidebar */}
+              <aside className="hidden md:block w-56 shrink-0">
+                <nav className="sticky top-24 space-y-1">
+                  {visibleTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        activeTab === tab.id
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </aside>
 
-            {/* Mobile grid navigation */}
-            <aside className="md:hidden w-full mb-6">
-              <nav className="grid grid-cols-2 gap-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === tab.id
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
-            </aside>
+              {/* Mobile grid navigation */}
+              <aside className="md:hidden w-full mb-6">
+                <nav className="grid grid-cols-2 gap-2">
+                  {visibleTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        activeTab === tab.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </aside>
 
-            {/* Tab Content */}
-            <section className="flex-1 min-w-0">
+              {/* Tab Content */}
+              <section className="flex-1 min-w-0">
               {/* Diary Tab */}
               {activeTab === "diary" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -1204,6 +1279,7 @@ const UserProfile = () => {
             </section>
           </div>
         </div>
+        )}
       </main>
     </div>
   );

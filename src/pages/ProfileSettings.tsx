@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Info } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Info, Shield, Eye, EyeOff, Users, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 
 interface Profile {
   id: string;
@@ -23,6 +25,16 @@ interface Profile {
   location: string | null;
   favorite_genres: string[] | null;
   default_release_types: string[];
+  // Privacy settings
+  is_public: boolean;
+  friends_only: boolean;
+  show_albums: boolean;
+  show_artists: boolean;
+  show_diary: boolean;
+  show_lists: boolean;
+  show_friends_count: boolean;
+  show_friends_list: boolean;
+  allow_friend_requests: boolean;
 }
 
 const RELEASE_TYPE_OPTIONS = [
@@ -74,6 +86,17 @@ const ProfileSettings = () => {
   const [newGenre, setNewGenre] = useState("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
+  
+  // Privacy settings state
+  const [isPublic, setIsPublic] = useState(true);
+  const [friendsOnly, setFriendsOnly] = useState(false);
+  const [showAlbums, setShowAlbums] = useState(true);
+  const [showArtists, setShowArtists] = useState(true);
+  const [showDiary, setShowDiary] = useState(true);
+  const [showLists, setShowLists] = useState(true);
+  const [showFriendsCount, setShowFriendsCount] = useState(true);
+  const [showFriendsList, setShowFriendsList] = useState(true);
+  const [allowFriendRequests, setAllowFriendRequests] = useState(true);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -108,6 +131,16 @@ const ProfileSettings = () => {
       setAvatarUrl(profile.avatar_url || "");
       setFavoriteGenres(profile.favorite_genres || []);
       setDefaultReleaseTypes(profile.default_release_types || ['Album']);
+      // Privacy settings
+      setIsPublic(profile.is_public ?? true);
+      setFriendsOnly(profile.friends_only ?? false);
+      setShowAlbums(profile.show_albums ?? true);
+      setShowArtists(profile.show_artists ?? true);
+      setShowDiary(profile.show_diary ?? true);
+      setShowLists(profile.show_lists ?? true);
+      setShowFriendsCount(profile.show_friends_count ?? true);
+      setShowFriendsList(profile.show_friends_list ?? true);
+      setAllowFriendRequests(profile.allow_friend_requests ?? true);
     }
   }, [profile]);
 
@@ -124,6 +157,16 @@ const ProfileSettings = () => {
           avatar_url: avatarUrl.trim() || null,
           favorite_genres: favoriteGenres.length > 0 ? favoriteGenres : null,
           default_release_types: defaultReleaseTypes.length > 0 ? defaultReleaseTypes : ['Album'],
+          // Privacy settings
+          is_public: isPublic,
+          friends_only: friendsOnly,
+          show_albums: showAlbums,
+          show_artists: showArtists,
+          show_diary: showDiary,
+          show_lists: showLists,
+          show_friends_count: showFriendsCount,
+          show_friends_list: showFriendsList,
+          allow_friend_requests: allowFriendRequests,
         })
         .eq('id', user!.id);
       
@@ -538,6 +581,178 @@ const ProfileSettings = () => {
                       </Label>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <Separator className="my-6" />
+
+              {/* Privacy Settings */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold text-foreground">Privacy Settings</h2>
+                </div>
+
+                {/* Profile Visibility */}
+                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Eye className="h-4 w-4" />
+                    Profile Visibility
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="isPublic" className="text-sm font-normal cursor-pointer">
+                          Public Profile
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Anyone can view your profile
+                        </p>
+                      </div>
+                      <Switch
+                        id="isPublic"
+                        checked={isPublic}
+                        onCheckedChange={(checked) => {
+                          setIsPublic(checked);
+                          if (!checked) setFriendsOnly(false);
+                        }}
+                      />
+                    </div>
+
+                    {isPublic && (
+                      <div className="flex items-center justify-between pl-4 border-l-2 border-border">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="friendsOnly" className="text-sm font-normal cursor-pointer">
+                            Friends Only
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Only friends can see your full profile
+                          </p>
+                        </div>
+                        <Switch
+                          id="friendsOnly"
+                          checked={friendsOnly}
+                          onCheckedChange={setFriendsOnly}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section Visibility */}
+                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <EyeOff className="h-4 w-4" />
+                    Hide Sections
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Choose which sections others can see on your profile
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showAlbums" className="text-sm font-normal cursor-pointer">
+                        Albums
+                      </Label>
+                      <Switch
+                        id="showAlbums"
+                        checked={showAlbums}
+                        onCheckedChange={setShowAlbums}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showArtists" className="text-sm font-normal cursor-pointer">
+                        Artists
+                      </Label>
+                      <Switch
+                        id="showArtists"
+                        checked={showArtists}
+                        onCheckedChange={setShowArtists}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showDiary" className="text-sm font-normal cursor-pointer">
+                        Diary
+                      </Label>
+                      <Switch
+                        id="showDiary"
+                        checked={showDiary}
+                        onCheckedChange={setShowDiary}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showLists" className="text-sm font-normal cursor-pointer">
+                        Lists
+                      </Label>
+                      <Switch
+                        id="showLists"
+                        checked={showLists}
+                        onCheckedChange={setShowLists}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Friends Privacy */}
+                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Users className="h-4 w-4" />
+                    Friends Privacy
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="showFriendsCount" className="text-sm font-normal cursor-pointer">
+                          Show Friends Count
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Display how many friends you have
+                        </p>
+                      </div>
+                      <Switch
+                        id="showFriendsCount"
+                        checked={showFriendsCount}
+                        onCheckedChange={setShowFriendsCount}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="showFriendsList" className="text-sm font-normal cursor-pointer">
+                          Show Friends List
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Let others see who your friends are
+                        </p>
+                      </div>
+                      <Switch
+                        id="showFriendsList"
+                        checked={showFriendsList}
+                        onCheckedChange={setShowFriendsList}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="allowFriendRequests" className="text-sm font-normal cursor-pointer">
+                          Allow Friend Requests
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Let others send you friend requests
+                        </p>
+                      </div>
+                      <Switch
+                        id="allowFriendRequests"
+                        checked={allowFriendRequests}
+                        onCheckedChange={setAllowFriendRequests}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

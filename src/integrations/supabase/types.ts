@@ -354,38 +354,65 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allow_friend_requests: boolean
           avatar_url: string | null
           bio: string | null
           created_at: string
           default_release_types: string[]
           display_name: string | null
           favorite_genres: string[] | null
+          friends_only: boolean
           id: string
+          is_public: boolean
           location: string | null
+          show_albums: boolean
+          show_artists: boolean
+          show_diary: boolean
+          show_friends_count: boolean
+          show_friends_list: boolean
+          show_lists: boolean
           updated_at: string
           username: string | null
         }
         Insert: {
+          allow_friend_requests?: boolean
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           default_release_types?: string[]
           display_name?: string | null
           favorite_genres?: string[] | null
+          friends_only?: boolean
           id: string
+          is_public?: boolean
           location?: string | null
+          show_albums?: boolean
+          show_artists?: boolean
+          show_diary?: boolean
+          show_friends_count?: boolean
+          show_friends_list?: boolean
+          show_lists?: boolean
           updated_at?: string
           username?: string | null
         }
         Update: {
+          allow_friend_requests?: boolean
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           default_release_types?: string[]
           display_name?: string | null
           favorite_genres?: string[] | null
+          friends_only?: boolean
           id?: string
+          is_public?: boolean
           location?: string | null
+          show_albums?: boolean
+          show_artists?: boolean
+          show_diary?: boolean
+          show_friends_count?: boolean
+          show_friends_list?: boolean
+          show_lists?: boolean
           updated_at?: string
           username?: string | null
         }
@@ -519,7 +546,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_view_profile: {
+        Args: { profile_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
