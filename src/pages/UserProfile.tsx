@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play, Lock, Ban, MoreHorizontal } from "lucide-react";
+import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play, Lock, Ban, MoreHorizontal, Target } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,8 +13,9 @@ import { getCoverArtUrl, getArtistImage } from "@/services/musicbrainz";
 import { useFriendships } from "@/hooks/useFriendships";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { format, startOfYear, isAfter } from "date-fns";
 import { FavoriteAlbums } from "@/components/profile/FavoriteAlbums";
+import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +48,7 @@ interface Profile {
   bio: string | null;
   location: string | null;
   favorite_genres: string[] | null;
+  yearly_listen_goal: number | null;
   // Privacy settings
   is_public: boolean;
   friends_only: boolean;
@@ -626,6 +628,14 @@ const UserProfile = () => {
   const displayName = profile.display_name || profile.username || 'User';
   const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
+  // Calculate this year's listen count for the listening challenge
+  const currentYear = new Date().getFullYear();
+  const thisYearStart = startOfYear(new Date());
+  const thisYearCount = diaryEntries.filter(entry => 
+    isAfter(new Date(entry.listened_on), thisYearStart) || 
+    new Date(entry.listened_on).getFullYear() === currentYear
+  ).length;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -764,6 +774,26 @@ const UserProfile = () => {
                     <div className="text-center">
                       <p className="text-2xl font-semibold text-foreground">{userFriends.length}</p>
                       <p className="text-xs text-muted-foreground">Friends</p>
+                    </div>
+                  )}
+                  
+                  {/* Listening Challenge */}
+                  {canViewProfile && profile.show_diary && profile.yearly_listen_goal && (
+                    <div className="hidden sm:flex items-center gap-3 pl-6 border-l border-border/50">
+                      <Target className="h-5 w-5 text-primary shrink-0" />
+                      <div className="min-w-[120px]">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
+                          <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
+                        </div>
+                        <Progress 
+                          value={Math.min((thisYearCount / profile.yearly_listen_goal) * 100, 100)} 
+                          className="h-1.5 mt-1"
+                        />
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {currentYear} Goal
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
