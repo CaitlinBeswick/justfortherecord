@@ -147,7 +147,7 @@ export function FriendsSection() {
                       <span className="text-xs text-muted-foreground">Pending</span>
                     )}
                     {status === 'friends' && (
-                      <span className="text-xs text-primary">Friends</span>
+                      <span className="text-xs text-primary">Following</span>
                     )}
                   </div>
                 );
@@ -163,7 +163,7 @@ export function FriendsSection() {
       {pendingRequests.length > 0 && (
         <div className="mb-8">
           <h3 className="text-lg font-medium text-foreground mb-4">
-            Friend Requests ({pendingRequests.length})
+            Follow Requests ({pendingRequests.length})
           </h3>
           <div className="space-y-2">
             {pendingRequests.map((request) => (
@@ -217,7 +217,7 @@ export function FriendsSection() {
       <div>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <h3 className="text-lg font-medium text-foreground">
-            Friends ({friends.length})
+            Following ({friends.length})
           </h3>
           {friends.length > 0 && (
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
@@ -283,9 +283,9 @@ export function FriendsSection() {
         ) : (
           <div className="text-center py-12">
             <User className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">No friends yet</p>
+            <p className="text-muted-foreground">Not following anyone yet</p>
             <p className="text-sm text-muted-foreground/60 mt-2">
-              Search for users above to add friends
+              Search for users above to follow
             </p>
           </div>
         )}
