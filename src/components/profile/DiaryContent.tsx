@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
-import { format } from "date-fns";
+import { format, startOfYear, isAfter } from "date-fns";
 import { toast } from "sonner";
 
 type DiarySortOption = "date" | "rating" | "artist" | "album";
@@ -74,6 +74,14 @@ export function DiaryContent() {
 
   const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
+  // Calculate this year's listen count
+  const thisYearStart = startOfYear(new Date());
+  const thisYearCount = diaryEntriesData.filter(entry => 
+    isAfter(new Date(entry.listened_on), thisYearStart) || 
+    new Date(entry.listened_on).getFullYear() === new Date().getFullYear()
+  ).length;
+  const currentYear = new Date().getFullYear();
+
   const filteredDiaryEntries = diaryEntriesData.filter(entry => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
@@ -119,9 +127,20 @@ export function DiaryContent() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h2 className="font-serif text-xl text-foreground">
-          Diary ({diaryEntriesData.length})
-        </h2>
+        <div className="flex items-center gap-4">
+          <h2 className="font-serif text-xl text-foreground">
+            Diary
+          </h2>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-muted-foreground">
+              <span className="font-semibold text-foreground">{thisYearCount}</span> in {currentYear}
+            </span>
+            <span className="text-muted-foreground/40">•</span>
+            <span className="text-muted-foreground">
+              <span className="font-semibold text-foreground">{diaryEntriesData.length}</span> total
+            </span>
+          </div>
+        </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
