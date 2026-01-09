@@ -104,6 +104,13 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
   const url = typeof window !== 'undefined' ? window.location.href : '';
   const shareText = `Check out ${displayName}'s music profile on JustForTheRecord`;
 
+  const openExternal = (targetUrl: string) => {
+    const win = window.open(targetUrl, "_blank", "noopener,noreferrer");
+    if (!win) {
+      toast.error("Pop-up blocked — please allow pop-ups to share.");
+    }
+  };
+
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -217,28 +224,30 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
   const handleTwitterShare = () => {
     const tweetText = encodeURIComponent(shareText);
     const tweetUrl = encodeURIComponent(url);
-    window.location.href = `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`;
+    openExternal(`https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`);
   };
 
   const handleFacebookShare = () => {
     const fbUrl = encodeURIComponent(url);
-    window.location.href = `https://www.facebook.com/sharer/sharer.php?u=${fbUrl}`;
+    openExternal(`https://www.facebook.com/sharer/sharer.php?u=${fbUrl}`);
   };
 
   const handleWhatsAppShare = () => {
     const waText = encodeURIComponent(`${shareText} ${url}`);
-    window.location.href = `https://api.whatsapp.com/send?text=${waText}`;
+    openExternal(`https://api.whatsapp.com/send?text=${waText}`);
   };
 
   const handleEmailShare = () => {
     const subject = encodeURIComponent(`${displayName}'s Music Profile`);
     const body = encodeURIComponent(`${shareText}\n\n${url}`);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    // mailto generally should not be opened in a new tab, but the preview iframe blocks navigations.
+    // Using openExternal gives the best chance of working here.
+    openExternal(`mailto:?subject=${subject}&body=${body}`);
   };
 
   const handleMessagesShare = () => {
     const smsText = encodeURIComponent(`${shareText} ${url}`);
-    window.location.href = `sms:?body=${smsText}`;
+    openExternal(`sms:?body=${smsText}`);
   };
 
   const handleInstagramShare = () => {
@@ -260,8 +269,7 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
         }
       }
     } else {
-      handleCopyLink();
-      toast.info("Share sheet not available - link copied instead");
+      toast.info("Share sheet not available on this device");
     }
   };
 
@@ -290,14 +298,13 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
             });
             toast.success("Shared successfully!");
           } catch (err) {
+            // user cancelled or share failed
             if ((err as Error).name !== "AbortError") {
-              // User didn't cancel, try clipboard
-              await copyImageToClipboard(blob);
+              toast.error("Couldn't open the share sheet on this device.");
             }
           }
         } else {
-          await copyImageToClipboard(blob);
-          toast.info("Share sheet not available - image copied to clipboard");
+          toast.info("AirDrop sharing is only available via the iOS share sheet.");
         }
         setIsGenerating(false);
         return;
@@ -305,44 +312,49 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
 
       // For Copy, just copy to clipboard
       if (method === 'copy') {
-        await copyImageToClipboard(blob);
+        const ok = await copyImageToClipboard(blob);
         setIsGenerating(false);
+        if (ok) toast.success("Image copied to clipboard!");
         return;
       }
 
       // For Instagram, copy to clipboard with message
       if (method === 'instagram') {
-        await copyImageToClipboard(blob);
-        toast.success("Image copied! Open Instagram and paste in your story or DM");
+        const ok = await copyImageToClipboard(blob);
+        if (ok) toast.success("Copied! Open Instagram and paste in your story/DM");
         setIsGenerating(false);
         return;
       }
 
       // For other platforms, copy image to clipboard and open the share URL with the profile link
-      await copyImageToClipboard(blob);
-      
-      // Small delay to ensure clipboard is ready, then open the platform
-      setTimeout(() => {
-        switch (method) {
-          case 'twitter':
-            window.location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText + " " + url)}`;
-            break;
-          case 'facebook':
-            window.location.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-            break;
-          case 'whatsapp':
-            window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + url)}`;
-            break;
-          case 'messages':
-            window.location.href = `sms:?body=${encodeURIComponent(shareText + " " + url)}`;
-            break;
-          case 'email':
-            window.location.href = `mailto:?subject=${encodeURIComponent(`${displayName}'s Music Profile`)}&body=${encodeURIComponent(shareText + "\n\n" + url)}`;
-            break;
-        }
-      }, 100);
-      
-      toast.success("Image copied! Paste it in your message after the app opens");
+      const ok = await copyImageToClipboard(blob);
+      if (!ok) {
+        setIsGenerating(false);
+        return;
+      }
+
+      // Then open the platform share UI (best-effort; some browsers/iframes may block it)
+      switch (method) {
+        case 'twitter':
+          openExternal(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText + " " + url)}`);
+          break;
+        case 'facebook':
+          openExternal(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`);
+          break;
+        case 'whatsapp':
+          openExternal(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + url)}`);
+          break;
+        case 'messages':
+          openExternal(`sms:?body=${encodeURIComponent(shareText + " " + url)}`);
+          break;
+        case 'email':
+          openExternal(
+            `mailto:?subject=${encodeURIComponent(`${displayName}'s Music Profile`)}&body=${encodeURIComponent(shareText + "\n\n" + url)}`
+          );
+          break;
+      }
+
+      toast.success("Image copied! Paste it after the app opens");
     } catch (error) {
       console.error("Error sharing:", error);
       toast.error("Failed to share");
@@ -351,46 +363,16 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
     }
   };
 
-  const copyImageToClipboard = async (blob: Blob) => {
+  const copyImageToClipboard = async (blob: Blob): Promise<boolean> => {
     try {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       setCopied(true);
-      toast.success("Image copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback: create a temporary download
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = `${displayName}-profile-card.png`;
-      link.href = url;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.info("Image downloaded to your device");
-    }
-  };
-
-  const handleDownload = async () => {
-    if (!cardRef.current) return;
-    setIsGenerating(true);
-    
-    try {
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: null,
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-      });
-      
-      const link = document.createElement('a');
-      link.download = `${displayName}-profile-card.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      toast.success("Profile card downloaded!");
-    } catch (error) {
-      console.error("Error generating image:", error);
-      toast.error("Failed to generate image");
-    } finally {
-      setIsGenerating(false);
+      return true;
+    } catch (e) {
+      console.error("Clipboard image write failed:", e);
+      toast.error("Image copy isn't supported here (often blocked in browsers/iframes). Use AirDrop on iOS or take a screenshot.");
+      return false;
     }
   };
 
