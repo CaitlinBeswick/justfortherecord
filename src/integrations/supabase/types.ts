@@ -397,6 +397,7 @@ export type Database = {
           show_lists: boolean
           updated_at: string
           username: string | null
+          yearly_listen_goal: number | null
         }
         Insert: {
           allow_friend_requests?: boolean
@@ -418,6 +419,7 @@ export type Database = {
           show_lists?: boolean
           updated_at?: string
           username?: string | null
+          yearly_listen_goal?: number | null
         }
         Update: {
           allow_friend_requests?: boolean
@@ -439,6 +441,7 @@ export type Database = {
           show_lists?: boolean
           updated_at?: string
           username?: string | null
+          yearly_listen_goal?: number | null
         }
         Relationships: []
       }

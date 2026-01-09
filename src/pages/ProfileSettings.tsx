@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Info, Shield, Eye, EyeOff, Users, Lock, Ban } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Info, Shield, Eye, EyeOff, Users, Lock, Ban, Target } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,6 +26,7 @@ interface Profile {
   location: string | null;
   favorite_genres: string[] | null;
   default_release_types: string[];
+  yearly_listen_goal: number | null;
   // Privacy settings
   is_public: boolean;
   friends_only: boolean;
@@ -87,6 +88,7 @@ const ProfileSettings = () => {
   const [newGenre, setNewGenre] = useState("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
+  const [yearlyListenGoal, setYearlyListenGoal] = useState<string>("");
   
   // Privacy settings state
   const [isPublic, setIsPublic] = useState(true);
@@ -148,6 +150,7 @@ const ProfileSettings = () => {
       setAvatarUrl(profile.avatar_url || "");
       setFavoriteGenres(profile.favorite_genres || []);
       setDefaultReleaseTypes(profile.default_release_types || ['Album']);
+      setYearlyListenGoal(profile.yearly_listen_goal?.toString() || "");
       // Privacy settings
       setIsPublic(profile.is_public ?? true);
       setFriendsOnly(profile.friends_only ?? false);
@@ -174,6 +177,7 @@ const ProfileSettings = () => {
           avatar_url: avatarUrl.trim() || null,
           favorite_genres: favoriteGenres.length > 0 ? favoriteGenres : null,
           default_release_types: defaultReleaseTypes.length > 0 ? defaultReleaseTypes : ['Album'],
+          yearly_listen_goal: yearlyListenGoal ? parseInt(yearlyListenGoal, 10) : null,
           // Privacy settings
           is_public: isPublic,
           friends_only: friendsOnly,
@@ -598,6 +602,41 @@ const ProfileSettings = () => {
                       </Label>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Yearly Listen Goal */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  <Label htmlFor="yearlyGoal">Yearly Listen Goal</Label>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Set a goal for how many albums you want to listen to this year. Leave empty to disable.
+                </p>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="yearlyGoal"
+                    type="number"
+                    placeholder="e.g. 100"
+                    value={yearlyListenGoal}
+                    onChange={(e) => setYearlyListenGoal(e.target.value)}
+                    className="bg-card w-32"
+                    min={1}
+                    max={9999}
+                  />
+                  <span className="text-sm text-muted-foreground">albums per year</span>
+                  {yearlyListenGoal && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setYearlyListenGoal("")}
+                      className="text-muted-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
 

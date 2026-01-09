@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, Play, Search } from "lucide-react";
+import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, Play, Search, Target } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { format, startOfYear, isAfter } from "date-fns";
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
 
 type DiarySortOption = "date" | "rating" | "artist" | "album";
 
@@ -71,6 +72,23 @@ export function DiaryContent() {
     },
     enabled: !!user,
   });
+
+  // Fetch user's yearly goal from profile
+  const { data: profile } = useQuery({
+    queryKey: ['profile-goal', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('yearly_listen_goal')
+        .eq('id', user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const yearlyGoal = profile?.yearly_listen_goal;
 
   const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
@@ -131,14 +149,13 @@ export function DiaryContent() {
           <h2 className="font-serif text-xl text-foreground">
             Diary
           </h2>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-muted-foreground">
-              <span className="font-semibold text-foreground">{thisYearCount}</span> in {currentYear}
-            </span>
-            <span className="text-muted-foreground/40">•</span>
-            <span className="text-muted-foreground">
-              <span className="font-semibold text-foreground">{diaryEntriesData.length}</span> total
-            </span>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-semibold text-foreground">{thisYearCount}</span>
+            {yearlyGoal ? (
+              <span className="text-muted-foreground">/ {yearlyGoal} in {currentYear}</span>
+            ) : (
+              <span className="text-muted-foreground">in {currentYear}</span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -175,6 +192,33 @@ export function DiaryContent() {
           </Select>
         </div>
       </div>
+
+      {/* Yearly Goal Progress */}
+      {yearlyGoal && (
+        <div className="mb-6 p-4 rounded-lg bg-card/50 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Target className="h-4 w-4 text-primary" />
+              <span className="font-medium text-foreground">
+                {currentYear} Goal
+              </span>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {Math.round((thisYearCount / yearlyGoal) * 100)}%
+            </span>
+          </div>
+          <Progress 
+            value={Math.min((thisYearCount / yearlyGoal) * 100, 100)} 
+            className="h-2"
+          />
+          <p className="text-xs text-muted-foreground mt-2">
+            {thisYearCount >= yearlyGoal 
+              ? `🎉 Goal reached! ${thisYearCount - yearlyGoal} bonus albums!`
+              : `${yearlyGoal - thisYearCount} more to go`
+            }
+          </p>
+        </div>
+      )}
 
       {sortedDiaryEntries.length > 0 ? (
         <div className="space-y-2">
