@@ -313,76 +313,163 @@ export function DiaryContent() {
       </AnimatePresence>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div className="flex items-center gap-4">
-            <h2 className="font-serif text-xl text-foreground">
-              Diary
-            </h2>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold text-foreground">{thisYearCount}</span>
+        {/* Listening Challenge Card - Always visible */}
+        <div className={`mb-6 p-5 rounded-xl border-2 ${yearlyGoal ? 'bg-card/50 border-border' : 'bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30'}`}>
+          <div className="flex items-start gap-4">
+            {/* Icon */}
+            <div className={`shrink-0 w-14 h-14 rounded-full flex items-center justify-center ${yearlyGoal ? 'bg-primary/10' : 'bg-primary/20'}`}>
+              <Target className={`h-7 w-7 ${yearlyGoal ? 'text-primary' : 'text-primary'}`} />
+            </div>
+            
+            <div className="flex-1 min-w-0">
               {yearlyGoal ? (
-                <span className="text-muted-foreground">/ {yearlyGoal} in {currentYear}</span>
-              ) : (
-                <span className="text-muted-foreground">in {currentYear}</span>
-              )}
-              <Popover open={isGoalPopoverOpen} onOpenChange={setIsGoalPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-3" align="start">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      <span className="font-medium text-sm">Set {currentYear} Goal</span>
-                    </div>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 100"
-                      value={goalInput}
-                      onChange={(e) => setGoalInput(e.target.value)}
-                      min="1"
-                      className="h-8"
-                    />
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        onClick={handleSaveGoal}
-                        disabled={updateGoalMutation.isPending}
-                        className="flex-1"
-                      >
-                        <Check className="h-3.5 w-3.5 mr-1" />
-                        Save
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => setIsGoalPopoverOpen(false)}
-                        className="flex-1"
-                      >
-                        <X className="h-3.5 w-3.5 mr-1" />
-                        Cancel
-                      </Button>
-                    </div>
-                    {yearlyGoal && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="w-full text-muted-foreground"
-                        onClick={() => {
-                          setGoalInput('');
-                          updateGoalMutation.mutate(null);
-                        }}
-                      >
-                        Remove goal
-                      </Button>
-                    )}
+                <>
+                  {/* Has Goal - Show Progress */}
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-semibold text-foreground">
+                      {currentYear} Listening Challenge
+                    </h3>
+                    <Popover open={isGoalPopoverOpen} onOpenChange={setIsGoalPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3 mr-1" />
+                          Edit goal
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-3" align="end">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Target className="h-4 w-4 text-primary" />
+                            <span className="font-medium text-sm">Update {currentYear} Goal</span>
+                          </div>
+                          <Input
+                            type="number"
+                            placeholder="e.g. 100"
+                            value={goalInput}
+                            onChange={(e) => setGoalInput(e.target.value)}
+                            min="1"
+                            className="h-9"
+                          />
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={handleSaveGoal}
+                              disabled={updateGoalMutation.isPending}
+                              className="flex-1"
+                            >
+                              <Check className="h-3.5 w-3.5 mr-1" />
+                              Save
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => setIsGoalPopoverOpen(false)}
+                              className="flex-1"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="w-full text-muted-foreground text-xs"
+                            onClick={() => {
+                              setGoalInput('');
+                              updateGoalMutation.mutate(null);
+                            }}
+                          >
+                            Remove goal
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                </PopoverContent>
-              </Popover>
+                  
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="text-3xl font-bold text-foreground">{thisYearCount}</span>
+                    <span className="text-lg text-muted-foreground">/ {yearlyGoal} albums</span>
+                    <span className="ml-auto text-sm font-medium text-primary">
+                      {Math.round((thisYearCount / yearlyGoal) * 100)}%
+                    </span>
+                  </div>
+                  
+                  <Progress 
+                    value={Math.min((thisYearCount / yearlyGoal) * 100, 100)} 
+                    className="h-2.5"
+                  />
+                  
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {thisYearCount >= yearlyGoal 
+                      ? `🎉 Goal reached! You've listened to ${thisYearCount - yearlyGoal} bonus albums!`
+                      : `${yearlyGoal - thisYearCount} albums to go. Keep listening!`
+                    }
+                  </p>
+                </>
+              ) : (
+                <>
+                  {/* No Goal - Show CTA */}
+                  <h3 className="font-semibold text-lg text-foreground mb-1">
+                    {currentYear} Listening Challenge
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Challenge yourself to listen to more albums this year! Set a goal and track your progress.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Popover open={isGoalPopoverOpen} onOpenChange={setIsGoalPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button size="sm" className="font-semibold">
+                          <Target className="h-4 w-4 mr-2" />
+                          Set a {currentYear} Goal
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 p-4" align="start">
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-semibold text-foreground mb-1">How many albums?</h4>
+                            <p className="text-xs text-muted-foreground">
+                              Set a target for how many albums you want to listen to in {currentYear}
+                            </p>
+                          </div>
+                          <Input
+                            type="number"
+                            placeholder="e.g. 52 (one per week!)"
+                            value={goalInput}
+                            onChange={(e) => setGoalInput(e.target.value)}
+                            min="1"
+                            className="h-10"
+                          />
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={handleSaveGoal}
+                              disabled={updateGoalMutation.isPending}
+                              className="flex-1"
+                            >
+                              Start Challenge
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              onClick={() => setIsGoalPopoverOpen(false)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <span className="text-sm text-muted-foreground">
+                      You've listened to <strong className="text-foreground">{thisYearCount}</strong> albums so far
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h2 className="font-serif text-xl text-foreground">
+            Diary
+          </h2>
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -417,33 +504,6 @@ export function DiaryContent() {
             </Select>
           </div>
         </div>
-
-        {/* Yearly Goal Progress */}
-        {yearlyGoal && (
-          <div className="mb-6 p-4 rounded-lg bg-card/50 border border-border">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Target className="h-4 w-4 text-primary" />
-                <span className="font-medium text-foreground">
-                  {currentYear} Goal
-                </span>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {Math.round((thisYearCount / yearlyGoal) * 100)}%
-              </span>
-            </div>
-            <Progress 
-              value={Math.min((thisYearCount / yearlyGoal) * 100, 100)} 
-              className="h-2"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              {thisYearCount >= yearlyGoal 
-                ? `🎉 Goal reached! ${thisYearCount - yearlyGoal} bonus albums!`
-                : `${yearlyGoal - thisYearCount} more to go`
-              }
-            </p>
-          </div>
-        )}
 
       {sortedDiaryEntries.length > 0 ? (
         <div className="space-y-2">
