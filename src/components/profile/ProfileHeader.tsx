@@ -1,11 +1,13 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Settings, User, Share2 } from "lucide-react";
+import { Settings, User, Share2, Target } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { FavoriteAlbums } from "@/components/profile/FavoriteAlbums";
 import { ProfileCardDialog } from "@/components/profile/ProfileCardDialog";
+import { Progress } from "@/components/ui/progress";
+import { startOfYear, isAfter } from "date-fns";
 
 interface Profile {
   id: string;
@@ -15,6 +17,7 @@ interface Profile {
   bio: string | null;
   location: string | null;
   favorite_genres: string[] | null;
+  yearly_listen_goal: number | null;
 }
 
 export const ProfileHeader = () => {
@@ -91,6 +94,27 @@ export const ProfileHeader = () => {
     enabled: !!user,
   });
 
+  // Fetch diary entries to calculate this year's listen count
+  const { data: diaryEntriesData = [] } = useQuery({
+    queryKey: ['diary-entries', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('listened_on')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const currentYear = new Date().getFullYear();
+  const thisYearStart = startOfYear(new Date());
+  const thisYearCount = diaryEntriesData.filter(entry => 
+    isAfter(new Date(entry.listened_on), thisYearStart) || 
+    new Date(entry.listened_on).getFullYear() === currentYear
+  ).length;
+
   const displayName = profile?.display_name || profile?.username || user?.email?.split('@')[0] || 'User';
   const artistsCount = followedArtists.length;
   const friendsCount = friendships.length;
@@ -155,6 +179,26 @@ export const ProfileHeader = () => {
                 <p className="text-2xl font-semibold text-foreground">{friendsCount}</p>
                 <p className="text-xs text-muted-foreground">Friends</p>
               </div>
+              
+              {/* Listening Challenge */}
+              {profile?.yearly_listen_goal && thisYearCount !== undefined && (
+                <div className="hidden sm:flex items-center gap-3 pl-6 border-l border-border/50">
+                  <Target className="h-5 w-5 text-primary shrink-0" />
+                  <div className="min-w-[120px]">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
+                      <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
+                    </div>
+                    <Progress 
+                      value={Math.min((thisYearCount / profile.yearly_listen_goal) * 100, 100)} 
+                      className="h-1.5 mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {currentYear} Goal
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {profile?.favorite_genres && profile.favorite_genres.length > 0 && (
