@@ -263,7 +263,12 @@ export function ActivityFeed() {
                         {activity.albumTitle}
                       </span>
                       <span className="text-muted-foreground"> by </span>
-                      <span className="text-muted-foreground">{activity.artistName}</span>
+                      <span 
+                        className="font-medium text-foreground hover:text-primary cursor-pointer transition-colors"
+                        onClick={() => navigate(`/search?q=${encodeURIComponent(activity.artistName || '')}&type=artist`)}
+                      >
+                        {activity.artistName}
+                      </span>
                     </>
                   )}
                 </p>
