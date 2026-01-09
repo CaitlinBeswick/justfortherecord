@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play, Lock } from "lucide-react";
+import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play, Lock, Ban, MoreHorizontal } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,9 +11,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { getCoverArtUrl, getArtistImage } from "@/services/musicbrainz";
 import { useFriendships } from "@/hooks/useFriendships";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { FavoriteAlbums } from "@/components/profile/FavoriteAlbums";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -121,8 +138,10 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>("diary");
-  const { sendRequest, acceptRequest, getFriendshipStatus, pendingRequests } = useFriendships();
+  const { sendRequest, acceptRequest, getFriendshipStatus, pendingRequests, removeFriend } = useFriendships();
+  const { isUserBlocked, blockUser, unblockUser } = useBlockedUsers();
   const [artistImages, setArtistImages] = useState<Record<string, string | null>>({});
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
 
   // Search and filter states
   const [diarySearch, setDiarySearch] = useState('');
@@ -568,6 +587,19 @@ const UserProfile = () => {
     }
   };
 
+  const handleBlockUser = () => {
+    if (!userId) return;
+    blockUser.mutate({ userId });
+    setShowBlockDialog(false);
+  };
+
+  const handleUnblockUser = () => {
+    if (!userId) return;
+    unblockUser.mutate(userId);
+  };
+
+  const isBlocked = userId ? isUserBlocked(userId) : false;
+
   if (profileLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -631,38 +663,79 @@ const UserProfile = () => {
                   
                   {user && userId !== user.id && (
                     <>
-                      {friendshipStatus === 'none' && profile.allow_friend_requests && (
+                      {!isBlocked && (
+                        <>
+                          {friendshipStatus === 'none' && profile.allow_friend_requests && (
+                            <Button
+                              onClick={handleFriendAction}
+                              size="sm"
+                              disabled={sendRequest.isPending}
+                            >
+                              <UserPlus className="h-4 w-4 mr-1" />
+                              Add Friend
+                            </Button>
+                          )}
+                          {friendshipStatus === 'pending-sent' && (
+                            <Button size="sm" variant="secondary" disabled>
+                              <Clock className="h-4 w-4 mr-1" />
+                              Request Sent
+                            </Button>
+                          )}
+                          {friendshipStatus === 'pending-received' && (
+                            <Button
+                              onClick={handleFriendAction}
+                              size="sm"
+                              disabled={acceptRequest.isPending}
+                            >
+                              <UserCheck className="h-4 w-4 mr-1" />
+                              Accept Request
+                            </Button>
+                          )}
+                          {friendshipStatus === 'friends' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium">
+                              <UserCheck className="h-4 w-4" />
+                              Friends
+                            </span>
+                          )}
+                        </>
+                      )}
+                      
+                      {isBlocked && (
                         <Button
-                          onClick={handleFriendAction}
+                          onClick={handleUnblockUser}
                           size="sm"
-                          disabled={sendRequest.isPending}
+                          variant="outline"
+                          disabled={unblockUser.isPending}
                         >
-                          <UserPlus className="h-4 w-4 mr-1" />
-                          Add Friend
+                          <Ban className="h-4 w-4 mr-1" />
+                          Unblock User
                         </Button>
                       )}
-                      {friendshipStatus === 'pending-sent' && (
-                        <Button size="sm" variant="secondary" disabled>
-                          <Clock className="h-4 w-4 mr-1" />
-                          Request Sent
-                        </Button>
-                      )}
-                      {friendshipStatus === 'pending-received' && (
-                        <Button
-                          onClick={handleFriendAction}
-                          size="sm"
-                          disabled={acceptRequest.isPending}
-                        >
-                          <UserCheck className="h-4 w-4 mr-1" />
-                          Accept Request
-                        </Button>
-                      )}
-                      {friendshipStatus === 'friends' && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium">
-                          <UserCheck className="h-4 w-4" />
-                          Friends
-                        </span>
-                      )}
+                      
+                      {/* More options dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {!isBlocked ? (
+                            <DropdownMenuItem 
+                              onClick={() => setShowBlockDialog(true)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Ban className="h-4 w-4 mr-2" />
+                              Block User
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={handleUnblockUser}>
+                              <Ban className="h-4 w-4 mr-2" />
+                              Unblock User
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </>
                   )}
                 </div>
@@ -1281,6 +1354,33 @@ const UserProfile = () => {
         </div>
         )}
       </main>
+
+      {/* Block User Confirmation Dialog */}
+      <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Block {displayName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Blocking this user will:
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Prevent them from viewing your profile</li>
+                <li>Prevent them from sending you friend requests</li>
+                <li>Remove any existing friendship</li>
+              </ul>
+              <p className="mt-2">You can unblock them at any time from your settings.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBlockUser}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Block User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
