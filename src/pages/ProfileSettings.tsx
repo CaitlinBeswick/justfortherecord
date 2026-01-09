@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Info, Shield, Eye, EyeOff, Users, Lock } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Info, Shield, Eye, EyeOff, Users, Lock, Ban } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 
 interface Profile {
   id: string;
@@ -98,7 +99,23 @@ const ProfileSettings = () => {
   const [showFriendsList, setShowFriendsList] = useState(true);
   const [allowFriendRequests, setAllowFriendRequests] = useState(true);
 
-  // Redirect if not logged in
+  // Blocked users
+  const { blockedUsers, unblockUser } = useBlockedUsers();
+
+  // Fetch blocked user profiles for display
+  const { data: blockedProfiles = [] } = useQuery({
+    queryKey: ['blocked-user-profiles', blockedUsers.map(b => b.blocked_id)],
+    queryFn: async () => {
+      if (blockedUsers.length === 0) return [];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', blockedUsers.map(b => b.blocked_id));
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: blockedUsers.length > 0,
+  });
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
@@ -753,6 +770,63 @@ const ProfileSettings = () => {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* Blocked Users */}
+                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Ban className="h-4 w-4" />
+                    Blocked Users
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Blocked users cannot view your profile or send you friend requests.
+                  </p>
+
+                  {blockedProfiles.length > 0 ? (
+                    <div className="space-y-2">
+                      {blockedProfiles.map((blockedUser) => (
+                        <div 
+                          key={blockedUser.id}
+                          className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
+                        >
+                          <div className="flex items-center gap-3">
+                            {blockedUser.avatar_url ? (
+                              <img
+                                src={blockedUser.avatar_url}
+                                alt=""
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                                <User className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                {blockedUser.display_name || blockedUser.username || 'User'}
+                              </p>
+                              {blockedUser.username && (
+                                <p className="text-xs text-muted-foreground">@{blockedUser.username}</p>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => unblockUser.mutate(blockedUser.id)}
+                            disabled={unblockUser.isPending}
+                          >
+                            Unblock
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground/60 text-center py-4">
+                      You haven't blocked anyone
+                    </p>
+                  )}
                 </div>
               </div>
 
