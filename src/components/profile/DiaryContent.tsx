@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, Play, Search, Target } from "lucide-react";
+import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, Play, Search, Target, Pencil, Check, X, Trophy, PartyPopper } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -8,15 +8,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { format, startOfYear, isAfter } from "date-fns";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type DiarySortOption = "date" | "rating" | "artist" | "album";
 
@@ -45,6 +51,11 @@ export function DiaryContent() {
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
   const [sortAscending, setSortAscending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [goalInput, setGoalInput] = useState('');
+  const [isGoalPopoverOpen, setIsGoalPopoverOpen] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [hasShownCelebration, setHasShownCelebration] = useState(false);
+  const prevGoalReached = useRef<boolean | null>(null);
 
   const { data: ratings = [] } = useQuery({
     queryKey: ['user-album-ratings-basic', user?.id],
@@ -88,6 +99,24 @@ export function DiaryContent() {
     enabled: !!user,
   });
 
+  const updateGoalMutation = useMutation({
+    mutationFn: async (newGoal: number | null) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ yearly_listen_goal: newGoal })
+        .eq('id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile-goal'] });
+      setIsGoalPopoverOpen(false);
+      toast.success("Goal updated!");
+    },
+    onError: () => {
+      toast.error("Failed to update goal");
+    },
+  });
+
   const yearlyGoal = profile?.yearly_listen_goal;
 
   const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
@@ -99,6 +128,38 @@ export function DiaryContent() {
     new Date(entry.listened_on).getFullYear() === new Date().getFullYear()
   ).length;
   const currentYear = new Date().getFullYear();
+
+  // Check for goal reached and trigger celebration
+  const goalReached = yearlyGoal ? thisYearCount >= yearlyGoal : false;
+  
+  useEffect(() => {
+    // Only trigger celebration when we first reach the goal (transition from false to true)
+    if (goalReached && prevGoalReached.current === false && !hasShownCelebration) {
+      setShowCelebration(true);
+      setHasShownCelebration(true);
+      const timer = setTimeout(() => setShowCelebration(false), 5000);
+      return () => clearTimeout(timer);
+    }
+    prevGoalReached.current = goalReached;
+  }, [goalReached, hasShownCelebration]);
+
+  // Update goal input when popover opens
+  useEffect(() => {
+    if (isGoalPopoverOpen) {
+      setGoalInput(yearlyGoal?.toString() || '');
+    }
+  }, [isGoalPopoverOpen, yearlyGoal]);
+
+  const handleSaveGoal = () => {
+    const parsed = parseInt(goalInput);
+    if (goalInput.trim() === '') {
+      updateGoalMutation.mutate(null);
+    } else if (!isNaN(parsed) && parsed > 0) {
+      updateGoalMutation.mutate(parsed);
+    } else {
+      toast.error("Please enter a valid number");
+    }
+  };
 
   const filteredDiaryEntries = diaryEntriesData.filter(entry => {
     if (!searchQuery.trim()) return true;
@@ -143,82 +204,246 @@ export function DiaryContent() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <div className="flex items-center gap-4">
-          <h2 className="font-serif text-xl text-foreground">
-            Diary
-          </h2>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="font-semibold text-foreground">{thisYearCount}</span>
-            {yearlyGoal ? (
-              <span className="text-muted-foreground">/ {yearlyGoal} in {currentYear}</span>
-            ) : (
-              <span className="text-muted-foreground">in {currentYear}</span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search diary..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 w-[180px]"
-            />
-          </div>
-          <Select 
-            value={`${diarySort}-${sortAscending ? 'asc' : 'desc'}`} 
-            onValueChange={(v) => {
-              const [sort, dir] = v.split('-') as [DiarySortOption, string];
-              setDiarySort(sort);
-              setSortAscending(dir === 'asc');
-            }}
+    <>
+      {/* Goal Celebration Overlay */}
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
           >
-            <SelectTrigger className="w-[160px] h-8 text-sm">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="date-desc">Date (Newest)</SelectItem>
-              <SelectItem value="date-asc">Date (Oldest)</SelectItem>
-              <SelectItem value="rating-desc">Rating (High-Low)</SelectItem>
-              <SelectItem value="rating-asc">Rating (Low-High)</SelectItem>
-              <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
-              <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
-              <SelectItem value="album-asc">Album (A-Z)</SelectItem>
-              <SelectItem value="album-desc">Album (Z-A)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.9 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-background pointer-events-auto"
+              onClick={() => setShowCelebration(false)}
+            />
 
-      {/* Yearly Goal Progress */}
-      {yearlyGoal && (
-        <div className="mb-6 p-4 rounded-lg bg-card/50 border border-border">
-          <div className="flex items-center justify-between mb-2">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: "spring", damping: 12, stiffness: 150 }}
+              className="relative z-10 flex flex-col items-center gap-6"
+            >
+              {/* Confetti-like particles */}
+              {[...Array(12)].map((_, i) => {
+                const angle = (i * 360) / 12;
+                const radians = (angle * Math.PI) / 180;
+                const colors = ['text-primary', 'text-yellow-400', 'text-green-400', 'text-pink-400'];
+                
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ 
+                      opacity: 0,
+                      x: 0,
+                      y: 0,
+                      scale: 0,
+                    }}
+                    animate={{
+                      opacity: [0, 1, 1, 0],
+                      x: Math.cos(radians) * 180,
+                      y: Math.sin(radians) * 180,
+                      scale: [0, 1.5, 1, 0],
+                      rotate: [0, 360],
+                    }}
+                    transition={{
+                      duration: 2,
+                      delay: 0.3 + i * 0.1,
+                      repeat: Infinity,
+                      repeatDelay: 1,
+                      ease: "easeOut",
+                    }}
+                    className="absolute"
+                  >
+                    {i % 2 === 0 ? (
+                      <Trophy className={`h-6 w-6 ${colors[i % colors.length]}`} />
+                    ) : (
+                      <PartyPopper className={`h-6 w-6 ${colors[i % colors.length]}`} />
+                    )}
+                  </motion.div>
+                );
+              })}
+
+              {/* Main celebration icon */}
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", damping: 10, stiffness: 100 }}
+              >
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-4 border-primary/30">
+                  <Target className="h-16 w-16 text-primary" />
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="text-center"
+              >
+                <motion.h3 
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="font-serif text-3xl text-foreground font-bold"
+                >
+                  🎉 Goal Reached!
+                </motion.h3>
+                <p className="text-muted-foreground mt-2 max-w-xs">
+                  You've listened to {thisYearCount} albums in {currentYear}!
+                </p>
+              </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.6 }}
+                transition={{ delay: 1.5 }}
+                className="text-xs text-muted-foreground pointer-events-auto cursor-pointer"
+                onClick={() => setShowCelebration(false)}
+              >
+                Click anywhere to dismiss
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-center gap-4">
+            <h2 className="font-serif text-xl text-foreground">
+              Diary
+            </h2>
             <div className="flex items-center gap-2 text-sm">
-              <Target className="h-4 w-4 text-primary" />
-              <span className="font-medium text-foreground">
-                {currentYear} Goal
+              <span className="font-semibold text-foreground">{thisYearCount}</span>
+              {yearlyGoal ? (
+                <span className="text-muted-foreground">/ {yearlyGoal} in {currentYear}</span>
+              ) : (
+                <span className="text-muted-foreground">in {currentYear}</span>
+              )}
+              <Popover open={isGoalPopoverOpen} onOpenChange={setIsGoalPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-3" align="start">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-sm">Set {currentYear} Goal</span>
+                    </div>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 100"
+                      value={goalInput}
+                      onChange={(e) => setGoalInput(e.target.value)}
+                      min="1"
+                      className="h-8"
+                    />
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={handleSaveGoal}
+                        disabled={updateGoalMutation.isPending}
+                        className="flex-1"
+                      >
+                        <Check className="h-3.5 w-3.5 mr-1" />
+                        Save
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setIsGoalPopoverOpen(false)}
+                        className="flex-1"
+                      >
+                        <X className="h-3.5 w-3.5 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                    {yearlyGoal && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full text-muted-foreground"
+                        onClick={() => {
+                          setGoalInput('');
+                          updateGoalMutation.mutate(null);
+                        }}
+                      >
+                        Remove goal
+                      </Button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search diary..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-[180px]"
+              />
+            </div>
+            <Select 
+              value={`${diarySort}-${sortAscending ? 'asc' : 'desc'}`} 
+              onValueChange={(v) => {
+                const [sort, dir] = v.split('-') as [DiarySortOption, string];
+                setDiarySort(sort);
+                setSortAscending(dir === 'asc');
+              }}
+            >
+              <SelectTrigger className="w-[160px] h-8 text-sm">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+                <SelectItem value="rating-desc">Rating (High-Low)</SelectItem>
+                <SelectItem value="rating-asc">Rating (Low-High)</SelectItem>
+                <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
+                <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
+                <SelectItem value="album-asc">Album (A-Z)</SelectItem>
+                <SelectItem value="album-desc">Album (Z-A)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Yearly Goal Progress */}
+        {yearlyGoal && (
+          <div className="mb-6 p-4 rounded-lg bg-card/50 border border-border">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Target className="h-4 w-4 text-primary" />
+                <span className="font-medium text-foreground">
+                  {currentYear} Goal
+                </span>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {Math.round((thisYearCount / yearlyGoal) * 100)}%
               </span>
             </div>
-            <span className="text-sm text-muted-foreground">
-              {Math.round((thisYearCount / yearlyGoal) * 100)}%
-            </span>
+            <Progress 
+              value={Math.min((thisYearCount / yearlyGoal) * 100, 100)} 
+              className="h-2"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              {thisYearCount >= yearlyGoal 
+                ? `🎉 Goal reached! ${thisYearCount - yearlyGoal} bonus albums!`
+                : `${yearlyGoal - thisYearCount} more to go`
+              }
+            </p>
           </div>
-          <Progress 
-            value={Math.min((thisYearCount / yearlyGoal) * 100, 100)} 
-            className="h-2"
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            {thisYearCount >= yearlyGoal 
-              ? `🎉 Goal reached! ${thisYearCount - yearlyGoal} bonus albums!`
-              : `${yearlyGoal - thisYearCount} more to go`
-            }
-          </p>
-        </div>
-      )}
+        )}
 
       {sortedDiaryEntries.length > 0 ? (
         <div className="space-y-2">
@@ -330,6 +555,7 @@ export function DiaryContent() {
           </button>
         </div>
       )}
-    </motion.div>
+      </motion.div>
+    </>
   );
 }
