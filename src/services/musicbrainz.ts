@@ -338,10 +338,15 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
   }
   
   try {
-    // Search for artists with similar genres
-    // Use the first 2 genres for better matching
-    const genreQuery = genres.slice(0, 2).map(g => `tag:"${g}"`).join(' AND ');
-    const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery, limit: limit + 10 });
+    // For larger result sets, use more genres with OR to get more matches
+    // For small previews (limit <= 8), use AND for better precision
+    const useOr = limit > 8;
+    const genresToUse = useOr ? genres.slice(0, 4) : genres.slice(0, 2);
+    const genreQuery = genresToUse.map(g => `tag:"${g}"`).join(useOr ? ' OR ' : ' AND ');
+    
+    // Request more than needed to account for filtering out the current artist
+    const requestLimit = Math.min(limit + 20, 100);
+    const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery, limit: requestLimit });
     const artists: MBArtist[] = data.artists || [];
     
     // Filter out the current artist and return top matches
