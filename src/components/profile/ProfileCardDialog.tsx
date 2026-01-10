@@ -262,7 +262,7 @@ export const ProfileCardDialog = ({ children, displayName }: ProfileCardDialogPr
                   </div>
                   <div className="text-center">
                     <p className="text-lg font-bold text-foreground">{friendsCount}</p>
-                    <p className="text-xs text-muted-foreground">Friends</p>
+                    <p className="text-xs text-muted-foreground">Following</p>
                   </div>
                 </div>
 

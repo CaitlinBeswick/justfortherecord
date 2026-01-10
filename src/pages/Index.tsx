@@ -61,7 +61,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Friends Activity */}
+      {/* Following Activity */}
       <section className="container mx-auto px-4 py-12">
         <motion.div
           initial="hidden"
@@ -71,7 +71,7 @@ const Index = () => {
         >
           <div className="flex items-center gap-3 mb-6">
             <Activity className="h-5 w-5 text-primary" />
-            <h2 className="font-serif text-2xl text-foreground">Friends Activity</h2>
+            <h2 className="font-serif text-2xl text-foreground">Following Activity</h2>
           </div>
           
           <ActivityFeed />
