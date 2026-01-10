@@ -332,7 +332,7 @@ export async function getArtist(id: string): Promise<MBArtist> {
   return await callMusicBrainz({ action: 'get-artist', id });
 }
 
-export async function getSimilarArtists(artistId: string, artistName: string, genres: string[]): Promise<MBArtist[]> {
+export async function getSimilarArtists(artistId: string, artistName: string, genres: string[], limit: number = 8): Promise<MBArtist[]> {
   if (!isValidId(artistId) || genres.length === 0) {
     return [];
   }
@@ -341,13 +341,13 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
     // Search for artists with similar genres
     // Use the first 2 genres for better matching
     const genreQuery = genres.slice(0, 2).map(g => `tag:"${g}"`).join(' AND ');
-    const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery });
+    const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery, limit: limit + 10 });
     const artists: MBArtist[] = data.artists || [];
     
     // Filter out the current artist and return top matches
     return artists
       .filter(a => a.id !== artistId && a.name.toLowerCase() !== artistName.toLowerCase())
-      .slice(0, 8);
+      .slice(0, limit);
   } catch (error) {
     console.error('Failed to fetch similar artists:', error);
     return [];
