@@ -144,18 +144,18 @@ export function useFriendships() {
         .insert({
           user_id: addresseeId,
           type: 'friend_request',
-          title: 'New Friend Request',
-          message: `${senderName} wants to be your friend`,
+          title: 'New Follow Request',
+          message: `${senderName} wants to follow you`,
           data: { requester_id: user.id }
         });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friendships'] });
-      toast.success("Friend request sent!");
+      toast.success("Follow request sent!");
     },
     onError: (error: any) => {
       if (error.code === '23505') {
-        toast.error("Friend request already exists");
+        toast.error("Follow request already exists");
       } else {
         toast.error("Failed to send request");
       }
@@ -198,14 +198,14 @@ export function useFriendships() {
         .insert({
           user_id: friendship.requester_id,
           type: 'friend_request_accepted',
-          title: 'Friend Request Accepted',
-          message: `${accepterName} accepted your friend request`,
+          title: 'Follow Request Accepted',
+          message: `${accepterName} accepted your follow request`,
           data: { accepter_id: user.id }
         });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friendships'] });
-      toast.success("Friend request accepted!");
+      toast.success("Follow request accepted!");
     },
     onError: () => {
       toast.error("Failed to accept request");
@@ -231,7 +231,7 @@ export function useFriendships() {
     }
   });
 
-  // Remove friend
+  // Remove from following
   const removeFriend = useMutation({
     mutationFn: async (friendshipId: string) => {
       const { error } = await supabase
@@ -243,10 +243,10 @@ export function useFriendships() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friendships'] });
-      toast.success("Friend removed");
+      toast.success("Unfollowed");
     },
     onError: () => {
-      toast.error("Failed to remove friend");
+      toast.error("Failed to unfollow");
     }
   });
 

@@ -285,7 +285,7 @@ export function FriendsSection() {
             <User className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-muted-foreground">Not following anyone yet</p>
             <p className="text-sm text-muted-foreground/60 mt-2">
-              Search for users above to follow
+              Search for users above to start following
             </p>
           </div>
         )}

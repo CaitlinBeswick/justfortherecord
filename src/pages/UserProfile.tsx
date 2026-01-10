@@ -682,7 +682,7 @@ const UserProfile = () => {
                               disabled={sendRequest.isPending}
                             >
                               <UserPlus className="h-4 w-4 mr-1" />
-                              Add Friend
+                              Follow
                             </Button>
                           )}
                           {friendshipStatus === 'pending-sent' && (
