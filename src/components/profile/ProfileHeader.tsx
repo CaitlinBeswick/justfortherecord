@@ -117,7 +117,7 @@ export const ProfileHeader = () => {
 
   const displayName = profile?.display_name || profile?.username || user?.email?.split('@')[0] || 'User';
   const artistsCount = followedArtists.length;
-  const friendsCount = friendships.length;
+  const followingCount = friendships.length;
 
   return (
     <div className="gradient-hero">
@@ -176,8 +176,8 @@ export const ProfileHeader = () => {
                 <p className="text-xs text-muted-foreground">Artists</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-semibold text-foreground">{friendsCount}</p>
-                <p className="text-xs text-muted-foreground">Friends</p>
+                <p className="text-2xl font-semibold text-foreground">{followingCount}</p>
+                <p className="text-xs text-muted-foreground">Following</p>
               </div>
               
               {/* Listening Challenge */}
