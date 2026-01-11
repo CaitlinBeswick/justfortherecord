@@ -523,8 +523,13 @@ const ArtistDetail = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      {/* 100% Completion Celebration */}
-      {user && <VinylCelebration isComplete={completionPercentage === 100 && releases.length > 0} artistName={artist.name} />}
+      {/* 100% Completion Celebration - only show when data is fully loaded and stable */}
+      {user && !isCheckingOfficial && (
+        <VinylCelebration 
+          isComplete={completionPercentage === 100 && totalDisplayedReleases > 0 && allDisplayedReleases.length > 0} 
+          artistName={artist.name} 
+        />
+      )}
       
       <main className="pt-16">
         {/* Hero Section */}
