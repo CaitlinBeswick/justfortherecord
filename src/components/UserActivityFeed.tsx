@@ -201,7 +201,7 @@ export function UserActivityFeed() {
                     <>
                       <span 
                         className="font-medium text-foreground hover:text-primary cursor-pointer transition-colors"
-                        onClick={() => navigate(`/album/${activity.albumId}`)}
+                        onClick={() => activity.albumId && navigate(`/album/${activity.albumId}`)}
                       >
                         {activity.albumTitle}
                       </span>
@@ -239,7 +239,7 @@ export function UserActivityFeed() {
               {activity.albumId && (
                 <div 
                   className="w-12 h-12 rounded overflow-hidden shrink-0 cursor-pointer"
-                  onClick={() => navigate(`/album/${activity.albumId}`)}
+                  onClick={() => activity.albumId && navigate(`/album/${activity.albumId}`)}
                 >
                   <img
                     src={getCoverArtUrl(activity.albumId, '250')}
