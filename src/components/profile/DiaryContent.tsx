@@ -466,10 +466,10 @@ export function DiaryContent() {
 
                 <div 
                   className="w-10 h-10 rounded overflow-hidden shrink-0 cursor-pointer"
-                  onClick={() => navigate(`/album/${entry.release_group_id}`)}
+                  onClick={() => entry.release_group_id && navigate(`/album/${entry.release_group_id}`)}
                 >
                   <img 
-                    src={getCoverArtUrl(entry.release_group_id, '250')}
+                    src={entry.release_group_id ? getCoverArtUrl(entry.release_group_id, '250') : '/placeholder.svg'}
                     alt={entry.album_title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -482,7 +482,7 @@ export function DiaryContent() {
                   <div className="flex items-center gap-1.5">
                     <h3 
                       className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => navigate(`/album/${entry.release_group_id}`)}
+                      onClick={() => entry.release_group_id && navigate(`/album/${entry.release_group_id}`)}
                     >
                       {entry.album_title}
                     </h3>

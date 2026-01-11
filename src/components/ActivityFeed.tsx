@@ -258,7 +258,7 @@ export function ActivityFeed() {
                     <>
                       <span 
                         className="font-medium text-foreground hover:text-primary cursor-pointer transition-colors"
-                        onClick={() => navigate(`/album/${activity.albumId}`)}
+                        onClick={() => activity.albumId && navigate(`/album/${activity.albumId}`)}
                       >
                         {activity.albumTitle}
                       </span>
