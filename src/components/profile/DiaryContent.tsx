@@ -23,7 +23,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
+import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
 type DiarySortOption = "date" | "rating" | "artist" | "album";
 
 interface DiaryEntry {
@@ -56,6 +56,8 @@ export function DiaryContent() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [hasShownCelebration, setHasShownCelebration] = useState(false);
   const prevGoalReached = useRef<boolean | null>(null);
+  const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const { data: ratings = [] } = useQuery({
     queryKey: ['user-album-ratings-basic', user?.id],
@@ -202,6 +204,60 @@ export function DiaryContent() {
       queryClient.invalidateQueries({ queryKey: ['diary-entry-dates', user?.id] });
       toast.success("Entry deleted");
     }
+  };
+
+  // Update diary entry mutation with optimistic updates
+  const updateEntryMutation = useMutation({
+    mutationFn: async ({ entryId, updates }: { entryId: string; updates: { listened_on: string; is_relisten: boolean; notes: string | null } }) => {
+      const { error } = await supabase
+        .from('diary_entries')
+        .update(updates)
+        .eq('id', entryId)
+        .eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onMutate: async ({ entryId, updates }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['diary-entries-full', user?.id] });
+
+      // Snapshot the previous value
+      const previousEntries = queryClient.getQueryData<DiaryEntry[]>(['diary-entries-full', user?.id]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData<DiaryEntry[]>(['diary-entries-full', user?.id], (old) =>
+        old?.map((entry) =>
+          entry.id === entryId ? { ...entry, ...updates } : entry
+        )
+      );
+
+      return { previousEntries };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousEntries) {
+        queryClient.setQueryData(['diary-entries-full', user?.id], context.previousEntries);
+      }
+      toast.error("Failed to update entry");
+    },
+    onSuccess: () => {
+      toast.success("Entry updated!");
+      setIsEditDialogOpen(false);
+      setEditingEntry(null);
+    },
+    onSettled: () => {
+      // Refetch to ensure we're in sync
+      queryClient.invalidateQueries({ queryKey: ['diary-entries-full', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['diary-entry-dates', user?.id] });
+    },
+  });
+
+  const handleEditEntry = (entry: DiaryEntry) => {
+    setEditingEntry(entry);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEntry = (entryId: string, updates: { listened_on: string; is_relisten: boolean; notes: string | null }) => {
+    updateEntryMutation.mutate({ entryId, updates });
   };
 
   return (
@@ -532,8 +588,17 @@ export function DiaryContent() {
                 )}
 
                 <button
+                  onClick={() => handleEditEntry(entry)}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-primary transition-all"
+                  title="Edit entry"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+
+                <button
                   onClick={() => handleDeleteDiaryEntry(entry.id)}
                   className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive transition-all"
+                  title="Delete entry"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -555,6 +620,18 @@ export function DiaryContent() {
         </div>
       )}
       </motion.div>
+
+      {/* Edit Diary Entry Dialog */}
+      <EditDiaryEntryDialog
+        entry={editingEntry}
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setEditingEntry(null);
+        }}
+        onSave={handleSaveEntry}
+        isPending={updateEntryMutation.isPending}
+      />
     </>
   );
 }
