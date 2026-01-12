@@ -24,6 +24,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
+import { ListeningGoalPopup } from "./ListeningGoalPopup";
 type DiarySortOption = "date" | "rating" | "artist" | "album";
 
 interface DiaryEntry {
@@ -631,6 +632,12 @@ export function DiaryContent() {
         }}
         onSave={handleSaveEntry}
         isPending={updateEntryMutation.isPending}
+      />
+
+      {/* Feature announcement popup */}
+      <ListeningGoalPopup
+        hasGoal={!!yearlyGoal}
+        onSetGoal={() => setIsGoalPopoverOpen(true)}
       />
     </>
   );
