@@ -94,9 +94,9 @@ export const ProfileHeader = () => {
     enabled: !!user,
   });
 
-  // Fetch diary entries to calculate this year's listen count
-  const { data: diaryEntriesData = [] } = useQuery({
-    queryKey: ['diary-entries', user?.id],
+  // Fetch diary entry dates to calculate this year's listen count
+  const { data: diaryEntryDates = [] } = useQuery({
+    queryKey: ['diary-entry-dates', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('diary_entries')
@@ -110,8 +110,8 @@ export const ProfileHeader = () => {
 
   const currentYear = new Date().getFullYear();
   const thisYearStart = startOfYear(new Date());
-  const thisYearCount = diaryEntriesData.filter(entry => 
-    isAfter(new Date(entry.listened_on), thisYearStart) || 
+  const thisYearCount = diaryEntryDates.filter((entry) =>
+    isAfter(new Date(entry.listened_on), thisYearStart) ||
     new Date(entry.listened_on).getFullYear() === currentYear
   ).length;
 

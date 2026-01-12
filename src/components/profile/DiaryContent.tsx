@@ -71,7 +71,7 @@ export function DiaryContent() {
   });
 
   const { data: diaryEntriesData = [] } = useQuery({
-    queryKey: ['diary-entries', user?.id],
+    queryKey: ['diary-entries-full', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('diary_entries')
@@ -198,7 +198,8 @@ export function DiaryContent() {
     if (error) {
       toast.error("Failed to delete entry");
     } else {
-      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['diary-entries-full', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['diary-entry-dates', user?.id] });
       toast.success("Entry deleted");
     }
   };
