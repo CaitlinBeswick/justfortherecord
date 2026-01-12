@@ -149,10 +149,10 @@ export function LogListenDialog({
       toast.error("Failed to log listen");
     } else {
       toast.success(isRelisten ? "Re-listen logged!" : "Listen logged!");
-      queryClient.invalidateQueries({ queryKey: ["diary-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["album-diary-entries", releaseGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["diary-entries-full", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["diary-entry-dates", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["album-diary-entries", releaseGroupId, user.id] });
       queryClient.invalidateQueries({ queryKey: ["album-rating", releaseGroupId] });
-      queryClient.invalidateQueries({ queryKey: ["user-ratings"] });
       queryClient.invalidateQueries({ queryKey: ["user-album-rating", user.id, releaseGroupId] });
       queryClient.invalidateQueries({ queryKey: ["listening-status", user.id, releaseGroupId] });
       queryClient.invalidateQueries({ queryKey: ["listening-statuses", user.id] });
