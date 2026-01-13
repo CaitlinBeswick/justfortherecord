@@ -6,6 +6,7 @@ import { UserActivityFeed } from "@/components/UserActivityFeed";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ListeningGoalPopup } from "@/components/profile/ListeningGoalPopup";
+import { WelcomeTour } from "@/components/WelcomeTour";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -100,6 +101,9 @@ const Index = () => {
 
       {/* Listening Goal Popup */}
       <ListeningGoalPopup />
+
+      {/* Welcome Tour for new users */}
+      <WelcomeTour />
     </div>
   );
 };
