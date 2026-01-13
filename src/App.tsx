@@ -23,6 +23,7 @@ const ProfileToListen = lazy(() => import("./pages/profile/ToListen"));
 const ProfileDiary = lazy(() => import("./pages/profile/Diary"));
 const ProfileLists = lazy(() => import("./pages/profile/Lists"));
 const ProfileArtists = lazy(() => import("./pages/profile/Artists"));
+const ProfileReviews = lazy(() => import("./pages/profile/Reviews"));
 const ProfileFriends = lazy(() => import("./pages/profile/Friends"));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/profile/diary" element={<ProfileDiary />} />
               <Route path="/profile/lists" element={<ProfileLists />} />
               <Route path="/profile/artists" element={<ProfileArtists />} />
+              <Route path="/profile/reviews" element={<ProfileReviews />} />
               <Route path="/profile/friends" element={<ProfileFriends />} />
               <Route path="/profile/settings" element={<ProfileSettings />} />
               <Route path="/user/:userId" element={<UserProfile />} />

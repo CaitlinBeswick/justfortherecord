@@ -52,6 +52,7 @@ export function DiaryContent() {
   const [diarySort, setDiarySort] = useState<DiarySortOption>("date");
   const [sortAscending, setSortAscending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [goalInput, setGoalInput] = useState('');
   const [isGoalPopoverOpen, setIsGoalPopoverOpen] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -164,7 +165,17 @@ export function DiaryContent() {
     }
   };
 
-  const filteredDiaryEntries = diaryEntriesData.filter(entry => {
+  // Get available years from diary entries
+  const availableYears = [...new Set(diaryEntriesData.map(entry => 
+    new Date(entry.listened_on).getFullYear()
+  ))].sort((a, b) => b - a);
+
+  // Filter by selected year first, then by search query
+  const yearFilteredEntries = diaryEntriesData.filter(entry => 
+    new Date(entry.listened_on).getFullYear() === selectedYear
+  );
+
+  const filteredDiaryEntries = yearFilteredEntries.filter(entry => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return entry.album_title.toLowerCase().includes(query) ||
@@ -377,11 +388,11 @@ export function DiaryContent() {
               Diary
             </h2>
             <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold text-foreground">{thisYearCount}</span>
-              {yearlyGoal ? (
-                <span className="text-muted-foreground">/ {yearlyGoal} in {currentYear}</span>
+              <span className="font-semibold text-foreground">{yearFilteredEntries.length}</span>
+              {selectedYear === currentYear && yearlyGoal ? (
+                <span className="text-muted-foreground">/ {yearlyGoal} in {selectedYear}</span>
               ) : (
-                <span className="text-muted-foreground">in {currentYear}</span>
+                <span className="text-muted-foreground">in {selectedYear}</span>
               )}
               <Popover open={isGoalPopoverOpen} onOpenChange={setIsGoalPopoverOpen}>
                 <PopoverTrigger asChild>
@@ -444,7 +455,26 @@ export function DiaryContent() {
               </Popover>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Year Selector */}
+            {availableYears.length > 0 && (
+              <Select 
+                value={selectedYear.toString()} 
+                onValueChange={(v) => setSelectedYear(parseInt(v))}
+              >
+                <SelectTrigger className="w-[100px] h-8 text-sm">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableYears.map(year => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input

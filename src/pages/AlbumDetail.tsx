@@ -25,6 +25,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAverageRating } from "@/hooks/useAverageRating";
 import {
   Dialog,
   DialogContent,
@@ -346,7 +347,9 @@ const AlbumDetail = () => {
 
   const artistName = getArtistNames(releaseGroup["artist-credit"]);
   const year = getYear(releaseGroup["first-release-date"]);
-  const rating = releaseGroup.rating?.value || 0;
+  
+  // Use real average rating from user ratings in our database
+  const { averageRating, ratingCount } = useAverageRating(id);
 
   return (
     <div className="min-h-screen bg-background">
@@ -406,8 +409,8 @@ const AlbumDetail = () => {
                     {releaseGroup.title}
                   </h1>
                   <AverageAlbumRating 
-                    rating={rating} 
-                    voteCount={releaseGroup.rating?.["votes-count"] || 0} 
+                    rating={averageRating} 
+                    voteCount={ratingCount} 
                   />
                 </div>
                 <button 
