@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Info, Shield, Eye, EyeOff, Users, Lock, Ban, Target } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Shield, Eye, EyeOff, Users, Lock, Ban, Target, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -100,7 +100,7 @@ const ProfileSettings = () => {
   const [showFriendsCount, setShowFriendsCount] = useState(true);
   const [showFriendsList, setShowFriendsList] = useState(true);
   const [allowFriendRequests, setAllowFriendRequests] = useState(true);
-
+  const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
   // Blocked users
   const { blockedUsers, unblockUser } = useBlockedUsers();
 
@@ -570,12 +570,9 @@ const ProfileSettings = () => {
 
               {/* Default Release Types */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Label>Default Discography Display</Label>
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </div>
+                <Label>Default Discography Display</Label>
                 <p className="text-sm text-muted-foreground">
-                  Choose which release types to show by default on all artist pages. You can override this per artist using Manage Releases.
+                  Choose which release types to show by default on all artist pages. You can override this for individual artists by using the Manage Releases function on their page.
                 </p>
                 <div className="space-y-2">
                   {RELEASE_TYPE_OPTIONS.map((option) => (
@@ -642,231 +639,251 @@ const ProfileSettings = () => {
 
               <Separator className="my-6" />
 
-              {/* Privacy Settings */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold text-foreground">Privacy Settings</h2>
-                </div>
-
-                {/* Profile Visibility */}
-                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Eye className="h-4 w-4" />
-                    Profile Visibility
+              {/* Privacy Settings - Collapsible */}
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setIsPrivacyExpanded(!isPrivacyExpanded)}
+                  className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Privacy Settings</h2>
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="isPublic" className="text-sm font-normal cursor-pointer">
-                          Public Profile
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Anyone can view your profile
-                        </p>
-                      </div>
-                      <Switch
-                        id="isPublic"
-                        checked={isPublic}
-                        onCheckedChange={(checked) => {
-                          setIsPublic(checked);
-                          if (!checked) setFriendsOnly(false);
-                        }}
-                      />
-                    </div>
-
-                    {isPublic && (
-                      <div className="flex items-center justify-between pl-4 border-l-2 border-border">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="friendsOnly" className="text-sm font-normal cursor-pointer">
-                            Friends Only
-                          </Label>
-                          <p className="text-xs text-muted-foreground">
-                            Only friends can see your full profile
-                          </p>
-                        </div>
-                        <Switch
-                          id="friendsOnly"
-                          checked={friendsOnly}
-                          onCheckedChange={setFriendsOnly}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Section Visibility */}
-                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <EyeOff className="h-4 w-4" />
-                    Hide Sections
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Choose which sections others can see on your profile
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="showAlbums" className="text-sm font-normal cursor-pointer">
-                        Albums
-                      </Label>
-                      <Switch
-                        id="showAlbums"
-                        checked={showAlbums}
-                        onCheckedChange={setShowAlbums}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="showArtists" className="text-sm font-normal cursor-pointer">
-                        Artists
-                      </Label>
-                      <Switch
-                        id="showArtists"
-                        checked={showArtists}
-                        onCheckedChange={setShowArtists}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="showDiary" className="text-sm font-normal cursor-pointer">
-                        Diary
-                      </Label>
-                      <Switch
-                        id="showDiary"
-                        checked={showDiary}
-                        onCheckedChange={setShowDiary}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="showLists" className="text-sm font-normal cursor-pointer">
-                        Lists
-                      </Label>
-                      <Switch
-                        id="showLists"
-                        checked={showLists}
-                        onCheckedChange={setShowLists}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Following Privacy */}
-                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Users className="h-4 w-4" />
-                    Following Privacy
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="showFriendsCount" className="text-sm font-normal cursor-pointer">
-                          Show Following Count
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Display how many people you follow
-                        </p>
-                      </div>
-                      <Switch
-                        id="showFriendsCount"
-                        checked={showFriendsCount}
-                        onCheckedChange={setShowFriendsCount}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="showFriendsList" className="text-sm font-normal cursor-pointer">
-                          Show Following List
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Let others see who you follow
-                        </p>
-                      </div>
-                      <Switch
-                        id="showFriendsList"
-                        checked={showFriendsList}
-                        onCheckedChange={setShowFriendsList}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="allowFriendRequests" className="text-sm font-normal cursor-pointer">
-                          Allow Follow Requests
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Let others send you follow requests
-                        </p>
-                      </div>
-                      <Switch
-                        id="allowFriendRequests"
-                        checked={allowFriendRequests}
-                        onCheckedChange={setAllowFriendRequests}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Blocked Users */}
-                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Ban className="h-4 w-4" />
-                    Blocked Users
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Blocked users cannot view your profile or send you friend requests.
-                  </p>
-
-                  {blockedProfiles.length > 0 ? (
-                    <div className="space-y-2">
-                      {blockedProfiles.map((blockedUser) => (
-                        <div 
-                          key={blockedUser.id}
-                          className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
-                        >
-                          <div className="flex items-center gap-3">
-                            {blockedUser.avatar_url ? (
-                              <img
-                                src={blockedUser.avatar_url}
-                                alt=""
-                                className="w-10 h-10 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                                <User className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="text-sm font-medium text-foreground">
-                                {blockedUser.display_name || blockedUser.username || 'User'}
-                              </p>
-                              {blockedUser.username && (
-                                <p className="text-xs text-muted-foreground">@{blockedUser.username}</p>
-                              )}
-                            </div>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => unblockUser.mutate(blockedUser.id)}
-                            disabled={unblockUser.isPending}
-                          >
-                            Unblock
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
+                  {isPrivacyExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
                   ) : (
-                    <p className="text-sm text-muted-foreground/60 text-center py-4">
-                      You haven't blocked anyone
-                    </p>
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
                   )}
-                </div>
+                </button>
+
+                {isPrivacyExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4 pl-4 border-l-2 border-primary/20"
+                  >
+                    {/* Profile Visibility */}
+                    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Eye className="h-4 w-4" />
+                        Profile Visibility
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="isPublic" className="text-sm font-normal cursor-pointer">
+                              Public Profile
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Anyone can view your profile
+                            </p>
+                          </div>
+                          <Switch
+                            id="isPublic"
+                            checked={isPublic}
+                            onCheckedChange={(checked) => {
+                              setIsPublic(checked);
+                              if (!checked) setFriendsOnly(false);
+                            }}
+                          />
+                        </div>
+
+                        {isPublic && (
+                          <div className="flex items-center justify-between pl-4 border-l-2 border-border">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="friendsOnly" className="text-sm font-normal cursor-pointer">
+                                Friends Only
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                Only friends can see your full profile
+                              </p>
+                            </div>
+                            <Switch
+                              id="friendsOnly"
+                              checked={friendsOnly}
+                              onCheckedChange={setFriendsOnly}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Section Visibility */}
+                    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <EyeOff className="h-4 w-4" />
+                        Hide Sections
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Choose which sections others can see on your profile
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="showAlbums" className="text-sm font-normal cursor-pointer">
+                            Albums
+                          </Label>
+                          <Switch
+                            id="showAlbums"
+                            checked={showAlbums}
+                            onCheckedChange={setShowAlbums}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="showArtists" className="text-sm font-normal cursor-pointer">
+                            Artists
+                          </Label>
+                          <Switch
+                            id="showArtists"
+                            checked={showArtists}
+                            onCheckedChange={setShowArtists}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="showDiary" className="text-sm font-normal cursor-pointer">
+                            Diary
+                          </Label>
+                          <Switch
+                            id="showDiary"
+                            checked={showDiary}
+                            onCheckedChange={setShowDiary}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="showLists" className="text-sm font-normal cursor-pointer">
+                            Lists
+                          </Label>
+                          <Switch
+                            id="showLists"
+                            checked={showLists}
+                            onCheckedChange={setShowLists}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Following Privacy */}
+                    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Users className="h-4 w-4" />
+                        Following Privacy
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="showFriendsCount" className="text-sm font-normal cursor-pointer">
+                              Show Following Count
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Display how many people you follow
+                            </p>
+                          </div>
+                          <Switch
+                            id="showFriendsCount"
+                            checked={showFriendsCount}
+                            onCheckedChange={setShowFriendsCount}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="showFriendsList" className="text-sm font-normal cursor-pointer">
+                              Show Following List
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Let others see who you follow
+                            </p>
+                          </div>
+                          <Switch
+                            id="showFriendsList"
+                            checked={showFriendsList}
+                            onCheckedChange={setShowFriendsList}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="allowFriendRequests" className="text-sm font-normal cursor-pointer">
+                              Allow Follow Requests
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Let others send you follow requests
+                            </p>
+                          </div>
+                          <Switch
+                            id="allowFriendRequests"
+                            checked={allowFriendRequests}
+                            onCheckedChange={setAllowFriendRequests}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Blocked Users */}
+                    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Ban className="h-4 w-4" />
+                        Blocked Users
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Blocked users cannot view your profile or send you friend requests.
+                      </p>
+
+                      {blockedProfiles.length > 0 ? (
+                        <div className="space-y-2">
+                          {blockedProfiles.map((blockedUser) => (
+                            <div 
+                              key={blockedUser.id}
+                              className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
+                            >
+                              <div className="flex items-center gap-3">
+                                {blockedUser.avatar_url ? (
+                                  <img
+                                    src={blockedUser.avatar_url}
+                                    alt=""
+                                    className="w-10 h-10 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                                    <User className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">
+                                    {blockedUser.display_name || blockedUser.username || 'User'}
+                                  </p>
+                                  {blockedUser.username && (
+                                    <p className="text-xs text-muted-foreground">@{blockedUser.username}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => unblockUser.mutate(blockedUser.id)}
+                                disabled={unblockUser.isPending}
+                              >
+                                Unblock
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground/60 text-center py-4">
+                          You haven't blocked anyone
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
               {/* Submit Button */}
