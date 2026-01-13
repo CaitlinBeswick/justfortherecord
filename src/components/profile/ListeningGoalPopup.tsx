@@ -2,20 +2,41 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Target, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_KEY = "listening-goal-popup-dismissed";
 
-interface ListeningGoalPopupProps {
-  onSetGoal: () => void;
-  hasGoal: boolean;
-}
-
-export function ListeningGoalPopup({ onSetGoal, hasGoal }: ListeningGoalPopupProps) {
+export function ListeningGoalPopup() {
   const [isVisible, setIsVisible] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Fetch user's yearly goal from profile
+  const { data: profile } = useQuery({
+    queryKey: ['profile-goal', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('yearly_listen_goal')
+        .eq('id', user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const hasGoal = !!profile?.yearly_listen_goal;
 
   useEffect(() => {
-    // Don't show if user already has a goal or has dismissed the popup
-    if (hasGoal) return;
+    // Don't show if user not logged in or already has a goal
+    if (!user || hasGoal) {
+      setIsVisible(false);
+      return;
+    }
     
     const dismissed = localStorage.getItem(STORAGE_KEY);
     if (!dismissed) {
@@ -23,7 +44,7 @@ export function ListeningGoalPopup({ onSetGoal, hasGoal }: ListeningGoalPopupPro
       const timer = setTimeout(() => setIsVisible(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, [hasGoal]);
+  }, [user, hasGoal]);
 
   const handleDismiss = () => {
     localStorage.setItem(STORAGE_KEY, "true");
@@ -32,11 +53,11 @@ export function ListeningGoalPopup({ onSetGoal, hasGoal }: ListeningGoalPopupPro
 
   const handleSetGoal = () => {
     handleDismiss();
-    onSetGoal();
+    navigate("/profile/diary");
   };
 
-  // Don't render if user already has a goal
-  if (hasGoal) return null;
+  // Don't render if user not logged in or already has a goal
+  if (!user || hasGoal) return null;
 
   return (
     <AnimatePresence>

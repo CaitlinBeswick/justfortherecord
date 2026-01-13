@@ -5,6 +5,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { UserActivityFeed } from "@/components/UserActivityFeed";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { ListeningGoalPopup } from "@/components/profile/ListeningGoalPopup";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -96,6 +97,9 @@ const Index = () => {
           </motion.div>
         </section>
       )}
+
+      {/* Listening Goal Popup */}
+      <ListeningGoalPopup />
     </div>
   );
 };
