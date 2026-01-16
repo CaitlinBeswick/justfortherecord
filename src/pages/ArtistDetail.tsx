@@ -7,6 +7,7 @@ import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info, ChevronRight } from "lucide-react";
+import { DiscographySearch } from "@/components/DiscographySearch";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup, getSimilarArtists, getArtistNames, getReleaseGroup } from "@/services/musicbrainz";
@@ -56,6 +57,7 @@ const ArtistDetail = () => {
   const queryClient = useQueryClient();
   const { getStatusForAlbum, allStatuses } = useListeningStatus();
   const [fadeListened, setFadeListened] = useState(true);
+  const [discographySearch, setDiscographySearch] = useState('');
 
   const artistId = id ?? "";
   const isValidArtistId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(artistId);
@@ -388,11 +390,18 @@ const ArtistDetail = () => {
     return primaryType === 'Album' && secondaryTypes.includes('Compilation') && !secondaryTypes.includes('Live');
   });
 
+  // Filter releases by search query
+  const filterBySearch = (releases: MBReleaseGroup[]) => {
+    if (!discographySearch.trim()) return releases;
+    const query = discographySearch.toLowerCase();
+    return releases.filter(r => r.title.toLowerCase().includes(query));
+  };
+
   const groupedReleases: Record<string, MBReleaseGroup[]> = {
-    'Studio Albums': studioAlbums,
-    'EPs': eps,
-    'Live Albums': liveAlbums,
-    'Compilations': compilations,
+    'Studio Albums': filterBySearch(studioAlbums),
+    'EPs': filterBySearch(eps),
+    'Live Albums': filterBySearch(liveAlbums),
+    'Compilations': filterBySearch(compilations),
   };
 
   // Map category names to types used in preferences
@@ -730,19 +739,22 @@ const ArtistDetail = () => {
                 </Popover>
               )}
             </div>
-            {user && (
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="fade-listened"
-                  checked={fadeListened}
-                  onCheckedChange={setFadeListened}
-                />
-                <Label htmlFor="fade-listened" className="text-sm text-muted-foreground flex items-center gap-1.5 cursor-pointer">
-                  {fadeListened ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  Fade listened
-                </Label>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <DiscographySearch value={discographySearch} onChange={setDiscographySearch} />
+              {user && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="fade-listened"
+                    checked={fadeListened}
+                    onCheckedChange={setFadeListened}
+                  />
+                  <Label htmlFor="fade-listened" className="text-sm text-muted-foreground flex items-center gap-1.5 cursor-pointer">
+                    {fadeListened ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    Fade listened
+                  </Label>
+                </div>
+              )}
+            </div>
           </div>
           
           {sortedTypes.length > 0 ? (
