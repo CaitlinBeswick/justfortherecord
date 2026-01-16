@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
-import { ArrowRight, Activity, User } from "lucide-react";
+import { ArrowRight, Activity, User, ChevronRight } from "lucide-react";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { UserActivityFeed } from "@/components/UserActivityFeed";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ListeningGoalPopup } from "@/components/profile/ListeningGoalPopup";
 import { WelcomeTour } from "@/components/WelcomeTour";
@@ -71,9 +71,18 @@ const Index = () => {
           viewport={{ once: true }}
           variants={containerVariants}
         >
-          <div className="flex items-center gap-3 mb-6">
-            <Activity className="h-5 w-5 text-primary" />
-            <h2 className="font-serif text-2xl text-foreground">Following Activity</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Activity className="h-5 w-5 text-primary" />
+              <h2 className="font-serif text-2xl text-foreground">Following Activity</h2>
+            </div>
+            <Link 
+              to="/activity/following"
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              See all
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
           
           <ActivityFeed />
@@ -89,9 +98,18 @@ const Index = () => {
             viewport={{ once: true }}
             variants={containerVariants}
           >
-            <div className="flex items-center gap-3 mb-6">
-              <User className="h-5 w-5 text-primary" />
-              <h2 className="font-serif text-2xl text-foreground">Your Recent Activity</h2>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-primary" />
+                <h2 className="font-serif text-2xl text-foreground">Your Recent Activity</h2>
+              </div>
+              <Link 
+                to="/activity/you"
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                See all
+                <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
             
             <UserActivityFeed />

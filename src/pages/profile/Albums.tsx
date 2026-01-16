@@ -37,8 +37,10 @@ type SortOption =
   | 'album-desc' 
   | 'release-desc' 
   | 'release-asc'
-  | 'rating-high'
-  | 'rating-low';
+  | 'my-rating-high'
+  | 'my-rating-low'
+  | 'avg-rating-high'
+  | 'avg-rating-low';
 
 const sortLabels: Record<SortOption, string> = {
   'artist-asc': 'Artist (A-Z)',
@@ -47,8 +49,10 @@ const sortLabels: Record<SortOption, string> = {
   'album-desc': 'Album (Z-A)',
   'release-desc': 'Release Date (Newest)',
   'release-asc': 'Release Date (Oldest)',
-  'rating-high': 'Rating (High-Low)',
-  'rating-low': 'Rating (Low-High)',
+  'my-rating-high': 'My Rating (High-Low)',
+  'my-rating-low': 'My Rating (Low-High)',
+  'avg-rating-high': 'Avg Rating (High-Low)',
+  'avg-rating-low': 'Avg Rating (Low-High)',
 };
 
 const Albums = () => {
@@ -58,6 +62,7 @@ const Albums = () => {
   const [sortBy, setSortBy] = useState<SortOption>('release-desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [hasTriggeredBackfill, setHasTriggeredBackfill] = useState(false);
+  const [ratingFilter, setRatingFilter] = useState<string>('all');
   const [filters, setFilters] = useState({
     unrated: false,
     rated: false,

@@ -499,7 +499,7 @@ const ProfileSettings = () => {
               </div>
 
               {/* Favorite Genres */}
-              <div className="space-y-3">
+              <div className="space-y-3 p-4 rounded-lg border border-border/50 bg-card/30">
                 <Label>Favorite Genres</Label>
                 
                 {/* Selected genres */}
@@ -569,7 +569,7 @@ const ProfileSettings = () => {
               </div>
 
               {/* Default Release Types */}
-              <div className="space-y-3">
+              <div className="space-y-3 p-4 rounded-lg border border-border/50 bg-card/30">
                 <Label>Default Discography Display</Label>
                 <p className="text-sm text-muted-foreground">
                   Choose which release types to show by default on all artist pages. You can override this for individual artists by using the Manage Releases function on their page.
@@ -603,7 +603,7 @@ const ProfileSettings = () => {
               </div>
 
               {/* Yearly Listen Goal */}
-              <div className="space-y-3">
+              <div className="space-y-3 p-4 rounded-lg border border-border/50 bg-card/30">
                 <div className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
                   <Label htmlFor="yearlyGoal">Yearly Listen Goal</Label>

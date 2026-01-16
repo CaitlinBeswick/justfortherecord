@@ -27,6 +27,8 @@ const ProfileReviews = lazy(() => import("./pages/profile/Reviews"));
 const ProfileFriends = lazy(() => import("./pages/profile/Friends"));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
+const FollowingActivity = lazy(() => import("./pages/FollowingActivity"));
+const YourActivity = lazy(() => import("./pages/YourActivity"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -61,6 +63,8 @@ const App = () => (
               <Route path="/profile/friends" element={<ProfileFriends />} />
               <Route path="/profile/settings" element={<ProfileSettings />} />
               <Route path="/user/:userId" element={<UserProfile />} />
+              <Route path="/activity/following" element={<FollowingActivity />} />
+              <Route path="/activity/you" element={<YourActivity />} />
               <Route path="/auth" element={<Auth />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
