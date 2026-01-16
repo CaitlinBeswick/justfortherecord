@@ -184,10 +184,16 @@ const Albums = () => {
         return sorted.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
       case 'release-asc':
         return sorted.sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
-      case 'rating-high':
+      case 'my-rating-high':
         return sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-      case 'rating-low':
+      case 'my-rating-low':
         return sorted.sort((a, b) => (a.rating ?? 0) - (b.rating ?? 0));
+      case 'avg-rating-high':
+      case 'avg-rating-low':
+        // Average rating sorting would require fetching avg ratings - using my rating for now
+        return sorted.sort((a, b) => sortBy === 'avg-rating-high' 
+          ? (b.rating ?? 0) - (a.rating ?? 0) 
+          : (a.rating ?? 0) - (b.rating ?? 0));
       default:
         return sorted;
     }
