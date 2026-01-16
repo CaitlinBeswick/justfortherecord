@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Plus, UserCheck, UserMinus, Search, ArrowUpDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { toast } from "sonner";
 import { getArtistImage } from "@/services/musicbrainz";
+import { RatingFilter } from "@/components/profile/RatingFilter";
 import {
   Select,
   SelectContent,
@@ -31,7 +32,7 @@ interface ArtistRating {
   rating: number;
 }
 
-type SortOption = 'name-asc' | 'name-desc' | 'rating-high' | 'rating-low';
+type SortOption = 'name-asc' | 'name-desc' | 'my-rating-high' | 'my-rating-low' | 'avg-rating-high' | 'avg-rating-low';
 
 const Artists = () => {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ const Artists = () => {
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
   const [artistImages, setArtistImages] = useState<Record<string, string | null>>({});
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+  const [ratingFilter, setRatingFilter] = useState<string>('all');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -149,32 +151,48 @@ const Artists = () => {
     }
   };
 
-  const filteredAndSortedArtists = followedArtists
-    .filter(artist => {
-      if (!searchQuery.trim()) return true;
-      const query = searchQuery.toLowerCase();
-      return artist.artist_name.toLowerCase().includes(query);
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name-asc':
-          return a.artist_name.localeCompare(b.artist_name);
-        case 'name-desc':
-          return b.artist_name.localeCompare(a.artist_name);
-        case 'rating-high': {
-          const ratingA = ratingsMap[a.artist_id] ?? 0;
-          const ratingB = ratingsMap[b.artist_id] ?? 0;
-          return ratingB - ratingA;
+  const filteredAndSortedArtists = useMemo(() => {
+    return followedArtists
+      .filter(artist => {
+        // Rating filter
+        if (ratingFilter !== 'all') {
+          const rating = ratingsMap[artist.artist_id];
+          if (ratingFilter === 'unrated') {
+            if (rating) return false;
+          } else {
+            const minRating = parseInt(ratingFilter);
+            if (!rating || rating < minRating) return false;
+          }
         }
-        case 'rating-low': {
-          const ratingA = ratingsMap[a.artist_id] ?? 0;
-          const ratingB = ratingsMap[b.artist_id] ?? 0;
-          return ratingA - ratingB;
+        
+        // Search filter
+        if (!searchQuery.trim()) return true;
+        const query = searchQuery.toLowerCase();
+        return artist.artist_name.toLowerCase().includes(query);
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'name-asc':
+            return a.artist_name.localeCompare(b.artist_name);
+          case 'name-desc':
+            return b.artist_name.localeCompare(a.artist_name);
+          case 'my-rating-high':
+          case 'avg-rating-high': {
+            const ratingA = ratingsMap[a.artist_id] ?? 0;
+            const ratingB = ratingsMap[b.artist_id] ?? 0;
+            return ratingB - ratingA;
+          }
+          case 'my-rating-low':
+          case 'avg-rating-low': {
+            const ratingA = ratingsMap[a.artist_id] ?? 0;
+            const ratingB = ratingsMap[b.artist_id] ?? 0;
+            return ratingA - ratingB;
+          }
+          default:
+            return 0;
         }
-        default:
-          return 0;
-      }
-    });
+      });
+  }, [followedArtists, searchQuery, sortBy, ratingFilter, ratingsMap]);
 
   if (authLoading || isLoading) {
     return (
@@ -205,17 +223,18 @@ const Artists = () => {
                   </h2>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                      <SelectTrigger className="w-[160px]">
+                      <SelectTrigger className="w-[180px]">
                         <ArrowUpDown className="h-4 w-4 mr-2" />
                         <SelectValue placeholder="Sort by" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="name-asc">Name (A-Z)</SelectItem>
                         <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                        <SelectItem value="rating-high">Rating (High-Low)</SelectItem>
-                        <SelectItem value="rating-low">Rating (Low-High)</SelectItem>
+                        <SelectItem value="my-rating-high">My Rating (High-Low)</SelectItem>
+                        <SelectItem value="my-rating-low">My Rating (Low-High)</SelectItem>
                       </SelectContent>
                     </Select>
+                    <RatingFilter value={ratingFilter} onChange={setRatingFilter} />
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input

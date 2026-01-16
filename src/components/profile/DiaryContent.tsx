@@ -24,6 +24,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
+import { RatingFilter } from "./RatingFilter";
+import { MobileListeningGoal } from "./MobileListeningGoal";
 
 type DiarySortOption = "date" | "rating" | "artist" | "album";
 
@@ -60,6 +62,7 @@ export function DiaryContent() {
   const prevGoalReached = useRef<boolean | null>(null);
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [ratingFilter, setRatingFilter] = useState<string>('all');
 
   const { data: ratings = [] } = useQuery({
     queryKey: ['user-album-ratings-basic', user?.id],
@@ -88,31 +91,51 @@ export function DiaryContent() {
     enabled: !!user,
   });
 
-  // Fetch user's yearly goal from profile
-  const { data: profile } = useQuery({
-    queryKey: ['profile-goal', user?.id],
+  // Fetch user's yearly goals for all years
+  const { data: yearlyGoals = [] } = useQuery({
+    queryKey: ['yearly-listening-goals', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('yearly_listen_goal')
-        .eq('id', user!.id)
-        .maybeSingle();
+        .from('yearly_listening_goals')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('year', { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
+  // Get the goal for the selected year
+  const selectedYearGoal = yearlyGoals.find(g => g.year === selectedYear)?.goal;
+  // Get the goal for current year (for the celebration logic)
+  const currentYearGoal = yearlyGoals.find(g => g.year === currentYear)?.goal;
+
   const updateGoalMutation = useMutation({
-    mutationFn: async (newGoal: number | null) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ yearly_listen_goal: newGoal })
-        .eq('id', user!.id);
-      if (error) throw error;
+    mutationFn: async ({ year, goal }: { year: number; goal: number | null }) => {
+      if (goal === null) {
+        // Delete the goal for this year
+        const { error } = await supabase
+          .from('yearly_listening_goals')
+          .delete()
+          .eq('user_id', user!.id)
+          .eq('year', year);
+        if (error) throw error;
+      } else {
+        // Upsert the goal
+        const { error } = await supabase
+          .from('yearly_listening_goals')
+          .upsert({
+            user_id: user!.id,
+            year,
+            goal,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id,year' });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile-goal'] });
+      queryClient.invalidateQueries({ queryKey: ['yearly-listening-goals'] });
       setIsGoalPopoverOpen(false);
       toast.success("Goal updated!");
     },
@@ -121,20 +144,18 @@ export function DiaryContent() {
     },
   });
 
-  const yearlyGoal = profile?.yearly_listen_goal;
-
   const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
   // Calculate this year's listen count
+  const currentYear = new Date().getFullYear();
   const thisYearStart = startOfYear(new Date());
   const thisYearCount = diaryEntriesData.filter(entry => 
     isAfter(new Date(entry.listened_on), thisYearStart) || 
-    new Date(entry.listened_on).getFullYear() === new Date().getFullYear()
+    new Date(entry.listened_on).getFullYear() === currentYear
   ).length;
-  const currentYear = new Date().getFullYear();
 
   // Check for goal reached and trigger celebration
-  const goalReached = yearlyGoal ? thisYearCount >= yearlyGoal : false;
+  const goalReached = currentYearGoal ? thisYearCount >= currentYearGoal : false;
   
   useEffect(() => {
     // Only trigger celebration when we first reach the goal (transition from false to true)
@@ -147,19 +168,19 @@ export function DiaryContent() {
     prevGoalReached.current = goalReached;
   }, [goalReached, hasShownCelebration]);
 
-  // Update goal input when popover opens
+  // Update goal input when popover opens or year changes
   useEffect(() => {
     if (isGoalPopoverOpen) {
-      setGoalInput(yearlyGoal?.toString() || '');
+      setGoalInput(selectedYearGoal?.toString() || '');
     }
-  }, [isGoalPopoverOpen, yearlyGoal]);
+  }, [isGoalPopoverOpen, selectedYearGoal]);
 
   const handleSaveGoal = () => {
     const parsed = parseInt(goalInput);
     if (goalInput.trim() === '') {
-      updateGoalMutation.mutate(null);
+      updateGoalMutation.mutate({ year: selectedYear, goal: null });
     } else if (!isNaN(parsed) && parsed > 0) {
-      updateGoalMutation.mutate(parsed);
+      updateGoalMutation.mutate({ year: selectedYear, goal: parsed });
     } else {
       toast.error("Please enter a valid number");
     }
@@ -176,6 +197,18 @@ export function DiaryContent() {
   );
 
   const filteredDiaryEntries = yearFilteredEntries.filter(entry => {
+    // Rating filter
+    if (ratingFilter !== 'all') {
+      const rating = ratingsMap.get(entry.release_group_id);
+      if (ratingFilter === 'unrated') {
+        if (rating) return false;
+      } else {
+        const minRating = parseInt(ratingFilter);
+        if (!rating || rating.rating < minRating) return false;
+      }
+    }
+    
+    // Search filter
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return entry.album_title.toLowerCase().includes(query) ||
@@ -389,15 +422,15 @@ export function DiaryContent() {
             </h2>
             <div className="flex items-center gap-2 text-sm">
               <span className="font-semibold text-foreground">{yearFilteredEntries.length}</span>
-              {selectedYear === currentYear && yearlyGoal ? (
-                <span className="text-muted-foreground">/ {yearlyGoal} in {selectedYear}</span>
+              {selectedYearGoal ? (
+                <span className="text-muted-foreground">/ {selectedYearGoal} in {selectedYear}</span>
               ) : (
                 <span className="text-muted-foreground">in {selectedYear}</span>
               )}
               <Popover open={isGoalPopoverOpen} onOpenChange={setIsGoalPopoverOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" title={yearlyGoal ? "Edit goal" : "Set a goal"}>
-                    {yearlyGoal ? (
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title={selectedYearGoal ? "Edit goal" : "Set a goal"}>
+                    {selectedYearGoal ? (
                       <Pencil className="h-3 w-3" />
                     ) : (
                       <Target className="h-3.5 w-3.5 text-primary" />
@@ -408,7 +441,7 @@ export function DiaryContent() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Target className="h-4 w-4 text-primary" />
-                      <span className="font-medium text-sm">{yearlyGoal ? 'Update' : 'Set'} {currentYear} Goal</span>
+                      <span className="font-medium text-sm">{selectedYearGoal ? 'Update' : 'Set'} {selectedYear} Goal</span>
                     </div>
                     <Input
                       type="number"
@@ -437,14 +470,14 @@ export function DiaryContent() {
                         Cancel
                       </Button>
                     </div>
-                    {yearlyGoal && (
+                    {selectedYearGoal && (
                       <Button
                         size="sm"
                         variant="ghost"
                         className="w-full text-muted-foreground text-xs"
                         onClick={() => {
                           setGoalInput('');
-                          updateGoalMutation.mutate(null);
+                          updateGoalMutation.mutate({ year: selectedYear, goal: null });
                         }}
                       >
                         Remove goal
@@ -474,6 +507,9 @@ export function DiaryContent() {
                 </SelectContent>
               </Select>
             )}
+            
+            {/* Rating Filter */}
+            <RatingFilter value={ratingFilter} onChange={setRatingFilter} />
             
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -509,21 +545,30 @@ export function DiaryContent() {
           </div>
         </div>
 
-        {/* Compact Goal Progress - only when goal is set */}
-        {yearlyGoal && (
-          <div className="mb-4 p-3 rounded-lg bg-card/50 border border-border">
+        {/* Mobile Listening Goal - only shown on mobile when goal is set for selected year */}
+        {selectedYearGoal && (
+          <MobileListeningGoal 
+            currentCount={yearFilteredEntries.length} 
+            goal={selectedYearGoal} 
+            year={selectedYear} 
+          />
+        )}
+        
+        {/* Compact Goal Progress - desktop only, when goal is set */}
+        {selectedYearGoal && (
+          <div className="hidden md:block mb-4 p-3 rounded-lg bg-card/50 border border-border">
             <div className="flex items-center gap-3">
               <Target className="h-4 w-4 text-primary shrink-0" />
               <div className="flex-1">
                 <Progress 
-                  value={Math.min((thisYearCount / yearlyGoal) * 100, 100)} 
+                  value={Math.min((yearFilteredEntries.length / selectedYearGoal) * 100, 100)} 
                   className="h-2"
                 />
               </div>
               <span className="text-xs text-muted-foreground shrink-0">
-                {thisYearCount >= yearlyGoal 
-                  ? `🎉 +${thisYearCount - yearlyGoal} bonus!`
-                  : `${yearlyGoal - thisYearCount} to go`
+                {yearFilteredEntries.length >= selectedYearGoal 
+                  ? `🎉 +${yearFilteredEntries.length - selectedYearGoal} bonus!`
+                  : `${selectedYearGoal - yearFilteredEntries.length} to go`
                 }
               </span>
             </div>

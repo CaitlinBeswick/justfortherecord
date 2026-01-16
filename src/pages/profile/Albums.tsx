@@ -11,6 +11,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
+import { RatingFilter } from "@/components/profile/RatingFilter";
+import { useMultipleAverageRatings } from "@/hooks/useAverageRating";
 import {
   Select,
   SelectContent,
@@ -64,8 +66,6 @@ const Albums = () => {
   const [hasTriggeredBackfill, setHasTriggeredBackfill] = useState(false);
   const [ratingFilter, setRatingFilter] = useState<string>('all');
   const [filters, setFilters] = useState({
-    unrated: false,
-    rated: false,
     loved: false,
   });
 
@@ -143,18 +143,26 @@ const Albums = () => {
     return Array.from(albumsMap.values());
   }, [listenedStatuses, ratings]);
 
+  // Get all release group IDs for fetching average ratings
+  const releaseGroupIds = useMemo(() => albums.map(a => a.release_group_id), [albums]);
+  const { ratings: avgRatingsMap, isLoading: isLoadingAvgRatings } = useMultipleAverageRatings(releaseGroupIds);
+
   const filteredAlbums = useMemo(() => {
     let result = albums;
     
-    // Apply checkbox filters
-    const hasActiveFilters = filters.unrated || filters.rated || filters.loved;
-    if (hasActiveFilters) {
-      result = result.filter(a => {
-        if (filters.unrated && !a.rating) return true;
-        if (filters.rated && a.rating) return true;
-        if (filters.loved && a.loved) return true;
-        return false;
-      });
+    // Apply rating filter
+    if (ratingFilter !== 'all') {
+      if (ratingFilter === 'unrated') {
+        result = result.filter(a => !a.rating);
+      } else {
+        const minRating = parseInt(ratingFilter);
+        result = result.filter(a => a.rating && a.rating >= minRating);
+      }
+    }
+    
+    // Apply loved filter
+    if (filters.loved) {
+      result = result.filter(a => a.loved);
     }
     
     // Apply search filter
@@ -167,7 +175,7 @@ const Albums = () => {
     }
     
     return result;
-  }, [albums, searchQuery, filters]);
+  }, [albums, searchQuery, filters, ratingFilter]);
 
   const sortedAlbums = useMemo(() => {
     const sorted = [...filteredAlbums];
@@ -189,15 +197,21 @@ const Albums = () => {
       case 'my-rating-low':
         return sorted.sort((a, b) => (a.rating ?? 0) - (b.rating ?? 0));
       case 'avg-rating-high':
+        return sorted.sort((a, b) => {
+          const avgA = avgRatingsMap.get(a.release_group_id)?.average ?? 0;
+          const avgB = avgRatingsMap.get(b.release_group_id)?.average ?? 0;
+          return avgB - avgA;
+        });
       case 'avg-rating-low':
-        // Average rating sorting would require fetching avg ratings - using my rating for now
-        return sorted.sort((a, b) => sortBy === 'avg-rating-high' 
-          ? (b.rating ?? 0) - (a.rating ?? 0) 
-          : (a.rating ?? 0) - (b.rating ?? 0));
+        return sorted.sort((a, b) => {
+          const avgA = avgRatingsMap.get(a.release_group_id)?.average ?? 0;
+          const avgB = avgRatingsMap.get(b.release_group_id)?.average ?? 0;
+          return avgA - avgB;
+        });
       default:
         return sorted;
     }
-  }, [filteredAlbums, sortBy]);
+  }, [filteredAlbums, sortBy, avgRatingsMap]);
 
   // Auto-backfill release dates on mount
   useEffect(() => {
@@ -267,28 +281,9 @@ const Albums = () => {
                   </div>
                 </div>
 
-                {/* Filter checkboxes */}
-                <div className="flex items-center gap-6 mb-6">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="filter-unrated"
-                      checked={filters.unrated}
-                      onCheckedChange={(checked) => setFilters(f => ({ ...f, unrated: !!checked }))}
-                    />
-                    <label htmlFor="filter-unrated" className="text-sm text-muted-foreground cursor-pointer">
-                      Unrated
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="filter-rated"
-                      checked={filters.rated}
-                      onCheckedChange={(checked) => setFilters(f => ({ ...f, rated: !!checked }))}
-                    />
-                    <label htmlFor="filter-rated" className="text-sm text-muted-foreground cursor-pointer">
-                      Rated
-                    </label>
-                  </div>
+                {/* Filter controls */}
+                <div className="flex items-center gap-4 mb-6 flex-wrap">
+                  <RatingFilter value={ratingFilter} onChange={setRatingFilter} />
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="filter-loved"
@@ -296,10 +291,10 @@ const Albums = () => {
                       onCheckedChange={(checked) => setFilters(f => ({ ...f, loved: !!checked }))}
                     />
                     <label htmlFor="filter-loved" className="text-sm text-muted-foreground cursor-pointer">
-                      Loved
+                      Loved only
                     </label>
                   </div>
-                  {(filters.unrated || filters.rated || filters.loved) && (
+                  {(ratingFilter !== 'all' || filters.loved) && (
                     <span className="text-xs text-muted-foreground">
                       ({filteredAlbums.length} shown)
                     </span>
