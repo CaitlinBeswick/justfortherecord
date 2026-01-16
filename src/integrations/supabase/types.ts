@@ -568,6 +568,33 @@ export type Database = {
         }
         Relationships: []
       }
+      yearly_listening_goals: {
+        Row: {
+          created_at: string
+          goal: number
+          id: string
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          goal: number
+          id?: string
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          goal?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
