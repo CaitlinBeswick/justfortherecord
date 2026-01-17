@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CalendarIcon, RotateCcw, Plus, Star } from "lucide-react";
+import { CalendarIcon, RotateCcw, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,7 +23,6 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { StarRating } from "@/components/ui/StarRating";
 
 interface LogListenDialogProps {
   releaseGroupId: string;
@@ -234,44 +233,6 @@ export function LogListenDialog({
               </p>
             </div>
           </div>
-
-          {/* Rating */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Star className="h-4 w-4 text-primary" />
-              Rating
-            </Label>
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card/50">
-              <StarRating
-                rating={rating}
-                size="lg"
-                interactive
-                onRatingChange={setRating}
-              />
-              {rating > 0 && (
-                <span className="text-sm text-muted-foreground">
-                  {rating} / 5
-                </span>
-              )}
-              {rating > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto h-7 text-xs"
-                  onClick={() => setRating(0)}
-                >
-                  Clear
-                </Button>
-              )}
-            </div>
-            {existingRatingData?.rating && existingRatingData.rating !== rating && (
-              <p className="text-xs text-muted-foreground">
-                Current rating: {existingRatingData.rating}/5 — this will update it
-              </p>
-            )}
-          </div>
-
           {/* Review */}
           <div className="space-y-2">
             <Label htmlFor="review">Review (optional)</Label>

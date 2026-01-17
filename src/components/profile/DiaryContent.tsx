@@ -26,6 +26,7 @@ import {
 import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
 import { RatingFilter } from "./RatingFilter";
 import { MobileListeningGoal } from "./MobileListeningGoal";
+import { ExportDiaryButton } from "./ExportDiaryButton";
 
 type DiarySortOption = "date" | "rating" | "artist" | "album";
 

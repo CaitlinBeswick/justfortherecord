@@ -16,6 +16,7 @@ const navItems = [
   { path: "/", label: "Home", icon: Music2 },
   { path: "/albums", label: "Albums", icon: Disc3 },
   { path: "/artists", label: "Artists", icon: Users },
+  { path: "/profile", label: "My Profile", icon: User, requiresAuth: true },
 ];
 
 // Pages that share search query state
@@ -57,6 +58,8 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
+            // Hide auth-required items when not logged in
+            if ((item as any).requiresAuth && !user) return null;
             return (
               <Link
                 key={item.path}
@@ -91,14 +94,6 @@ export function Navbar() {
             </div>
           ) : user ? (
             <>
-              {/* My Profile quick access button - visible on all screens */}
-              <Link
-                to="/profile"
-                className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-2"
-              >
-                My Profile
-              </Link>
-              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:opacity-90">

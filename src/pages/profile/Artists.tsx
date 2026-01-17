@@ -71,7 +71,7 @@ const Artists = () => {
     enabled: !!user,
   });
 
-  // Fetch artist ratings for sorting
+  // Fetch user's artist ratings for sorting by "my rating"
   const { data: artistRatings = [] } = useQuery({
     queryKey: ['user-artist-ratings', user?.id],
     queryFn: async () => {
@@ -85,11 +85,45 @@ const Artists = () => {
     enabled: !!user,
   });
 
-  // Create a map for quick rating lookup
+  // Fetch all community artist ratings for average rating sorting
+  const artistIds = followedArtists.map(a => a.artist_id);
+  const { data: allCommunityRatings = [] } = useQuery({
+    queryKey: ['all-artist-community-ratings', artistIds.join(',')],
+    queryFn: async () => {
+      if (artistIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('artist_ratings')
+        .select('artist_id, rating')
+        .in('artist_id', artistIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: artistIds.length > 0,
+  });
+
+  // Create a map for quick my-rating lookup
   const ratingsMap = artistRatings.reduce((acc, r) => {
     acc[r.artist_id] = r.rating;
     return acc;
   }, {} as Record<string, number>);
+
+  // Create a map for average ratings
+  const avgRatingsMap = useMemo(() => {
+    const map = new Map<string, { avg: number; count: number }>();
+    const grouped: Record<string, number[]> = {};
+    
+    allCommunityRatings.forEach(r => {
+      if (!grouped[r.artist_id]) grouped[r.artist_id] = [];
+      grouped[r.artist_id].push(Number(r.rating));
+    });
+    
+    Object.entries(grouped).forEach(([artistId, ratings]) => {
+      const avg = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
+      map.set(artistId, { avg, count: ratings.length });
+    });
+    
+    return map;
+  }, [allCommunityRatings]);
 
   useEffect(() => {
     console.log("[ProfileArtists] user", user?.id);
@@ -176,23 +210,31 @@ const Artists = () => {
             return a.artist_name.localeCompare(b.artist_name);
           case 'name-desc':
             return b.artist_name.localeCompare(a.artist_name);
-          case 'my-rating-high':
-          case 'avg-rating-high': {
+          case 'my-rating-high': {
             const ratingA = ratingsMap[a.artist_id] ?? 0;
             const ratingB = ratingsMap[b.artist_id] ?? 0;
             return ratingB - ratingA;
           }
-          case 'my-rating-low':
-          case 'avg-rating-low': {
+          case 'my-rating-low': {
             const ratingA = ratingsMap[a.artist_id] ?? 0;
             const ratingB = ratingsMap[b.artist_id] ?? 0;
             return ratingA - ratingB;
+          }
+          case 'avg-rating-high': {
+            const avgA = avgRatingsMap.get(a.artist_id)?.avg ?? 0;
+            const avgB = avgRatingsMap.get(b.artist_id)?.avg ?? 0;
+            return avgB - avgA;
+          }
+          case 'avg-rating-low': {
+            const avgA = avgRatingsMap.get(a.artist_id)?.avg ?? 0;
+            const avgB = avgRatingsMap.get(b.artist_id)?.avg ?? 0;
+            return avgA - avgB;
           }
           default:
             return 0;
         }
       });
-  }, [followedArtists, searchQuery, sortBy, ratingFilter, ratingsMap]);
+  }, [followedArtists, searchQuery, sortBy, ratingFilter, ratingsMap, avgRatingsMap]);
 
   if (authLoading || isLoading) {
     return (
@@ -232,6 +274,8 @@ const Artists = () => {
                         <SelectItem value="name-desc">Name (Z-A)</SelectItem>
                         <SelectItem value="my-rating-high">My Rating (High-Low)</SelectItem>
                         <SelectItem value="my-rating-low">My Rating (Low-High)</SelectItem>
+                        <SelectItem value="avg-rating-high">Avg Rating (High-Low)</SelectItem>
+                        <SelectItem value="avg-rating-low">Avg Rating (Low-High)</SelectItem>
                       </SelectContent>
                     </Select>
                     <RatingFilter value={ratingFilter} onChange={setRatingFilter} />
