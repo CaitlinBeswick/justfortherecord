@@ -9,7 +9,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { formatDistanceToNow, format } from "date-fns";
-import { StarRating } from "@/components/ui/StarRating";
+import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -222,7 +222,10 @@ const ProfileReviews = () => {
                                 {review.artist_name}
                               </p>
                             </div>
-                            <StarRating rating={review.rating} size="sm" />
+                            <div className="flex items-center gap-0.5">
+                              <Star className="h-3 w-3 fill-primary text-primary" />
+                              <span className="text-xs font-medium">{review.rating.toFixed(1)}</span>
+                            </div>
                           </div>
                           
                           <p className="text-sm text-muted-foreground mt-2 line-clamp-3">

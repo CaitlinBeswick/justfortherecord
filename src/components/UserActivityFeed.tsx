@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { formatDistanceToNow } from "date-fns";
-import { StarRating } from "@/components/ui/StarRating";
 
 interface ActivityItem {
   id: string;
@@ -218,8 +217,9 @@ export function UserActivityFeed() {
 
                 {/* Rating for reviews/ratings */}
                 {(activity.type === 'review' || activity.type === 'rating') && activity.rating && (
-                  <div className="mt-1">
-                    <StarRating rating={activity.rating} size="sm" />
+                  <div className="mt-1 flex items-center gap-0.5">
+                    <Star className="h-3 w-3 fill-primary text-primary" />
+                    <span className="text-xs font-medium">{activity.rating.toFixed(1)}</span>
                   </div>
                 )}
 

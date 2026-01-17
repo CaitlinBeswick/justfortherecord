@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
-import { StarRating } from "./ui/StarRating";
 import { useState } from "react";
-import { Disc3, Heart, BookOpen, Users } from "lucide-react";
+import { Disc3, Heart, BookOpen, Users, Star } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AlbumCardProps {
@@ -84,9 +83,12 @@ export function AlbumCard({
           )}
         </div>
         
-        {rating !== undefined && (
+        {rating !== undefined && rating > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <StarRating rating={rating} size="sm" />
+            <div className="flex items-center gap-0.5 px-2 py-1 bg-background/80 rounded-full">
+              <Star className="h-3 w-3 fill-primary text-primary" />
+              <span className="text-xs font-medium">{rating.toFixed(1)}</span>
+            </div>
           </div>
         )}
       </div>

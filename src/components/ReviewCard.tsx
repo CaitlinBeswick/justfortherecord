@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-import { StarRating } from "./ui/StarRating";
-import { Heart, MessageCircle } from "lucide-react";
+import { Heart, MessageCircle, Star } from "lucide-react";
 
 interface ReviewCardProps {
   id: string;
@@ -51,7 +50,10 @@ export function ReviewCard({
             </h3>
             <p className="text-sm text-muted-foreground">{artist}</p>
           </div>
-          <StarRating rating={rating} size="sm" />
+          <div className="flex items-center gap-0.5">
+            <Star className="h-3 w-3 fill-primary text-primary" />
+            <span className="text-sm font-medium">{rating.toFixed(1)}</span>
+          </div>
         </div>
         
         <p className="mt-2 text-sm text-foreground/80 line-clamp-2">

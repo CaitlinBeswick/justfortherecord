@@ -1,10 +1,9 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
-import { StarRating } from "@/components/ui/StarRating";
 import { AverageAlbumRating } from "@/components/AverageAlbumRating";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown, Star } from "lucide-react";
+import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -423,26 +422,9 @@ const AlbumDetail = () => {
                   {artistName}
                 </button>
 
-                {/* Rating & Status Card */}
+                {/* Listening Status Card */}
                 <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    {/* Personal Rating */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">Your rating:</span>
-                      <StarRating
-                        rating={userRating}
-                        size="lg"
-                        interactive
-                        onRatingChange={handleRatingChange}
-                      />
-                      {userRating > 0 && (
-                        <span className="text-sm font-medium text-foreground">{userRating.toFixed(1)}</span>
-                      )}
-                    </div>
-
-                    {/* Divider */}
-                    <div className="hidden sm:block w-px h-8 bg-border/50" />
-
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     {/* Listening Status */}
                     <ListeningStatusButtons
                       releaseGroupId={id!}
