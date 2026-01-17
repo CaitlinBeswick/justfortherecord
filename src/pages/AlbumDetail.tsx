@@ -58,6 +58,9 @@ const AlbumDetail = () => {
   const [coverError, setCoverError] = useState(false);
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
 
+  // Use real average rating from user ratings in our database - must be called before any early returns
+  const { averageRating, ratingCount } = useAverageRating(id);
+
   const { data: releaseGroup, isLoading, error } = useQuery({
     queryKey: ['release-group', id],
     queryFn: () => getReleaseGroup(id!),
@@ -347,9 +350,6 @@ const AlbumDetail = () => {
 
   const artistName = getArtistNames(releaseGroup["artist-credit"]);
   const year = getYear(releaseGroup["first-release-date"]);
-  
-  // Use real average rating from user ratings in our database
-  const { averageRating, ratingCount } = useAverageRating(id);
 
   return (
     <div className="min-h-screen bg-background">
