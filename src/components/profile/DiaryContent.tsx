@@ -23,6 +23,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
 import { RatingFilter } from "./RatingFilter";
 import { MobileListeningGoal } from "./MobileListeningGoal";
@@ -627,9 +632,28 @@ export function DiaryContent() {
                       {entry.album_title}
                     </h3>
                     {rating?.review_text && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium shrink-0">
-                        Review
-                      </span>
+                      <HoverCard openDelay={200} closeDelay={100}>
+                        <HoverCardTrigger asChild>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium shrink-0 cursor-pointer hover:bg-primary/20 transition-colors">
+                            Review
+                          </span>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-80 p-3" side="top" align="start">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
+                              <span className="text-xs font-medium text-foreground">{rating.rating}/5</span>
+                              {rating.loved && <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" />}
+                            </div>
+                            <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap">
+                              {rating.review_text}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/60">
+                              Click album to read full review
+                            </p>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
