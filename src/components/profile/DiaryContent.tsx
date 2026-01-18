@@ -113,6 +113,10 @@ export function DiaryContent() {
     enabled: !!user,
   });
 
+  // Calculate this year's listen count - define currentYear first since it's used below
+  const currentYear = new Date().getFullYear();
+  const thisYearStart = startOfYear(new Date());
+
   // Get the goal for the selected year
   const selectedYearGoal = yearlyGoals.find(g => g.year === selectedYear)?.goal;
   // Get the goal for current year (for the celebration logic)
@@ -153,9 +157,6 @@ export function DiaryContent() {
 
   const ratingsMap = new Map(ratings.map(r => [r.release_group_id, r]));
 
-  // Calculate this year's listen count
-  const currentYear = new Date().getFullYear();
-  const thisYearStart = startOfYear(new Date());
   const thisYearCount = diaryEntriesData.filter(entry => 
     isAfter(new Date(entry.listened_on), thisYearStart) || 
     new Date(entry.listened_on).getFullYear() === currentYear
