@@ -46,6 +46,7 @@ interface AlbumRating {
   release_group_id: string;
   rating: number;
   loved: boolean;
+  review_text?: string | null;
 }
 
 export function DiaryContent() {
@@ -66,11 +67,11 @@ export function DiaryContent() {
   const [ratingFilter, setRatingFilter] = useState<string>('all');
 
   const { data: ratings = [] } = useQuery({
-    queryKey: ['user-album-ratings-basic', user?.id],
+    queryKey: ['user-album-ratings-with-reviews', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')
-        .select('id, release_group_id, rating, loved')
+        .select('id, release_group_id, rating, loved, review_text')
         .eq('user_id', user!.id);
       if (error) throw error;
       return data as AlbumRating[];
@@ -512,6 +513,11 @@ export function DiaryContent() {
             {/* Rating Filter */}
             <RatingFilter value={ratingFilter} onChange={setRatingFilter} />
             
+            <ExportDiaryButton 
+              entries={yearFilteredEntries} 
+              ratings={ratings} 
+              year={selectedYear} 
+            />
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -620,6 +626,11 @@ export function DiaryContent() {
                     >
                       {entry.album_title}
                     </h3>
+                    {rating?.review_text && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium shrink-0">
+                        Review
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
                 </div>

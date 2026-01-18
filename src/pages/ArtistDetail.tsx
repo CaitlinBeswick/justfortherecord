@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
-import { ArtistRating } from "@/components/ArtistRating";
 import { AverageArtistRating } from "@/components/AverageArtistRating";
 import { ShareButton } from "@/components/ShareButton";
 
@@ -613,44 +612,35 @@ const ArtistDetail = () => {
                     <span><strong className="text-foreground">{releases.length}</strong> releases</span>
                   </div>
 
-                  {/* Rating & Actions Card */}
+                  {/* Actions Card */}
                   <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                      {/* Personal Rating */}
-                      <ArtistRating artistId={artistId} artistName={artist.name} />
-
-                      {/* Divider */}
-                      <div className="hidden sm:block w-px h-8 bg-border/50" />
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={handleFollow}
-                          disabled={followMutation.isPending}
-                          className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
-                            following
-                              ? "bg-red-500 text-white hover:bg-red-600"
-                              : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                          } disabled:opacity-50`}
-                        >
-                          {following ? (
-                            <>
-                              <UserCheck className="h-4 w-4" />
-                              Following
-                            </>
-                          ) : (
-                            <>
-                              <UserPlus className="h-4 w-4" />
-                              Follow
-                            </>
-                          )}
-                        </button>
-                        <ShareButton 
-                          title={artist.name}
-                          text={`Check out ${artist.name}`}
-                          className="flex h-10 w-10 items-center justify-center rounded-lg"
-                        />
-                      </div>
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        onClick={handleFollow}
+                        disabled={followMutation.isPending}
+                        className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
+                          following
+                            ? "bg-red-500 text-white hover:bg-red-600"
+                            : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                        } disabled:opacity-50`}
+                      >
+                        {following ? (
+                          <>
+                            <UserCheck className="h-4 w-4" />
+                            Following
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4" />
+                            Follow
+                          </>
+                        )}
+                      </button>
+                      <ShareButton 
+                        title={artist.name}
+                        text={`Check out ${artist.name}`}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg"
+                      />
                     </div>
                   </div>
                 </motion.div>
