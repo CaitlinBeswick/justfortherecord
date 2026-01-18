@@ -26,9 +26,7 @@ type SortOption =
   | 'album-asc' 
   | 'album-desc'
   | 'date-added-desc'
-  | 'date-added-asc'
-  | 'rating-high'
-  | 'rating-low';
+  | 'date-added-asc';
 
 const sortLabels: Record<SortOption, string> = {
   'artist-asc': 'Artist (A-Z)',
@@ -37,8 +35,6 @@ const sortLabels: Record<SortOption, string> = {
   'album-desc': 'Album (Z-A)',
   'date-added-desc': 'Date Added (Newest)',
   'date-added-asc': 'Date Added (Oldest)',
-  'rating-high': 'Rating (High-Low)',
-  'rating-low': 'Rating (Low-High)',
 };
 
 const ToListen = () => {
@@ -101,22 +97,10 @@ const ToListen = () => {
         return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       case 'date-added-asc':
         return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      case 'rating-high':
-        return sorted.sort((a, b) => {
-          const ratingA = ratingsMap.get(a.release_group_id)?.rating ?? 0;
-          const ratingB = ratingsMap.get(b.release_group_id)?.rating ?? 0;
-          return ratingB - ratingA;
-        });
-      case 'rating-low':
-        return sorted.sort((a, b) => {
-          const ratingA = ratingsMap.get(a.release_group_id)?.rating ?? 0;
-          const ratingB = ratingsMap.get(b.release_group_id)?.rating ?? 0;
-          return ratingA - ratingB;
-        });
       default:
         return sorted;
     }
-  }, [toListenAlbums, searchQuery, sortBy, ratingsMap]);
+  }, [toListenAlbums, searchQuery, sortBy]);
 
   if (authLoading || isLoading) {
     return (

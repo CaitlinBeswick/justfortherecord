@@ -11,7 +11,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { toast } from "sonner";
 import { getArtistImage } from "@/services/musicbrainz";
-import { RatingFilter } from "@/components/profile/RatingFilter";
+
 import {
   Select,
   SelectContent,
@@ -32,7 +32,7 @@ interface ArtistRating {
   rating: number;
 }
 
-type SortOption = 'name-asc' | 'name-desc' | 'my-rating-high' | 'my-rating-low' | 'avg-rating-high' | 'avg-rating-low';
+type SortOption = 'name-asc' | 'name-desc';
 
 const Artists = () => {
   const navigate = useNavigate();
@@ -42,7 +42,6 @@ const Artists = () => {
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
   const [artistImages, setArtistImages] = useState<Record<string, string | null>>({});
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
-  const [ratingFilter, setRatingFilter] = useState<string>('all');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -188,17 +187,6 @@ const Artists = () => {
   const filteredAndSortedArtists = useMemo(() => {
     return followedArtists
       .filter(artist => {
-        // Rating filter
-        if (ratingFilter !== 'all') {
-          const rating = ratingsMap[artist.artist_id];
-          if (ratingFilter === 'unrated') {
-            if (rating) return false;
-          } else {
-            const minRating = parseInt(ratingFilter);
-            if (!rating || rating < minRating) return false;
-          }
-        }
-        
         // Search filter
         if (!searchQuery.trim()) return true;
         const query = searchQuery.toLowerCase();
@@ -210,31 +198,11 @@ const Artists = () => {
             return a.artist_name.localeCompare(b.artist_name);
           case 'name-desc':
             return b.artist_name.localeCompare(a.artist_name);
-          case 'my-rating-high': {
-            const ratingA = ratingsMap[a.artist_id] ?? 0;
-            const ratingB = ratingsMap[b.artist_id] ?? 0;
-            return ratingB - ratingA;
-          }
-          case 'my-rating-low': {
-            const ratingA = ratingsMap[a.artist_id] ?? 0;
-            const ratingB = ratingsMap[b.artist_id] ?? 0;
-            return ratingA - ratingB;
-          }
-          case 'avg-rating-high': {
-            const avgA = avgRatingsMap.get(a.artist_id)?.avg ?? 0;
-            const avgB = avgRatingsMap.get(b.artist_id)?.avg ?? 0;
-            return avgB - avgA;
-          }
-          case 'avg-rating-low': {
-            const avgA = avgRatingsMap.get(a.artist_id)?.avg ?? 0;
-            const avgB = avgRatingsMap.get(b.artist_id)?.avg ?? 0;
-            return avgA - avgB;
-          }
           default:
             return 0;
         }
       });
-  }, [followedArtists, searchQuery, sortBy, ratingFilter, ratingsMap, avgRatingsMap]);
+  }, [followedArtists, searchQuery, sortBy]);
 
   if (authLoading || isLoading) {
     return (
@@ -265,20 +233,15 @@ const Artists = () => {
                   </h2>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-[140px]">
                         <ArrowUpDown className="h-4 w-4 mr-2" />
                         <SelectValue placeholder="Sort by" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="name-asc">Name (A-Z)</SelectItem>
                         <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                        <SelectItem value="my-rating-high">My Rating (High-Low)</SelectItem>
-                        <SelectItem value="my-rating-low">My Rating (Low-High)</SelectItem>
-                        <SelectItem value="avg-rating-high">Avg Rating (High-Low)</SelectItem>
-                        <SelectItem value="avg-rating-low">Avg Rating (Low-High)</SelectItem>
                       </SelectContent>
                     </Select>
-                    <RatingFilter value={ratingFilter} onChange={setRatingFilter} />
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input

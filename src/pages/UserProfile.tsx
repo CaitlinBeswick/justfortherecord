@@ -120,8 +120,8 @@ interface UserFriend {
 type ProfileTab = "diary" | "albums" | "to_listen" | "artists" | "lists" | "following";
 
 // Sort options for each tab
-type AlbumSortOption = 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc' | 'release-desc' | 'release-asc' | 'rating-high' | 'rating-low';
-type DiarySortOption = 'date-desc' | 'date-asc' | 'rating-desc' | 'rating-asc' | 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc';
+type AlbumSortOption = 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc' | 'release-desc' | 'release-asc';
+type DiarySortOption = 'date-desc' | 'date-asc' | 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc';
 type ToListenSortOption = 'artist-asc' | 'artist-desc' | 'album-asc' | 'album-desc' | 'date-added-desc' | 'date-added-asc';
 type ArtistSortOption = 'name-asc' | 'name-desc';
 type FollowingSortOption = 'name-asc' | 'name-desc';
@@ -394,8 +394,6 @@ const UserProfile = () => {
       switch (diarySort) {
         case 'date-desc': return new Date(b.listened_on).getTime() - new Date(a.listened_on).getTime();
         case 'date-asc': return new Date(a.listened_on).getTime() - new Date(b.listened_on).getTime();
-        case 'rating-desc': return (ratingsMap.get(b.release_group_id) ?? -1) - (ratingsMap.get(a.release_group_id) ?? -1);
-        case 'rating-asc': return (ratingsMap.get(a.release_group_id) ?? -1) - (ratingsMap.get(b.release_group_id) ?? -1);
         case 'artist-asc': return a.artist_name.localeCompare(b.artist_name);
         case 'artist-desc': return b.artist_name.localeCompare(a.artist_name);
         case 'album-asc': return a.album_title.localeCompare(b.album_title);
@@ -435,8 +433,6 @@ const UserProfile = () => {
         case 'album-desc': return b.album_title.localeCompare(a.album_title);
         case 'release-desc': return (b.release_date || '').localeCompare(a.release_date || '');
         case 'release-asc': return (a.release_date || '').localeCompare(b.release_date || '');
-        case 'rating-high': return (b.rating ?? 0) - (a.rating ?? 0);
-        case 'rating-low': return (a.rating ?? 0) - (b.rating ?? 0);
         default: return 0;
       }
     });

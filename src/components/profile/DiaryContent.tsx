@@ -29,11 +29,11 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
-import { RatingFilter } from "./RatingFilter";
 import { MobileListeningGoal } from "./MobileListeningGoal";
 import { ExportDiaryButton } from "./ExportDiaryButton";
+import { AnnualStats } from "./AnnualStats";
 
-type DiarySortOption = "date" | "rating" | "artist" | "album";
+type DiarySortOption = "date" | "artist" | "album";
 
 interface DiaryEntry {
   id: string;
@@ -69,7 +69,6 @@ export function DiaryContent() {
   const prevGoalReached = useRef<boolean | null>(null);
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [ratingFilter, setRatingFilter] = useState<string>('all');
 
   const { data: ratings = [] } = useQuery({
     queryKey: ['user-album-ratings-with-reviews', user?.id],
@@ -205,17 +204,6 @@ export function DiaryContent() {
   );
 
   const filteredDiaryEntries = yearFilteredEntries.filter(entry => {
-    // Rating filter
-    if (ratingFilter !== 'all') {
-      const rating = ratingsMap.get(entry.release_group_id);
-      if (ratingFilter === 'unrated') {
-        if (rating) return false;
-      } else {
-        const minRating = parseInt(ratingFilter);
-        if (!rating || rating.rating < minRating) return false;
-      }
-    }
-    
     // Search filter
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
@@ -228,11 +216,6 @@ export function DiaryContent() {
     switch (diarySort) {
       case "date":
         comparison = new Date(b.listened_on).getTime() - new Date(a.listened_on).getTime();
-        break;
-      case "rating":
-        const ratingA = ratingsMap.get(a.release_group_id)?.rating ?? -1;
-        const ratingB = ratingsMap.get(b.release_group_id)?.rating ?? -1;
-        comparison = ratingB - ratingA;
         break;
       case "artist":
         comparison = a.artist_name.localeCompare(b.artist_name);
@@ -516,9 +499,6 @@ export function DiaryContent() {
               </Select>
             )}
             
-            {/* Rating Filter */}
-            <RatingFilter value={ratingFilter} onChange={setRatingFilter} />
-            
             <ExportDiaryButton 
               entries={yearFilteredEntries} 
               ratings={ratings} 
@@ -547,8 +527,6 @@ export function DiaryContent() {
               <SelectContent>
                 <SelectItem value="date-desc">Date (Newest)</SelectItem>
                 <SelectItem value="date-asc">Date (Oldest)</SelectItem>
-                <SelectItem value="rating-desc">Rating (High-Low)</SelectItem>
-                <SelectItem value="rating-asc">Rating (Low-High)</SelectItem>
                 <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
                 <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
                 <SelectItem value="album-asc">Album (A-Z)</SelectItem>
