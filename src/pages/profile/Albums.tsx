@@ -11,7 +11,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
-import { RatingFilter } from "@/components/profile/RatingFilter";
 import { useMultipleAverageRatings } from "@/hooks/useAverageRating";
 import {
   Select,
@@ -38,11 +37,7 @@ type SortOption =
   | 'album-asc' 
   | 'album-desc' 
   | 'release-desc' 
-  | 'release-asc'
-  | 'my-rating-high'
-  | 'my-rating-low'
-  | 'avg-rating-high'
-  | 'avg-rating-low';
+  | 'release-asc';
 
 const sortLabels: Record<SortOption, string> = {
   'artist-asc': 'Artist (A-Z)',
@@ -51,10 +46,6 @@ const sortLabels: Record<SortOption, string> = {
   'album-desc': 'Album (Z-A)',
   'release-desc': 'Release Date (Newest)',
   'release-asc': 'Release Date (Oldest)',
-  'my-rating-high': 'My Rating (High-Low)',
-  'my-rating-low': 'My Rating (Low-High)',
-  'avg-rating-high': 'Avg Rating (High-Low)',
-  'avg-rating-low': 'Avg Rating (Low-High)',
 };
 
 const Albums = () => {
@@ -64,7 +55,6 @@ const Albums = () => {
   const [sortBy, setSortBy] = useState<SortOption>('release-desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [hasTriggeredBackfill, setHasTriggeredBackfill] = useState(false);
-  const [ratingFilter, setRatingFilter] = useState<string>('all');
   const [filters, setFilters] = useState({
     loved: false,
   });
@@ -150,16 +140,6 @@ const Albums = () => {
   const filteredAlbums = useMemo(() => {
     let result = albums;
     
-    // Apply rating filter
-    if (ratingFilter !== 'all') {
-      if (ratingFilter === 'unrated') {
-        result = result.filter(a => !a.rating);
-      } else {
-        const minRating = parseInt(ratingFilter);
-        result = result.filter(a => a.rating && a.rating >= minRating);
-      }
-    }
-    
     // Apply loved filter
     if (filters.loved) {
       result = result.filter(a => a.loved);
@@ -175,7 +155,7 @@ const Albums = () => {
     }
     
     return result;
-  }, [albums, searchQuery, filters, ratingFilter]);
+  }, [albums, searchQuery, filters]);
 
   const sortedAlbums = useMemo(() => {
     const sorted = [...filteredAlbums];
@@ -192,26 +172,10 @@ const Albums = () => {
         return sorted.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
       case 'release-asc':
         return sorted.sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
-      case 'my-rating-high':
-        return sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-      case 'my-rating-low':
-        return sorted.sort((a, b) => (a.rating ?? 0) - (b.rating ?? 0));
-      case 'avg-rating-high':
-        return sorted.sort((a, b) => {
-          const avgA = avgRatingsMap.get(a.release_group_id)?.average ?? 0;
-          const avgB = avgRatingsMap.get(b.release_group_id)?.average ?? 0;
-          return avgB - avgA;
-        });
-      case 'avg-rating-low':
-        return sorted.sort((a, b) => {
-          const avgA = avgRatingsMap.get(a.release_group_id)?.average ?? 0;
-          const avgB = avgRatingsMap.get(b.release_group_id)?.average ?? 0;
-          return avgA - avgB;
-        });
       default:
         return sorted;
     }
-  }, [filteredAlbums, sortBy, avgRatingsMap]);
+  }, [filteredAlbums, sortBy]);
 
   // Auto-backfill release dates on mount
   useEffect(() => {
@@ -283,7 +247,6 @@ const Albums = () => {
 
                 {/* Filter controls */}
                 <div className="flex items-center gap-4 mb-6 flex-wrap">
-                  <RatingFilter value={ratingFilter} onChange={setRatingFilter} />
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="filter-loved"
@@ -294,7 +257,7 @@ const Albums = () => {
                       Loved only
                     </label>
                   </div>
-                  {(ratingFilter !== 'all' || filters.loved) && (
+                  {filters.loved && (
                     <span className="text-xs text-muted-foreground">
                       ({filteredAlbums.length} shown)
                     </span>
