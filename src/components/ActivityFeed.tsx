@@ -27,6 +27,7 @@ interface AlbumRating {
   rating: number;
   review_text: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface ArtistFollow {
@@ -83,7 +84,7 @@ export function ActivityFeed() {
     enabled: friendIds.length > 0,
   });
 
-  // Fetch friends' ratings (all ratings)
+  // Fetch friends' ratings (all ratings) - use updated_at to show recent review updates
   const { data: friendRatings = [], isLoading: ratingsLoading } = useQuery({
     queryKey: ['friends-ratings', friendIds],
     queryFn: async () => {
@@ -93,7 +94,7 @@ export function ActivityFeed() {
         .from('album_ratings')
         .select('*')
         .in('user_id', friendIds)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(50);
       
       if (error) throw error;
@@ -147,7 +148,7 @@ export function ActivityFeed() {
       albumId: rating.release_group_id,
       albumTitle: rating.album_title,
       artistName: rating.artist_name,
-      timestamp: rating.created_at,
+      timestamp: rating.updated_at,
       rating: rating.rating,
       reviewText: rating.review_text || undefined,
     })),
