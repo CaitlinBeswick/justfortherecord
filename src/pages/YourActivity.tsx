@@ -59,7 +59,7 @@ const YourActivity = () => {
         .from('album_ratings')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(100);
       
       if (error) throw error;
@@ -102,7 +102,7 @@ const YourActivity = () => {
       albumId: rating.release_group_id,
       albumTitle: rating.album_title,
       artistName: rating.artist_name,
-      timestamp: rating.created_at,
+      timestamp: rating.updated_at,
       rating: rating.rating,
       reviewText: rating.review_text || undefined,
     })),
