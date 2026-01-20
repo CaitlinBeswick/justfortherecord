@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Shield, Eye, EyeOff, Users, Lock, Ban, Target, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Shield, Eye, EyeOff, Users, Lock, Ban, Target, ChevronDown, ChevronUp, Download, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { AnnualStats } from "@/components/profile/AnnualStats";
+import { toast as sonnerToast } from "sonner";
 
 interface Profile {
   id: string;
@@ -101,6 +103,8 @@ const ProfileSettings = () => {
   const [showFriendsList, setShowFriendsList] = useState(true);
   const [allowFriendRequests, setAllowFriendRequests] = useState(true);
   const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
+  const [isStatsExpanded, setIsStatsExpanded] = useState(false);
+  const [isExportExpanded, setIsExportExpanded] = useState(false);
   // Blocked users
   const { blockedUsers, unblockUser } = useBlockedUsers();
 
@@ -881,6 +885,128 @@ const ProfileSettings = () => {
                           You haven't blocked anyone
                         </p>
                       )}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              <Separator className="my-6" />
+
+              {/* Annual Stats - Collapsible */}
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+                  className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Your Listening Stats</h2>
+                  </div>
+                  {isStatsExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+
+                {isStatsExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="pl-4 border-l-2 border-primary/20"
+                  >
+                    <AnnualStats />
+                  </motion.div>
+                )}
+              </div>
+
+              <Separator className="my-6" />
+
+              {/* Export Data - Collapsible */}
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setIsExportExpanded(!isExportExpanded)}
+                  className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Download className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Export Data</h2>
+                  </div>
+                  {isExportExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+
+                {isExportExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4 pl-4 border-l-2 border-primary/20"
+                  >
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Export your listening diary as a CSV file for backup or analysis.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={async () => {
+                          if (!user?.id) return;
+                          const { data: entries, error: entriesError } = await supabase
+                            .from('diary_entries')
+                            .select('*')
+                            .eq('user_id', user.id)
+                            .order('listened_on', { ascending: false });
+                          
+                          const { data: ratings, error: ratingsError } = await supabase
+                            .from('album_ratings')
+                            .select('release_group_id, rating, loved, review_text')
+                            .eq('user_id', user.id);
+                          
+                          if (entriesError || ratingsError || !entries) {
+                            sonnerToast.error("Failed to export data");
+                            return;
+                          }
+                          
+                          const ratingsMap = new Map(ratings?.map(r => [r.release_group_id, r]) || []);
+                          const headers = ["Date", "Album", "Artist", "Type", "Rating", "Loved", "Notes", "Review"];
+                          const rows = entries.map(entry => {
+                            const rating = ratingsMap.get(entry.release_group_id);
+                            return [
+                              entry.listened_on,
+                              `"${entry.album_title.replace(/"/g, '""')}"`,
+                              `"${entry.artist_name.replace(/"/g, '""')}"`,
+                              entry.is_relisten ? "Re-listen" : "First listen",
+                              rating?.rating?.toString() || "",
+                              rating?.loved ? "Yes" : "",
+                              entry.notes ? `"${entry.notes.replace(/"/g, '""')}"` : "",
+                              rating?.review_text ? `"${rating.review_text.replace(/"/g, '""')}"` : ""
+                            ];
+                          });
+                          
+                          const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+                          const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `diary-export-${new Date().toISOString().split('T')[0]}.csv`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          URL.revokeObjectURL(url);
+                          sonnerToast.success(`Exported ${entries.length} entries`);
+                        }}
+                        className="gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Export Diary as CSV
+                      </Button>
                     </div>
                   </motion.div>
                 )}

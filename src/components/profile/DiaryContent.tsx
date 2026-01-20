@@ -30,8 +30,7 @@ import {
 } from "@/components/ui/hover-card";
 import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
 import { MobileListeningGoal } from "./MobileListeningGoal";
-import { ExportDiaryButton } from "./ExportDiaryButton";
-import { AnnualStats } from "./AnnualStats";
+// ExportDiaryButton and AnnualStats moved to ProfileSettings
 
 type DiarySortOption = "date" | "artist" | "album";
 
@@ -499,11 +498,6 @@ export function DiaryContent() {
               </Select>
             )}
             
-            <ExportDiaryButton 
-              entries={yearFilteredEntries} 
-              ratings={ratings} 
-              year={selectedYear} 
-            />
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input

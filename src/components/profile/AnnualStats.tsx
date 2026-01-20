@@ -11,10 +11,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState, useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 interface AnnualStatsProps {
   userId?: string;
 }
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export function AnnualStats({ userId }: AnnualStatsProps) {
   const { user } = useAuth();
@@ -129,6 +140,24 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
     // Artist follows
     const newFollows = yearFollows.length;
 
+    // Monthly breakdown
+    const monthlyData = MONTH_NAMES.map((name, index) => {
+      const monthEntries = yearDiaryEntries.filter(entry => {
+        const date = new Date(entry.listened_on);
+        return date.getMonth() === index;
+      });
+      const monthRatings = yearRatings.filter(rating => {
+        const date = new Date(rating.created_at);
+        return date.getMonth() === index;
+      });
+      return {
+        month: name,
+        listens: monthEntries.length,
+        ratings: monthRatings.length,
+        newAlbums: monthEntries.filter(e => !e.is_relisten).length,
+      };
+    });
+
     return {
       totalListens,
       firstListens,
@@ -141,18 +170,21 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       lovedCount,
       reviewCount,
       newFollows,
+      monthlyData,
     };
   }, [diaryEntries, ratings, artistFollows, selectedYear]);
 
   if (!targetUserId) return null;
 
+  const hasMonthlyData = stats.monthlyData.some(m => m.listens > 0 || m.ratings > 0);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-8"
+      className="space-y-6"
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between">
         <h2 className="font-serif text-xl text-foreground flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" />
           Year in Review
@@ -172,7 +204,7 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
         <StatCard
           icon={<Disc3 className="h-5 w-5" />}
           label="Albums Listened"
@@ -211,8 +243,68 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
         />
       </div>
 
+      {/* Monthly Breakdown Chart */}
+      {hasMonthlyData && (
+        <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">Monthly Listening Activity</h3>
+          <div className="h-[200px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                  }}
+                  labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                  itemStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                />
+                <Bar 
+                  dataKey="listens" 
+                  name="Total Listens"
+                  fill="hsl(var(--primary))" 
+                  radius={[4, 4, 0, 0]}
+                  opacity={0.9}
+                />
+                <Bar 
+                  dataKey="newAlbums" 
+                  name="New Albums"
+                  fill="hsl(var(--primary))" 
+                  radius={[4, 4, 0, 0]}
+                  opacity={0.5}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center justify-center gap-6 mt-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-primary opacity-90" />
+              <span>Total Listens</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-primary opacity-50" />
+              <span>New Albums</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {stats.topArtists.length > 0 && (
-        <div className="mt-4 p-4 rounded-xl bg-card/50 border border-border/50">
+        <div className="p-4 rounded-xl bg-card/50 border border-border/50">
           <h3 className="text-sm font-medium text-muted-foreground mb-3">Most Listened Artists</h3>
           <div className="flex flex-wrap gap-2">
             {stats.topArtists.map(([artist, count], index) => (
