@@ -634,11 +634,11 @@ const UserProfile = () => {
   ).length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <VinylBackground fadeHeight="60%" />
       <Navbar />
       
       <main className="pt-16 relative">
-        <VinylBackground fadeHeight="60%" />
         
         {/* Profile Header */}
         <div className="gradient-hero relative">
