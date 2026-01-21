@@ -8,6 +8,7 @@ import { FavoriteAlbums } from "@/components/profile/FavoriteAlbums";
 import { ProfileCardDialog } from "@/components/profile/ProfileCardDialog";
 import { Progress } from "@/components/ui/progress";
 import { startOfYear, isAfter } from "date-fns";
+import { VinylBackground } from "@/components/VinylBackground";
 interface Profile {
   id: string;
   username: string | null;
@@ -114,8 +115,9 @@ export const ProfileHeader = () => {
   const displayName = profile?.display_name || profile?.username || user?.email?.split('@')[0] || 'User';
   const artistsCount = followedArtists.length;
   const followingCount = friendships.length;
-  return <div className="gradient-hero">
-      <div className="container mx-auto px-4 py-8 md:py-12">
+  return <div className="gradient-hero relative overflow-hidden">
+      <VinylBackground fadeHeight="120%" />
+      <div className="container mx-auto px-4 py-8 md:py-12 relative">
         <motion.div initial={{
         opacity: 0,
         y: 20
