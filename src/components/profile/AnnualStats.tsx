@@ -47,13 +47,13 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
     enabled: !!targetUserId,
   });
 
-  // Fetch ratings
+  // Fetch ratings - use updated_at for year filtering since reviews/loves can be updated
   const { data: ratings = [] } = useQuery({
     queryKey: ['annual-stats-ratings', targetUserId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')
-        .select('rating, loved, review_text, created_at')
+        .select('rating, loved, review_text, created_at, updated_at')
         .eq('user_id', targetUserId!);
       if (error) throw error;
       return data;
@@ -98,8 +98,9 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       return date >= yearStart && date < yearEnd;
     });
 
+    // Use updated_at for ratings to capture loves/reviews updated this year
     const yearRatings = ratings.filter(rating => {
-      const date = new Date(rating.created_at);
+      const date = new Date(rating.updated_at);
       return date >= yearStart && date < yearEnd;
     });
 
@@ -117,9 +118,8 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
     const newAlbumsSet = new Set(yearDiaryEntries.filter(e => !e.is_relisten).map(e => e.release_group_id));
     const newAlbums = newAlbumsSet.size;
 
-    // New artists (artists you listened to for the first time this year)
-    const newArtistsSet = new Set(yearDiaryEntries.filter(e => !e.is_relisten).map(e => e.artist_name.toLowerCase()));
-    const newArtists = newArtistsSet.size;
+    // Artists discovered (distinct artists from first-time listens this year)
+    const artistsDiscovered = new Set(yearDiaryEntries.filter(e => !e.is_relisten).map(e => e.artist_name.toLowerCase())).size;
 
     // Top artists by listen count
     const artistCounts: Record<string, number> = {};
@@ -154,6 +154,13 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
     const lovedCount = yearRatings.filter(r => r.loved).length;
     const reviewCount = yearRatings.filter(r => r.review_text).length;
 
+    // Rating distribution (0.5 to 5 in 0.5 increments)
+    const ratingDistribution: { rating: string; count: number }[] = [];
+    for (let r = 0.5; r <= 5; r += 0.5) {
+      const count = yearRatings.filter(rating => rating.rating === r).length;
+      ratingDistribution.push({ rating: r.toString(), count });
+    };
+
     // Artist follows
     const newFollows = yearFollows.length;
 
@@ -164,7 +171,7 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
         return date.getMonth() === index;
       });
       const monthRatings = yearRatings.filter(rating => {
-        const date = new Date(rating.created_at);
+        const date = new Date(rating.updated_at);
         return date.getMonth() === index;
       });
       return {
@@ -180,7 +187,7 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       firstListens,
       reListens,
       newAlbums,
-      newArtists,
+      artistsDiscovered,
       topArtists,
       mostReplayedAlbums,
       totalRatings,
@@ -189,12 +196,12 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       reviewCount,
       newFollows,
       monthlyData,
+      ratingDistribution,
     };
   }, [diaryEntries, ratings, artistFollows, selectedYear]);
 
-  if (!targetUserId) return null;
-
   const hasMonthlyData = stats.monthlyData.some(m => m.listens > 0 || m.ratings > 0);
+  const hasRatingData = stats.ratingDistribution.some(r => r.count > 0);
 
   return (
     <motion.div
@@ -249,17 +256,58 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
         />
         <StatCard
           icon={<Users className="h-5 w-5" />}
-          label="New Artists"
-          value={stats.newArtists}
+          label="Artists Discovered"
+          value={stats.artistsDiscovered}
           subtext={`${stats.newFollows} followed`}
         />
         <StatCard
           icon={<Disc3 className="h-5 w-5" />}
-          label="New Albums"
+          label="Albums Discovered"
           value={stats.newAlbums}
-          subtext="discovered"
+          subtext="first listens"
         />
       </div>
+
+      {/* Rating Distribution Chart */}
+      {hasRatingData && (
+        <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">Rating Distribution</h3>
+          <div className="h-[140px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.ratingDistribution} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <XAxis 
+                  dataKey="rating" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                  }}
+                  labelFormatter={(value) => `${value} stars`}
+                  formatter={(value: number) => [`${value} albums`, 'Count']}
+                />
+                <Bar 
+                  dataKey="count" 
+                  name="Albums"
+                  fill="hsl(var(--primary))" 
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Monthly Breakdown Chart */}
       {hasMonthlyData && (
