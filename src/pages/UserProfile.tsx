@@ -769,7 +769,7 @@ const UserProfile = () => {
                   {profile.show_friends_count && (
                     <div className="text-center">
                       <p className="text-2xl font-semibold text-foreground">{userFriends.length}</p>
-                      <p className="text-xs text-muted-foreground">Friends</p>
+                      <p className="text-xs text-muted-foreground">Following</p>
                     </div>
                   )}
                   

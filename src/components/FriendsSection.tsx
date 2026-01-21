@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { User, UserPlus, Search, Check, X, UserMinus, Loader2, ArrowUpDown } from "lucide-react";
+import { User, UserPlus, Search, Check, X, UserMinus, Loader2, ArrowUpDown, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFriendships } from "@/hooks/useFriendships";
@@ -246,7 +246,11 @@ export function FriendsSection() {
           </div>
         ) : sortedFriends.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {sortedFriends.map((friendship, index) => (
+            {sortedFriends.map((friendship, index) => {
+              // Check if this is a mutual friendship (friend)
+              const isMutualFriend = getFriendshipStatus(friendship.friend_profile?.id || '') === 'friends';
+              
+              return (
               <motion.div
                 key={friendship.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -255,20 +259,33 @@ export function FriendsSection() {
                 className="group text-center"
               >
                 <div 
-                  className="cursor-pointer"
+                  className="cursor-pointer relative"
                   onClick={() => navigate(`/user/${friendship.friend_profile?.id}`)}
                 >
                   {friendship.friend_profile?.avatar_url ? (
                     <img
                       src={friendship.friend_profile.avatar_url}
                       alt=""
-                      className="w-full aspect-square rounded-full object-cover border-2 border-border/50 group-hover:border-primary/50 transition-colors"
+                      className={`w-full aspect-square rounded-full object-cover border-2 transition-colors ${
+                        isMutualFriend 
+                          ? 'border-green-500 group-hover:border-green-400' 
+                          : 'border-border/50 group-hover:border-primary/50'
+                      }`}
                     />
                   ) : (
-                    <div className="w-full aspect-square rounded-full bg-secondary flex items-center justify-center border-2 border-border/50 group-hover:border-primary/50 transition-colors">
+                    <div className={`w-full aspect-square rounded-full bg-secondary flex items-center justify-center border-2 transition-colors ${
+                      isMutualFriend 
+                        ? 'border-green-500 group-hover:border-green-400' 
+                        : 'border-border/50 group-hover:border-primary/50'
+                    }`}>
                       <span className="text-foreground font-bold text-2xl">
                         {(friendship.friend_profile?.display_name || friendship.friend_profile?.username || 'U')[0].toUpperCase()}
                       </span>
+                    </div>
+                  )}
+                  {isMutualFriend && (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-green-500 border-2 border-background flex items-center justify-center" title="Mutual Friend">
+                      <Check className="h-3 w-3 text-white" />
                     </div>
                   )}
                   <p className="mt-2 font-medium text-foreground group-hover:text-primary transition-colors truncate">
@@ -286,7 +303,8 @@ export function FriendsSection() {
                   Remove
                 </Button>
               </motion.div>
-            ))}
+            );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">
