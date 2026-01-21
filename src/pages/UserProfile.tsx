@@ -640,30 +640,34 @@ const UserProfile = () => {
       
       <main className="pt-16 relative">
         
-        {/* Profile Header */}
-        <div className="gradient-hero relative">
-          <div className="container mx-auto px-4 py-12">
+        {/* Profile Header - centered layout matching own profile */}
+        <div className="gradient-hero relative overflow-hidden">
+          <VinylBackground fadeHeight="120%" />
+          <div className="container mx-auto px-4 py-8 md:py-12 relative">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex flex-col md:flex-row items-center md:items-start gap-6"
+              className="max-w-4xl mx-auto"
             >
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="Profile"
-                  className="w-32 h-32 rounded-full object-cover border-4 border-border/50"
-                />
-              ) : (
-                <div className="w-32 h-32 rounded-full bg-secondary flex items-center justify-center border-4 border-border/50">
-                  <User className="h-12 w-12 text-muted-foreground" />
-                </div>
-              )}
-              
-              <div className="flex-1 text-center md:text-left">
-                <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap">
-                  <h1 className="font-serif text-3xl text-foreground">{displayName}</h1>
+              {/* Centered profile layout */}
+              <div className="flex flex-col items-center text-center">
+                {/* Avatar */}
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="Profile"
+                    className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-border/50"
+                  />
+                ) : (
+                  <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-secondary flex items-center justify-center border-4 border-border/50">
+                    <User className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                )}
+                
+                {/* Name + Actions */}
+                <div className="mt-4 flex items-center gap-2 flex-wrap justify-center">
+                  <h1 className="font-serif text-2xl sm:text-5xl text-foreground">{displayName}</h1>
                   
                   <ShareButton 
                     title={displayName}
@@ -748,40 +752,44 @@ const UserProfile = () => {
                     </>
                   )}
                 </div>
-                
+
+                {/* Bio */}
                 {profile.bio && (
-                  <p className="text-muted-foreground mt-2">{profile.bio}</p>
+                  <p className="text-muted-foreground mt-2 max-w-lg">{profile.bio}</p>
                 )}
+                
+                {/* Location */}
                 {profile.location && (
                   <p className="text-sm text-muted-foreground/60 mt-1">📍 {profile.location}</p>
                 )}
-                
-                <div className="flex items-center justify-center md:justify-start gap-6 mt-6">
+
+                {/* Stats Row */}
+                <div className="flex flex-wrap items-center justify-center gap-6 mt-6">
                   {canViewProfile && profile.show_albums && (
                     <div className="text-center">
-                      <p className="text-2xl font-semibold text-foreground">{albumCount}</p>
+                      <p className="text-xl sm:text-2xl font-semibold text-foreground">{albumCount}</p>
                       <p className="text-xs text-muted-foreground">Albums</p>
                     </div>
                   )}
                   {canViewProfile && profile.show_artists && (
                     <div className="text-center">
-                      <p className="text-2xl font-semibold text-foreground">{followedArtists.length}</p>
+                      <p className="text-xl sm:text-2xl font-semibold text-foreground">{followedArtists.length}</p>
                       <p className="text-xs text-muted-foreground">Artists</p>
                     </div>
                   )}
                   {profile.show_friends_count && (
                     <div className="text-center">
-                      <p className="text-2xl font-semibold text-foreground">{userFriends.length}</p>
+                      <p className="text-xl sm:text-2xl font-semibold text-foreground">{userFriends.length}</p>
                       <p className="text-xs text-muted-foreground">Following</p>
                     </div>
                   )}
                   
                   {/* Listening Challenge */}
                   {canViewProfile && profile.show_diary && profile.yearly_listen_goal && (
-                    <div className="hidden sm:flex items-center gap-3 pl-6 border-l border-border/50">
+                    <div className="flex items-center gap-3 pl-6 border-l border-border/50">
                       <Target className="h-5 w-5 text-primary shrink-0" />
-                      <div className="min-w-[120px]">
-                        <div className="flex items-baseline gap-1.5">
+                      <div className="min-w-[80px] text-left">
+                        <div className="flex items-baseline gap-1">
                           <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
                           <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
                         </div>
@@ -789,25 +797,27 @@ const UserProfile = () => {
                           value={Math.min((thisYearCount / profile.yearly_listen_goal) * 100, 100)} 
                           className="h-1.5 mt-1"
                         />
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {currentYear} Goal
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{currentYear} Goal</p>
                       </div>
                     </div>
                   )}
                 </div>
 
+                {/* Genres */}
                 {profile.favorite_genres && profile.favorite_genres.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-4 justify-center md:justify-start">
+                  <div className="mt-6 flex flex-wrap gap-2 justify-center">
                     {profile.favorite_genres.map((genre) => (
-                      <span key={genre} className="px-3 py-1 rounded-full bg-secondary text-xs text-muted-foreground">
+                      <span key={genre} className="px-3 py-1 rounded-full text-xs bg-primary text-primary-foreground">
                         {genre}
                       </span>
                     ))}
                   </div>
                 )}
 
-                <FavoriteAlbums userId={userId} />
+                {/* Favorite Albums */}
+                <div className="mt-6 w-full flex justify-center">
+                  <FavoriteAlbums userId={userId} />
+                </div>
               </div>
             </motion.div>
           </div>
