@@ -16,17 +16,14 @@ interface AlbumRating {
   rating_count: number;
 }
 
-function AlbumCover({ releaseGroupId, title, size = "small" }: { releaseGroupId: string; title: string; size?: "small" | "large" }) {
+function AlbumCover({ releaseGroupId, title }: { releaseGroupId: string; title: string }) {
   const [hasError, setHasError] = useState(false);
   const imageUrl = getCoverArtUrl(releaseGroupId, '250');
 
-  const sizeClasses = size === "large" ? "w-36 h-36" : "w-12 h-12";
-  const iconSize = size === "large" ? "h-12 w-12" : "h-6 w-6";
-
   if (hasError) {
     return (
-      <div className={`${sizeClasses} rounded-lg bg-secondary flex items-center justify-center`}>
-        <Disc3 className={`${iconSize} text-muted-foreground`} />
+      <div className="aspect-square w-full rounded-lg bg-secondary flex items-center justify-center">
+        <Disc3 className="h-12 w-12 text-muted-foreground" />
       </div>
     );
   }
@@ -35,7 +32,7 @@ function AlbumCover({ releaseGroupId, title, size = "small" }: { releaseGroupId:
     <img 
       src={imageUrl} 
       alt={title}
-      className={`${sizeClasses} rounded-lg object-cover`}
+      className="aspect-square w-full rounded-lg object-cover"
       onError={() => setHasError(true)}
     />
   );
@@ -121,13 +118,13 @@ const TopAlbums = () => {
         </motion.div>
 
         {isLoading ? (
-          <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4 scrollbar-hide">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex-shrink-0 w-44">
-                <Skeleton className="h-36 w-36 rounded-lg mb-3" />
-                <Skeleton className="h-4 w-32 mb-2" />
-                <Skeleton className="h-3 w-24 mb-2" />
-                <Skeleton className="h-3 w-20" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {Array.from({ length: 24 }).map((_, i) => (
+              <div key={i}>
+                <Skeleton className="aspect-square w-full rounded-lg mb-3" />
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <Skeleton className="h-3 w-1/2 mb-2" />
+                <Skeleton className="h-3 w-1/3" />
               </div>
             ))}
           </div>
@@ -140,18 +137,18 @@ const TopAlbums = () => {
             </p>
           </div>
         ) : (
-          <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {topAlbums.map((album, index) => (
               <motion.div
                 key={album.release_group_id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: Math.min(index * 0.02, 0.3) }}
+                transition={{ delay: Math.min(index * 0.01, 0.2) }}
                 onClick={() => navigate(`/album/${album.release_group_id}`)}
-                className="flex-shrink-0 w-44 bg-card/50 border border-border/50 rounded-lg p-4 cursor-pointer hover:bg-card/80 transition-colors group"
+                className="cursor-pointer group"
               >
-                <div className="relative mb-3">
-                  <AlbumCover releaseGroupId={album.release_group_id} title={album.album_title} size="large" />
+                <div className="relative">
+                  <AlbumCover releaseGroupId={album.release_group_id} title={album.album_title} />
                   <div className={`absolute top-2 left-2 text-xs font-bold px-2 py-1 rounded ${
                     index === 0 ? 'bg-yellow-500 text-yellow-950' :
                     index === 1 ? 'bg-gray-300 text-gray-700' :
@@ -162,13 +159,11 @@ const TopAlbums = () => {
                   </div>
                 </div>
                 
-                <h3 className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                <h3 className="mt-2 text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                   {album.album_title}
                 </h3>
-                <p className="text-xs text-muted-foreground truncate mb-2">
-                  {album.artist_name}
-                </p>
-                <p className="text-xs text-muted-foreground mb-2">
+                <p className="text-xs text-muted-foreground truncate">{album.artist_name}</p>
+                <p className="text-xs text-muted-foreground mb-1">
                   {album.rating_count} {album.rating_count === 1 ? 'rating' : 'ratings'}
                 </p>
                 

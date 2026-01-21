@@ -37,7 +37,11 @@ type SortOption =
   | 'album-asc' 
   | 'album-desc' 
   | 'release-desc' 
-  | 'release-asc';
+  | 'release-asc'
+  | 'my-rating-desc'
+  | 'my-rating-asc'
+  | 'avg-rating-desc'
+  | 'avg-rating-asc';
 
 const sortLabels: Record<SortOption, string> = {
   'artist-asc': 'Artist (A-Z)',
@@ -46,6 +50,10 @@ const sortLabels: Record<SortOption, string> = {
   'album-desc': 'Album (Z-A)',
   'release-desc': 'Release Date (Newest)',
   'release-asc': 'Release Date (Oldest)',
+  'my-rating-desc': 'My Rating (High-Low)',
+  'my-rating-asc': 'My Rating (Low-High)',
+  'avg-rating-desc': 'Avg Rating (High-Low)',
+  'avg-rating-asc': 'Avg Rating (Low-High)',
 };
 
 const Albums = () => {
@@ -172,10 +180,26 @@ const Albums = () => {
         return sorted.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
       case 'release-asc':
         return sorted.sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
+      case 'my-rating-desc':
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      case 'my-rating-asc':
+        return sorted.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+      case 'avg-rating-desc':
+        return sorted.sort((a, b) => {
+          const avgA = avgRatingsMap.get(a.release_group_id)?.average || 0;
+          const avgB = avgRatingsMap.get(b.release_group_id)?.average || 0;
+          return avgB - avgA;
+        });
+      case 'avg-rating-asc':
+        return sorted.sort((a, b) => {
+          const avgA = avgRatingsMap.get(a.release_group_id)?.average || 0;
+          const avgB = avgRatingsMap.get(b.release_group_id)?.average || 0;
+          return avgA - avgB;
+        });
       default:
         return sorted;
     }
-  }, [filteredAlbums, sortBy]);
+  }, [filteredAlbums, sortBy, avgRatingsMap]);
 
   // Auto-backfill release dates on mount
   useEffect(() => {
