@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Batch insert notifications
+    // Batch insert notifications and send emails
     if (notificationsToCreate.length > 0) {
       console.log(`Creating ${notificationsToCreate.length} notifications...`);
       
@@ -182,6 +182,32 @@ Deno.serve(async (req) => {
       }
 
       console.log(`Successfully created ${notificationsToCreate.length} notifications`);
+
+      // Send email notifications (non-blocking)
+      const supabaseFunctionsUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.functions.supabase.co');
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      for (const notification of notificationsToCreate) {
+        try {
+          // Fire and forget - don't wait for email to complete
+          fetch(`${supabaseFunctionsUrl}/send-notification-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${serviceRoleKey}`,
+            },
+            body: JSON.stringify({
+              user_id: notification.user_id,
+              notification_type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              data: notification.data,
+            }),
+          }).catch(err => console.error('Email send error:', err));
+        } catch (emailError) {
+          console.error('Error queuing email notification:', emailError);
+        }
+      }
     } else {
       console.log('No new notifications to create');
     }

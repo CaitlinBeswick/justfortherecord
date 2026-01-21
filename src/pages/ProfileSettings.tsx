@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Shield, Eye, EyeOff, Users, Lock, Ban, Target, ChevronDown, ChevronUp, Download, TrendingUp, Music } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Shield, Eye, EyeOff, Users, Lock, Ban, Target, ChevronDown, ChevronUp, Download, TrendingUp, Music, Mail, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -39,6 +39,11 @@ interface Profile {
   show_friends_count: boolean;
   show_friends_list: boolean;
   allow_friend_requests: boolean;
+  // Email notification settings
+  email_notifications_enabled: boolean;
+  email_new_releases: boolean;
+  email_friend_requests: boolean;
+  email_friend_activity: boolean;
 }
 
 const RELEASE_TYPE_OPTIONS = [
@@ -106,6 +111,13 @@ const ProfileSettings = () => {
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
   const [isExportExpanded, setIsExportExpanded] = useState(false);
   const [isPreferencesExpanded, setIsPreferencesExpanded] = useState(false);
+  const [isNotificationsExpanded, setIsNotificationsExpanded] = useState(false);
+  
+  // Email notification settings state
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
+  const [emailNewReleases, setEmailNewReleases] = useState(true);
+  const [emailFriendRequests, setEmailFriendRequests] = useState(true);
+  const [emailFriendActivity, setEmailFriendActivity] = useState(false);
   // Blocked users
   const { blockedUsers, unblockUser } = useBlockedUsers();
 
@@ -166,6 +178,11 @@ const ProfileSettings = () => {
       setShowFriendsCount(profile.show_friends_count ?? true);
       setShowFriendsList(profile.show_friends_list ?? true);
       setAllowFriendRequests(profile.allow_friend_requests ?? true);
+      // Email notification settings
+      setEmailNotificationsEnabled(profile.email_notifications_enabled ?? false);
+      setEmailNewReleases(profile.email_new_releases ?? true);
+      setEmailFriendRequests(profile.email_friend_requests ?? true);
+      setEmailFriendActivity(profile.email_friend_activity ?? false);
     }
   }, [profile]);
 
@@ -193,6 +210,11 @@ const ProfileSettings = () => {
           show_friends_count: showFriendsCount,
           show_friends_list: showFriendsList,
           allow_friend_requests: allowFriendRequests,
+          // Email notification settings
+          email_notifications_enabled: emailNotificationsEnabled,
+          email_new_releases: emailNewReleases,
+          email_friend_requests: emailFriendRequests,
+          email_friend_activity: emailFriendActivity,
         })
         .eq('id', user!.id);
       
@@ -671,6 +693,123 @@ const ProfileSettings = () => {
                         )}
                       </div>
                     </div>
+                  </motion.div>
+                )}
+              </div>
+
+              <Separator className="my-6" />
+
+              {/* Email Notifications - Collapsible */}
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setIsNotificationsExpanded(!isNotificationsExpanded)}
+                  className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Email Notifications</h2>
+                  </div>
+                  {isNotificationsExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+
+                {isNotificationsExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4 pl-4 border-l-2 border-primary/20"
+                  >
+                    {/* Master Toggle */}
+                    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <Bell className="h-4 w-4" />
+                            <Label htmlFor="emailNotificationsEnabled" className="text-sm font-medium cursor-pointer">
+                              Enable Email Notifications
+                            </Label>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Receive notifications via email in addition to in-app notifications
+                          </p>
+                        </div>
+                        <Switch
+                          id="emailNotificationsEnabled"
+                          checked={emailNotificationsEnabled}
+                          onCheckedChange={setEmailNotificationsEnabled}
+                        />
+                      </div>
+                    </div>
+
+                    {emailNotificationsEnabled && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        className="space-y-4 rounded-lg border border-border bg-card p-4"
+                      >
+                        <div className="text-sm font-medium text-foreground">
+                          Notification Types
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Choose which notifications you want to receive via email
+                        </p>
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="emailNewReleases" className="text-sm font-normal cursor-pointer">
+                                New Releases
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                When artists you follow release new music
+                              </p>
+                            </div>
+                            <Switch
+                              id="emailNewReleases"
+                              checked={emailNewReleases}
+                              onCheckedChange={setEmailNewReleases}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="emailFriendRequests" className="text-sm font-normal cursor-pointer">
+                                Friend Requests
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                When someone sends you a friend request or accepts yours
+                              </p>
+                            </div>
+                            <Switch
+                              id="emailFriendRequests"
+                              checked={emailFriendRequests}
+                              onCheckedChange={setEmailFriendRequests}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="emailFriendActivity" className="text-sm font-normal cursor-pointer">
+                                Friend Activity
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                Updates about your friends' listening activity
+                              </p>
+                            </div>
+                            <Switch
+                              id="emailFriendActivity"
+                              checked={emailFriendActivity}
+                              onCheckedChange={setEmailFriendActivity}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
                   </motion.div>
                 )}
               </div>
