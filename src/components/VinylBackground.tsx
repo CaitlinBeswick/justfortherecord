@@ -1,24 +1,66 @@
 import { memo, useState, useCallback, useEffect } from "react";
 
+// Realistic vinyl record SVG with grooves, label, and highlight
 const VinylSVG = memo(({ detailed = false }: { detailed?: boolean }) => (
   <svg viewBox="0 0 200 200" className="w-full h-full">
+    {/* Outer edge - thick rim */}
+    <circle cx="100" cy="100" r="98" fill="none" stroke="hsl(var(--primary))" strokeWidth="3" opacity="0.9"/>
+    
+    {/* Vinyl grooves - many thin lines to simulate actual grooves */}
     {detailed ? (
       <>
-        <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-        <circle cx="100" cy="100" r="80" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-        <circle cx="100" cy="100" r="65" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-        <circle cx="100" cy="100" r="50" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-        <circle cx="100" cy="100" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-        <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-        <circle cx="100" cy="100" r="8" fill="hsl(var(--primary))"/>
+        {/* Detailed version with more grooves */}
+        <circle cx="100" cy="100" r="92" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.4"/>
+        <circle cx="100" cy="100" r="87" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.35"/>
+        <circle cx="100" cy="100" r="82" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.4"/>
+        <circle cx="100" cy="100" r="77" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.35"/>
+        <circle cx="100" cy="100" r="72" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.4"/>
+        <circle cx="100" cy="100" r="67" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.35"/>
+        <circle cx="100" cy="100" r="62" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.4"/>
+        <circle cx="100" cy="100" r="57" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.35"/>
+        <circle cx="100" cy="100" r="52" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.4"/>
+        <circle cx="100" cy="100" r="47" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.35"/>
+        {/* Label area outer ring */}
+        <circle cx="100" cy="100" r="38" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5" opacity="0.6"/>
+        {/* Label circle - filled */}
+        <circle cx="100" cy="100" r="32" fill="hsl(var(--primary))" opacity="0.15"/>
+        <circle cx="100" cy="100" r="32" fill="none" stroke="hsl(var(--primary))" strokeWidth="1" opacity="0.5"/>
+        {/* Inner label detail */}
+        <circle cx="100" cy="100" r="22" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.4"/>
+        {/* Spindle hole */}
+        <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))" opacity="0.8"/>
+        {/* Highlight/sheen effect - arc on upper left */}
+        <path 
+          d="M 40 70 Q 55 45, 90 35" 
+          fill="none" 
+          stroke="hsl(var(--primary))" 
+          strokeWidth="2" 
+          opacity="0.2"
+          strokeLinecap="round"
+        />
       </>
     ) : (
       <>
-        <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="4"/>
-        <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
-        <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-        <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
-        <circle cx="100" cy="100" r="8" fill="hsl(var(--primary))"/>
+        {/* Simpler version for small vinyls */}
+        <circle cx="100" cy="100" r="88" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.8" opacity="0.3"/>
+        <circle cx="100" cy="100" r="76" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.8" opacity="0.25"/>
+        <circle cx="100" cy="100" r="64" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.8" opacity="0.3"/>
+        <circle cx="100" cy="100" r="52" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.8" opacity="0.25"/>
+        {/* Label area */}
+        <circle cx="100" cy="100" r="38" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.2" opacity="0.5"/>
+        <circle cx="100" cy="100" r="30" fill="hsl(var(--primary))" opacity="0.12"/>
+        <circle cx="100" cy="100" r="30" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.8" opacity="0.4"/>
+        {/* Spindle hole */}
+        <circle cx="100" cy="100" r="4" fill="hsl(var(--primary))" opacity="0.7"/>
+        {/* Sheen */}
+        <path 
+          d="M 45 75 Q 58 52, 88 42" 
+          fill="none" 
+          stroke="hsl(var(--primary))" 
+          strokeWidth="1.5" 
+          opacity="0.15"
+          strokeLinecap="round"
+        />
       </>
     )}
   </svg>
