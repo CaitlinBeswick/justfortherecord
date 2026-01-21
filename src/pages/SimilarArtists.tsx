@@ -25,7 +25,7 @@ const SimilarArtists = () => {
   
   const { data: similarArtists = [], isLoading: isLoadingSimilar } = useQuery({
     queryKey: ['similar-artists-full', artistId, artistGenres.join(',')],
-    queryFn: () => getSimilarArtists(artistId, artist?.name || '', artistGenres, 28),
+    queryFn: () => getSimilarArtists(artistId, artist?.name || '', artistGenres, 20),
     enabled: isValidArtistId && !!artist && artistGenres.length > 0,
     staleTime: 1000 * 60 * 30,
   });

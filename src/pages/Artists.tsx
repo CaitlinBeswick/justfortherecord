@@ -10,6 +10,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { SearchAutocomplete, AutocompleteItem } from "@/components/SearchAutocomplete";
 import { VinylBackground } from "@/components/VinylBackground";
+import { Footer } from "@/components/Footer";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -92,7 +93,7 @@ const Artists = () => {
   }, [debouncedSearch, artists.length, isLoading]);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <div className="gradient-hero absolute inset-0" />
       <VinylBackground fadeHeight="200%" density="sparse" />
       <Navbar />
@@ -167,6 +168,7 @@ const Artists = () => {
           )}
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 };

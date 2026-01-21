@@ -10,6 +10,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { SearchAutocomplete, AutocompleteItem } from "@/components/SearchAutocomplete";
 import { VinylBackground } from "@/components/VinylBackground";
+import { Footer } from "@/components/Footer";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -108,7 +109,7 @@ const Albums = () => {
   }, [] as MBReleaseGroup[]);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <div className="gradient-hero absolute inset-0" />
       <VinylBackground fadeHeight="200%" density="sparse" />
       <Navbar />
@@ -227,6 +228,7 @@ const Albums = () => {
           )}
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 };
