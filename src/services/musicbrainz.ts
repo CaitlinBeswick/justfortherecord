@@ -332,44 +332,125 @@ export async function getArtist(id: string): Promise<MBArtist> {
   return await callMusicBrainz({ action: 'get-artist', id });
 }
 
+// Map of sub-genres to their parent/mainstream genres
+const GENRE_SIMPLIFICATIONS: Record<string, string[]> = {
+  'alternative pop': ['pop', 'indie pop'],
+  'art pop': ['pop', 'alternative'],
+  'synth-pop': ['pop', 'electronic'],
+  'electropop': ['pop', 'electronic'],
+  'dance-pop': ['pop', 'dance'],
+  'indie pop': ['pop', 'indie'],
+  'dream pop': ['pop', 'shoegaze'],
+  'chamber pop': ['pop', 'baroque pop'],
+  'contemporary country': ['country', 'pop country'],
+  'country pop': ['country', 'pop'],
+  'alt-country': ['country', 'alternative'],
+  'country rock': ['country', 'rock'],
+  'americana': ['country', 'folk', 'rock'],
+  'alternative rock': ['rock', 'alternative'],
+  'indie rock': ['rock', 'indie'],
+  'post-punk': ['rock', 'punk'],
+  'progressive rock': ['rock', 'prog'],
+  'hard rock': ['rock', 'metal'],
+  'soft rock': ['rock', 'pop rock'],
+  'alternative hip hop': ['hip hop', 'hip-hop', 'rap'],
+  'conscious hip hop': ['hip hop', 'hip-hop', 'rap'],
+  'trap': ['hip hop', 'hip-hop', 'rap'],
+  'contemporary r&b': ['r&b', 'soul', 'rnb'],
+  'neo soul': ['soul', 'r&b'],
+  'alternative r&b': ['r&b', 'soul'],
+  'electronic': ['electronica', 'dance'],
+  'house': ['electronic', 'dance'],
+  'techno': ['electronic', 'dance'],
+  'edm': ['electronic', 'dance'],
+  'folk rock': ['folk', 'rock'],
+  'indie folk': ['folk', 'indie'],
+  'contemporary folk': ['folk', 'singer-songwriter'],
+  'jazz fusion': ['jazz', 'fusion'],
+  'smooth jazz': ['jazz'],
+  'latin pop': ['latin', 'pop'],
+  'reggaeton': ['latin', 'reggae', 'hip hop'],
+};
+
+function getSimplifiedGenres(genres: string[]): string[] {
+  const simplified = new Set<string>();
+  
+  for (const genre of genres) {
+    const lowerGenre = genre.toLowerCase();
+    
+    // Check if this genre has known simplifications
+    if (GENRE_SIMPLIFICATIONS[lowerGenre]) {
+      for (const parent of GENRE_SIMPLIFICATIONS[lowerGenre]) {
+        simplified.add(parent);
+      }
+    } else {
+      // Try to extract parent genre from compound names (e.g., "alternative pop" -> "pop")
+      const words = lowerGenre.split(/[\s-]+/);
+      const mainGenres = ['pop', 'rock', 'hip hop', 'hip-hop', 'rap', 'country', 'r&b', 'rnb', 
+                          'soul', 'jazz', 'folk', 'electronic', 'metal', 'punk', 'blues', 
+                          'reggae', 'latin', 'dance', 'indie', 'alternative', 'classical'];
+      
+      for (const word of words) {
+        if (mainGenres.includes(word)) {
+          simplified.add(word);
+        }
+      }
+    }
+  }
+  
+  return Array.from(simplified);
+}
+
 export async function getSimilarArtists(artistId: string, artistName: string, genres: string[], limit: number = 8): Promise<MBArtist[]> {
   if (!isValidId(artistId)) {
     return [];
   }
   
+  const requestLimit = Math.min(limit * 5, 100);
+  
   try {
     let artists: MBArtist[] = [];
     
+    // Step 1: Try original genres with OR logic
     if (genres.length > 0) {
-      // Always use OR for genre searches to get more diverse results
-      // Use up to 3 genres to find artists that share at least one
       const genresToUse = genres.slice(0, 3);
       const genreQuery = genresToUse.map(g => `tag:"${g}"`).join(' OR ');
       
-      // Request more than needed to account for filtering out the current artist
-      const requestLimit = Math.min(limit * 5, 100);
       const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery, limit: requestLimit });
       artists = data.artists || [];
     }
     
-    // If no results from genre search, or no genres available, try name-based fallback
-    if (artists.length <= 1) {
-      // Search by artist type or just get popular artists in similar name space
-      const requestLimit = Math.min(limit * 5, 100);
+    // Step 2: If sparse results, try simplified/parent genres
+    if (artists.length <= 3 && genres.length > 0) {
+      const simplifiedGenres = getSimplifiedGenres(genres);
+      
+      if (simplifiedGenres.length > 0) {
+        const simplifiedQuery = simplifiedGenres.slice(0, 3).map(g => `tag:"${g}"`).join(' OR ');
+        const data = await callMusicBrainz({ action: 'search-artist', query: simplifiedQuery, limit: requestLimit });
+        const simplifiedResults: MBArtist[] = data.artists || [];
+        
+        // Merge results, avoiding duplicates
+        const existingIds = new Set(artists.map(a => a.id));
+        for (const a of simplifiedResults) {
+          if (!existingIds.has(a.id)) {
+            artists.push(a);
+            existingIds.add(a.id);
+          }
+        }
+      }
+    }
+    
+    // Step 3: If still sparse, try name-based fallback
+    if (artists.length <= 3) {
       const data = await callMusicBrainz({ action: 'search-artist', query: artistName, limit: requestLimit });
       const nameResults: MBArtist[] = data.artists || [];
       
-      // Combine results, preferring genre-based if available
-      if (artists.length > 0) {
-        // Add name-based results that aren't already in genre results
-        const existingIds = new Set(artists.map(a => a.id));
-        for (const a of nameResults) {
-          if (!existingIds.has(a.id)) {
-            artists.push(a);
-          }
+      const existingIds = new Set(artists.map(a => a.id));
+      for (const a of nameResults) {
+        if (!existingIds.has(a.id)) {
+          artists.push(a);
+          existingIds.add(a.id);
         }
-      } else {
-        artists = nameResults;
       }
     }
     
