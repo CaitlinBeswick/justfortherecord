@@ -29,6 +29,62 @@ const Index = () => {
       {/* Hero Section */}
       <section className="relative pt-16 overflow-hidden">
         <div className="gradient-hero absolute inset-0" />
+        
+        {/* Vinyl Disc Decorations */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Large vinyl - top right */}
+          <div className="absolute -top-20 -right-32 w-96 h-96 opacity-[0.07]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="65" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
+              <circle cx="100" cy="100" r="50" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
+              <circle cx="100" cy="100" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="15" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          
+          {/* Medium vinyl - middle right */}
+          <div className="absolute top-40 -right-16 w-64 h-64 opacity-[0.05]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="65" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
+              <circle cx="100" cy="100" r="50" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
+              <circle cx="100" cy="100" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="15" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          
+          {/* Small vinyl - left side */}
+          <div className="absolute top-32 -left-20 w-48 h-48 opacity-[0.06]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="65" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
+              <circle cx="100" cy="100" r="50" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
+              <circle cx="100" cy="100" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="15" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          
+          {/* Extra small vinyl - bottom left */}
+          <div className="absolute bottom-10 left-10 w-32 h-32 opacity-[0.04]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="65" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
+              <circle cx="100" cy="100" r="50" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
+              <circle cx="100" cy="100" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="15" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+        </div>
+        
         <div className="relative container mx-auto px-4 py-20">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
