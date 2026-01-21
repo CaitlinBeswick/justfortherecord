@@ -222,8 +222,7 @@ serve(async (req) => {
         break;
       
       case 'get-artist-image': {
-        // Artist images are a nice-to-have; never fail the whole request if upstream is flaky.
-        // We try multiple sources: Wikidata (P18), TheAudioDB, Fanart.tv via MusicBrainz relations
+        // Artist images - only use copyright-safe sources: Wikidata (CC-licensed) and MusicBrainz relations
         try {
           // First get the artist with URL relations
           const artistUrl = `${MUSICBRAINZ_BASE}/artist/${id}?inc=url-rels&fmt=json`;
@@ -232,7 +231,7 @@ serve(async (req) => {
           });
 
           if (!artistResponse.ok) {
-            return new Response(JSON.stringify({ imageUrl: null }), {
+            return new Response(JSON.stringify({ imageUrl: null, source: null }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
@@ -241,7 +240,7 @@ serve(async (req) => {
           const relations = artistData.relations || [];
           const artistName = artistData.name || '';
 
-          // Try source 1: Wikidata P18 image property
+          // Source 1: Wikidata P18 image property (Wikimedia Commons - typically CC-licensed)
           const wikidataRel = relations.find((r: any) => r.type === 'wikidata' && r.url?.resource);
           if (wikidataRel) {
             const wikidataUrl = wikidataRel.url.resource;
@@ -263,7 +262,7 @@ serve(async (req) => {
                     const filename = String(imageClaim).replace(/ /g, '_');
                     const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=500`;
                     console.log(`Found Wikidata image for ${artistName}`);
-                    return new Response(JSON.stringify({ imageUrl }), {
+                    return new Response(JSON.stringify({ imageUrl, source: 'wikimedia' }), {
                       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                     });
                   }
@@ -274,105 +273,20 @@ serve(async (req) => {
             }
           }
 
-          // Try source 2: Deezer (free API, good quality artist photos)
-          try {
-            const deezerUrl = `https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=1`;
-            const deezerResponse = await fetch(deezerUrl, {
-              headers: { 'User-Agent': USER_AGENT },
-            });
-
-            if (deezerResponse.ok) {
-              const deezerData = await deezerResponse.json();
-              const artist = deezerData.data?.[0];
-              // Deezer provides picture_xl (1000x1000), picture_big (500x500), picture_medium (250x250)
-              const imageUrl = artist?.picture_xl || artist?.picture_big;
-              
-              if (imageUrl && artist?.name?.toLowerCase() === artistName.toLowerCase()) {
-                console.log(`Found Deezer image for ${artistName}`);
-                return new Response(JSON.stringify({ imageUrl }), {
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                });
-              }
-            }
-          } catch (e) {
-            console.log('Deezer fetch failed, trying next source');
-          }
-
-          // Try source 3: Last.fm (free, good quality images)
-          try {
-            // Last.fm requires an API key for their official API, but we can use their public image CDN
-            // by searching via the free 2.0 API endpoint (no key needed for artist.getinfo with autocorrect)
-            const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.search&artist=${encodeURIComponent(artistName)}&format=json&limit=1`;
-            const lastfmResponse = await fetch(lastfmUrl, {
-              headers: { 'User-Agent': USER_AGENT },
-            });
-
-            if (lastfmResponse.ok) {
-              const lastfmData = await lastfmResponse.json();
-              const artist = lastfmData.results?.artistmatches?.artist?.[0];
-              // Last.fm returns array of images in different sizes
-              const images = artist?.image || [];
-              // Get the largest image (extralarge or large)
-              const largeImage = images.find((img: any) => img.size === 'extralarge')?.['#text'] ||
-                                images.find((img: any) => img.size === 'large')?.['#text'];
-              
-              if (largeImage && largeImage.length > 0 && !largeImage.includes('2a96cbd8b46e442fc41c2b86b821562f')) {
-                // Exclude default placeholder image
-                console.log(`Found Last.fm image for ${artistName}`);
-                return new Response(JSON.stringify({ imageUrl: largeImage }), {
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                });
-              }
-            }
-          } catch (e) {
-            console.log('Last.fm fetch failed, trying next source');
-          }
-
-          // Try source 4: TheAudioDB (free, no API key needed for basic lookups)
-          try {
-            const audioDbUrl = `https://www.theaudiodb.com/api/v1/json/2/search.php?s=${encodeURIComponent(artistName)}`;
-            const audioDbResponse = await fetch(audioDbUrl, {
-              headers: { 'User-Agent': USER_AGENT },
-            });
-
-            if (audioDbResponse.ok) {
-              const audioDbData = await audioDbResponse.json();
-              const artist = audioDbData.artists?.[0];
-              const thumbUrl = artist?.strArtistThumb || artist?.strArtistFanart || artist?.strArtistClearart;
-              
-              if (thumbUrl) {
-                console.log(`Found TheAudioDB image for ${artistName}`);
-                return new Response(JSON.stringify({ imageUrl: thumbUrl }), {
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                });
-              }
-            }
-          } catch (e) {
-            console.log('TheAudioDB fetch failed, trying next source');
-          }
-
-          // Try source 3: Look for image URL in MusicBrainz relations (some artists have direct image links)
+          // Source 2: Look for image URL in MusicBrainz relations (some artists have direct image links)
           const imageRel = relations.find((r: any) => 
             r.type === 'image' && r.url?.resource
           );
           if (imageRel) {
             console.log(`Found MusicBrainz image relation for ${artistName}`);
-            return new Response(JSON.stringify({ imageUrl: imageRel.url.resource }), {
+            return new Response(JSON.stringify({ imageUrl: imageRel.url.resource, source: 'musicbrainz' }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
 
-          // Try source 4: Discogs - look for discogs relation and use their artist images
-          const discogsRel = relations.find((r: any) => r.type === 'discogs' && r.url?.resource);
-          if (discogsRel) {
-            // Discogs artist pages have predictable image URLs, but require scraping
-            // For now, we'll just note that discogs exists but can't easily get the image without API key
-            console.log(`Discogs relation found for ${artistName}, but no free image access`);
-          }
-
-          // No image found from any source
+          // No image found from copyright-safe sources
           console.log(`No image found for artist ${artistName} (${id})`);
-          return new Response(JSON.stringify({ imageUrl: null }), {
+          return new Response(JSON.stringify({ imageUrl: null, source: null }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
 
