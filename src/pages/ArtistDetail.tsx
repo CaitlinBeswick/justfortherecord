@@ -615,9 +615,9 @@ const ArtistDetail = () => {
 
                   {/* Actions Card */}
                   <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-                    <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-wrap items-center justify-center gap-4">
                       <ArtistRating artistId={artistId} artistName={artist.name} />
-                      <div className="flex items-center justify-center gap-3">
+                      <div className="flex items-center gap-3">
                         <button
                           onClick={handleFollow}
                           disabled={followMutation.isPending}
