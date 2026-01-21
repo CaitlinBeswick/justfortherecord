@@ -59,15 +59,28 @@ export function ContactForm() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from("contact_submissions").insert({
+      const { data, error } = await supabase.from("contact_submissions").insert({
         name: result.data.name,
         email: result.data.email,
         subject: result.data.subject,
         message: result.data.message,
         user_id: user?.id || null,
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      // Send notification email to admins (fire and forget)
+      if (data?.id) {
+        supabase.functions.invoke('send-contact-notification', {
+          body: {
+            submission_id: data.id,
+            name: result.data.name,
+            email: result.data.email,
+            subject: result.data.subject,
+            message: result.data.message,
+          },
+        }).catch(err => console.error('Failed to send admin notification:', err));
+      }
 
       setIsSubmitted(true);
       toast({

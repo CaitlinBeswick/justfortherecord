@@ -56,6 +56,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_updates: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          title: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          is_active?: boolean
+          title: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       artist_follows: {
         Row: {
           artist_id: string
