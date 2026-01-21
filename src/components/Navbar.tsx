@@ -1,8 +1,9 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2 } from "lucide-react";
+import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { NotificationBell } from "@/components/NotificationBell";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ export function Navbar() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { user, loading, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
 
   // Get current search query if on a search page
   const currentQuery = searchParams.get("q");
@@ -107,6 +109,17 @@ export function Navbar() {
                     My Profile
                   </Link>
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                        <Shield className="h-4 w-4" />
+                        Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={() => signOut()}

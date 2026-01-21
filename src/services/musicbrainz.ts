@@ -338,32 +338,40 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
   }
   
   try {
-    let query: string;
+    let artists: MBArtist[] = [];
     
     if (genres.length > 0) {
-      // For larger result sets, use more genres with OR to get more matches
-      // For small previews (limit <= 8), use AND for better precision
-      const useOr = limit > 8;
-      const genresToUse = useOr ? genres.slice(0, 4) : genres.slice(0, 2);
-      query = genresToUse.map(g => `tag:"${g}"`).join(useOr ? ' OR ' : ' AND ');
-    } else {
-      // Fallback: search by artist name similarity for artists without genre tags
-      // This finds artists with similar names or who might be related
-      // Use the first word of the artist's name to find similar artists
-      const firstWord = artistName.split(' ')[0];
-      if (firstWord.length >= 3) {
-        query = `artist:"${firstWord}"`;
-      } else {
-        // For very short names, just search broadly
-        query = `artist:"${artistName}"`;
-      }
+      // Always use OR for genre searches to get more diverse results
+      // Use up to 3 genres to find artists that share at least one
+      const genresToUse = genres.slice(0, 3);
+      const genreQuery = genresToUse.map(g => `tag:"${g}"`).join(' OR ');
+      
+      // Request more than needed to account for filtering out the current artist
+      const requestLimit = Math.min(limit * 5, 100);
+      const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery, limit: requestLimit });
+      artists = data.artists || [];
     }
     
-    // Request more than needed to account for filtering out the current artist
-    // Use a higher multiplier to ensure we get enough results after filtering
-    const requestLimit = Math.min(limit * 5, 100);
-    const data = await callMusicBrainz({ action: 'search-artist', query, limit: requestLimit });
-    const artists: MBArtist[] = data.artists || [];
+    // If no results from genre search, or no genres available, try name-based fallback
+    if (artists.length <= 1) {
+      // Search by artist type or just get popular artists in similar name space
+      const requestLimit = Math.min(limit * 5, 100);
+      const data = await callMusicBrainz({ action: 'search-artist', query: artistName, limit: requestLimit });
+      const nameResults: MBArtist[] = data.artists || [];
+      
+      // Combine results, preferring genre-based if available
+      if (artists.length > 0) {
+        // Add name-based results that aren't already in genre results
+        const existingIds = new Set(artists.map(a => a.id));
+        for (const a of nameResults) {
+          if (!existingIds.has(a.id)) {
+            artists.push(a);
+          }
+        }
+      } else {
+        artists = nameResults;
+      }
+    }
     
     // Filter out the current artist and return top matches
     return artists
