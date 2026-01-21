@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { FeatureNotificationProvider } from "@/components/FeatureNotification";
 
 const Index = lazy(() => import("./pages/Index"));
 const Albums = lazy(() => import("./pages/Albums"));
@@ -40,6 +41,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <FeatureNotificationProvider />
         <BrowserRouter>
           <Suspense fallback={<div className="min-h-screen bg-background" />}>
             <Routes>

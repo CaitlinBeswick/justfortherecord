@@ -19,6 +19,9 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
 interface AnnualStatsProps {
@@ -26,6 +29,17 @@ interface AnnualStatsProps {
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const DECADE_COLORS = [
+  'hsl(var(--primary))',
+  'hsl(220, 70%, 50%)',
+  'hsl(280, 60%, 50%)',
+  'hsl(340, 65%, 50%)',
+  'hsl(180, 55%, 45%)',
+  'hsl(45, 80%, 50%)',
+  'hsl(120, 50%, 45%)',
+  'hsl(0, 65%, 50%)',
+];
 
 export function AnnualStats({ userId }: AnnualStatsProps) {
   const { user } = useAuth();
@@ -47,13 +61,13 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
     enabled: !!targetUserId,
   });
 
-  // Fetch ratings - use updated_at for year filtering since reviews/loves can be updated
+  // Fetch ratings with release_date for decades breakdown
   const { data: ratings = [] } = useQuery({
     queryKey: ['annual-stats-ratings', targetUserId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('album_ratings')
-        .select('rating, loved, review_text, created_at, updated_at')
+        .select('rating, loved, review_text, created_at, updated_at, release_date, release_group_id')
         .eq('user_id', targetUserId!);
       if (error) throw error;
       return data;
@@ -161,6 +175,22 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       ratingDistribution.push({ rating: r.toString(), count });
     };
 
+    // Decades breakdown - based on albums rated/listened this year
+    const decadeCounts: Record<string, number> = {};
+    const yearReleaseGroupIds = new Set(yearDiaryEntries.map(e => e.release_group_id));
+    ratings.forEach(rating => {
+      if (yearReleaseGroupIds.has(rating.release_group_id) && rating.release_date) {
+        const releaseYear = parseInt(rating.release_date.slice(0, 4));
+        if (!isNaN(releaseYear)) {
+          const decade = `${Math.floor(releaseYear / 10) * 10}s`;
+          decadeCounts[decade] = (decadeCounts[decade] || 0) + 1;
+        }
+      }
+    });
+    const decadesBreakdown = Object.entries(decadeCounts)
+      .map(([decade, count]) => ({ decade, count }))
+      .sort((a, b) => b.count - a.count);
+
     // Artist follows
     const newFollows = yearFollows.length;
 
@@ -197,11 +227,13 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       newFollows,
       monthlyData,
       ratingDistribution,
+      decadesBreakdown,
     };
   }, [diaryEntries, ratings, artistFollows, selectedYear]);
 
   const hasMonthlyData = stats.monthlyData.some(m => m.listens > 0 || m.ratings > 0);
   const hasRatingData = stats.ratingDistribution.some(r => r.count > 0);
+  const hasDecadesData = stats.decadesBreakdown.length > 0;
 
   return (
     <motion.div
@@ -268,46 +300,96 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
         />
       </div>
 
-      {/* Rating Distribution Chart */}
-      {hasRatingData && (
-        <div className="p-4 rounded-xl bg-card/50 border border-border/50">
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">Rating Distribution</h3>
-          <div className="h-[140px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.ratingDistribution} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis 
-                  dataKey="rating" 
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                  tickLine={false}
-                />
-                <YAxis 
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                  labelFormatter={(value) => `${value} stars`}
-                  formatter={(value: number) => [`${value} albums`, 'Count']}
-                />
-                <Bar 
-                  dataKey="count" 
-                  name="Albums"
-                  fill="hsl(var(--primary))" 
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Rating Distribution & Decades side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Rating Distribution Chart */}
+        {hasRatingData && (
+          <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+            <h3 className="text-sm font-medium text-muted-foreground mb-4">Rating Distribution</h3>
+            <div className="h-[140px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.ratingDistribution} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis 
+                    dataKey="rating" 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                    labelFormatter={(value) => `${value} stars`}
+                    formatter={(value: number) => [`${value} albums`, 'Count']}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    name="Albums"
+                    fill="hsl(var(--primary))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Decades Breakdown Chart */}
+        {hasDecadesData && (
+          <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+            <h3 className="text-sm font-medium text-muted-foreground mb-4">Decades Breakdown</h3>
+            <div className="h-[140px] w-full flex items-center">
+              <ResponsiveContainer width="50%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats.decadesBreakdown}
+                    dataKey="count"
+                    nameKey="decade"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={30}
+                    outerRadius={55}
+                    paddingAngle={2}
+                  >
+                    {stats.decadesBreakdown.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={DECADE_COLORS[index % DECADE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value: number, name: string) => [`${value} albums`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 flex flex-wrap gap-2 px-2">
+                {stats.decadesBreakdown.slice(0, 6).map((item, index) => (
+                  <div key={item.decade} className="flex items-center gap-1.5 text-xs">
+                    <div 
+                      className="w-2.5 h-2.5 rounded-sm shrink-0" 
+                      style={{ backgroundColor: DECADE_COLORS[index % DECADE_COLORS.length] }}
+                    />
+                    <span className="text-foreground">{item.decade}</span>
+                    <span className="text-muted-foreground">({item.count})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Monthly Breakdown Chart */}
       {hasMonthlyData && (

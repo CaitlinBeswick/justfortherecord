@@ -109,18 +109,18 @@ const TopArtists = () => {
             </p>
           </div>
         ) : (
-          <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {topArtists.map((artist, index) => (
               <motion.div
                 key={artist.artist_id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: Math.min(index * 0.02, 0.3) }}
+                transition={{ delay: Math.min(index * 0.01, 0.2) }}
                 onClick={() => navigate(`/artist/${artist.artist_id}`)}
-                className="flex-shrink-0 w-44 bg-card/50 border border-border/50 rounded-lg p-4 cursor-pointer hover:bg-card/80 transition-colors group"
+                className="bg-card/50 border border-border/50 rounded-lg p-4 cursor-pointer hover:bg-card/80 transition-colors group"
               >
                 <div className="relative mb-3">
-                  <div className="w-36 h-36 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                  <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                     <span className="font-serif text-4xl text-primary/60">
                       {artist.artist_name.charAt(0)}
                     </span>

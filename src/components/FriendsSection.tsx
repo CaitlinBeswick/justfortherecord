@@ -144,10 +144,13 @@ export function FriendsSection() {
                       </Button>
                     )}
                     {status === 'pending-sent' && (
-                      <span className="text-xs text-muted-foreground">Pending</span>
+                      <span className="text-xs text-muted-foreground">Request Sent</span>
+                    )}
+                    {status === 'pending-received' && (
+                      <span className="text-xs text-primary">Wants to follow you</span>
                     )}
                     {status === 'friends' && (
-                      <span className="text-xs text-primary">Following</span>
+                      <span className="text-xs text-green-500 font-medium">Friends</span>
                     )}
                   </div>
                 );
@@ -213,12 +216,17 @@ export function FriendsSection() {
         </div>
       )}
 
-      {/* Friends List */}
+      {/* Following/Friends List */}
       <div>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <h3 className="text-lg font-medium text-foreground">
-            Following ({friends.length})
-          </h3>
+          <div>
+            <h3 className="text-lg font-medium text-foreground">
+              Following ({friends.length})
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Mutual followers become <span className="text-green-500 font-medium">Friends</span>
+            </p>
+          </div>
           {friends.length > 0 && (
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
               <SelectTrigger className="w-[140px]">
