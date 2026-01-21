@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useEffect, useMemo } from "react";
+import { memo, useMemo } from "react";
 
 // Vintage label colors for variety
 const labelColors = [
@@ -82,8 +82,53 @@ const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolea
 
 VinylSVG.displayName = 'VinylSVG';
 
-// Accent vinyls spread across the page - many more with varied sizes
-const accentVinyls = [
+// SPARSE: ~35 total vinyls for home/profile pages
+const sparseAccentVinyls = [
+  { top: '-5%', left: '10%', size: 160, opacity: 0.14, duration: 65 },
+  { top: '-8%', left: '75%', size: 180, opacity: 0.15, duration: 75, reverse: true },
+  { top: '8%', left: '-4%', size: 170, opacity: 0.13, duration: 70 },
+  { top: '12%', left: '55%', size: 140, opacity: 0.12, duration: 55, reverse: true },
+  { top: '10%', right: '-3%', size: 150, opacity: 0.14, duration: 60 },
+  { top: '25%', left: '20%', size: 130, opacity: 0.11, duration: 50 },
+  { top: '28%', left: '70%', size: 160, opacity: 0.13, duration: 65, reverse: true },
+  { top: '35%', left: '-5%', size: 180, opacity: 0.14, duration: 72 },
+  { top: '40%', left: '45%', size: 120, opacity: 0.10, duration: 48 },
+  { top: '38%', right: '-4%', size: 170, opacity: 0.13, duration: 68, reverse: true },
+  { top: '52%', left: '15%', size: 150, opacity: 0.12, duration: 58 },
+  { top: '55%', left: '65%', size: 140, opacity: 0.11, duration: 52, reverse: true },
+  { top: '60%', left: '85%', size: 160, opacity: 0.13, duration: 62 },
+];
+
+const sparseMediumVinyls = [
+  { top: '5%', left: '35%', size: 55, opacity: 0.22 },
+  { top: '18%', left: '85%', size: 60, opacity: 0.24 },
+  { top: '32%', left: '35%', size: 50, opacity: 0.20 },
+  { top: '45%', left: '80%', size: 65, opacity: 0.25 },
+  { top: '58%', left: '5%', size: 55, opacity: 0.22 },
+  { top: '65%', left: '42%', size: 58, opacity: 0.23 },
+];
+
+const sparseSmallVinyls = [
+  { top: '3%', left: '50%', size: 7, opacity: 0.28 },
+  { top: '15%', left: '30%', size: 8, opacity: 0.30 },
+  { top: '22%', left: '90%', size: 6, opacity: 0.26 },
+  { top: '35%', left: '60%', size: 8, opacity: 0.28 },
+  { top: '42%', left: '10%', size: 7, opacity: 0.26 },
+  { top: '48%', left: '55%', size: 9, opacity: 0.30 },
+  { top: '55%', left: '25%', size: 6, opacity: 0.24 },
+  { top: '62%', left: '75%', size: 8, opacity: 0.28 },
+  { top: '68%', left: '40%', size: 7, opacity: 0.26 },
+  { top: '72%', left: '92%', size: 6, opacity: 0.22 },
+  { top: '78%', left: '18%', size: 8, opacity: 0.24 },
+  { top: '82%', left: '58%', size: 7, opacity: 0.22 },
+  { top: '88%', left: '35%', size: 6, opacity: 0.20 },
+  { top: '92%', left: '70%', size: 8, opacity: 0.22 },
+  { top: '95%', left: '12%', size: 7, opacity: 0.18 },
+  { top: '98%', left: '85%', size: 6, opacity: 0.16 },
+];
+
+// DENSE: Full vinyl set for albums/artists pages (160+ vinyls)
+const denseAccentVinyls = [
   // Top area - dense
   { top: '-8%', left: '5%', size: 180, opacity: 0.16, duration: 70 },
   { top: '-5%', left: '22%', size: 120, opacity: 0.13, duration: 50 },
@@ -153,9 +198,7 @@ const accentVinyls = [
   { top: '94%', left: '80%', size: 130, opacity: 0.12, duration: 52 },
 ];
 
-// Medium scattered vinyls - varied sizes
-const mediumVinyls = [
-  // Scattered throughout
+const denseMediumVinyls = [
   { top: '4%', left: '8%', size: 50, opacity: 0.22 }, { top: '2%', left: '35%', size: 65, opacity: 0.25 },
   { top: '6%', left: '58%', size: 45, opacity: 0.20 }, { top: '3%', left: '82%', size: 60, opacity: 0.24 },
   { top: '14%', left: '5%', size: 55, opacity: 0.23 }, { top: '16%', left: '48%', size: 70, opacity: 0.26 },
@@ -174,9 +217,7 @@ const mediumVinyls = [
   { top: '86%', left: '72%', size: 48, opacity: 0.20 }, { top: '94%', left: '92%', size: 58, opacity: 0.23 },
 ];
 
-// Small scattered vinyls
-const smallVinyls = [
-  // Dense grid of tiny vinyls
+const denseSmallVinyls = [
   { top: '1%', left: '12%', size: 7, opacity: 0.28 }, { top: '3%', left: '28%', size: 8, opacity: 0.30 },
   { top: '0%', left: '45%', size: 6, opacity: 0.26 }, { top: '2%', left: '62%', size: 9, opacity: 0.32 },
   { top: '4%', left: '78%', size: 7, opacity: 0.28 }, { top: '1%', left: '95%', size: 8, opacity: 0.30 },
@@ -218,21 +259,27 @@ const smallVinyls = [
 interface VinylBackgroundProps {
   className?: string;
   fadeHeight?: string;
+  density?: 'sparse' | 'dense';
 }
 
-export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBackgroundProps) {
+export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse" }: VinylBackgroundProps) {
+  // Select vinyl arrays based on density
+  const accentVinyls = density === 'dense' ? denseAccentVinyls : sparseAccentVinyls;
+  const mediumVinyls = density === 'dense' ? denseMediumVinyls : sparseMediumVinyls;
+  const smallVinyls = density === 'dense' ? denseSmallVinyls : sparseSmallVinyls;
+
   // Randomize color indices on mount
   const randomizedAccentColors = useMemo(() => {
     return accentVinyls.map(() => Math.floor(Math.random() * labelColors.length));
-  }, []);
+  }, [accentVinyls.length]);
   
   const randomizedMediumColors = useMemo(() => {
     return mediumVinyls.map(() => Math.floor(Math.random() * labelColors.length));
-  }, []);
+  }, [mediumVinyls.length]);
   
   const randomizedSmallColors = useMemo(() => {
     return smallVinyls.map(() => Math.floor(Math.random() * labelColors.length));
-  }, []);
+  }, [smallVinyls.length]);
 
   return (
     <div 
@@ -251,7 +298,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBa
           style={{
             top: vinyl.top,
             left: vinyl.left,
-            right: vinyl.right,
+            right: (vinyl as any).right,
             width: `${vinyl.size}px`,
             height: `${vinyl.size}px`,
             opacity: vinyl.opacity,
@@ -306,8 +353,16 @@ export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBa
 
       {/* CSS for animations */}
       <style>{`
-        .vinyl-disc {
-          transition: animation-duration 0.3s ease-out;
+        @keyframes spin-slow {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 60s linear infinite;
         }
       `}</style>
     </div>

@@ -33,7 +33,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <VinylBackground fadeHeight="60%" />
+      <VinylBackground fadeHeight="60%" density="sparse" />
       <Navbar />
       <main className="relative pt-16">
         <ProfileHeader />
