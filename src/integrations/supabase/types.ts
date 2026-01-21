@@ -80,6 +80,27 @@ export type Database = {
         }
         Relationships: []
       }
+      artist_image_cache: {
+        Row: {
+          artist_id: string
+          checked_at: string
+          created_at: string
+          image_url: string | null
+        }
+        Insert: {
+          artist_id: string
+          checked_at?: string
+          created_at?: string
+          image_url?: string | null
+        }
+        Update: {
+          artist_id?: string
+          checked_at?: string
+          created_at?: string
+          image_url?: string | null
+        }
+        Relationships: []
+      }
       artist_ratings: {
         Row: {
           artist_id: string
