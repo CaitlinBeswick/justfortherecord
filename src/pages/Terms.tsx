@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { ContactForm } from "@/components/ContactForm";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -81,9 +82,10 @@ const Terms = () => {
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">7. Contact</h2>
-            <p className="text-muted-foreground">
-              For questions about these terms, please contact us through the application.
+            <p className="text-muted-foreground mb-6">
+              For questions about these terms, please use the form below.
             </p>
+            <ContactForm />
           </section>
         </div>
       </main>

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { FeatureNotificationProvider } from "@/components/FeatureNotification";
+import { CookieConsent } from "@/components/CookieConsent";
 
 const Index = lazy(() => import("./pages/Index"));
 const Albums = lazy(() => import("./pages/Albums"));
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <ScrollToTop />
+            <CookieConsent />
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>
