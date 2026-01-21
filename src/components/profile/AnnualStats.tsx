@@ -39,7 +39,7 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('diary_entries')
-        .select('listened_on, artist_name, release_group_id, is_relisten')
+        .select('listened_on, artist_name, release_group_id, album_title, is_relisten')
         .eq('user_id', targetUserId!);
       if (error) throw error;
       return data;
@@ -113,11 +113,13 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
     const firstListens = yearDiaryEntries.filter(e => !e.is_relisten).length;
     const reListens = yearDiaryEntries.filter(e => e.is_relisten).length;
 
-    // Unique albums
-    const uniqueAlbums = new Set(yearDiaryEntries.map(e => e.release_group_id)).size;
+    // New albums (first-time listens only)
+    const newAlbumsSet = new Set(yearDiaryEntries.filter(e => !e.is_relisten).map(e => e.release_group_id));
+    const newAlbums = newAlbumsSet.size;
 
-    // Unique artists
-    const uniqueArtists = new Set(yearDiaryEntries.map(e => e.artist_name.toLowerCase())).size;
+    // New artists (artists you listened to for the first time this year)
+    const newArtistsSet = new Set(yearDiaryEntries.filter(e => !e.is_relisten).map(e => e.artist_name.toLowerCase()));
+    const newArtists = newArtistsSet.size;
 
     // Top artists by listen count
     const artistCounts: Record<string, number> = {};
@@ -128,6 +130,21 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
     const topArtists = Object.entries(artistCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
+
+    // Most replayed albums (albums listened to more than once)
+    const albumListenCounts: Record<string, { title: string; artist: string; count: number }> = {};
+    yearDiaryEntries.forEach(entry => {
+      const key = entry.release_group_id;
+      if (!albumListenCounts[key]) {
+        albumListenCounts[key] = { title: entry.album_title, artist: entry.artist_name, count: 0 };
+      }
+      albumListenCounts[key].count += 1;
+    });
+    const mostReplayedAlbums = Object.entries(albumListenCounts)
+      .filter(([, data]) => data.count > 1)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 5)
+      .map(([id, data]) => ({ id, ...data }));
 
     // Ratings stats
     const totalRatings = yearRatings.length;
@@ -162,9 +179,10 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       totalListens,
       firstListens,
       reListens,
-      uniqueAlbums,
-      uniqueArtists,
+      newAlbums,
+      newArtists,
       topArtists,
+      mostReplayedAlbums,
       totalRatings,
       avgRating,
       lovedCount,
@@ -231,14 +249,14 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
         />
         <StatCard
           icon={<Users className="h-5 w-5" />}
-          label="Unique Artists"
-          value={stats.uniqueArtists}
-          subtext={`${stats.newFollows} new follows`}
+          label="New Artists"
+          value={stats.newArtists}
+          subtext={`${stats.newFollows} followed`}
         />
         <StatCard
           icon={<Disc3 className="h-5 w-5" />}
-          label="Unique Albums"
-          value={stats.uniqueAlbums}
+          label="New Albums"
+          value={stats.newAlbums}
           subtext="discovered"
         />
       </div>
@@ -315,6 +333,27 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
                 <span className="text-primary font-semibold">#{index + 1}</span>
                 <span className="text-foreground">{artist}</span>
                 <span className="text-muted-foreground">({count})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {stats.mostReplayedAlbums.length > 0 && (
+        <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Most Replayed Albums</h3>
+          <div className="space-y-2">
+            {stats.mostReplayedAlbums.map((album, index) => (
+              <div
+                key={album.id}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/30 text-sm"
+              >
+                <span className="text-primary font-semibold w-6">#{index + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-foreground font-medium truncate">{album.title}</p>
+                  <p className="text-muted-foreground text-xs truncate">{album.artist}</p>
+                </div>
+                <span className="text-muted-foreground shrink-0">×{album.count}</span>
               </div>
             ))}
           </div>

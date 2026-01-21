@@ -16,7 +16,6 @@ const navItems = [
   { path: "/", label: "Home", icon: Music2 },
   { path: "/albums", label: "Albums", icon: Disc3 },
   { path: "/artists", label: "Artists", icon: Users },
-  { path: "/profile", label: "My Profile", icon: User, requiresAuth: true },
 ];
 
 // Pages that share search query state
@@ -58,8 +57,6 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
-            // Hide auth-required items when not logged in
-            if ((item as any).requiresAuth && !user) return null;
             return (
               <Link
                 key={item.path}
