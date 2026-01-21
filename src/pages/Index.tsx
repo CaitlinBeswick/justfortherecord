@@ -32,55 +32,182 @@ const Index = () => {
         
         {/* Vinyl Disc Decorations */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Large vinyl - top right */}
-          <div className="absolute -top-20 -right-32 w-96 h-96 opacity-[0.07]">
+          {/* Row 1 - Top */}
+          <div className="absolute -top-8 left-[5%] w-24 h-24 opacity-[0.06]">
             <svg viewBox="0 0 200 200" className="w-full h-full">
-              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-              <circle cx="100" cy="100" r="80" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-              <circle cx="100" cy="100" r="65" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-              <circle cx="100" cy="100" r="50" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-              <circle cx="100" cy="100" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-              <circle cx="100" cy="100" r="15" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-              <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))"/>
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute -top-4 left-[20%] w-16 h-16 opacity-[0.05]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-4 right-[30%] w-20 h-20 opacity-[0.07]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute -top-6 right-[10%] w-28 h-28 opacity-[0.06]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
             </svg>
           </div>
           
-          {/* Medium vinyl - middle right */}
-          <div className="absolute top-40 -right-16 w-64 h-64 opacity-[0.05]">
+          {/* Row 2 - Upper middle */}
+          <div className="absolute top-20 left-[2%] w-14 h-14 opacity-[0.05]">
             <svg viewBox="0 0 200 200" className="w-full h-full">
-              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-              <circle cx="100" cy="100" r="80" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-              <circle cx="100" cy="100" r="65" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-              <circle cx="100" cy="100" r="50" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-              <circle cx="100" cy="100" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-              <circle cx="100" cy="100" r="15" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-              <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))"/>
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-28 right-[45%] w-12 h-12 opacity-[0.04]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-16 right-[15%] w-18 h-18 opacity-[0.06]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-24 right-[3%] w-20 h-20 opacity-[0.05]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
             </svg>
           </div>
           
-          {/* Small vinyl - left side */}
-          <div className="absolute top-32 -left-20 w-48 h-48 opacity-[0.06]">
+          {/* Row 3 - Middle */}
+          <div className="absolute top-44 left-[8%] w-16 h-16 opacity-[0.06]">
             <svg viewBox="0 0 200 200" className="w-full h-full">
-              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-              <circle cx="100" cy="100" r="80" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-              <circle cx="100" cy="100" r="65" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-              <circle cx="100" cy="100" r="50" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-              <circle cx="100" cy="100" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-              <circle cx="100" cy="100" r="15" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-              <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))"/>
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-52 left-[25%] w-10 h-10 opacity-[0.04]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-48 right-[35%] w-14 h-14 opacity-[0.05]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-40 right-[20%] w-12 h-12 opacity-[0.06]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-56 right-[5%] w-18 h-18 opacity-[0.05]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
             </svg>
           </div>
           
-          {/* Extra small vinyl - bottom left */}
-          <div className="absolute bottom-10 left-10 w-32 h-32 opacity-[0.04]">
+          {/* Row 4 - Lower */}
+          <div className="absolute top-72 left-[3%] w-12 h-12 opacity-[0.04]">
             <svg viewBox="0 0 200 200" className="w-full h-full">
-              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-              <circle cx="100" cy="100" r="80" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-              <circle cx="100" cy="100" r="65" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-              <circle cx="100" cy="100" r="50" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-              <circle cx="100" cy="100" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-              <circle cx="100" cy="100" r="15" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
-              <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))"/>
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-80 left-[15%] w-14 h-14 opacity-[0.05]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-[22rem] left-[30%] w-10 h-10 opacity-[0.04]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-[20rem] right-[40%] w-16 h-16 opacity-[0.05]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-[18rem] right-[25%] w-12 h-12 opacity-[0.06]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
+            </svg>
+          </div>
+          <div className="absolute top-[21rem] right-[8%] w-14 h-14 opacity-[0.05]">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="100" cy="100" r="95" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
+              <circle cx="100" cy="100" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="6" fill="hsl(var(--primary))"/>
             </svg>
           </div>
         </div>
