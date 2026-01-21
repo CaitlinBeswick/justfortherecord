@@ -17,6 +17,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
 const TOUR_STORAGE_KEY = "welcome-tour-completed";
+// Feature was added on this date - only show tour to users who signed up after
+const FEATURE_LAUNCH_DATE = new Date("2025-01-20T00:00:00Z");
 
 interface TourStep {
   id: string;
@@ -94,11 +96,19 @@ export function WelcomeTour() {
     if (!user) return;
     
     const completed = localStorage.getItem(TOUR_STORAGE_KEY);
-    if (!completed) {
-      // Delay showing the tour
-      const timer = setTimeout(() => setIsOpen(true), 2000);
-      return () => clearTimeout(timer);
+    if (completed) return;
+    
+    // Only show tour to users who signed up after the feature was added
+    const userCreatedAt = new Date(user.created_at);
+    if (userCreatedAt < FEATURE_LAUNCH_DATE) {
+      // User existed before the feature - mark as completed silently
+      localStorage.setItem(TOUR_STORAGE_KEY, "true");
+      return;
     }
+    
+    // New user - show the tour
+    const timer = setTimeout(() => setIsOpen(true), 2000);
+    return () => clearTimeout(timer);
   }, [user]);
 
   const handleClose = () => {
