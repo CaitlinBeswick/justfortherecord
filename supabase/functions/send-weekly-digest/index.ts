@@ -39,11 +39,47 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Only allow service role or cron requests
-  const authHeader = req.headers.get('Authorization');
-  const expectedKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   
-  if (authHeader !== `Bearer ${expectedKey}`) {
+  // Check authorization - allow service role key OR admin users
+  const authHeader = req.headers.get('Authorization');
+  
+  if (authHeader === `Bearer ${supabaseServiceKey}`) {
+    // Service role key - allowed (cron jobs)
+  } else if (authHeader?.startsWith('Bearer ')) {
+    // Check if it's an admin user
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getUser(token);
+    
+    if (claimsError || !claimsData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Check if user is admin
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', claimsData.user.id)
+      .eq('role', 'admin')
+      .single();
+    
+    if (!roleData) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  } else {
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),
       { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -61,8 +97,6 @@ serve(async (req) => {
     }
 
     const resend = new Resend(resendApiKey);
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get all users who opted into weekly digest
