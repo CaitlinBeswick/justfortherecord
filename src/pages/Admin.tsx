@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, ShieldAlert, Mail, MailOpen, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldAlert, Mail, MailOpen, Reply } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { AppUpdatesManager } from "@/components/admin/AppUpdatesManager";
 
 interface ContactSubmission {
   id: string;
@@ -160,6 +161,11 @@ const Admin = () => {
               </Card>
             </div>
 
+            {/* App Updates Section */}
+            <div className="mb-8">
+              <AppUpdatesManager />
+            </div>
+
             {/* Submissions List */}
             <h2 className="font-serif text-xl text-foreground mb-4">Contact Submissions</h2>
             
@@ -200,6 +206,16 @@ const Admin = () => {
                             <span className="text-xs text-muted-foreground">
                               {format(new Date(submission.created_at), "MMM d, yyyy 'at' h:mm a")}
                             </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              asChild
+                              title="Reply via email"
+                            >
+                              <a href={`mailto:${submission.email}?subject=Re: ${encodeURIComponent(submission.subject)}`}>
+                                <Reply className="h-4 w-4" />
+                              </a>
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
