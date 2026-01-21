@@ -44,6 +44,7 @@ interface Profile {
   email_new_releases: boolean;
   email_friend_requests: boolean;
   email_friend_activity: boolean;
+  email_weekly_digest: boolean;
 }
 
 const RELEASE_TYPE_OPTIONS = [
@@ -118,6 +119,7 @@ const ProfileSettings = () => {
   const [emailNewReleases, setEmailNewReleases] = useState(true);
   const [emailFriendRequests, setEmailFriendRequests] = useState(true);
   const [emailFriendActivity, setEmailFriendActivity] = useState(false);
+  const [emailWeeklyDigest, setEmailWeeklyDigest] = useState(false);
   // Blocked users
   const { blockedUsers, unblockUser } = useBlockedUsers();
 
@@ -183,6 +185,7 @@ const ProfileSettings = () => {
       setEmailNewReleases(profile.email_new_releases ?? true);
       setEmailFriendRequests(profile.email_friend_requests ?? true);
       setEmailFriendActivity(profile.email_friend_activity ?? false);
+      setEmailWeeklyDigest((profile as Profile & { email_weekly_digest?: boolean }).email_weekly_digest ?? false);
     }
   }, [profile]);
 
@@ -215,6 +218,7 @@ const ProfileSettings = () => {
           email_new_releases: emailNewReleases,
           email_friend_requests: emailFriendRequests,
           email_friend_activity: emailFriendActivity,
+          email_weekly_digest: emailWeeklyDigest,
         })
         .eq('id', user!.id);
       
@@ -805,6 +809,24 @@ const ProfileSettings = () => {
                               id="emailFriendActivity"
                               checked={emailFriendActivity}
                               onCheckedChange={setEmailFriendActivity}
+                            />
+                          </div>
+
+                          <Separator className="my-3" />
+
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="emailWeeklyDigest" className="text-sm font-normal cursor-pointer">
+                                Weekly Digest
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                A weekly summary of new releases and friend activity every Sunday
+                              </p>
+                            </div>
+                            <Switch
+                              id="emailWeeklyDigest"
+                              checked={emailWeeklyDigest}
+                              onCheckedChange={setEmailWeeklyDigest}
                             />
                           </div>
                         </div>
