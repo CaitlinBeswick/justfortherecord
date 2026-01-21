@@ -94,7 +94,7 @@ const Artists = () => {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="gradient-hero absolute inset-0" />
-      <VinylBackground fadeHeight="200%" />
+      <VinylBackground fadeHeight="200%" density="dense" />
       <Navbar />
       
       <main className="relative container mx-auto px-4 pt-24 pb-20">

@@ -31,7 +31,7 @@ const Index = () => {
       <section className="relative pt-16 overflow-hidden">
         <div className="gradient-hero absolute inset-0" />
         
-        <VinylBackground />
+        <VinylBackground density="sparse" />
         
         <div className="relative container mx-auto px-4 py-20">
           <motion.div
