@@ -21,6 +21,17 @@ interface DigestData {
     rating: number | null;
     release_group_id: string;
   }>;
+  trendingReleases: Array<{
+    album_title: string;
+    artist_name: string;
+    release_group_id: string;
+    listen_count: number;
+  }>;
+  appUpdates: Array<{
+    title: string;
+    description: string;
+    version: string | null;
+  }>;
 }
 
 serve(async (req) => {
@@ -172,8 +183,63 @@ serve(async (req) => {
           }
         }
 
+        // Get trending releases from the community (most listened this week)
+        const { data: trendingData } = await supabase
+          .from('diary_entries')
+          .select('release_group_id, album_title, artist_name')
+          .gte('created_at', oneWeekAgoStr)
+          .order('created_at', { ascending: false });
+
+        const trendingReleases: DigestData['trendingReleases'] = [];
+        if (trendingData && trendingData.length > 0) {
+          // Count listens per album
+          const listenCounts = new Map<string, { album_title: string; artist_name: string; release_group_id: string; count: number }>();
+          for (const entry of trendingData) {
+            const existing = listenCounts.get(entry.release_group_id);
+            if (existing) {
+              existing.count++;
+            } else {
+              listenCounts.set(entry.release_group_id, {
+                album_title: entry.album_title,
+                artist_name: entry.artist_name,
+                release_group_id: entry.release_group_id,
+                count: 1,
+              });
+            }
+          }
+          // Sort by count and take top 5
+          const sorted = Array.from(listenCounts.values())
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+          for (const item of sorted) {
+            trendingReleases.push({
+              album_title: item.album_title,
+              artist_name: item.artist_name,
+              release_group_id: item.release_group_id,
+              listen_count: item.count,
+            });
+          }
+        }
+
+        // Get recent app updates (past 2 weeks)
+        const twoWeeksAgo = new Date();
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+        const { data: appUpdatesData } = await supabase
+          .from('app_updates')
+          .select('title, description, version, created_at')
+          .eq('is_active', true)
+          .gte('created_at', twoWeeksAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        const appUpdates: DigestData['appUpdates'] = appUpdatesData?.map(u => ({
+          title: u.title,
+          description: u.description,
+          version: u.version,
+        })) || [];
+
         // Skip if there's nothing to report
-        if (newReleases.length === 0 && friendActivity.length === 0) {
+        if (newReleases.length === 0 && friendActivity.length === 0 && trendingReleases.length === 0 && appUpdates.length === 0) {
           console.log(`No activity to report for user ${digestUser.id}`);
           continue;
         }
@@ -235,6 +301,57 @@ serve(async (req) => {
           `;
         }
 
+        // Trending releases section
+        let trendingHtml = '';
+        if (trendingReleases.length > 0) {
+          const trendingItems = trendingReleases.map(t => `
+            <tr>
+              <td style="padding: 12px 0; border-bottom: 1px solid #262626;">
+                <a href="${baseUrl}/album/${t.release_group_id}" style="color: #fafafa; text-decoration: none; font-weight: 500;">
+                  ${t.album_title}
+                </a>
+                <br>
+                <span style="color: #a1a1aa; font-size: 14px;">by ${t.artist_name}</span>
+                <span style="color: #71717a; font-size: 13px; margin-left: 8px;">(${t.listen_count} listens)</span>
+              </td>
+            </tr>
+          `).join('');
+
+          trendingHtml = `
+            <div style="margin-bottom: 32px;">
+              <h2 style="color: #f97316; font-size: 18px; margin: 0 0 16px 0;">
+                🔥 Trending This Week
+              </h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                ${trendingItems}
+              </table>
+            </div>
+          `;
+        }
+
+        // App updates section
+        let updatesHtml = '';
+        if (appUpdates.length > 0) {
+          const updateItems = appUpdates.map(u => `
+            <div style="padding: 12px 0; border-bottom: 1px solid #262626;">
+              <p style="color: #fafafa; font-weight: 500; margin: 0 0 4px 0;">
+                ${u.title}
+                ${u.version ? `<span style="color: #71717a; font-size: 12px; margin-left: 8px;">v${u.version}</span>` : ''}
+              </p>
+              <p style="color: #a1a1aa; font-size: 14px; margin: 0;">${u.description}</p>
+            </div>
+          `).join('');
+
+          updatesHtml = `
+            <div style="margin-bottom: 32px;">
+              <h2 style="color: #f97316; font-size: 18px; margin: 0 0 16px 0;">
+                ✨ What's New
+              </h2>
+              ${updateItems}
+            </div>
+          `;
+        }
+
         const emailHtml = `
           <!DOCTYPE html>
           <html>
@@ -251,6 +368,9 @@ serve(async (req) => {
               
               ${releasesHtml}
               ${activityHtml}
+              ${trendingHtml}
+              ${updatesHtml}
+
               
               <div style="text-align: center; margin: 32px 0;">
                 <a href="${baseUrl}" style="display: inline-block; background-color: #f97316; color: #0a0a0a; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
