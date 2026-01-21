@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useEffect } from "react";
+import { memo, useState, useCallback, useEffect, useMemo } from "react";
 
 // Vintage label colors for variety
 const labelColors = [
@@ -9,6 +9,16 @@ const labelColors = [
   { fill: 'hsl(0, 60%, 50%)', stroke: 'hsl(0, 65%, 40%)' },     // Red (Capitol-style)
   { fill: 'hsl(280, 40%, 55%)', stroke: 'hsl(280, 45%, 45%)' }, // Purple (Motown-style)
 ];
+
+// Shuffle array using Fisher-Yates
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 // Realistic vinyl record SVG with grooves, colored label, and highlight
 const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolean; colorIndex?: number }) => {
@@ -193,12 +203,21 @@ export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBa
     };
   }, [handleMouseMove, handleMouseLeave]);
 
+  // Randomize color indices on mount
+  const randomizedAccentColors = useMemo(() => {
+    return accentVinyls.map(() => Math.floor(Math.random() * labelColors.length));
+  }, []);
+  
+  const randomizedSmallColors = useMemo(() => {
+    return smallVinyls.map(() => Math.floor(Math.random() * labelColors.length));
+  }, []);
+
   return (
     <div 
       className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
       style={{
-        maskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
+        maskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
         height: fadeHeight,
       }}
     >
@@ -218,7 +237,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBa
             animationDirection: vinyl.reverse ? 'reverse' : 'normal',
           }}
         >
-          <VinylSVG detailed colorIndex={vinyl.colorIndex} />
+          <VinylSVG detailed colorIndex={randomizedAccentColors[i]} />
         </div>
       ))}
       
@@ -237,7 +256,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBa
             animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
           }}
         >
-          <VinylSVG colorIndex={i % labelColors.length} />
+          <VinylSVG colorIndex={randomizedSmallColors[i]} />
         </div>
       ))}
 

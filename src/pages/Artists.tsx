@@ -92,14 +92,12 @@ const Artists = () => {
   }, [debouncedSearch, artists.length, isLoading]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <div className="gradient-hero absolute inset-0" />
+      <VinylBackground fadeHeight="200%" />
       <Navbar />
       
-      <section className="relative pt-16 overflow-hidden">
-        <div className="gradient-hero absolute inset-0" />
-        <VinylBackground fadeHeight="100%" />
-        
-        <main className="relative container mx-auto px-4 py-8 pb-20">
+      <main className="relative container mx-auto px-4 pt-24 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <div className="flex flex-col gap-4 mb-8">
             <div>
@@ -168,8 +166,7 @@ const Artists = () => {
             </div>
           )}
         </motion.div>
-        </main>
-      </section>
+      </main>
     </div>
   );
 };
