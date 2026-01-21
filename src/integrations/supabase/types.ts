@@ -417,6 +417,10 @@ export type Database = {
           created_at: string
           default_release_types: string[]
           display_name: string | null
+          email_friend_activity: boolean
+          email_friend_requests: boolean
+          email_new_releases: boolean
+          email_notifications_enabled: boolean
           favorite_genres: string[] | null
           friends_only: boolean
           id: string
@@ -439,6 +443,10 @@ export type Database = {
           created_at?: string
           default_release_types?: string[]
           display_name?: string | null
+          email_friend_activity?: boolean
+          email_friend_requests?: boolean
+          email_new_releases?: boolean
+          email_notifications_enabled?: boolean
           favorite_genres?: string[] | null
           friends_only?: boolean
           id: string
@@ -461,6 +469,10 @@ export type Database = {
           created_at?: string
           default_release_types?: string[]
           display_name?: string | null
+          email_friend_activity?: boolean
+          email_friend_requests?: boolean
+          email_new_releases?: boolean
+          email_notifications_enabled?: boolean
           favorite_genres?: string[] | null
           friends_only?: boolean
           id?: string
