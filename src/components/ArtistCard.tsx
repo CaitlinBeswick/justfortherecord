@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { getArtistImage } from "@/services/musicbrainz";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ArtistCardProps {
   id: string;
@@ -34,6 +35,45 @@ function getInitials(name: string): string {
     return words[0].substring(0, 2).toUpperCase();
   }
   return words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+// Cache duration: 7 days
+const CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+async function getCachedOrFetchArtistImage(artistId: string): Promise<string | null> {
+  // First, check the cache
+  const { data: cached } = await supabase
+    .from('artist_image_cache')
+    .select('image_url, checked_at')
+    .eq('artist_id', artistId)
+    .single();
+
+  if (cached) {
+    const cacheAge = Date.now() - new Date(cached.checked_at).getTime();
+    if (cacheAge < CACHE_DURATION_MS) {
+      return cached.image_url;
+    }
+  }
+
+  // Fetch from API
+  const imageUrl = await getArtistImage(artistId);
+
+  // Store in cache (upsert)
+  try {
+    await supabase
+      .from('artist_image_cache')
+      .upsert({
+        artist_id: artistId,
+        image_url: imageUrl,
+        checked_at: new Date().toISOString(),
+      }, {
+        onConflict: 'artist_id'
+      });
+  } catch (e) {
+    console.log('Failed to cache artist image:', e);
+  }
+
+  return imageUrl;
 }
 
 export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: ArtistCardProps) {
@@ -78,10 +118,10 @@ export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: Artist
 
   const { data: artistImage } = useQuery({
     queryKey: ['artist-image', id],
-    queryFn: () => getArtistImage(id),
-    staleTime: 1000 * 60 * 60 * 24, // Cache for 24 hours
+    queryFn: () => getCachedOrFetchArtistImage(id),
+    staleTime: 1000 * 60 * 60 * 24, // React Query cache for 24 hours
     enabled: shouldFetch,
-    retry: 1, // Only retry once to avoid overwhelming the API
+    retry: 1,
   });
 
   return (
