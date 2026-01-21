@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { AppUpdatesManager } from "@/components/admin/AppUpdatesManager";
+import { SendTestDigestButton } from "@/components/admin/SendTestDigestButton";
 
 interface ContactSubmission {
   id: string;
@@ -129,8 +130,9 @@ const Admin = () => {
               </button>
               <div>
                 <h1 className="font-serif text-3xl text-foreground">Admin Dashboard</h1>
-                <p className="text-muted-foreground">Manage contact form submissions</p>
+                <p className="text-muted-foreground">Manage contact form submissions and app updates</p>
               </div>
+              <SendTestDigestButton />
             </div>
 
             {/* Stats */}
