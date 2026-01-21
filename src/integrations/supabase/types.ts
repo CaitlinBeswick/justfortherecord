@@ -421,6 +421,7 @@ export type Database = {
           email_friend_requests: boolean
           email_new_releases: boolean
           email_notifications_enabled: boolean
+          email_weekly_digest: boolean
           favorite_genres: string[] | null
           friends_only: boolean
           id: string
@@ -447,6 +448,7 @@ export type Database = {
           email_friend_requests?: boolean
           email_new_releases?: boolean
           email_notifications_enabled?: boolean
+          email_weekly_digest?: boolean
           favorite_genres?: string[] | null
           friends_only?: boolean
           id: string
@@ -473,6 +475,7 @@ export type Database = {
           email_friend_requests?: boolean
           email_new_releases?: boolean
           email_notifications_enabled?: boolean
+          email_weekly_digest?: boolean
           favorite_genres?: string[] | null
           friends_only?: boolean
           id?: string
