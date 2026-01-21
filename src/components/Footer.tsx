@@ -1,4 +1,5 @@
 import { Disc3 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
@@ -9,6 +10,17 @@ export function Footer() {
           <div className="flex items-center gap-2 text-muted-foreground">
             <Disc3 className="h-4 w-4" />
             <span className="text-sm font-medium">Just For The Record</span>
+          </div>
+
+          {/* Links */}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <Link to="/terms" className="hover:text-foreground transition-colors">
+              Terms
+            </Link>
+            <span className="text-muted-foreground/50">•</span>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">
+              Privacy Policy
+            </Link>
           </div>
 
           {/* Copyright */}

@@ -31,6 +31,8 @@ const UserProfile = lazy(() => import("./pages/UserProfile"));
 const FollowingActivity = lazy(() => import("./pages/FollowingActivity"));
 const YourActivity = lazy(() => import("./pages/YourActivity"));
 const Auth = lazy(() => import("./pages/Auth"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -68,6 +70,8 @@ const App = () => (
               <Route path="/activity/following" element={<FollowingActivity />} />
               <Route path="/activity/you" element={<YourActivity />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

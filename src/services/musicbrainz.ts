@@ -346,7 +346,7 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
     
     // Request more than needed to account for filtering out the current artist
     // Use a higher multiplier to ensure we get enough results after filtering
-    const requestLimit = Math.min(limit * 3, 100);
+    const requestLimit = Math.min(limit * 5, 100);
     const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery, limit: requestLimit });
     const artists: MBArtist[] = data.artists || [];
     
