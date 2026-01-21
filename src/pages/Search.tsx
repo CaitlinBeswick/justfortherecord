@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
-import { VinylBackground } from "@/components/VinylBackground";
+import { Footer } from "@/components/Footer";
 
 type SearchTab = "all" | "albums" | "artists";
 
@@ -220,8 +220,8 @@ const Search = () => {
 
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      <VinylBackground fadeHeight="200%" />
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar />
       <Navbar />
       
       <main className="relative container mx-auto px-4 pt-24 pb-20">
@@ -541,6 +541,7 @@ const Search = () => {
           )}
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 };
