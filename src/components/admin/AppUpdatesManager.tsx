@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Plus, Pencil, Trash2, Loader2, Sparkles, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface AppUpdate {
   id: string;
@@ -60,6 +65,8 @@ export function AppUpdatesManager() {
   const [editingUpdate, setEditingUpdate] = useState<AppUpdate | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [broadcastingId, setBroadcastingId] = useState<string | null>(null);
 
   const { data: updates = [], isLoading } = useQuery({
     queryKey: ["app-updates"],
@@ -131,6 +138,36 @@ export function AppUpdatesManager() {
     },
   });
 
+  const handleBroadcast = async (update: AppUpdate) => {
+    setBroadcastingId(update.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('broadcast-app-update', {
+        body: {
+          app_update_id: update.id,
+          title: update.title,
+          description: update.description,
+          version: update.version,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Notification sent!",
+        description: `Broadcasted to ${data?.notificationsSent || 0} users.`,
+      });
+    } catch (err) {
+      console.error('Failed to broadcast:', err);
+      toast({
+        title: "Failed to broadcast",
+        description: "Could not send notifications",
+        variant: "destructive",
+      });
+    } finally {
+      setBroadcastingId(null);
+    }
+  };
+
   const openCreateDialog = () => {
     setEditingUpdate(null);
     setFormData(initialFormData);
@@ -168,6 +205,10 @@ export function AppUpdatesManager() {
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+  
+  // Show first 3 by default, all when expanded
+  const visibleUpdates = isExpanded ? updates : updates.slice(0, 3);
+  const hasMore = updates.length > 3;
 
   return (
     <div className="space-y-4">
@@ -192,12 +233,12 @@ export function AppUpdatesManager() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {updates.map((update) => (
+          {visibleUpdates.map((update) => (
             <Card key={update.id} className={!update.is_active ? "opacity-60" : ""}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <CardTitle className="text-base">{update.title}</CardTitle>
                       {update.version && (
                         <Badge variant="outline" className="text-xs">
@@ -215,6 +256,19 @@ export function AppUpdatesManager() {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleBroadcast(update)}
+                      disabled={broadcastingId === update.id}
+                      title="Send to all users' notification bell"
+                    >
+                      {broadcastingId === update.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Bell className="h-4 w-4" />
+                      )}
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(update)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -229,6 +283,26 @@ export function AppUpdatesManager() {
               </CardContent>
             </Card>
           ))}
+          
+          {hasMore && (
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-2" />
+                  Show Less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-2" />
+                  Show {updates.length - 3} More
+                </>
+              )}
+            </Button>
+          )}
         </div>
       )}
 
