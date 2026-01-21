@@ -78,7 +78,7 @@ const Index = () => {
           ].map((vinyl, i) => (
             <div
               key={i}
-              className="absolute opacity-[0.06]"
+              className="absolute opacity-[0.12]"
               style={{
                 top: vinyl.top,
                 left: vinyl.left,
