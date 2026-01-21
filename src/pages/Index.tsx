@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ListeningGoalPopup } from "@/components/profile/ListeningGoalPopup";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { VinylBackground } from "@/components/VinylBackground";
+import { Footer } from "@/components/Footer";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -24,7 +25,7 @@ const Index = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
       {/* Hero Section */}
@@ -126,6 +127,8 @@ const Index = () => {
 
       {/* Welcome Tour for new users */}
       <WelcomeTour />
+      
+      <Footer />
     </div>
   );
 };

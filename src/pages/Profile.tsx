@@ -7,6 +7,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { DiaryContent } from "@/components/profile/DiaryContent";
 import { VinylBackground } from "@/components/VinylBackground";
+import { Footer } from "@/components/Footer";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ const Profile = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <VinylBackground fadeHeight="60%" density="sparse" />
       <Navbar />
       <main className="relative pt-16">
@@ -46,6 +47,7 @@ const Profile = () => {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 };
