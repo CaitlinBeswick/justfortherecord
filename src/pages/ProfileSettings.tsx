@@ -475,6 +475,20 @@ const ProfileSettings = () => {
                   />
                 </div>
 
+                {/* Location */}
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    type="text"
+                    placeholder="City, Country"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="bg-card"
+                    maxLength={100}
+                  />
+                </div>
+
                 {/* Bio */}
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
@@ -489,20 +503,6 @@ const ProfileSettings = () => {
                   <p className="text-xs text-muted-foreground text-right">
                     {bio.length}/300
                   </p>
-                </div>
-
-                {/* Location */}
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    type="text"
-                    placeholder="City, Country"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="bg-card"
-                    maxLength={100}
-                  />
                 </div>
               </div>
 
@@ -674,6 +674,8 @@ const ProfileSettings = () => {
                   </motion.div>
                 )}
               </div>
+
+              <Separator className="my-6" />
 
               {/* Privacy Settings - Collapsible */}
               <div className="space-y-4">
