@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Shield, Eye, EyeOff, Users, Lock, Ban, Target, ChevronDown, ChevronUp, Download, TrendingUp } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Shield, Eye, EyeOff, Users, Lock, Ban, Target, ChevronDown, ChevronUp, Download, TrendingUp, Music } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -105,6 +105,7 @@ const ProfileSettings = () => {
   const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
   const [isExportExpanded, setIsExportExpanded] = useState(false);
+  const [isPreferencesExpanded, setIsPreferencesExpanded] = useState(false);
   // Blocked users
   const { blockedUsers, unblockUser } = useBlockedUsers();
 
@@ -444,204 +445,235 @@ const ProfileSettings = () => {
                 </div>
               </div>
 
-              {/* Username */}
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="@username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="bg-card"
-                  maxLength={30}
-                />
-              </div>
-
-              {/* Display Name */}
-              <div className="space-y-2">
-                <Label htmlFor="displayName">Display Name</Label>
-                <Input
-                  id="displayName"
-                  type="text"
-                  placeholder="Your name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="bg-card"
-                  maxLength={50}
-                />
-              </div>
-
-              {/* Bio */}
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  placeholder="Tell us about yourself and your music taste..."
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  className="bg-card min-h-[100px] resize-none"
-                  maxLength={300}
-                />
-                <p className="text-xs text-muted-foreground text-right">
-                  {bio.length}/300
-                </p>
-              </div>
-
-              {/* Location */}
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  type="text"
-                  placeholder="City, Country"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="bg-card"
-                  maxLength={100}
-                />
-              </div>
-
-              {/* Favorite Genres */}
-              <div className="space-y-3 p-4 rounded-lg border border-border/50 bg-card/30">
-                <Label>Favorite Genres</Label>
-                
-                {/* Selected genres */}
-                {favoriteGenres.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {favoriteGenres.map((genre) => (
-                      <Badge
-                        key={genre}
-                        variant="secondary"
-                        className="flex items-center gap-1 pr-1"
-                      >
-                        {genre}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveGenre(genre)}
-                          className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add custom genre */}
-                <div className="flex gap-2">
+              {/* Basic Info Section */}
+              <div className="grid gap-6">
+                {/* Username */}
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
                   <Input
+                    id="username"
                     type="text"
-                    placeholder="Add a genre..."
-                    value={newGenre}
-                    onChange={(e) => setNewGenre(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddGenre(newGenre);
-                      }
-                    }}
+                    placeholder="@username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="bg-card"
                     maxLength={30}
                   />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    onClick={() => handleAddGenre(newGenre)}
-                    disabled={!newGenre.trim()}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
                 </div>
 
-                {/* Genre suggestions */}
-                <div className="flex flex-wrap gap-2">
-                  {GENRE_SUGGESTIONS.filter(g => !favoriteGenres.includes(g))
-                    .slice(0, 10)
-                    .map((genre) => (
-                      <button
-                        key={genre}
-                        type="button"
-                        onClick={() => handleAddGenre(genre)}
-                        className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-                      >
-                        + {genre}
-                      </button>
-                    ))}
-                </div>
-              </div>
-
-              {/* Default Release Types */}
-              <div className="space-y-3 p-4 rounded-lg border border-border/50 bg-card/30">
-                <Label>Default Discography Display</Label>
-                <p className="text-sm text-muted-foreground">
-                  Choose which release types to show by default on all artist pages. You can override this for individual artists by using the Manage Releases function on their page.
-                </p>
+                {/* Display Name */}
                 <div className="space-y-2">
-                  {RELEASE_TYPE_OPTIONS.map((option) => (
-                    <div key={option.value} className="flex items-center gap-3">
-                      <Checkbox
-                        id={`release-type-${option.value}`}
-                        checked={defaultReleaseTypes.includes(option.value)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setDefaultReleaseTypes([...defaultReleaseTypes, option.value]);
-                          } else {
-                            // Ensure at least one type is selected
-                            if (defaultReleaseTypes.length > 1) {
-                              setDefaultReleaseTypes(defaultReleaseTypes.filter(t => t !== option.value));
-                            }
-                          }
-                        }}
-                      />
-                      <Label 
-                        htmlFor={`release-type-${option.value}`}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Yearly Listen Goal */}
-              <div className="space-y-3 p-4 rounded-lg border border-border/50 bg-card/30">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  <Label htmlFor="yearlyGoal">Yearly Listen Goal</Label>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Set a goal for how many albums you want to listen to this year. Leave empty to disable.
-                </p>
-                <div className="flex items-center gap-3">
+                  <Label htmlFor="displayName">Display Name</Label>
                   <Input
-                    id="yearlyGoal"
-                    type="number"
-                    placeholder="e.g. 100"
-                    value={yearlyListenGoal}
-                    onChange={(e) => setYearlyListenGoal(e.target.value)}
-                    className="bg-card w-32"
-                    min={1}
-                    max={9999}
+                    id="displayName"
+                    type="text"
+                    placeholder="Your name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="bg-card"
+                    maxLength={50}
                   />
-                  <span className="text-sm text-muted-foreground">albums per year</span>
-                  {yearlyListenGoal && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setYearlyListenGoal("")}
-                      className="text-muted-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+                </div>
+
+                {/* Bio */}
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    placeholder="Tell us about yourself and your music taste..."
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    className="bg-card min-h-[100px] resize-none"
+                    maxLength={300}
+                  />
+                  <p className="text-xs text-muted-foreground text-right">
+                    {bio.length}/300
+                  </p>
+                </div>
+
+                {/* Location */}
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    type="text"
+                    placeholder="City, Country"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="bg-card"
+                    maxLength={100}
+                  />
                 </div>
               </div>
 
               <Separator className="my-6" />
+
+              {/* Music Preferences - Collapsible */}
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setIsPreferencesExpanded(!isPreferencesExpanded)}
+                  className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Music className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Music Preferences</h2>
+                  </div>
+                  {isPreferencesExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+
+                {isPreferencesExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4 pl-4 border-l-2 border-primary/20"
+                  >
+                    {/* Favorite Genres */}
+                    <div className="space-y-3 p-4 rounded-lg border border-border bg-card">
+                      <Label>Favorite Genres</Label>
+                      
+                      {/* Selected genres */}
+                      {favoriteGenres.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {favoriteGenres.map((genre) => (
+                            <Badge
+                              key={genre}
+                              variant="secondary"
+                              className="flex items-center gap-1 pr-1"
+                            >
+                              {genre}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveGenre(genre)}
+                                className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add custom genre */}
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Add a genre..."
+                          value={newGenre}
+                          onChange={(e) => setNewGenre(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddGenre(newGenre);
+                            }
+                          }}
+                          className="bg-card"
+                          maxLength={30}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="icon"
+                          onClick={() => handleAddGenre(newGenre)}
+                          disabled={!newGenre.trim()}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {/* Genre suggestions */}
+                      <div className="flex flex-wrap gap-2">
+                        {GENRE_SUGGESTIONS.filter(g => !favoriteGenres.includes(g))
+                          .slice(0, 10)
+                          .map((genre) => (
+                            <button
+                              key={genre}
+                              type="button"
+                              onClick={() => handleAddGenre(genre)}
+                              className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                            >
+                              + {genre}
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Default Release Types */}
+                    <div className="space-y-3 p-4 rounded-lg border border-border bg-card">
+                      <Label>Default Discography Display</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Choose which release types to show by default on all artist pages. You can override this for individual artists by using the Manage Releases function on their page.
+                      </p>
+                      <div className="space-y-2">
+                        {RELEASE_TYPE_OPTIONS.map((option) => (
+                          <div key={option.value} className="flex items-center gap-3">
+                            <Checkbox
+                              id={`release-type-${option.value}`}
+                              checked={defaultReleaseTypes.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setDefaultReleaseTypes([...defaultReleaseTypes, option.value]);
+                                } else {
+                                  // Ensure at least one type is selected
+                                  if (defaultReleaseTypes.length > 1) {
+                                    setDefaultReleaseTypes(defaultReleaseTypes.filter(t => t !== option.value));
+                                  }
+                                }
+                              }}
+                            />
+                            <Label 
+                              htmlFor={`release-type-${option.value}`}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {option.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Yearly Listen Goal */}
+                    <div className="space-y-3 p-4 rounded-lg border border-border bg-card">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-primary" />
+                        <Label htmlFor="yearlyGoal">Yearly Listen Goal</Label>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Set a goal for how many albums you want to listen to this year. Leave empty to disable.
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          id="yearlyGoal"
+                          type="number"
+                          placeholder="e.g. 100"
+                          value={yearlyListenGoal}
+                          onChange={(e) => setYearlyListenGoal(e.target.value)}
+                          className="bg-card w-32"
+                          min={1}
+                          max={9999}
+                        />
+                        <span className="text-sm text-muted-foreground">albums per year</span>
+                        {yearlyListenGoal && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setYearlyListenGoal("")}
+                            className="text-muted-foreground"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
 
               {/* Privacy Settings - Collapsible */}
               <div className="space-y-4">
