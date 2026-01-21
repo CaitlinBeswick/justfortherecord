@@ -8,6 +8,7 @@ import { getCoverArtUrl } from "@/services/musicbrainz";
 import { formatDistanceToNow } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import { useEffect } from "react";
+import { ArtistImage } from "@/components/ArtistImage";
 
 interface ActivityItem {
   id: string;
@@ -269,6 +270,16 @@ const YourActivity = () => {
                               }}
                             />
                           </div>
+                        )}
+
+                        {/* Artist Image (for follow activities) */}
+                        {activity.type === 'follow' && activity.artistId && (
+                          <ArtistImage
+                            artistId={activity.artistId}
+                            artistName={activity.artistName}
+                            size="md"
+                            onClick={() => navigate(`/artist/${activity.artistId}`)}
+                          />
                         )}
                       </div>
                     </div>

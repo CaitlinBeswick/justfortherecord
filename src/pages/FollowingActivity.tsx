@@ -7,6 +7,7 @@ import { useFriendships } from "@/hooks/useFriendships";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { formatDistanceToNow } from "date-fns";
 import { Navbar } from "@/components/Navbar";
+import { ArtistImage } from "@/components/ArtistImage";
 
 interface DiaryEntry {
   id: string;
@@ -302,6 +303,16 @@ const FollowingActivity = () => {
                               }}
                             />
                           </div>
+                        )}
+
+                        {/* Artist Image (for follow activities) */}
+                        {activity.type === 'follow' && activity.artistId && (
+                          <ArtistImage
+                            artistId={activity.artistId}
+                            artistName={activity.artistName}
+                            size="md"
+                            onClick={() => navigate(`/artist/${activity.artistId}`)}
+                          />
                         )}
                       </div>
                     </div>

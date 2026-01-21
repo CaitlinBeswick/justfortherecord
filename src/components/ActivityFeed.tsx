@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useFriendships } from "@/hooks/useFriendships";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { formatDistanceToNow } from "date-fns";
+import { ArtistImage } from "./ArtistImage";
 
 interface DiaryEntry {
   id: string;
@@ -308,6 +309,16 @@ export function ActivityFeed() {
                     }}
                   />
                 </div>
+              )}
+
+              {/* Artist Image (for follow activities) */}
+              {activity.type === 'follow' && activity.artistId && (
+                <ArtistImage
+                  artistId={activity.artistId}
+                  artistName={activity.artistName}
+                  size="md"
+                  onClick={() => navigate(`/artist/${activity.artistId}`)}
+                />
               )}
             </div>
           </div>
