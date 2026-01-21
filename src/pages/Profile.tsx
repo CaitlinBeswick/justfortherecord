@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { DiaryContent } from "@/components/profile/DiaryContent";
+import { VinylBackground } from "@/components/VinylBackground";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -31,9 +32,10 @@ const Profile = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <VinylBackground fadeHeight="60%" />
       <Navbar />
-      <main className="pt-16">
+      <main className="relative pt-16">
         <ProfileHeader />
         <div className="container mx-auto px-4 py-8 pb-20">
           <div className="flex flex-col md:flex-row md:gap-8">

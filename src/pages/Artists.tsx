@@ -93,9 +93,9 @@ const Artists = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <VinylBackground fadeHeight="100%" />
+      <VinylBackground fadeHeight="200%" />
       <Navbar />
-      <main className="container mx-auto px-4 pt-24 pb-20">
+      <main className="relative container mx-auto px-4 pt-24 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <div className="flex flex-col gap-4 mb-8">
             <div>

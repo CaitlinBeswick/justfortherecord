@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState, useCallback, useEffect } from "react";
 
 const VinylSVG = memo(({ detailed = false }: { detailed?: boolean }) => (
   <svg viewBox="0 0 200 200" className="w-full h-full">
@@ -26,16 +26,22 @@ const VinylSVG = memo(({ detailed = false }: { detailed?: boolean }) => (
 
 VinylSVG.displayName = 'VinylSVG';
 
-// Accent vinyls with varied sizes
+// Accent vinyls spread more evenly across the page
 const accentVinyls = [
-  { top: '-8%', left: '-5%', size: 180, opacity: 0.12, duration: 60 },
-  { top: '-10%', right: '-8%', size: 220, opacity: 0.15, duration: 80, reverse: true },
-  { top: '15%', left: '-6%', size: 120, opacity: 0.10, duration: 70 },
-  { top: '25%', right: '-7%', size: 200, opacity: 0.12, duration: 90, reverse: true },
-  { top: '45%', left: '-4%', size: 160, opacity: 0.11, duration: 75 },
-  { top: '40%', right: '-5%', size: 140, opacity: 0.10, duration: 65, reverse: true },
-  { top: '60%', left: '-3%', size: 100, opacity: 0.09, duration: 55 },
-  { top: '55%', right: '-4%', size: 180, opacity: 0.11, duration: 85, reverse: true },
+  // Top area
+  { top: '-5%', left: '15%', size: 140, opacity: 0.11, duration: 65 },
+  { top: '-8%', left: '70%', size: 180, opacity: 0.13, duration: 80, reverse: true },
+  // Upper middle
+  { top: '18%', left: '-4%', size: 120, opacity: 0.10, duration: 70 },
+  { top: '15%', left: '45%', size: 100, opacity: 0.09, duration: 55 },
+  { top: '20%', right: '-3%', size: 160, opacity: 0.12, duration: 75, reverse: true },
+  // Middle
+  { top: '38%', left: '25%', size: 90, opacity: 0.08, duration: 60 },
+  { top: '42%', right: '20%', size: 130, opacity: 0.10, duration: 85, reverse: true },
+  // Lower middle
+  { top: '55%', left: '-2%', size: 150, opacity: 0.11, duration: 70 },
+  { top: '52%', left: '60%', size: 110, opacity: 0.09, duration: 65, reverse: true },
+  { top: '60%', right: '-4%', size: 170, opacity: 0.12, duration: 90 },
 ];
 
 // Small scattered vinyls
@@ -83,6 +89,43 @@ interface VinylBackgroundProps {
 }
 
 export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBackgroundProps) {
+  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
+  const [isHovering, setIsHovering] = useState(false);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+    setIsHovering(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [handleMouseMove, handleMouseLeave]);
+
+  // Calculate speed multiplier based on distance from mouse
+  const getSpeedMultiplier = (element: HTMLElement | null) => {
+    if (!element || !isHovering) return 1;
+    const rect = element.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const distance = Math.sqrt(
+      Math.pow(mousePos.x - centerX, 2) + Math.pow(mousePos.y - centerY, 2)
+    );
+    // Within 150px, speed up. Closer = faster (up to 3x)
+    if (distance < 150) {
+      return 1 + (2 * (1 - distance / 150));
+    }
+    return 1;
+  };
+
   return (
     <div 
       className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
@@ -92,11 +135,11 @@ export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBa
         height: fadeHeight,
       }}
     >
-      {/* Large accent vinyls with varied sizes */}
+      {/* Large accent vinyls spread across page */}
       {accentVinyls.map((vinyl, i) => (
         <div
           key={`accent-${i}`}
-          className="absolute animate-spin-slow"
+          className="absolute animate-spin-slow vinyl-disc"
           style={{
             top: vinyl.top,
             left: vinyl.left,
@@ -116,7 +159,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBa
       {smallVinyls.map((vinyl, i) => (
         <div
           key={`small-${i}`}
-          className="absolute animate-spin-slow"
+          className="absolute animate-spin-slow vinyl-disc"
           style={{
             top: vinyl.top,
             left: vinyl.left,
@@ -130,6 +173,13 @@ export function VinylBackground({ className = "", fadeHeight = "150%" }: VinylBa
           <VinylSVG />
         </div>
       ))}
+
+      {/* Hover speed boost effect via CSS */}
+      <style>{`
+        .vinyl-disc {
+          transition: animation-duration 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
