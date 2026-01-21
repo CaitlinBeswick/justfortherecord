@@ -9,6 +9,7 @@ import { searchReleases, searchArtists, getCoverArtUrl, getArtistNames, getYear,
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { SearchAutocomplete, AutocompleteItem } from "@/components/SearchAutocomplete";
+import { VinylBackground } from "@/components/VinylBackground";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -107,7 +108,8 @@ const Albums = () => {
   }, [] as MBReleaseGroup[]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <VinylBackground fadeHeight="100%" />
       <Navbar />
       
       <main className="container mx-auto px-4 pt-24 pb-20">

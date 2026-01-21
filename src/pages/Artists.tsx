@@ -9,6 +9,7 @@ import { searchArtists, MBArtist } from "@/services/musicbrainz";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { SearchAutocomplete, AutocompleteItem } from "@/components/SearchAutocomplete";
+import { VinylBackground } from "@/components/VinylBackground";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -91,7 +92,8 @@ const Artists = () => {
   }, [debouncedSearch, artists.length, isLoading]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <VinylBackground fadeHeight="100%" />
       <Navbar />
       <main className="container mx-auto px-4 pt-24 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
