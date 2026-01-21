@@ -34,56 +34,59 @@ const Index = () => {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {[
             // Row 1
-            { top: '-2%', left: '2%', size: 6 }, { top: '0%', left: '8%', size: 8 }, { top: '-1%', left: '15%', size: 5 },
-            { top: '2%', left: '22%', size: 7 }, { top: '-2%', left: '30%', size: 6 }, { top: '1%', left: '38%', size: 8 },
-            { top: '0%', left: '45%', size: 5 }, { top: '-1%', left: '52%', size: 7 }, { top: '2%', left: '60%', size: 6 },
-            { top: '-2%', left: '68%', size: 8 }, { top: '1%', left: '75%', size: 5 }, { top: '0%', left: '82%', size: 7 },
-            { top: '-1%', left: '90%', size: 6 }, { top: '2%', left: '96%', size: 8 },
+            { top: '-2%', left: '2%', size: 6, opacity: 0.10 }, { top: '0%', left: '8%', size: 8, opacity: 0.14 }, { top: '-1%', left: '15%', size: 5, opacity: 0.08 },
+            { top: '2%', left: '22%', size: 7, opacity: 0.12 }, { top: '-2%', left: '30%', size: 6, opacity: 0.10 }, { top: '1%', left: '38%', size: 8, opacity: 0.14 },
+            { top: '0%', left: '45%', size: 5, opacity: 0.08 }, { top: '-1%', left: '52%', size: 7, opacity: 0.12 }, { top: '2%', left: '60%', size: 6, opacity: 0.10 },
+            { top: '-2%', left: '68%', size: 8, opacity: 0.14 }, { top: '1%', left: '75%', size: 5, opacity: 0.08 }, { top: '0%', left: '82%', size: 7, opacity: 0.12 },
+            { top: '-1%', left: '90%', size: 6, opacity: 0.10 }, { top: '2%', left: '96%', size: 8, opacity: 0.14 },
             // Row 2
-            { top: '8%', left: '0%', size: 7 }, { top: '6%', left: '6%', size: 5 }, { top: '10%', left: '12%', size: 8 },
-            { top: '7%', left: '19%', size: 6 }, { top: '9%', left: '26%', size: 7 }, { top: '6%', left: '34%', size: 5 },
-            { top: '11%', left: '41%', size: 8 }, { top: '8%', left: '48%', size: 6 }, { top: '7%', left: '56%', size: 7 },
-            { top: '10%', left: '63%', size: 5 }, { top: '6%', left: '70%', size: 8 }, { top: '9%', left: '78%', size: 6 },
-            { top: '8%', left: '85%', size: 7 }, { top: '11%', left: '93%', size: 5 },
+            { top: '8%', left: '0%', size: 7, opacity: 0.12 }, { top: '6%', left: '6%', size: 5, opacity: 0.08 }, { top: '10%', left: '12%', size: 8, opacity: 0.14 },
+            { top: '7%', left: '19%', size: 6, opacity: 0.10 }, { top: '9%', left: '26%', size: 7, opacity: 0.12 }, { top: '6%', left: '34%', size: 5, opacity: 0.08 },
+            { top: '11%', left: '41%', size: 8, opacity: 0.14 }, { top: '8%', left: '48%', size: 6, opacity: 0.10 }, { top: '7%', left: '56%', size: 7, opacity: 0.12 },
+            { top: '10%', left: '63%', size: 5, opacity: 0.08 }, { top: '6%', left: '70%', size: 8, opacity: 0.14 }, { top: '9%', left: '78%', size: 6, opacity: 0.10 },
+            { top: '8%', left: '85%', size: 7, opacity: 0.12 }, { top: '11%', left: '93%', size: 5, opacity: 0.08 },
             // Row 3
-            { top: '16%', left: '3%', size: 8 }, { top: '14%', left: '10%', size: 6 }, { top: '18%', left: '17%', size: 5 },
-            { top: '15%', left: '24%', size: 7 }, { top: '17%', left: '31%', size: 8 }, { top: '14%', left: '39%', size: 6 },
-            { top: '19%', left: '46%', size: 5 }, { top: '16%', left: '53%', size: 7 }, { top: '15%', left: '61%', size: 8 },
-            { top: '18%', left: '68%', size: 6 }, { top: '14%', left: '76%', size: 5 }, { top: '17%', left: '83%', size: 7 },
-            { top: '16%', left: '91%', size: 8 },
+            { top: '16%', left: '3%', size: 8, opacity: 0.14 }, { top: '14%', left: '10%', size: 6, opacity: 0.10 }, { top: '18%', left: '17%', size: 5, opacity: 0.08 },
+            { top: '15%', left: '24%', size: 7, opacity: 0.12 }, { top: '17%', left: '31%', size: 8, opacity: 0.14 }, { top: '14%', left: '39%', size: 6, opacity: 0.10 },
+            { top: '19%', left: '46%', size: 5, opacity: 0.08 }, { top: '16%', left: '53%', size: 7, opacity: 0.12 }, { top: '15%', left: '61%', size: 8, opacity: 0.14 },
+            { top: '18%', left: '68%', size: 6, opacity: 0.10 }, { top: '14%', left: '76%', size: 5, opacity: 0.08 }, { top: '17%', left: '83%', size: 7, opacity: 0.12 },
+            { top: '16%', left: '91%', size: 8, opacity: 0.14 },
             // Row 4
-            { top: '24%', left: '1%', size: 5 }, { top: '22%', left: '7%', size: 7 }, { top: '26%', left: '14%', size: 8 },
-            { top: '23%', left: '21%', size: 6 }, { top: '25%', left: '28%', size: 5 }, { top: '22%', left: '36%', size: 7 },
-            { top: '27%', left: '43%', size: 8 }, { top: '24%', left: '50%', size: 6 }, { top: '23%', left: '58%', size: 5 },
-            { top: '26%', left: '65%', size: 7 }, { top: '22%', left: '72%', size: 8 }, { top: '25%', left: '80%', size: 6 },
-            { top: '24%', left: '87%', size: 5 }, { top: '27%', left: '94%', size: 7 },
+            { top: '24%', left: '1%', size: 5, opacity: 0.08 }, { top: '22%', left: '7%', size: 7, opacity: 0.12 }, { top: '26%', left: '14%', size: 8, opacity: 0.14 },
+            { top: '23%', left: '21%', size: 6, opacity: 0.10 }, { top: '25%', left: '28%', size: 5, opacity: 0.08 }, { top: '22%', left: '36%', size: 7, opacity: 0.12 },
+            { top: '27%', left: '43%', size: 8, opacity: 0.14 }, { top: '24%', left: '50%', size: 6, opacity: 0.10 }, { top: '23%', left: '58%', size: 5, opacity: 0.08 },
+            { top: '26%', left: '65%', size: 7, opacity: 0.12 }, { top: '22%', left: '72%', size: 8, opacity: 0.14 }, { top: '25%', left: '80%', size: 6, opacity: 0.10 },
+            { top: '24%', left: '87%', size: 5, opacity: 0.08 }, { top: '27%', left: '94%', size: 7, opacity: 0.12 },
             // Row 5
-            { top: '32%', left: '4%', size: 6 }, { top: '30%', left: '11%', size: 8 }, { top: '34%', left: '18%', size: 5 },
-            { top: '31%', left: '25%', size: 7 }, { top: '33%', left: '33%', size: 6 }, { top: '30%', left: '40%', size: 8 },
-            { top: '35%', left: '47%', size: 5 }, { top: '32%', left: '55%', size: 7 }, { top: '31%', left: '62%', size: 6 },
-            { top: '34%', left: '69%', size: 8 }, { top: '30%', left: '77%', size: 5 }, { top: '33%', left: '84%', size: 7 },
-            { top: '32%', left: '92%', size: 6 },
+            { top: '32%', left: '4%', size: 6, opacity: 0.10 }, { top: '30%', left: '11%', size: 8, opacity: 0.14 }, { top: '34%', left: '18%', size: 5, opacity: 0.08 },
+            { top: '31%', left: '25%', size: 7, opacity: 0.12 }, { top: '33%', left: '33%', size: 6, opacity: 0.10 }, { top: '30%', left: '40%', size: 8, opacity: 0.14 },
+            { top: '35%', left: '47%', size: 5, opacity: 0.08 }, { top: '32%', left: '55%', size: 7, opacity: 0.12 }, { top: '31%', left: '62%', size: 6, opacity: 0.10 },
+            { top: '34%', left: '69%', size: 8, opacity: 0.14 }, { top: '30%', left: '77%', size: 5, opacity: 0.08 }, { top: '33%', left: '84%', size: 7, opacity: 0.12 },
+            { top: '32%', left: '92%', size: 6, opacity: 0.10 },
             // Row 6
-            { top: '40%', left: '0%', size: 8 }, { top: '38%', left: '8%', size: 5 }, { top: '42%', left: '15%', size: 7 },
-            { top: '39%', left: '22%', size: 6 }, { top: '41%', left: '30%', size: 8 }, { top: '38%', left: '37%', size: 5 },
-            { top: '43%', left: '44%', size: 7 }, { top: '40%', left: '52%', size: 6 }, { top: '39%', left: '59%', size: 8 },
-            { top: '42%', left: '66%', size: 5 }, { top: '38%', left: '74%', size: 7 }, { top: '41%', left: '81%', size: 6 },
-            { top: '40%', left: '89%', size: 8 }, { top: '43%', left: '96%', size: 5 },
+            { top: '40%', left: '0%', size: 8, opacity: 0.14 }, { top: '38%', left: '8%', size: 5, opacity: 0.08 }, { top: '42%', left: '15%', size: 7, opacity: 0.12 },
+            { top: '39%', left: '22%', size: 6, opacity: 0.10 }, { top: '41%', left: '30%', size: 8, opacity: 0.14 }, { top: '38%', left: '37%', size: 5, opacity: 0.08 },
+            { top: '43%', left: '44%', size: 7, opacity: 0.12 }, { top: '40%', left: '52%', size: 6, opacity: 0.10 }, { top: '39%', left: '59%', size: 8, opacity: 0.14 },
+            { top: '42%', left: '66%', size: 5, opacity: 0.08 }, { top: '38%', left: '74%', size: 7, opacity: 0.12 }, { top: '41%', left: '81%', size: 6, opacity: 0.10 },
+            { top: '40%', left: '89%', size: 8, opacity: 0.14 }, { top: '43%', left: '96%', size: 5, opacity: 0.08 },
             // Row 7
-            { top: '48%', left: '2%', size: 7 }, { top: '46%', left: '9%', size: 6 }, { top: '50%', left: '16%', size: 8 },
-            { top: '47%', left: '23%', size: 5 }, { top: '49%', left: '31%', size: 7 }, { top: '46%', left: '38%', size: 6 },
-            { top: '51%', left: '45%', size: 8 }, { top: '48%', left: '53%', size: 5 }, { top: '47%', left: '60%', size: 7 },
-            { top: '50%', left: '67%', size: 6 }, { top: '46%', left: '75%', size: 8 }, { top: '49%', left: '82%', size: 5 },
-            { top: '48%', left: '90%', size: 7 },
+            { top: '48%', left: '2%', size: 7, opacity: 0.12 }, { top: '46%', left: '9%', size: 6, opacity: 0.10 }, { top: '50%', left: '16%', size: 8, opacity: 0.14 },
+            { top: '47%', left: '23%', size: 5, opacity: 0.08 }, { top: '49%', left: '31%', size: 7, opacity: 0.12 }, { top: '46%', left: '38%', size: 6, opacity: 0.10 },
+            { top: '51%', left: '45%', size: 8, opacity: 0.14 }, { top: '48%', left: '53%', size: 5, opacity: 0.08 }, { top: '47%', left: '60%', size: 7, opacity: 0.12 },
+            { top: '50%', left: '67%', size: 6, opacity: 0.10 }, { top: '46%', left: '75%', size: 8, opacity: 0.14 }, { top: '49%', left: '82%', size: 5, opacity: 0.08 },
+            { top: '48%', left: '90%', size: 7, opacity: 0.12 },
           ].map((vinyl, i) => (
             <div
               key={i}
-              className="absolute opacity-[0.12]"
+              className="absolute animate-spin-slow"
               style={{
                 top: vinyl.top,
                 left: vinyl.left,
                 width: `${vinyl.size * 4}px`,
                 height: `${vinyl.size * 4}px`,
+                opacity: vinyl.opacity,
+                animationDuration: `${30 + (i % 5) * 10}s`,
+                animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
               }}
             >
               <svg viewBox="0 0 200 200" className="w-full h-full">
