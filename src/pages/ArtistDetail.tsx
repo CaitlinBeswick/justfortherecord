@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { AverageArtistRating } from "@/components/AverageArtistRating";
+import { ArtistRating } from "@/components/ArtistRating";
 import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -84,12 +85,12 @@ const ArtistDetail = () => {
     staleTime: 1000 * 60 * 60,
   });
 
-  // Fetch similar artists based on genres
+  // Fetch similar artists based on genres (or fallback search if no genres)
   const artistGenres = artist?.genres?.map(g => g.name) || [];
   const { data: similarArtists = [] } = useQuery({
-    queryKey: ['similar-artists', artistId, artistGenres.join(',')],
+    queryKey: ['similar-artists', artistId, artistGenres.join(','), artist?.name],
     queryFn: () => getSimilarArtists(artistId, artist?.name || '', artistGenres),
-    enabled: isValidArtistId && !!artist && artistGenres.length > 0,
+    enabled: isValidArtistId && !!artist,
     staleTime: 1000 * 60 * 30,
   });
 
@@ -614,33 +615,36 @@ const ArtistDetail = () => {
 
                   {/* Actions Card */}
                   <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-                    <div className="flex items-center justify-center gap-3">
-                      <button
-                        onClick={handleFollow}
-                        disabled={followMutation.isPending}
-                        className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
-                          following
-                            ? "bg-red-500 text-white hover:bg-red-600"
-                            : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                        } disabled:opacity-50`}
-                      >
-                        {following ? (
-                          <>
-                            <UserCheck className="h-4 w-4" />
-                            Following
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="h-4 w-4" />
-                            Follow
-                          </>
-                        )}
-                      </button>
-                      <ShareButton 
-                        title={artist.name}
-                        text={`Check out ${artist.name}`}
-                        className="flex h-10 w-10 items-center justify-center rounded-lg"
-                      />
+                    <div className="flex flex-col items-center gap-4">
+                      <ArtistRating artistId={artistId} artistName={artist.name} />
+                      <div className="flex items-center justify-center gap-3">
+                        <button
+                          onClick={handleFollow}
+                          disabled={followMutation.isPending}
+                          className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
+                            following
+                              ? "bg-red-500 text-white hover:bg-red-600"
+                              : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                          } disabled:opacity-50`}
+                        >
+                          {following ? (
+                            <>
+                              <UserCheck className="h-4 w-4" />
+                              Following
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="h-4 w-4" />
+                              Follow
+                            </>
+                          )}
+                        </button>
+                        <ShareButton 
+                          title={artist.name}
+                          text={`Check out ${artist.name}`}
+                          className="flex h-10 w-10 items-center justify-center rounded-lg"
+                        />
+                      </div>
                     </div>
                   </div>
                 </motion.div>

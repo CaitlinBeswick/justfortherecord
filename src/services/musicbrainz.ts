@@ -333,21 +333,36 @@ export async function getArtist(id: string): Promise<MBArtist> {
 }
 
 export async function getSimilarArtists(artistId: string, artistName: string, genres: string[], limit: number = 8): Promise<MBArtist[]> {
-  if (!isValidId(artistId) || genres.length === 0) {
+  if (!isValidId(artistId)) {
     return [];
   }
   
   try {
-    // For larger result sets, use more genres with OR to get more matches
-    // For small previews (limit <= 8), use AND for better precision
-    const useOr = limit > 8;
-    const genresToUse = useOr ? genres.slice(0, 4) : genres.slice(0, 2);
-    const genreQuery = genresToUse.map(g => `tag:"${g}"`).join(useOr ? ' OR ' : ' AND ');
+    let query: string;
+    
+    if (genres.length > 0) {
+      // For larger result sets, use more genres with OR to get more matches
+      // For small previews (limit <= 8), use AND for better precision
+      const useOr = limit > 8;
+      const genresToUse = useOr ? genres.slice(0, 4) : genres.slice(0, 2);
+      query = genresToUse.map(g => `tag:"${g}"`).join(useOr ? ' OR ' : ' AND ');
+    } else {
+      // Fallback: search by artist name similarity for artists without genre tags
+      // This finds artists with similar names or who might be related
+      // Use the first word of the artist's name to find similar artists
+      const firstWord = artistName.split(' ')[0];
+      if (firstWord.length >= 3) {
+        query = `artist:"${firstWord}"`;
+      } else {
+        // For very short names, just search broadly
+        query = `artist:"${artistName}"`;
+      }
+    }
     
     // Request more than needed to account for filtering out the current artist
     // Use a higher multiplier to ensure we get enough results after filtering
     const requestLimit = Math.min(limit * 5, 100);
-    const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery, limit: requestLimit });
+    const data = await callMusicBrainz({ action: 'search-artist', query, limit: requestLimit });
     const artists: MBArtist[] = data.artists || [];
     
     // Filter out the current artist and return top matches
