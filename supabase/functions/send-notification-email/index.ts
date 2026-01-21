@@ -149,6 +149,71 @@ serve(async (req) => {
         </body>
         </html>
       `;
+    } else if (notification_type === 'friend_request' && data) {
+      const requesterName = data.requester_name || 'Someone';
+      
+      emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; color: #fafafa; padding: 40px 20px; margin: 0;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h1 style="color: #fafafa; font-size: 24px; margin: 0 0 8px 0;">👋 New Follow Request</h1>
+            </div>
+            <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
+              <strong style="color: #f97316;">${requesterName}</strong> wants to follow you on Just For The Record.
+            </p>
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${baseUrl}/profile/friends" style="display: inline-block; background-color: #f97316; color: #0a0a0a; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+                View Request
+              </a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #262626; margin: 32px 0;">
+            <p style="color: #71717a; font-size: 12px; text-align: center; margin: 0;">
+              <a href="${baseUrl}/profile/settings" style="color: #71717a; text-decoration: underline;">Manage email preferences</a>
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+    } else if (notification_type === 'friend_accepted' && data) {
+      const accepterName = data.accepter_name || 'Someone';
+      
+      emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; color: #fafafa; padding: 40px 20px; margin: 0;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h1 style="color: #fafafa; font-size: 24px; margin: 0 0 8px 0;">🎉 You're Now Connected!</h1>
+            </div>
+            <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
+              <strong style="color: #f97316;">${accepterName}</strong> accepted your follow request!
+            </p>
+            <p style="color: #71717a; font-size: 14px; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
+              You can now see their listening activity and diary entries.
+            </p>
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${baseUrl}/following" style="display: inline-block; background-color: #f97316; color: #0a0a0a; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+                See Their Activity
+              </a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #262626; margin: 32px 0;">
+            <p style="color: #71717a; font-size: 12px; text-align: center; margin: 0;">
+              <a href="${baseUrl}/profile/settings" style="color: #71717a; text-decoration: underline;">Manage email preferences</a>
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
     } else {
       // Generic notification email template
       emailHtml = `

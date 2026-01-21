@@ -148,6 +148,17 @@ export function useFriendships() {
           message: `${senderName} wants to follow you`,
           data: { requester_id: user.id }
         });
+
+      // Trigger email notification (non-blocking)
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          user_id: addresseeId,
+          notification_type: 'friend_request',
+          title: 'New Follow Request',
+          message: `${senderName} wants to follow you on Just For The Record.`,
+          data: { requester_id: user.id, requester_name: senderName }
+        }
+      }).catch(err => console.log('Email notification failed:', err));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friendships'] });
@@ -202,6 +213,17 @@ export function useFriendships() {
           message: `${accepterName} accepted your follow request`,
           data: { accepter_id: user.id }
         });
+
+      // Trigger email notification (non-blocking)
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          user_id: friendship.requester_id,
+          notification_type: 'friend_accepted',
+          title: 'Follow Request Accepted!',
+          message: `${accepterName} accepted your follow request on Just For The Record.`,
+          data: { accepter_id: user.id, accepter_name: accepterName }
+        }
+      }).catch(err => console.log('Email notification failed:', err));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friendships'] });
