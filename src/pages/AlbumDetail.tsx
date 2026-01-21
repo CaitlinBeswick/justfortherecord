@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ListeningStatusButtons } from "@/components/ListeningStatusButtons";
 import { LogListenDialog } from "@/components/LogListenDialog";
+import { ImageAttribution } from "@/components/ImageAttribution";
 
 const AlbumDetail = () => {
   const { id } = useParams();
@@ -385,13 +386,20 @@ const AlbumDetail = () => {
                 transition={{ duration: 0.4 }}
                 className="flex-shrink-0"
               >
-                <img
-                  src={coverError ? placeholderCover : coverUrl}
-                  alt={releaseGroup.title}
-                  className="w-64 h-64 md:w-72 md:h-72 rounded-xl object-cover shadow-2xl mx-auto md:mx-0 bg-secondary"
-                  style={{ boxShadow: "var(--shadow-album)" }}
-                  onError={() => setCoverError(true)}
-                />
+                <div className="relative">
+                  <img
+                    src={coverError ? placeholderCover : coverUrl}
+                    alt={releaseGroup.title}
+                    className="w-64 h-64 md:w-72 md:h-72 rounded-xl object-cover shadow-2xl mx-auto md:mx-0 bg-secondary"
+                    style={{ boxShadow: "var(--shadow-album)" }}
+                    onError={() => setCoverError(true)}
+                  />
+                  {!coverError && (
+                    <div className="absolute bottom-2 right-2">
+                      <ImageAttribution type="cover" compact />
+                    </div>
+                  )}
+                </div>
               </motion.div>
 
               <motion.div
