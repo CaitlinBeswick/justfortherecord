@@ -43,7 +43,7 @@ export function UserActivityFeed() {
     enabled: !!user?.id,
   });
 
-  // Fetch user's ratings
+  // Fetch user's ratings - use updated_at to show recent review updates
   const { data: ratings = [], isLoading: ratingsLoading } = useQuery({
     queryKey: ['user-ratings-activity', user?.id],
     queryFn: async () => {
@@ -53,7 +53,7 @@ export function UserActivityFeed() {
         .from('album_ratings')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(20);
       
       if (error) throw error;
@@ -98,7 +98,7 @@ export function UserActivityFeed() {
       albumId: rating.release_group_id,
       albumTitle: rating.album_title,
       artistName: rating.artist_name,
-      timestamp: rating.created_at,
+      timestamp: rating.updated_at,
       rating: rating.rating,
       reviewText: rating.review_text || undefined,
     })),

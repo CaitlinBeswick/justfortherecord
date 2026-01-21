@@ -166,40 +166,41 @@ export const ProfileHeader = () => {
               <p className="text-sm text-muted-foreground/60 mt-1">📍 {profile.location}</p>
             )}
             
-            <div className="flex items-center justify-center md:justify-start gap-6 mt-6">
-              <div className="text-center">
-                <p className="text-2xl font-semibold text-foreground">{albumCount}</p>
+            {/* Stats Grid - Responsive */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 sm:gap-6 mt-6">
+              <div className="text-center min-w-[60px]">
+                <p className="text-xl sm:text-2xl font-semibold text-foreground">{albumCount}</p>
                 <p className="text-xs text-muted-foreground">Albums</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-semibold text-foreground">{artistsCount}</p>
+              <div className="text-center min-w-[60px]">
+                <p className="text-xl sm:text-2xl font-semibold text-foreground">{artistsCount}</p>
                 <p className="text-xs text-muted-foreground">Artists</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-semibold text-foreground">{followingCount}</p>
+              <div className="text-center min-w-[60px]">
+                <p className="text-xl sm:text-2xl font-semibold text-foreground">{followingCount}</p>
                 <p className="text-xs text-muted-foreground">Following</p>
               </div>
+            </div>
               
-              {/* Listening Challenge */}
-              {profile?.yearly_listen_goal && thisYearCount !== undefined && (
-                <div className="hidden sm:flex items-center gap-3 pl-6 border-l border-border/50">
+            {/* Listening Challenge - Full width on mobile, inline on desktop */}
+            {profile?.yearly_listen_goal && thisYearCount !== undefined && (
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 rounded-xl bg-card/50 border border-border/50 max-w-sm mx-auto md:mx-0">
+                <div className="flex items-center gap-3">
                   <Target className="h-5 w-5 text-primary shrink-0" />
-                  <div className="min-w-[120px]">
-                    <div className="flex items-baseline gap-1.5">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
                       <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
                       <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
+                      <span className="text-xs text-muted-foreground ml-1">{currentYear} Goal</span>
                     </div>
                     <Progress 
                       value={Math.min((thisYearCount / profile.yearly_listen_goal) * 100, 100)} 
-                      className="h-1.5 mt-1"
+                      className="h-2 mt-2"
                     />
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {currentYear} Goal
-                    </p>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {profile?.favorite_genres && profile.favorite_genres.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-4 justify-center md:justify-start">
