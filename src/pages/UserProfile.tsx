@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ShareButton } from "@/components/ShareButton";
+import { VinylBackground } from "@/components/VinylBackground";
 import { useParams, useNavigate } from "react-router-dom";
 import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play, Lock, Ban, MoreHorizontal, Target } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
@@ -636,9 +637,11 @@ const UserProfile = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="pt-16">
+      <main className="pt-16 relative">
+        <VinylBackground fadeHeight="60%" />
+        
         {/* Profile Header */}
-        <div className="gradient-hero">
+        <div className="gradient-hero relative">
           <div className="container mx-auto px-4 py-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
