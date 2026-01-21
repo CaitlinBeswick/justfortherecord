@@ -1,6 +1,6 @@
 import { memo, useState, useCallback, useEffect } from "react";
 
-// Realistic vinyl record SVG with grooves, label, and highlight
+// Realistic vinyl record SVG with grooves, gold label, and highlight
 const VinylSVG = memo(({ detailed = false }: { detailed?: boolean }) => (
   <svg viewBox="0 0 200 200" className="w-full h-full">
     {/* Outer edge - thick rim */}
@@ -20,13 +20,13 @@ const VinylSVG = memo(({ detailed = false }: { detailed?: boolean }) => (
         <circle cx="100" cy="100" r="57" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.35"/>
         <circle cx="100" cy="100" r="52" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.4"/>
         <circle cx="100" cy="100" r="47" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.35"/>
-        {/* Label area outer ring */}
-        <circle cx="100" cy="100" r="38" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5" opacity="0.6"/>
-        {/* Label circle - filled */}
-        <circle cx="100" cy="100" r="32" fill="hsl(var(--primary))" opacity="0.15"/>
-        <circle cx="100" cy="100" r="32" fill="none" stroke="hsl(var(--primary))" strokeWidth="1" opacity="0.5"/>
+        {/* Label area outer ring - gold/cream */}
+        <circle cx="100" cy="100" r="38" fill="none" stroke="hsl(45, 60%, 55%)" strokeWidth="1.5" opacity="0.7"/>
+        {/* Label circle - filled with gold/cream */}
+        <circle cx="100" cy="100" r="32" fill="hsl(45, 50%, 70%)" opacity="0.25"/>
+        <circle cx="100" cy="100" r="32" fill="none" stroke="hsl(45, 60%, 55%)" strokeWidth="1" opacity="0.6"/>
         {/* Inner label detail */}
-        <circle cx="100" cy="100" r="22" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.4"/>
+        <circle cx="100" cy="100" r="22" fill="none" stroke="hsl(45, 50%, 60%)" strokeWidth="0.5" opacity="0.5"/>
         {/* Spindle hole */}
         <circle cx="100" cy="100" r="5" fill="hsl(var(--primary))" opacity="0.8"/>
         {/* Highlight/sheen effect - arc on upper left */}
@@ -46,10 +46,10 @@ const VinylSVG = memo(({ detailed = false }: { detailed?: boolean }) => (
         <circle cx="100" cy="100" r="76" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.8" opacity="0.25"/>
         <circle cx="100" cy="100" r="64" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.8" opacity="0.3"/>
         <circle cx="100" cy="100" r="52" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.8" opacity="0.25"/>
-        {/* Label area */}
-        <circle cx="100" cy="100" r="38" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.2" opacity="0.5"/>
-        <circle cx="100" cy="100" r="30" fill="hsl(var(--primary))" opacity="0.12"/>
-        <circle cx="100" cy="100" r="30" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.8" opacity="0.4"/>
+        {/* Label area - gold/cream */}
+        <circle cx="100" cy="100" r="38" fill="none" stroke="hsl(45, 60%, 55%)" strokeWidth="1.2" opacity="0.6"/>
+        <circle cx="100" cy="100" r="30" fill="hsl(45, 50%, 70%)" opacity="0.2"/>
+        <circle cx="100" cy="100" r="30" fill="none" stroke="hsl(45, 60%, 55%)" strokeWidth="0.8" opacity="0.5"/>
         {/* Spindle hole */}
         <circle cx="100" cy="100" r="4" fill="hsl(var(--primary))" opacity="0.7"/>
         {/* Sheen */}
@@ -68,61 +68,88 @@ const VinylSVG = memo(({ detailed = false }: { detailed?: boolean }) => (
 
 VinylSVG.displayName = 'VinylSVG';
 
-// Accent vinyls spread more evenly across the page
+// Accent vinyls spread across the page - more of them and higher opacity
 const accentVinyls = [
   // Top area
-  { top: '-5%', left: '15%', size: 140, opacity: 0.11, duration: 65 },
-  { top: '-8%', left: '70%', size: 180, opacity: 0.13, duration: 80, reverse: true },
+  { top: '-5%', left: '10%', size: 160, opacity: 0.16, duration: 65 },
+  { top: '-8%', left: '50%', size: 140, opacity: 0.14, duration: 55 },
+  { top: '-6%', left: '75%', size: 200, opacity: 0.18, duration: 80, reverse: true },
+  // Upper section
+  { top: '12%', left: '-5%', size: 180, opacity: 0.15, duration: 70 },
+  { top: '10%', left: '30%', size: 120, opacity: 0.13, duration: 50 },
+  { top: '15%', left: '60%', size: 100, opacity: 0.12, duration: 45 },
+  { top: '8%', right: '-4%', size: 170, opacity: 0.16, duration: 75, reverse: true },
   // Upper middle
-  { top: '18%', left: '-4%', size: 120, opacity: 0.10, duration: 70 },
-  { top: '15%', left: '45%', size: 100, opacity: 0.09, duration: 55 },
-  { top: '20%', right: '-3%', size: 160, opacity: 0.12, duration: 75, reverse: true },
+  { top: '25%', left: '15%', size: 130, opacity: 0.14, duration: 60 },
+  { top: '28%', left: '45%', size: 110, opacity: 0.12, duration: 55 },
+  { top: '22%', right: '10%', size: 150, opacity: 0.15, duration: 70, reverse: true },
   // Middle
-  { top: '38%', left: '25%', size: 90, opacity: 0.08, duration: 60 },
-  { top: '42%', right: '20%', size: 130, opacity: 0.10, duration: 85, reverse: true },
+  { top: '38%', left: '-3%', size: 160, opacity: 0.14, duration: 65 },
+  { top: '40%', left: '25%', size: 100, opacity: 0.11, duration: 50 },
+  { top: '35%', left: '55%', size: 140, opacity: 0.13, duration: 60 },
+  { top: '42%', right: '-5%', size: 180, opacity: 0.16, duration: 85, reverse: true },
   // Lower middle
-  { top: '55%', left: '-2%', size: 150, opacity: 0.11, duration: 70 },
-  { top: '52%', left: '60%', size: 110, opacity: 0.09, duration: 65, reverse: true },
-  { top: '60%', right: '-4%', size: 170, opacity: 0.12, duration: 90 },
+  { top: '52%', left: '8%', size: 130, opacity: 0.13, duration: 55 },
+  { top: '55%', left: '35%', size: 120, opacity: 0.12, duration: 50 },
+  { top: '50%', left: '65%', size: 150, opacity: 0.14, duration: 65, reverse: true },
+  { top: '58%', right: '5%', size: 170, opacity: 0.15, duration: 75 },
+  // Lower section
+  { top: '68%', left: '-4%', size: 190, opacity: 0.15, duration: 80 },
+  { top: '65%', left: '20%', size: 110, opacity: 0.12, duration: 55 },
+  { top: '70%', left: '48%', size: 140, opacity: 0.13, duration: 60, reverse: true },
+  { top: '72%', right: '-3%', size: 160, opacity: 0.14, duration: 70 },
+  // Bottom area
+  { top: '82%', left: '12%', size: 150, opacity: 0.13, duration: 65 },
+  { top: '85%', left: '40%', size: 130, opacity: 0.12, duration: 55, reverse: true },
+  { top: '80%', left: '70%', size: 180, opacity: 0.15, duration: 75 },
 ];
 
-// Small scattered vinyls
+// Small scattered vinyls - more visible
 const smallVinyls = [
   // Row 1
-  { top: '2%', left: '12%', size: 6, opacity: 0.18 }, { top: '0%', left: '25%', size: 8, opacity: 0.22 }, { top: '3%', left: '38%', size: 5, opacity: 0.15 },
-  { top: '1%', left: '50%', size: 7, opacity: 0.20 }, { top: '2%', left: '62%', size: 6, opacity: 0.18 }, { top: '0%', left: '75%', size: 8, opacity: 0.22 },
+  { top: '2%', left: '8%', size: 7, opacity: 0.25 }, { top: '0%', left: '20%', size: 9, opacity: 0.28 }, { top: '3%', left: '32%', size: 6, opacity: 0.22 },
+  { top: '1%', left: '44%', size: 8, opacity: 0.26 }, { top: '2%', left: '56%', size: 7, opacity: 0.24 }, { top: '0%', left: '68%', size: 9, opacity: 0.28 },
+  { top: '3%', left: '80%', size: 6, opacity: 0.22 }, { top: '1%', left: '92%', size: 8, opacity: 0.26 },
   // Row 2
-  { top: '10%', left: '8%', size: 7, opacity: 0.20 }, { top: '8%', left: '20%', size: 5, opacity: 0.15 }, { top: '12%', left: '32%', size: 8, opacity: 0.22 },
-  { top: '9%', left: '45%', size: 6, opacity: 0.18 }, { top: '11%', left: '58%', size: 7, opacity: 0.20 }, { top: '8%', left: '70%', size: 5, opacity: 0.15 },
-  { top: '10%', left: '82%', size: 8, opacity: 0.22 },
+  { top: '10%', left: '5%', size: 8, opacity: 0.26 }, { top: '8%', left: '16%', size: 6, opacity: 0.22 }, { top: '12%', left: '28%', size: 9, opacity: 0.28 },
+  { top: '9%', left: '40%', size: 7, opacity: 0.24 }, { top: '11%', left: '52%', size: 8, opacity: 0.26 }, { top: '8%', left: '64%', size: 6, opacity: 0.22 },
+  { top: '10%', left: '76%', size: 9, opacity: 0.28 }, { top: '12%', left: '88%', size: 7, opacity: 0.24 },
   // Row 3
-  { top: '18%', left: '5%', size: 8, opacity: 0.22 }, { top: '16%', left: '18%', size: 6, opacity: 0.18 }, { top: '20%', left: '30%', size: 5, opacity: 0.15 },
-  { top: '17%', left: '42%', size: 7, opacity: 0.20 }, { top: '19%', left: '55%', size: 8, opacity: 0.22 }, { top: '16%', left: '68%', size: 6, opacity: 0.18 },
-  { top: '18%', left: '80%', size: 5, opacity: 0.15 },
+  { top: '18%', left: '3%', size: 9, opacity: 0.28 }, { top: '16%', left: '14%', size: 7, opacity: 0.24 }, { top: '20%', left: '26%', size: 6, opacity: 0.22 },
+  { top: '17%', left: '38%', size: 8, opacity: 0.26 }, { top: '19%', left: '50%', size: 9, opacity: 0.28 }, { top: '16%', left: '62%', size: 7, opacity: 0.24 },
+  { top: '18%', left: '74%', size: 6, opacity: 0.22 }, { top: '20%', left: '86%', size: 8, opacity: 0.26 },
   // Row 4
-  { top: '26%', left: '10%', size: 5, opacity: 0.15 }, { top: '24%', left: '22%', size: 7, opacity: 0.20 }, { top: '28%', left: '35%', size: 8, opacity: 0.22 },
-  { top: '25%', left: '48%', size: 6, opacity: 0.18 }, { top: '27%', left: '60%', size: 5, opacity: 0.15 }, { top: '24%', left: '72%', size: 7, opacity: 0.20 },
-  { top: '26%', left: '85%', size: 8, opacity: 0.22 },
+  { top: '26%', left: '7%', size: 6, opacity: 0.22 }, { top: '24%', left: '18%', size: 8, opacity: 0.26 }, { top: '28%', left: '30%', size: 9, opacity: 0.28 },
+  { top: '25%', left: '42%', size: 7, opacity: 0.24 }, { top: '27%', left: '54%', size: 6, opacity: 0.22 }, { top: '24%', left: '66%', size: 8, opacity: 0.26 },
+  { top: '26%', left: '78%', size: 9, opacity: 0.28 }, { top: '28%', left: '90%', size: 7, opacity: 0.24 },
   // Row 5
-  { top: '34%', left: '6%', size: 6, opacity: 0.18 }, { top: '32%', left: '18%', size: 8, opacity: 0.22 }, { top: '36%', left: '30%', size: 5, opacity: 0.15 },
-  { top: '33%', left: '42%', size: 7, opacity: 0.20 }, { top: '35%', left: '55%', size: 6, opacity: 0.18 }, { top: '32%', left: '68%', size: 8, opacity: 0.22 },
-  { top: '34%', left: '80%', size: 5, opacity: 0.15 },
+  { top: '34%', left: '4%', size: 7, opacity: 0.24 }, { top: '32%', left: '15%', size: 9, opacity: 0.28 }, { top: '36%', left: '27%', size: 6, opacity: 0.22 },
+  { top: '33%', left: '39%', size: 8, opacity: 0.26 }, { top: '35%', left: '51%', size: 7, opacity: 0.24 }, { top: '32%', left: '63%', size: 9, opacity: 0.28 },
+  { top: '34%', left: '75%', size: 6, opacity: 0.22 }, { top: '36%', left: '87%', size: 8, opacity: 0.26 },
   // Row 6
-  { top: '42%', left: '12%', size: 8, opacity: 0.22 }, { top: '40%', left: '25%', size: 5, opacity: 0.15 }, { top: '44%', left: '38%', size: 7, opacity: 0.20 },
-  { top: '41%', left: '50%', size: 6, opacity: 0.18 }, { top: '43%', left: '62%', size: 8, opacity: 0.22 }, { top: '40%', left: '75%', size: 5, opacity: 0.15 },
-  { top: '42%', left: '88%', size: 7, opacity: 0.20 },
+  { top: '42%', left: '9%', size: 9, opacity: 0.28 }, { top: '40%', left: '21%', size: 6, opacity: 0.22 }, { top: '44%', left: '33%', size: 8, opacity: 0.26 },
+  { top: '41%', left: '45%', size: 7, opacity: 0.24 }, { top: '43%', left: '57%', size: 9, opacity: 0.28 }, { top: '40%', left: '69%', size: 6, opacity: 0.22 },
+  { top: '42%', left: '81%', size: 8, opacity: 0.26 }, { top: '44%', left: '93%', size: 7, opacity: 0.24 },
   // Row 7
-  { top: '50%', left: '8%', size: 7, opacity: 0.20 }, { top: '48%', left: '20%', size: 6, opacity: 0.18 }, { top: '52%', left: '32%', size: 8, opacity: 0.22 },
-  { top: '49%', left: '45%', size: 5, opacity: 0.15 }, { top: '51%', left: '58%', size: 7, opacity: 0.20 }, { top: '48%', left: '70%', size: 6, opacity: 0.18 },
-  { top: '50%', left: '82%', size: 8, opacity: 0.22 },
+  { top: '50%', left: '6%', size: 8, opacity: 0.26 }, { top: '48%', left: '17%', size: 7, opacity: 0.24 }, { top: '52%', left: '29%', size: 9, opacity: 0.28 },
+  { top: '49%', left: '41%', size: 6, opacity: 0.22 }, { top: '51%', left: '53%', size: 8, opacity: 0.26 }, { top: '48%', left: '65%', size: 7, opacity: 0.24 },
+  { top: '50%', left: '77%', size: 9, opacity: 0.28 }, { top: '52%', left: '89%', size: 6, opacity: 0.22 },
   // Row 8
-  { top: '58%', left: '5%', size: 6, opacity: 0.18 }, { top: '56%', left: '18%', size: 8, opacity: 0.20 }, { top: '60%', left: '30%', size: 5, opacity: 0.14 },
-  { top: '57%', left: '42%', size: 7, opacity: 0.18 }, { top: '59%', left: '55%', size: 6, opacity: 0.16 }, { top: '56%', left: '68%', size: 8, opacity: 0.20 },
-  { top: '58%', left: '80%', size: 5, opacity: 0.14 },
+  { top: '58%', left: '3%', size: 7, opacity: 0.24 }, { top: '56%', left: '14%', size: 9, opacity: 0.26 }, { top: '60%', left: '26%', size: 6, opacity: 0.20 },
+  { top: '57%', left: '38%', size: 8, opacity: 0.24 }, { top: '59%', left: '50%', size: 7, opacity: 0.22 }, { top: '56%', left: '62%', size: 9, opacity: 0.26 },
+  { top: '58%', left: '74%', size: 6, opacity: 0.20 }, { top: '60%', left: '86%', size: 8, opacity: 0.24 },
   // Row 9
-  { top: '66%', left: '10%', size: 7, opacity: 0.16 }, { top: '64%', left: '22%', size: 5, opacity: 0.12 }, { top: '68%', left: '35%', size: 8, opacity: 0.18 },
-  { top: '65%', left: '48%', size: 6, opacity: 0.14 }, { top: '67%', left: '60%', size: 7, opacity: 0.16 }, { top: '64%', left: '72%', size: 5, opacity: 0.12 },
-  { top: '66%', left: '85%', size: 8, opacity: 0.18 },
+  { top: '66%', left: '8%', size: 8, opacity: 0.22 }, { top: '64%', left: '19%', size: 6, opacity: 0.18 }, { top: '68%', left: '31%', size: 9, opacity: 0.24 },
+  { top: '65%', left: '43%', size: 7, opacity: 0.20 }, { top: '67%', left: '55%', size: 8, opacity: 0.22 }, { top: '64%', left: '67%', size: 6, opacity: 0.18 },
+  { top: '66%', left: '79%', size: 9, opacity: 0.24 }, { top: '68%', left: '91%', size: 7, opacity: 0.20 },
+  // Row 10
+  { top: '74%', left: '5%', size: 9, opacity: 0.22 }, { top: '72%', left: '16%', size: 7, opacity: 0.18 }, { top: '76%', left: '28%', size: 6, opacity: 0.16 },
+  { top: '73%', left: '40%', size: 8, opacity: 0.20 }, { top: '75%', left: '52%', size: 9, opacity: 0.22 }, { top: '72%', left: '64%', size: 7, opacity: 0.18 },
+  { top: '74%', left: '76%', size: 6, opacity: 0.16 }, { top: '76%', left: '88%', size: 8, opacity: 0.20 },
+  // Row 11
+  { top: '82%', left: '10%', size: 8, opacity: 0.18 }, { top: '80%', left: '22%', size: 6, opacity: 0.14 }, { top: '84%', left: '34%', size: 9, opacity: 0.20 },
+  { top: '81%', left: '46%', size: 7, opacity: 0.16 }, { top: '83%', left: '58%', size: 8, opacity: 0.18 }, { top: '80%', left: '70%', size: 6, opacity: 0.14 },
+  { top: '82%', left: '82%', size: 9, opacity: 0.20 }, { top: '84%', left: '94%', size: 7, opacity: 0.16 },
 ];
 
 interface VinylBackgroundProps {
