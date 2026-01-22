@@ -9,6 +9,7 @@ import { ListeningGoalPopup } from "@/components/profile/ListeningGoalPopup";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { VinylBackground } from "@/components/VinylBackground";
 import { Footer } from "@/components/Footer";
+import { RollingVinylLogo } from "@/components/RollingVinylLogo";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -35,36 +36,41 @@ const Index = () => {
         <VinylBackground density="sparse" />
         
         <div className="relative container mx-auto px-4 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="max-w-2xl"
-          >
-            <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight">
-              Track the music
-              <br />
-              <span className="text-primary glow-text">you love</span>
-            </h1>
-            <p className="mt-6 text-lg text-muted-foreground max-w-md">
-              Log albums, review music and discover new artists.<br />Your personal music diary, beautifully organised.
-            </p>
-            <div className="mt-8 flex gap-4">
-              <button 
-                onClick={() => navigate("/albums")}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
-              >
-                Start Logging
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <button 
-                onClick={() => navigate("/search")}
-                className="inline-flex items-center gap-2 rounded-lg bg-secondary px-6 py-3 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-surface-hover"
-              >
-                Explore Music
-              </button>
-            </div>
-          </motion.div>
+          <div className="relative">
+            {/* Rolling Vinyl Animation */}
+            <RollingVinylLogo />
+            
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="max-w-2xl"
+            >
+              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight">
+                Track the music
+                <br />
+                <span className="text-primary glow-text">you love</span>
+              </h1>
+              <p className="mt-6 text-lg text-muted-foreground max-w-md">
+                Log albums, review music and discover new artists.<br />Your personal music diary, beautifully organised.
+              </p>
+              <div className="mt-8 flex gap-4">
+                <button 
+                  onClick={() => navigate("/albums")}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
+                >
+                  Start Logging
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={() => navigate("/search")}
+                  className="inline-flex items-center gap-2 rounded-lg bg-secondary px-6 py-3 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-surface-hover"
+                >
+                  Explore Music
+                </button>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
