@@ -20,10 +20,18 @@ function AlbumCover({ releaseGroupId, title }: { releaseGroupId: string; title: 
   const [hasError, setHasError] = useState(false);
   const imageUrl = getCoverArtUrl(releaseGroupId, '250');
 
+  // Get initials from album title
+  const getInitials = (albumTitle: string) => {
+    const words = albumTitle.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length === 0) return '?';
+    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
+  };
+
   if (hasError) {
     return (
-      <div className="aspect-square w-full rounded-lg bg-secondary flex items-center justify-center">
-        <Disc3 className="h-12 w-12 text-muted-foreground" />
+      <div className="aspect-square w-full rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+        <span className="font-serif text-3xl text-primary/60">{getInitials(title)}</span>
       </div>
     );
   }

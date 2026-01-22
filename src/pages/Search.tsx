@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { Footer } from "@/components/Footer";
+import { VinylBackground } from "@/components/VinylBackground";
 
 type SearchTab = "all" | "albums" | "artists";
 
@@ -56,10 +57,18 @@ function AlbumCoverSquare({ releaseGroupId, title }: { releaseGroupId: string; t
   const [hasError, setHasError] = useState(false);
   const imageUrl = getCoverArtUrl(releaseGroupId, '250');
 
+  // Get initials from album title
+  const getInitials = (albumTitle: string) => {
+    const words = albumTitle.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length === 0) return '?';
+    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
+  };
+
   if (hasError) {
     return (
-      <div className="aspect-square rounded-lg bg-secondary flex items-center justify-center">
-        <Disc3 className="h-8 w-8 text-muted-foreground" />
+      <div className="aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+        <span className="font-serif text-2xl text-primary/60">{getInitials(title)}</span>
       </div>
     );
   }
@@ -182,7 +191,9 @@ const Search = () => {
 
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <div className="gradient-hero absolute inset-0" />
+      <VinylBackground fadeHeight="200%" density="sparse" />
       <Navbar />
       
       <main className="relative container mx-auto px-4 pt-24 pb-20">
