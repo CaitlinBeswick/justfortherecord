@@ -6,15 +6,17 @@ interface RollingVinylLogoProps {
   size?: number;
 }
 
-export function RollingVinylLogo({ onImpact, size = 185 }: RollingVinylLogoProps) {
+export function RollingVinylLogo({ onImpact, size = 195 }: RollingVinylLogoProps) {
   const controls = useAnimation();
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
+  const [showGlow, setShowGlow] = useState(false);
 
   const runAnimation = useCallback(async () => {
     if (isAnimating) return;
     
     setIsAnimating(true);
+    setShowGlow(false);
 
     // Reset position and scale
     await controls.set({ x: size + 50, rotate: 0, scaleX: 1, scaleY: 1 });
@@ -87,6 +89,8 @@ export function RollingVinylLogo({ onImpact, size = 185 }: RollingVinylLogoProps
       },
     });
 
+    // Show glow effect
+    setShowGlow(true);
     setIsAnimating(false);
   }, [controls, isAnimating, onImpact, size]);
 
@@ -130,7 +134,9 @@ export function RollingVinylLogo({ onImpact, size = 185 }: RollingVinylLogoProps
           title="Click to replay animation"
           style={{ originX: 0.5, originY: 0.5 }}
         >
-          <VinylSVG />
+          <div className={`transition-all duration-700 ${showGlow ? 'drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]' : ''}`}>
+            <VinylSVG />
+          </div>
         </motion.div>
       </div>
     </div>
