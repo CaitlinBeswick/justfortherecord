@@ -338,6 +338,36 @@ export type Database = {
         }
         Relationships: []
       }
+      digest_email_settings: {
+        Row: {
+          cta_text: string
+          custom_note: string | null
+          greeting: string
+          id: string
+          subject: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cta_text?: string
+          custom_note?: string | null
+          greeting?: string
+          id?: string
+          subject?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cta_text?: string
+          custom_note?: string | null
+          greeting?: string
+          id?: string
+          subject?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       favorite_albums: {
         Row: {
           album_title: string
