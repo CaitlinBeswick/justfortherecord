@@ -656,7 +656,7 @@ const UserProfile = () => {
                 {/* Main row: Stats | Avatar | Goal */}
                 <div className="flex items-center justify-center gap-6 md:gap-10">
                   {/* Left side: Albums, Artists, Following */}
-                  <div className="hidden sm:flex items-center gap-4 md:gap-6">
+                  <div className="hidden sm:flex items-center gap-4 md:gap-6 pt-10">
                     {canViewProfile && profile.show_albums && (
                       <div className="text-center">
                         <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
@@ -691,7 +691,7 @@ const UserProfile = () => {
                   )}
 
                   {/* Right side: Listening Goal */}
-                  <div className="hidden sm:flex items-center gap-3 min-w-[100px]">
+                  <div className="hidden sm:flex items-center gap-3 min-w-[100px] pt-10">
                     {canViewProfile && profile.show_diary && profile.yearly_listen_goal ? (
                       <div className="flex items-center gap-3">
                         <Target className="h-5 w-5 text-primary shrink-0" />
