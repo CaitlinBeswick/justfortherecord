@@ -2,11 +2,12 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { VinylBackground } from "@/components/VinylBackground";
-import { Sparkles, Calendar } from "lucide-react";
+import { Sparkles, Calendar, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow, format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -22,6 +23,8 @@ const itemVariants = {
 };
 
 const WhatsNew = () => {
+  const navigate = useNavigate();
+  
   const { data: updates = [], isLoading } = useQuery({
     queryKey: ['app-updates-public'],
     queryFn: async () => {
@@ -35,6 +38,12 @@ const WhatsNew = () => {
       return data || [];
     },
   });
+
+  const handleUpdateClick = (link: string | null) => {
+    if (link) {
+      navigate(link);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
@@ -83,7 +92,8 @@ const WhatsNew = () => {
                 <motion.div
                   key={update.id}
                   variants={itemVariants}
-                  className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50 hover:border-primary/30 transition-colors"
+                  onClick={() => handleUpdateClick(update.link)}
+                  className={`bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50 hover:border-primary/30 transition-colors ${update.link ? 'cursor-pointer' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="flex items-center gap-3">
@@ -99,14 +109,24 @@ const WhatsNew = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                      <Calendar className="h-3 w-3" />
-                      <span title={format(new Date(update.created_at), 'PPP')}>
-                        {formatDistanceToNow(new Date(update.created_at), { addSuffix: true })}
-                      </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span title={format(new Date(update.created_at), 'PPP')}>
+                          {formatDistanceToNow(new Date(update.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                      {update.link && (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
                     </div>
                   </div>
                   <p className="text-muted-foreground leading-relaxed">{update.description}</p>
+                  {update.link && (
+                    <p className="text-xs text-primary mt-3 flex items-center gap-1">
+                      View feature <ChevronRight className="h-3 w-3" />
+                    </p>
+                  )}
                 </motion.div>
               ))}
             </motion.div>

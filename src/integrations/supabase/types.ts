@@ -62,6 +62,7 @@ export type Database = {
           description: string
           id: string
           is_active: boolean
+          link: string | null
           title: string
           version: string | null
         }
@@ -70,6 +71,7 @@ export type Database = {
           description: string
           id?: string
           is_active?: boolean
+          link?: string | null
           title: string
           version?: string | null
         }
@@ -78,6 +80,7 @@ export type Database = {
           description?: string
           id?: string
           is_active?: boolean
+          link?: string | null
           title?: string
           version?: string | null
         }
