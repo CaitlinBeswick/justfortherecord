@@ -9,6 +9,7 @@ import { ProfileCardDialog } from "@/components/profile/ProfileCardDialog";
 import { Progress } from "@/components/ui/progress";
 import { startOfYear, isAfter } from "date-fns";
 import { VinylBackground } from "@/components/VinylBackground";
+import { GoalCelebration } from "@/components/profile/GoalCelebration";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 interface Profile {
   id: string;
@@ -116,7 +117,19 @@ export const ProfileHeader = () => {
   const displayName = profile?.display_name || profile?.username || user?.email?.split('@')[0] || 'User';
   const artistsCount = followedArtists.length;
   const followingCount = friendships.length;
+
+  // Check if goal is complete
+  const goalComplete = profile?.yearly_listen_goal && thisYearCount >= profile.yearly_listen_goal;
+
   return <div className="gradient-hero relative overflow-hidden">
+      {/* Goal completion celebration */}
+      {profile?.yearly_listen_goal && (
+        <GoalCelebration 
+          isComplete={goalComplete || false} 
+          year={currentYear} 
+          goal={profile.yearly_listen_goal} 
+        />
+      )}
       <VinylBackground fadeHeight="120%" />
       <div className="container mx-auto px-4 py-8 md:py-12 relative">
         <motion.div initial={{
