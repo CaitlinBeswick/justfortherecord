@@ -5,8 +5,7 @@ import { ArrowLeft, Trophy, Disc3, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCoverArtUrl } from "@/services/musicbrainz";
-import { useState } from "react";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 
 interface AlbumRating {
   release_group_id: string;
@@ -14,36 +13,6 @@ interface AlbumRating {
   artist_name: string;
   avg_rating: number;
   rating_count: number;
-}
-
-function AlbumCover({ releaseGroupId, title }: { releaseGroupId: string; title: string }) {
-  const [hasError, setHasError] = useState(false);
-  const imageUrl = getCoverArtUrl(releaseGroupId, '250');
-
-  // Get initials from album title
-  const getInitials = (albumTitle: string) => {
-    const words = albumTitle.trim().split(/\s+/).filter(w => w.length > 0);
-    if (words.length === 0) return '?';
-    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
-    return (words[0][0] + words[1][0]).toUpperCase();
-  };
-
-  if (hasError) {
-    return (
-      <div className="aspect-square w-full rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-        <span className="font-serif text-3xl text-primary/60">{getInitials(title)}</span>
-      </div>
-    );
-  }
-
-  return (
-    <img 
-      src={imageUrl} 
-      alt={title}
-      className="aspect-square w-full rounded-lg object-cover"
-      onError={() => setHasError(true)}
-    />
-  );
 }
 
 const TopAlbums = () => {
@@ -123,7 +92,7 @@ const TopAlbums = () => {
                 className="cursor-pointer group"
               >
                 <div className="relative">
-                  <AlbumCover releaseGroupId={album.release_group_id} title={album.album_title} />
+                  <AlbumCoverWithFallback releaseGroupId={album.release_group_id} title={album.album_title} />
                   <div className={`absolute top-2 left-2 text-xs font-bold px-2 py-1 rounded ${
                     index === 0 ? 'bg-yellow-500 text-yellow-950' :
                     index === 1 ? 'bg-gray-300 text-gray-700' :
