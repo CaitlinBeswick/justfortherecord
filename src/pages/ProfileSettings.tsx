@@ -820,7 +820,7 @@ const ProfileSettings = () => {
                                 Weekly Digest
                               </Label>
                               <p className="text-xs text-muted-foreground">
-                                A weekly summary of new releases and friend activity every Sunday
+                                A weekly summary of new releases and friend activity every Friday
                               </p>
                             </div>
                             <Switch

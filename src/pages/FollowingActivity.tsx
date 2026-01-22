@@ -8,6 +8,8 @@ import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { formatDistanceToNow } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import { ArtistImage } from "@/components/ArtistImage";
+import { ActivityItemActions } from "@/components/ActivityItemActions";
+import { ActivityType } from "@/hooks/useActivityInteractions";
 
 interface DiaryEntry {
   id: string;
@@ -41,7 +43,9 @@ interface ArtistFollow {
 
 interface ActivityItem {
   id: string;
+  rawId: string;
   type: 'listen' | 'review' | 'rating' | 'follow';
+  activityType: ActivityType;
   userId: string;
   userProfile: {
     id: string;
@@ -126,7 +130,9 @@ const FollowingActivity = () => {
   const activities: ActivityItem[] = [
     ...friendDiaryEntries.map(entry => ({
       id: `diary-${entry.id}`,
+      rawId: entry.id,
       type: 'listen' as const,
+      activityType: 'diary_entry' as ActivityType,
       userId: entry.user_id,
       userProfile: profileMap.get(entry.user_id) || null,
       albumId: entry.release_group_id,
@@ -137,7 +143,9 @@ const FollowingActivity = () => {
     })),
     ...friendRatings.map(rating => ({
       id: `rating-${rating.id}`,
+      rawId: rating.id,
       type: rating.review_text ? 'review' as const : 'rating' as const,
+      activityType: 'album_rating' as ActivityType,
       userId: rating.user_id,
       userProfile: profileMap.get(rating.user_id) || null,
       albumId: rating.release_group_id,
@@ -149,7 +157,9 @@ const FollowingActivity = () => {
     })),
     ...friendFollows.map(follow => ({
       id: `follow-${follow.id}`,
+      rawId: follow.id,
       type: 'follow' as const,
+      activityType: 'artist_follow' as ActivityType,
       userId: follow.user_id,
       userProfile: profileMap.get(follow.user_id) || null,
       artistId: follow.artist_id,
@@ -287,6 +297,12 @@ const FollowingActivity = () => {
                           <p className="text-xs text-muted-foreground/60 mt-1">
                             {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                           </p>
+
+                          {/* Like and Comment actions */}
+                          <ActivityItemActions 
+                            activityType={activity.activityType} 
+                            activityId={activity.rawId} 
+                          />
                         </div>
 
                         {activity.albumId && (

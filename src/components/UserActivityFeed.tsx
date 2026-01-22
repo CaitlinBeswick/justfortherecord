@@ -7,10 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { AlbumCoverWithFallback } from "./AlbumCoverWithFallback";
 import { formatDistanceToNow } from "date-fns";
 import { ArtistImage } from "./ArtistImage";
+import { ActivityItemActions } from "./ActivityItemActions";
+import { ActivityType } from "@/hooks/useActivityInteractions";
 
 interface ActivityItem {
   id: string;
+  rawId: string;
   type: 'listen' | 'review' | 'rating' | 'follow';
+  activityType: ActivityType;
   albumId?: string;
   albumTitle?: string;
   artistId?: string;
@@ -86,7 +90,9 @@ export function UserActivityFeed() {
   const activities: ActivityItem[] = [
     ...diaryEntries.map(entry => ({
       id: `diary-${entry.id}`,
+      rawId: entry.id,
       type: 'listen' as const,
+      activityType: 'diary_entry' as ActivityType,
       albumId: entry.release_group_id,
       albumTitle: entry.album_title,
       artistName: entry.artist_name,
@@ -95,7 +101,9 @@ export function UserActivityFeed() {
     })),
     ...ratings.map(rating => ({
       id: `rating-${rating.id}`,
+      rawId: rating.id,
       type: rating.review_text ? 'review' as const : 'rating' as const,
+      activityType: 'album_rating' as ActivityType,
       albumId: rating.release_group_id,
       albumTitle: rating.album_title,
       artistName: rating.artist_name,
@@ -105,7 +113,9 @@ export function UserActivityFeed() {
     })),
     ...follows.map(follow => ({
       id: `follow-${follow.id}`,
+      rawId: follow.id,
       type: 'follow' as const,
+      activityType: 'artist_follow' as ActivityType,
       artistId: follow.artist_id,
       artistName: follow.artist_name,
       timestamp: follow.created_at,
@@ -234,6 +244,12 @@ export function UserActivityFeed() {
                 <p className="text-xs text-muted-foreground/60 mt-1">
                   {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                 </p>
+
+                {/* Like and Comment actions */}
+                <ActivityItemActions 
+                  activityType={activity.activityType} 
+                  activityId={activity.rawId} 
+                />
               </div>
 
               {/* Album Cover (for non-follow activities) */}
