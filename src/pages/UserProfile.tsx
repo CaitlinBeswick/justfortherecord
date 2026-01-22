@@ -658,19 +658,19 @@ const UserProfile = () => {
                   {/* Left side: Albums, Artists, Following */}
                   <div className="hidden sm:flex items-center gap-4 md:gap-6 pt-10">
                     {canViewProfile && profile.show_albums && (
-                      <div className="text-center">
+                      <div className="text-center transition-transform duration-200 hover:scale-110 cursor-default">
                         <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
                         <p className="text-xs text-muted-foreground">Albums</p>
                       </div>
                     )}
                     {canViewProfile && profile.show_artists && (
-                      <div className="text-center">
+                      <div className="text-center transition-transform duration-200 hover:scale-110 cursor-default">
                         <p className="text-xl md:text-2xl font-semibold text-foreground">{followedArtists.length}</p>
                         <p className="text-xs text-muted-foreground">Artists</p>
                       </div>
                     )}
                     {profile.show_friends_count && (
-                      <div className="text-center">
+                      <div className="text-center transition-transform duration-200 hover:scale-110 cursor-default">
                         <p className="text-xl md:text-2xl font-semibold text-foreground">{userFriends.length}</p>
                         <p className="text-xs text-muted-foreground">Following</p>
                       </div>
@@ -693,7 +693,7 @@ const UserProfile = () => {
                   {/* Right side: Listening Goal */}
                   <div className="hidden sm:flex items-center gap-3 min-w-[100px] pt-10">
                     {canViewProfile && profile.show_diary && profile.yearly_listen_goal ? (
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 transition-transform duration-200 hover:scale-105 cursor-default">
                         <Target className="h-5 w-5 text-primary shrink-0" />
                         <div className="text-left">
                           <div className="flex items-baseline gap-1">
