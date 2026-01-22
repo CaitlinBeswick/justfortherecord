@@ -127,72 +127,107 @@ export const ProfileHeader = () => {
       }} transition={{
         duration: 0.4
       }} className="max-w-4xl mx-auto">
-          {/* Centered profile layout with stats flanking avatar */}
+          {/* Centered profile layout */}
           <div className="flex flex-col items-center text-center">
-            {/* Main row: Stats | Avatar | Goal */}
-            <div className="flex items-center justify-center gap-6 md:gap-10">
-              {/* Left side: Albums, Artists, Following */}
-              <div className="hidden sm:flex items-center gap-4 md:gap-6 pt-10">
-                <div className="text-center transition-transform duration-200 hover:scale-110 cursor-default">
-                  <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
-                  <p className="text-xs text-muted-foreground">Albums</p>
+            {/* Conditional layout: flanking if goal exists, stacked if not */}
+            {profile?.yearly_listen_goal ? (
+              /* Main row: Stats | Avatar | Goal */
+              <div className="flex items-center justify-center gap-6 md:gap-10">
+                {/* Left side: Albums, Artists, Following */}
+                <div className="hidden sm:flex items-center gap-4 md:gap-6 pt-10">
+                  <button onClick={() => navigate("/profile/albums")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
+                    <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
+                    <p className="text-xs text-muted-foreground">Albums</p>
+                  </button>
+                  <button onClick={() => navigate("/profile/artists")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
+                    <p className="text-xl md:text-2xl font-semibold text-foreground">{artistsCount}</p>
+                    <p className="text-xs text-muted-foreground">Artists</p>
+                  </button>
+                  <button onClick={() => navigate("/profile/friends")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
+                    <p className="text-xl md:text-2xl font-semibold text-foreground">{followingCount}</p>
+                    <p className="text-xs text-muted-foreground">Following</p>
+                  </button>
                 </div>
-                <div className="text-center transition-transform duration-200 hover:scale-110 cursor-default">
-                  <p className="text-xl md:text-2xl font-semibold text-foreground">{artistsCount}</p>
-                  <p className="text-xs text-muted-foreground">Artists</p>
-                </div>
-                <div className="text-center transition-transform duration-200 hover:scale-110 cursor-default">
-                  <p className="text-xl md:text-2xl font-semibold text-foreground">{followingCount}</p>
-                  <p className="text-xs text-muted-foreground">Following</p>
-                </div>
-              </div>
 
-              {/* Avatar */}
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Profile" className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-border/50 shrink-0" />
-              ) : (
-                <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-secondary flex items-center justify-center border-4 border-border/50 shrink-0">
-                  <User className="h-12 w-12 text-muted-foreground" />
-                </div>
-              )}
-
-              {/* Right side: Listening Goal */}
-              <div className="hidden sm:flex items-center min-w-[120px] pt-10">
-                {profile?.yearly_listen_goal && thisYearCount !== undefined ? (
-                  <div className="flex items-center gap-3 transition-transform duration-200 hover:scale-105 cursor-default">
-                    <Target className="h-5 w-5 text-primary shrink-0" />
-                    <div className="text-left">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
-                        <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
-                      </div>
-                      <Progress value={Math.min(thisYearCount / profile.yearly_listen_goal * 100, 100)} className="h-1.5 mt-1 w-20" />
-                      <p className="text-xs text-muted-foreground mt-0.5">{currentYear} Goal</p>
-                    </div>
-                  </div>
+                {/* Avatar */}
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Profile" className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-border/50 shrink-0" />
                 ) : (
-                  <div className="min-w-[120px]" /> /* Spacer to keep avatar centered */
+                  <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-secondary flex items-center justify-center border-4 border-border/50 shrink-0">
+                    <User className="h-12 w-12 text-muted-foreground" />
+                  </div>
                 )}
-              </div>
-            </div>
 
-            {/* Mobile stats row - shown below avatar on small screens */}
+                {/* Right side: Listening Goal */}
+                <div className="hidden sm:flex items-center min-w-[120px] pt-10">
+                  {thisYearCount !== undefined && (
+                    <div className={`flex items-center gap-3 transition-transform duration-200 hover:scale-105 cursor-default ${
+                      (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]' : ''
+                    }`}>
+                      <Target className={`h-5 w-5 shrink-0 ${
+                        (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
+                      }`} />
+                      <div className="text-left">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
+                          <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
+                        </div>
+                        <Progress value={Math.min(thisYearCount / profile.yearly_listen_goal * 100, 100)} className="h-1.5 mt-1 w-20" />
+                        <p className="text-xs text-muted-foreground mt-0.5">{currentYear} Goal</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* No goal: Avatar only, stats below */
+              <>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Profile" className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-border/50" />
+                ) : (
+                  <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-secondary flex items-center justify-center border-4 border-border/50">
+                    <User className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                )}
+                {/* Stats below avatar when no goal */}
+                <div className="hidden sm:flex items-center gap-6 mt-4">
+                  <button onClick={() => navigate("/profile/albums")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
+                    <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
+                    <p className="text-xs text-muted-foreground">Albums</p>
+                  </button>
+                  <button onClick={() => navigate("/profile/artists")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
+                    <p className="text-xl md:text-2xl font-semibold text-foreground">{artistsCount}</p>
+                    <p className="text-xs text-muted-foreground">Artists</p>
+                  </button>
+                  <button onClick={() => navigate("/profile/friends")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
+                    <p className="text-xl md:text-2xl font-semibold text-foreground">{followingCount}</p>
+                    <p className="text-xs text-muted-foreground">Following</p>
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Mobile stats row - always shown below avatar on small screens */}
             <div className="flex sm:hidden flex-wrap items-center justify-center gap-4 mt-4">
-              <div className="text-center">
+              <button onClick={() => navigate("/profile/albums")} className="text-center">
                 <p className="text-xl font-semibold text-foreground">{albumCount}</p>
                 <p className="text-xs text-muted-foreground">Albums</p>
-              </div>
-              <div className="text-center">
+              </button>
+              <button onClick={() => navigate("/profile/artists")} className="text-center">
                 <p className="text-xl font-semibold text-foreground">{artistsCount}</p>
                 <p className="text-xs text-muted-foreground">Artists</p>
-              </div>
-              <div className="text-center">
+              </button>
+              <button onClick={() => navigate("/profile/friends")} className="text-center">
                 <p className="text-xl font-semibold text-foreground">{followingCount}</p>
                 <p className="text-xs text-muted-foreground">Following</p>
-              </div>
+              </button>
               {profile?.yearly_listen_goal && thisYearCount !== undefined && (
-                <div className="flex items-center gap-2 pl-4 border-l border-border/50">
-                  <Target className="h-4 w-4 text-primary shrink-0" />
+                <div className={`flex items-center gap-2 pl-4 border-l border-border/50 ${
+                  (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]' : ''
+                }`}>
+                  <Target className={`h-4 w-4 shrink-0 ${
+                    (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
+                  }`} />
                   <div className="text-left">
                     <div className="flex items-baseline gap-1">
                       <span className="text-base font-semibold text-foreground">{thisYearCount}</span>
