@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { ShareButton } from "@/components/ShareButton";
 import { VinylBackground } from "@/components/VinylBackground";
 import { useParams, useNavigate } from "react-router-dom";
-import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play, Lock, Ban, MoreHorizontal, Target } from "lucide-react";
+import { User, Loader2, UserPlus, UserCheck, Clock, Music, Calendar, Users, List, UserMinus, Search, ArrowUpDown, Heart, Star, RotateCcw, Play, Lock, Ban, MoreHorizontal, Target, Trophy } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -716,9 +716,13 @@ const UserProfile = () => {
                           <button onClick={() => setActiveTab('diary')} className={`flex items-center gap-3 transition-transform duration-200 hover:scale-[1.15] cursor-pointer ${
                             (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]' : ''
                           }`}>
-                            <Target className={`h-5 w-5 shrink-0 ${
-                              (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
-                            }`} />
+                            {thisYearCount >= profile.yearly_listen_goal ? (
+                              <Trophy className="h-5 w-5 shrink-0 text-yellow-500 animate-pulse" />
+                            ) : (
+                              <Target className={`h-5 w-5 shrink-0 ${
+                                (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
+                              }`} />
+                            )}
                             <div className="text-left">
                               <div className="flex items-baseline gap-1">
                                 <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
@@ -813,9 +817,13 @@ const UserProfile = () => {
                     <button onClick={() => setActiveTab('diary')} className={`flex items-center gap-2 pl-4 border-l border-border/50 ${
                       (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]' : ''
                     }`}>
-                      <Target className={`h-4 w-4 shrink-0 ${
-                        (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
-                      }`} />
+                      {thisYearCount >= profile.yearly_listen_goal ? (
+                        <Trophy className="h-4 w-4 shrink-0 text-yellow-500 animate-pulse" />
+                      ) : (
+                        <Target className={`h-4 w-4 shrink-0 ${
+                          (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
+                        }`} />
+                      )}
                       <div className="text-left">
                         <div className="flex items-baseline gap-1">
                           <span className="text-base font-semibold text-foreground">{thisYearCount}</span>
