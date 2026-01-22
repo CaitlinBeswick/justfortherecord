@@ -44,6 +44,7 @@ import {
 import { ListeningStatusButtons } from "@/components/ListeningStatusButtons";
 import { LogListenDialog } from "@/components/LogListenDialog";
 import { ImageAttribution } from "@/components/ImageAttribution";
+import { getAlbumInitials } from "@/components/AlbumCoverWithFallback";
 
 const AlbumDetail = () => {
   const { id } = useParams();
@@ -302,7 +303,6 @@ const AlbumDetail = () => {
   // Get all tracks from all media (supports multi-disc albums)
   const tracks = releaseWithTracks?.media?.flatMap(m => m.tracks || []) || [];
   const coverUrl = id ? getCoverArtUrl(id, '500') : '';
-  const placeholderCover = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop";
 
   // Handle missing or invalid ID
   if (!id || id === 'undefined') {
@@ -359,12 +359,16 @@ const AlbumDetail = () => {
         {/* Hero Section */}
         <div className="relative">
           <div className="absolute inset-0 overflow-hidden">
-            <img
-              src={coverError ? placeholderCover : coverUrl}
-              alt=""
-              className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
-              onError={() => setCoverError(true)}
-            />
+            {!coverError ? (
+              <img
+                src={coverUrl}
+                alt=""
+                className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
+                onError={() => setCoverError(true)}
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/10" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
           </div>
           
@@ -387,13 +391,24 @@ const AlbumDetail = () => {
                 className="flex-shrink-0"
               >
                 <div className="relative">
-                  <img
-                    src={coverError ? placeholderCover : coverUrl}
-                    alt={releaseGroup.title}
-                    className="w-64 h-64 md:w-72 md:h-72 rounded-xl object-cover shadow-2xl mx-auto md:mx-0 bg-secondary"
-                    style={{ boxShadow: "var(--shadow-album)" }}
-                    onError={() => setCoverError(true)}
-                  />
+                  {!coverError ? (
+                    <img
+                      src={coverUrl}
+                      alt={releaseGroup.title}
+                      className="w-64 h-64 md:w-72 md:h-72 rounded-xl object-cover shadow-2xl mx-auto md:mx-0 bg-secondary"
+                      style={{ boxShadow: "var(--shadow-album)" }}
+                      onError={() => setCoverError(true)}
+                    />
+                  ) : (
+                    <div 
+                      className="w-64 h-64 md:w-72 md:h-72 rounded-xl shadow-2xl mx-auto md:mx-0 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center"
+                      style={{ boxShadow: "var(--shadow-album)" }}
+                    >
+                      <span className="font-serif text-5xl text-primary/60">
+                        {getAlbumInitials(releaseGroup.title)}
+                      </span>
+                    </div>
+                  )}
                   {!coverError && (
                     <div className="absolute bottom-2 right-2">
                       <ImageAttribution type="cover" compact />
