@@ -132,7 +132,7 @@ export const ProfileHeader = () => {
             {/* Main row: Stats | Avatar | Goal */}
             <div className="flex items-center justify-center gap-6 md:gap-10">
               {/* Left side: Albums, Artists, Following */}
-              <div className="hidden sm:flex items-center gap-4 md:gap-6">
+              <div className="hidden sm:flex items-center gap-4 md:gap-6 pt-6">
                 <div className="text-center">
                   <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
                   <p className="text-xs text-muted-foreground">Albums</p>
@@ -157,7 +157,7 @@ export const ProfileHeader = () => {
               )}
 
               {/* Right side: Listening Goal */}
-              <div className="hidden sm:flex items-center min-w-[120px]">
+              <div className="hidden sm:flex items-center min-w-[120px] pt-6">
                 {profile?.yearly_listen_goal && thisYearCount !== undefined ? (
                   <div className="flex items-center gap-3">
                     <Target className="h-5 w-5 text-primary shrink-0" />
