@@ -76,8 +76,8 @@ export function RollingVinylLogo({ onImpact, size = 160 }: RollingVinylLogoProps
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    // Roll back to rest at about 4/5 across the screen (right side)
-    const restX = -(vw * 0.2); // 4/5 = 80% from left = 20% from right
+    // Roll back to rest position - align with background vinyl (approx 85% from left = 15% from right)
+    const restX = -(vw * 0.15) + size / 2;
     await controls.start({
       x: restX,
       rotate: -200,
