@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, History, CheckCircle, XCircle, FlaskConical } from "lucide-react";
+import { Loader2, History, CheckCircle, XCircle, FlaskConical, Download } from "lucide-react";
 import { format } from "date-fns";
 
 interface DigestEmailLog {
@@ -23,12 +24,41 @@ export function DigestEmailHistory() {
         .from("digest_email_logs")
         .select("*")
         .order("sent_at", { ascending: false })
-        .limit(10);
+        .limit(50);
       
       if (error) throw error;
       return data as DigestEmailLog[];
     },
   });
+
+  const exportToCsv = () => {
+    if (logs.length === 0) return;
+
+    const headers = ["Date", "Time", "Emails Sent", "Emails Failed", "Total Users", "Type"];
+    const rows = logs.map(log => [
+      format(new Date(log.sent_at), "yyyy-MM-dd"),
+      format(new Date(log.sent_at), "HH:mm:ss"),
+      log.emails_sent,
+      log.emails_failed,
+      log.total_users,
+      log.is_test ? "Test" : "Live"
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `digest-email-history-${format(new Date(), "yyyy-MM-dd")}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (isLoading) {
     return (
@@ -59,18 +89,29 @@ export function DigestEmailHistory() {
     );
   }
 
+  // Show first 10 in the UI
+  const visibleLogs = logs.slice(0, 10);
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <History className="h-5 w-5" />
-          Digest Send History
-        </CardTitle>
-        <CardDescription>Recent weekly digest email sends</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Digest Send History
+            </CardTitle>
+            <CardDescription>Recent weekly digest email sends</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={exportToCsv}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {logs.map((log) => (
+          {visibleLogs.map((log) => (
             <div
               key={log.id}
               className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
@@ -109,6 +150,11 @@ export function DigestEmailHistory() {
             </div>
           ))}
         </div>
+        {logs.length > 10 && (
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            Showing 10 of {logs.length} records. Export CSV for full history.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
