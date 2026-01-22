@@ -33,7 +33,7 @@ export function RollingVinylLogo() {
     // Stop sparks after roll-in animation
     const timeout = setTimeout(() => {
       clearInterval(sparkInterval);
-    }, 1800);
+    }, 2200);
 
     return () => {
       clearInterval(sparkInterval);
@@ -47,12 +47,13 @@ export function RollingVinylLogo() {
 
     const runAnimation = async () => {
       // Roll in from right to left (rotating as it moves)
+      // Need to travel from off-screen right to near the title
       await controls.start({
-        x: 0,
-        rotate: -720, // 2 full rotations
+        x: -500, // Roll far left to hit the title area
+        rotate: -1080, // 3 full rotations for the distance
         transition: {
-          x: { duration: 1.8, ease: [0.25, 0.1, 0.25, 1] },
-          rotate: { duration: 1.8, ease: "linear" },
+          x: { duration: 2.2, ease: [0.25, 0.1, 0.25, 1] },
+          rotate: { duration: 2.2, ease: "linear" },
         },
       });
 
@@ -61,8 +62,8 @@ export function RollingVinylLogo() {
 
       // Bounce back slightly with deceleration
       await controls.start({
-        x: 60,
-        rotate: -620, // Roll back a bit
+        x: -420, // Roll back a bit
+        rotate: -980, // Roll back rotation
         transition: {
           x: { duration: 0.4, ease: "easeOut" },
           rotate: { duration: 0.4, ease: "easeOut" },
@@ -71,8 +72,8 @@ export function RollingVinylLogo() {
 
       // Small settle
       await controls.start({
-        x: 40,
-        rotate: -640,
+        x: -450,
+        rotate: -1020,
         transition: {
           x: { duration: 0.3, ease: "easeInOut" },
           rotate: { duration: 0.3, ease: "easeInOut" },
@@ -131,11 +132,11 @@ export function RollingVinylLogo() {
             return (
               <motion.div
                 key={`impact-${i}`}
-                initial={{ opacity: 1, scale: 1, x: -20, y: 40 }}
+                initial={{ opacity: 1, scale: 1, x: 0, y: 40 }}
                 animate={{
                   opacity: 0,
                   scale: 0,
-                  x: -20 + Math.cos((angle * Math.PI) / 180) * distance,
+                  x: Math.cos((angle * Math.PI) / 180) * distance,
                   y: 40 + Math.sin((angle * Math.PI) / 180) * distance,
                 }}
                 exit={{ opacity: 0 }}
@@ -155,11 +156,11 @@ export function RollingVinylLogo() {
   );
 
   return (
-    <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none overflow-visible z-10">
-      <div className="relative">
+    <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none z-10" style={{ width: "100vw" }}>
+      <div className="relative flex justify-end">
         {/* Rolling sparks container */}
         <motion.div
-          initial={{ x: 300 }}
+          initial={{ x: 100 }} 
           animate={controls}
           className="relative"
         >
