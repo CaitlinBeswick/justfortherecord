@@ -32,6 +32,11 @@ interface DigestData {
     description: string;
     version: string | null;
   }>;
+  userActivity: {
+    albumsLogged: number;
+    artistsRated: number;
+    topAlbum: { title: string; artist: string; rating: number | null } | null;
+  };
 }
 
 serve(async (req) => {
@@ -272,36 +277,96 @@ serve(async (req) => {
           version: u.version,
         })) || [];
 
+        // Get user's own activity this week
+        const { data: userDiaryEntries } = await supabase
+          .from('diary_entries')
+          .select('album_title, artist_name, rating')
+          .eq('user_id', digestUser.id)
+          .gte('created_at', oneWeekAgoStr)
+          .order('rating', { ascending: false, nullsFirst: false });
+
+        const { data: userArtistRatings } = await supabase
+          .from('artist_ratings')
+          .select('id')
+          .eq('user_id', digestUser.id)
+          .gte('created_at', oneWeekAgoStr);
+
+        const userActivity: DigestData['userActivity'] = {
+          albumsLogged: userDiaryEntries?.length || 0,
+          artistsRated: userArtistRatings?.length || 0,
+          topAlbum: userDiaryEntries?.[0] ? {
+            title: userDiaryEntries[0].album_title,
+            artist: userDiaryEntries[0].artist_name,
+            rating: userDiaryEntries[0].rating,
+          } : null,
+        };
+
         // Skip if there's nothing to report
-        if (newReleases.length === 0 && friendActivity.length === 0 && trendingReleases.length === 0 && appUpdates.length === 0) {
+        if (newReleases.length === 0 && friendActivity.length === 0 && trendingReleases.length === 0 && appUpdates.length === 0 && userActivity.albumsLogged === 0) {
           console.log(`No activity to report for user ${digestUser.id}`);
           continue;
         }
 
-        // Build email content
+        // Build email content with off-white/red theme
+        const primaryColor = '#dc2626'; // Red
+        const bgColor = '#faf8f5'; // Off-white background
+        const cardBg = '#ffffff';
+        const textColor = '#1a1a1a';
+        const mutedColor = '#6b7280';
+        const borderColor = '#e5e2de';
+
+        // User's weekly summary section
+        let userSummaryHtml = '';
+        if (userActivity.albumsLogged > 0 || userActivity.artistsRated > 0) {
+          userSummaryHtml = `
+            <div style="margin-bottom: 32px; background-color: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 24px;">
+              <h2 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 500;">
+                Your Week in Review
+              </h2>
+              <div style="display: flex; gap: 24px;">
+                <div style="text-align: center;">
+                  <p style="font-size: 32px; font-weight: 600; color: ${primaryColor}; margin: 0;">${userActivity.albumsLogged}</p>
+                  <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Albums logged</p>
+                </div>
+                <div style="text-align: center;">
+                  <p style="font-size: 32px; font-weight: 600; color: ${primaryColor}; margin: 0;">${userActivity.artistsRated}</p>
+                  <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Artists rated</p>
+                </div>
+              </div>
+              ${userActivity.topAlbum ? `
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid ${borderColor};">
+                  <p style="font-size: 12px; color: ${mutedColor}; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">Top rated this week</p>
+                  <p style="font-size: 16px; color: ${textColor}; margin: 0; font-weight: 500;">${userActivity.topAlbum.title}</p>
+                  <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">by ${userActivity.topAlbum.artist}${userActivity.topAlbum.rating ? ` · ${userActivity.topAlbum.rating} stars` : ''}</p>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+
         let releasesHtml = '';
         if (newReleases.length > 0) {
           const releasesItems = newReleases.slice(0, 5).map(r => `
             <tr>
-              <td style="padding: 12px 0; border-bottom: 1px solid #262626;">
-                <a href="${baseUrl}/album/${r.release_group_id}" style="color: #fafafa; text-decoration: none; font-weight: 500;">
+              <td style="padding: 12px 0; border-bottom: 1px solid ${borderColor};">
+                <a href="${baseUrl}/album/${r.release_group_id}" style="color: ${textColor}; text-decoration: none; font-weight: 500;">
                   ${r.album_title}
                 </a>
                 <br>
-                <span style="color: #a1a1aa; font-size: 14px;">by ${r.artist_name}</span>
+                <span style="color: ${mutedColor}; font-size: 14px;">by ${r.artist_name}</span>
               </td>
             </tr>
           `).join('');
 
           releasesHtml = `
-            <div style="margin-bottom: 32px;">
-              <h2 style="color: #f97316; font-size: 18px; margin: 0 0 16px 0; display: flex; align-items: center;">
-                🎵 New Releases (${newReleases.length})
+            <div style="margin-bottom: 32px; background-color: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 24px;">
+              <h2 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 500;">
+                New Releases
               </h2>
               <table style="width: 100%; border-collapse: collapse;">
                 ${releasesItems}
               </table>
-              ${newReleases.length > 5 ? `<p style="color: #71717a; font-size: 14px; margin-top: 12px;">+ ${newReleases.length - 5} more releases</p>` : ''}
+              ${newReleases.length > 5 ? `<p style="color: ${mutedColor}; font-size: 14px; margin-top: 12px;">+ ${newReleases.length - 5} more releases</p>` : ''}
             </div>
           `;
         }
@@ -310,27 +375,27 @@ serve(async (req) => {
         if (friendActivity.length > 0) {
           const activityItems = friendActivity.slice(0, 5).map(a => `
             <tr>
-              <td style="padding: 12px 0; border-bottom: 1px solid #262626;">
-                <span style="color: #f97316; font-weight: 500;">${a.display_name}</span>
-                <span style="color: #a1a1aa;"> listened to </span>
-                <a href="${baseUrl}/album/${a.release_group_id}" style="color: #fafafa; text-decoration: none; font-weight: 500;">
+              <td style="padding: 12px 0; border-bottom: 1px solid ${borderColor};">
+                <span style="color: ${primaryColor}; font-weight: 500;">${a.display_name}</span>
+                <span style="color: ${mutedColor};"> listened to </span>
+                <a href="${baseUrl}/album/${a.release_group_id}" style="color: ${textColor}; text-decoration: none; font-weight: 500;">
                   ${a.album_title}
                 </a>
-                <span style="color: #a1a1aa;"> by ${a.artist_name}</span>
-                ${a.rating ? `<span style="color: #fbbf24; margin-left: 8px;">★ ${a.rating}</span>` : ''}
+                <span style="color: ${mutedColor};"> by ${a.artist_name}</span>
+                ${a.rating ? `<span style="color: ${primaryColor}; margin-left: 8px;">★ ${a.rating}</span>` : ''}
               </td>
             </tr>
           `).join('');
 
           activityHtml = `
-            <div style="margin-bottom: 32px;">
-              <h2 style="color: #f97316; font-size: 18px; margin: 0 0 16px 0;">
-                👥 Friend Activity (${friendActivity.length})
+            <div style="margin-bottom: 32px; background-color: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 24px;">
+              <h2 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 500;">
+                Friend Activity
               </h2>
               <table style="width: 100%; border-collapse: collapse;">
                 ${activityItems}
               </table>
-              ${friendActivity.length > 5 ? `<p style="color: #71717a; font-size: 14px; margin-top: 12px;">+ ${friendActivity.length - 5} more listens</p>` : ''}
+              ${friendActivity.length > 5 ? `<p style="color: ${mutedColor}; font-size: 14px; margin-top: 12px;">+ ${friendActivity.length - 5} more listens</p>` : ''}
             </div>
           `;
         }
@@ -340,21 +405,21 @@ serve(async (req) => {
         if (trendingReleases.length > 0) {
           const trendingItems = trendingReleases.map(t => `
             <tr>
-              <td style="padding: 12px 0; border-bottom: 1px solid #262626;">
-                <a href="${baseUrl}/album/${t.release_group_id}" style="color: #fafafa; text-decoration: none; font-weight: 500;">
+              <td style="padding: 12px 0; border-bottom: 1px solid ${borderColor};">
+                <a href="${baseUrl}/album/${t.release_group_id}" style="color: ${textColor}; text-decoration: none; font-weight: 500;">
                   ${t.album_title}
                 </a>
                 <br>
-                <span style="color: #a1a1aa; font-size: 14px;">by ${t.artist_name}</span>
-                <span style="color: #71717a; font-size: 13px; margin-left: 8px;">(${t.listen_count} listens)</span>
+                <span style="color: ${mutedColor}; font-size: 14px;">by ${t.artist_name}</span>
+                <span style="color: ${mutedColor}; font-size: 13px; margin-left: 8px;">(${t.listen_count} listens)</span>
               </td>
             </tr>
           `).join('');
 
           trendingHtml = `
-            <div style="margin-bottom: 32px;">
-              <h2 style="color: #f97316; font-size: 18px; margin: 0 0 16px 0;">
-                🔥 Trending This Week
+            <div style="margin-bottom: 32px; background-color: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 24px;">
+              <h2 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 500;">
+                Trending This Week
               </h2>
               <table style="width: 100%; border-collapse: collapse;">
                 ${trendingItems}
@@ -367,19 +432,19 @@ serve(async (req) => {
         let updatesHtml = '';
         if (appUpdates.length > 0) {
           const updateItems = appUpdates.map(u => `
-            <div style="padding: 12px 0; border-bottom: 1px solid #262626;">
-              <p style="color: #fafafa; font-weight: 500; margin: 0 0 4px 0;">
+            <div style="padding: 12px 0; border-bottom: 1px solid ${borderColor};">
+              <p style="color: ${textColor}; font-weight: 500; margin: 0 0 4px 0;">
                 ${u.title}
-                ${u.version ? `<span style="color: #71717a; font-size: 12px; margin-left: 8px;">v${u.version}</span>` : ''}
+                ${u.version ? `<span style="color: ${mutedColor}; font-size: 12px; margin-left: 8px;">v${u.version}</span>` : ''}
               </p>
-              <p style="color: #a1a1aa; font-size: 14px; margin: 0;">${u.description}</p>
+              <p style="color: ${mutedColor}; font-size: 14px; margin: 0;">${u.description}</p>
             </div>
           `).join('');
 
           updatesHtml = `
-            <div style="margin-bottom: 32px;">
-              <h2 style="color: #f97316; font-size: 18px; margin: 0 0 16px 0;">
-                ✨ What's New
+            <div style="margin-bottom: 32px; background-color: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 24px;">
+              <h2 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 500;">
+                What's New
               </h2>
               ${updateItems}
             </div>
@@ -392,31 +457,36 @@ serve(async (req) => {
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
           </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; color: #fafafa; padding: 40px 20px; margin: 0;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626;">
+          <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${bgColor}; color: ${textColor}; padding: 40px 20px; margin: 0;">
+            <div style="max-width: 600px; margin: 0 auto;">
+              <!-- Header with Logo -->
               <div style="text-align: center; margin-bottom: 32px;">
-                <h1 style="color: #fafafa; font-size: 28px; margin: 0 0 8px 0;">📀 Your Weekly Digest</h1>
-                <p style="color: #a1a1aa; font-size: 16px; margin: 0;">Hey ${userName}, here's what happened this week!</p>
+                <div style="display: inline-block; background-color: ${primaryColor}; width: 48px; height: 48px; border-radius: 12px; margin-bottom: 16px; line-height: 48px;">
+                  <span style="color: white; font-size: 24px; font-weight: 700;">J</span>
+                </div>
+                <h1 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 28px; margin: 0 0 8px 0; font-weight: 500;">Your Weekly Digest</h1>
+                <p style="color: ${mutedColor}; font-size: 16px; margin: 0;">Hey ${userName}, here's what happened this week</p>
               </div>
               
+              ${userSummaryHtml}
               ${releasesHtml}
               ${activityHtml}
               ${trendingHtml}
               ${updatesHtml}
-
               
               <div style="text-align: center; margin: 32px 0;">
-                <a href="${baseUrl}" style="display: inline-block; background-color: #f97316; color: #0a0a0a; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+                <a href="${baseUrl}" style="display: inline-block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px;">
                   Open Just For The Record
                 </a>
               </div>
               
-              <hr style="border: none; border-top: 1px solid #262626; margin: 32px 0;">
-              <p style="color: #71717a; font-size: 12px; text-align: center; margin: 0;">
+              <hr style="border: none; border-top: 1px solid ${borderColor}; margin: 32px 0;">
+              <p style="color: ${mutedColor}; font-size: 12px; text-align: center; margin: 0;">
                 You're receiving this weekly digest because you opted in.
                 <br><br>
-                <a href="${baseUrl}/profile/settings" style="color: #71717a; text-decoration: underline;">Manage email preferences</a>
+                <a href="${baseUrl}/profile/settings" style="color: ${mutedColor}; text-decoration: underline;">Manage email preferences</a>
               </p>
             </div>
           </body>
@@ -427,7 +497,7 @@ serve(async (req) => {
         const emailResponse = await resend.emails.send({
           from: 'Just For The Record <notifications@resend.dev>',
           to: [userEmail],
-          subject: `📀 Your Weekly Digest - ${newReleases.length} new releases, ${friendActivity.length} friend listens`,
+          subject: `Your Weekly Digest - ${newReleases.length} new releases, ${friendActivity.length} friend listens`,
           html: emailHtml,
         }) as { data?: { id: string } | null; error?: { message: string } | null };
 
