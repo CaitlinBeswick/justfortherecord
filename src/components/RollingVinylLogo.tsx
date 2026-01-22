@@ -76,13 +76,14 @@ export function RollingVinylLogo({ onImpact, size = 160 }: RollingVinylLogoProps
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    // Roll back to starting position (fully visible on the right)
+    // Roll back to rest at about 4/5 across the screen (right side)
+    const restX = -(vw * 0.2); // 4/5 = 80% from left = 20% from right
     await controls.start({
-      x: size + 50,
-      rotate: 0,
+      x: restX,
+      rotate: -200,
       transition: {
-        x: { duration: 1.8, ease: [0.25, 0.1, 0.25, 1] },
-        rotate: { duration: 1.8, ease: "linear" },
+        x: { duration: 1.6, ease: [0.25, 0.1, 0.25, 1] },
+        rotate: { duration: 1.6, ease: "linear" },
       },
     });
 
