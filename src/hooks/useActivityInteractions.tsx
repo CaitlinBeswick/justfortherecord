@@ -21,6 +21,7 @@ interface ActivityComment {
   comment_text: string;
   created_at: string;
   updated_at: string;
+  parent_comment_id: string | null;
 }
 
 interface CommentWithProfile extends ActivityComment {
@@ -30,6 +31,7 @@ interface CommentWithProfile extends ActivityComment {
     display_name: string | null;
     avatar_url: string | null;
   };
+  replies?: CommentWithProfile[];
 }
 
 export function useActivityInteractions(activityType: ActivityType, activityId: string) {
@@ -75,10 +77,30 @@ export function useActivityInteractions(activityType: ActivityType, activityId: 
 
       const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-      return data.map(comment => ({
+      // Separate top-level comments and replies
+      const commentsWithProfiles = data.map(comment => ({
         ...comment,
         profile: profileMap.get(comment.user_id),
       })) as CommentWithProfile[];
+
+      // Build tree structure: top-level comments with nested replies
+      const topLevelComments = commentsWithProfiles.filter(c => !c.parent_comment_id);
+      const replyMap = new Map<string, CommentWithProfile[]>();
+      
+      commentsWithProfiles
+        .filter(c => c.parent_comment_id)
+        .forEach(reply => {
+          const parentId = reply.parent_comment_id!;
+          if (!replyMap.has(parentId)) {
+            replyMap.set(parentId, []);
+          }
+          replyMap.get(parentId)!.push(reply);
+        });
+
+      return topLevelComments.map(comment => ({
+        ...comment,
+        replies: replyMap.get(comment.id) || [],
+      }));
     },
     enabled: !!activityId,
   });
@@ -129,7 +151,7 @@ export function useActivityInteractions(activityType: ActivityType, activityId: 
 
   // Add comment mutation
   const addCommentMutation = useMutation({
-    mutationFn: async (commentText: string) => {
+    mutationFn: async ({ commentText, parentCommentId }: { commentText: string; parentCommentId?: string }) => {
       if (!user) throw new Error('Must be logged in');
 
       const { error } = await supabase
@@ -139,6 +161,7 @@ export function useActivityInteractions(activityType: ActivityType, activityId: 
           activity_type: activityType,
           activity_id: activityId,
           comment_text: commentText,
+          parent_comment_id: parentCommentId || null,
         });
 
       if (error) throw error;
@@ -188,7 +211,8 @@ export function useActivityInteractions(activityType: ActivityType, activityId: 
     isLikedByUser,
     isLoading: likesLoading || commentsLoading,
     toggleLike: () => likeMutation.mutate(),
-    addComment: (text: string) => addCommentMutation.mutate(text),
+    addComment: (text: string, parentCommentId?: string) => 
+      addCommentMutation.mutate({ commentText: text, parentCommentId }),
     deleteComment: (commentId: string) => deleteCommentMutation.mutate(commentId),
     isLiking: likeMutation.isPending,
     isAddingComment: addCommentMutation.isPending,
