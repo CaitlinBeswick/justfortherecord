@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Settings, User, Share2, Target } from "lucide-react";
+import { Settings, User, Share2, Target, Trophy } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -196,9 +196,13 @@ export const ProfileHeader = () => {
                         <button onClick={() => navigate("/profile")} className={`flex items-center gap-3 transition-transform duration-200 hover:scale-[1.15] cursor-pointer ${
                           (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]' : ''
                         }`}>
-                          <Target className={`h-5 w-5 shrink-0 ${
-                            (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
-                          }`} />
+                          {goalComplete ? (
+                            <Trophy className="h-5 w-5 shrink-0 text-yellow-500 animate-pulse" />
+                          ) : (
+                            <Target className={`h-5 w-5 shrink-0 ${
+                              (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
+                            }`} />
+                          )}
                           <div className="text-left">
                             <div className="flex items-baseline gap-1">
                               <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
@@ -275,9 +279,13 @@ export const ProfileHeader = () => {
                 <button onClick={() => navigate("/profile")} className={`flex items-center gap-2 pl-4 border-l border-border/50 ${
                   (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]' : ''
                 }`}>
-                  <Target className={`h-4 w-4 shrink-0 ${
-                    (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
-                  }`} />
+                  {goalComplete ? (
+                    <Trophy className="h-4 w-4 shrink-0 text-yellow-500 animate-pulse" />
+                  ) : (
+                    <Target className={`h-4 w-4 shrink-0 ${
+                      (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
+                    }`} />
+                  )}
                   <div className="text-left">
                     <div className="flex items-baseline gap-1">
                       <span className="text-base font-semibold text-foreground">{thisYearCount}</span>
