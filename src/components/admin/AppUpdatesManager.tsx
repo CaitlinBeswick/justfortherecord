@@ -355,14 +355,34 @@ export function AppUpdatesManager() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="link">Link destination (optional)</Label>
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={formData.link}
+                  onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                >
+                  <option value="">Select a destination...</option>
+                  <option value="/profile/settings">Settings</option>
+                  <option value="/whats-new">What's New</option>
+                  <option value="/search">Explore Music</option>
+                  <option value="/albums">Albums</option>
+                  <option value="/artists">Artists</option>
+                  <option value="/top-albums">Top 250 Albums</option>
+                  <option value="/top-artists">Top 250 Artists</option>
+                  <option value="/profile">Profile</option>
+                  <option value="/profile/diary">Diary</option>
+                  <option value="/profile/lists">Lists</option>
+                </select>
+              </div>
               <Input
                 id="link"
                 value={formData.link}
                 onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                placeholder="e.g. /profile/settings"
+                placeholder="Or enter a custom path, e.g. /profile/settings"
+                className="mt-2"
               />
               <p className="text-xs text-muted-foreground">
-                Use a relative path inside the app. If set, the update will be clickable in What's New and notifications.
+                Select from the dropdown or enter a custom relative path.
               </p>
             </div>
             <div className="flex items-center gap-3">
