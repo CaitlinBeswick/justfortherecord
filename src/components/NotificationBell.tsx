@@ -40,8 +40,8 @@ export function NotificationBell() {
         navigate(`/user/${data.requester_id}`);
       }
     } else if (notification.type === 'app_update') {
-      // Navigate to admin page for app updates (new features)
-      navigate('/admin');
+      // Navigate to What's New page for app updates
+      navigate('/whats-new');
     }
   };
 
