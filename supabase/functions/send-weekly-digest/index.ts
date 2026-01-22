@@ -129,8 +129,9 @@ serve(async (req) => {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const oneWeekAgoStr = oneWeekAgo.toISOString();
 
-         const baseUrl = 'https://justfortherecord.lovable.app';
-         const logoUrl = `${baseUrl}/email-logo.png?v=2`;
+    const baseUrl = 'https://justfortherecord.lovable.app';
+    // Base64 encoded vinyl record logo for email (embedded to avoid email client blocking)
+    const logoDataUri = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIzMCIgZmlsbD0iIzFhMWExYSIvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjI2IiBmaWxsPSJub25lIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMC41Ii8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIwLjUiLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjAuNSIvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjEyIiBmaWxsPSIjZGMyNjI2Ii8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iNCIgZmlsbD0iIzFhMWExYSIvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjIiIGZpbGw9IiNmZmYiLz4KPC9zdmc+';
     let emailsSent = 0;
     let emailsFailed = 0;
 
@@ -464,7 +465,7 @@ serve(async (req) => {
             <div style="max-width: 600px; margin: 0 auto;">
               <!-- Header with Logo -->
               <div style="text-align: center; margin-bottom: 32px;">
-                <img src="${logoUrl}" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" />
+                <img src="${logoDataUri}" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" />
                 <h1 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 28px; margin: 0 0 8px 0; font-weight: 500;">Your Weekly Digest</h1>
                 <p style="color: ${mutedColor}; font-size: 16px; margin: 0;">Hey ${userName}, here's what happened this week</p>
               </div>
