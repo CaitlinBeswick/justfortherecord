@@ -576,6 +576,15 @@ serve(async (req) => {
 
     console.log(`Weekly digest complete: ${emailsSent} sent, ${emailsFailed} failed`);
 
+    // Log the digest send to the database
+    await supabase.from('digest_email_logs').insert({
+      emails_sent: emailsSent,
+      emails_failed: emailsFailed,
+      total_users: digestUsers.length,
+      is_test: testMode,
+      triggered_by: requestingUserId,
+    });
+
     return new Response(
       JSON.stringify({ 
         success: true, 

@@ -338,6 +338,36 @@ export type Database = {
         }
         Relationships: []
       }
+      digest_email_logs: {
+        Row: {
+          emails_failed: number
+          emails_sent: number
+          id: string
+          is_test: boolean
+          sent_at: string
+          total_users: number
+          triggered_by: string | null
+        }
+        Insert: {
+          emails_failed?: number
+          emails_sent?: number
+          id?: string
+          is_test?: boolean
+          sent_at?: string
+          total_users?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          emails_failed?: number
+          emails_sent?: number
+          id?: string
+          is_test?: boolean
+          sent_at?: string
+          total_users?: number
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       digest_email_settings: {
         Row: {
           cta_text: string
