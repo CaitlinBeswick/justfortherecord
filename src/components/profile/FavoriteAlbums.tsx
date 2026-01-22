@@ -172,7 +172,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                     <img
                       src={getCoverArtUrl(slot.release_group_id, '250')}
                       alt={slot.album_title || ''}
-                      className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-cover border border-border/50 transition-transform group-hover:scale-105"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover border border-border/50 transition-transform group-hover:scale-105"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/placeholder.svg';
                       }}
@@ -201,7 +201,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                 ) : (
                   <button
                     onClick={() => setEditingPosition(slot.position)}
-                    className="w-14 h-14 md:w-16 md:h-16 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
@@ -227,7 +227,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                     <img
                       src={getCoverArtUrl(slot.release_group_id, '250')}
                       alt={slot.album_title || ''}
-                      className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-cover border border-border/50 transition-transform group-hover:scale-105"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover border border-border/50 transition-transform group-hover:scale-105"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/placeholder.svg';
                       }}
@@ -249,12 +249,12 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                 ) : isOwner ? (
                   <button
                     onClick={() => setEditingPosition(slot.position)}
-                    className="w-14 h-14 md:w-16 md:h-16 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
                 ) : (
-                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-lg border border-border/30 bg-secondary/30" />
+                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/30 bg-secondary/30" />
                 )}
               </motion.div>
             ))}

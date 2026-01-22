@@ -1,4 +1,4 @@
-import { Bell, Check, Trash2, X, Disc3, UserPlus } from "lucide-react";
+import { Bell, Check, Trash2, X, Disc3, UserPlus, Sparkles } from "lucide-react";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -39,6 +39,9 @@ export function NotificationBell() {
       if (data.requester_id && typeof data.requester_id === 'string') {
         navigate(`/user/${data.requester_id}`);
       }
+    } else if (notification.type === 'app_update') {
+      // Navigate to admin page for app updates (new features)
+      navigate('/admin');
     }
   };
 
@@ -48,6 +51,8 @@ export function NotificationBell() {
         return <Disc3 className="h-4 w-4 text-primary" />;
       case 'friend_request':
         return <UserPlus className="h-4 w-4 text-primary" />;
+      case 'app_update':
+        return <Sparkles className="h-4 w-4 text-primary" />;
       default:
         return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
