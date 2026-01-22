@@ -4,7 +4,7 @@ import { User, Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus, ArrowLeft, Ac
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFriendships } from "@/hooks/useFriendships";
-import { getCoverArtUrl } from "@/services/musicbrainz";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { formatDistanceToNow } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import { ArtistImage } from "@/components/ArtistImage";
@@ -291,16 +291,14 @@ const FollowingActivity = () => {
 
                         {activity.albumId && (
                           <div 
-                            className="w-12 h-12 rounded overflow-hidden shrink-0 cursor-pointer"
+                            className="shrink-0 cursor-pointer"
                             onClick={() => navigate(`/album/${activity.albumId}`)}
                           >
-                            <img
-                              src={getCoverArtUrl(activity.albumId, '250')}
-                              alt={activity.albumTitle}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/placeholder.svg';
-                              }}
+                            <AlbumCoverWithFallback
+                              releaseGroupId={activity.albumId}
+                              title={activity.albumTitle || ''}
+                              size="250"
+                              className="w-12 h-12 rounded"
                             />
                           </div>
                         )}

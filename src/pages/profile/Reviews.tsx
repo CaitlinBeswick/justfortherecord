@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/Navbar";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
-import { getCoverArtUrl } from "@/services/musicbrainz";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { formatDistanceToNow, format } from "date-fns";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -195,16 +195,14 @@ const ProfileReviews = () => {
                       >
                         {/* Album Cover */}
                         <div 
-                          className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-secondary cursor-pointer"
+                          className="shrink-0 cursor-pointer"
                           onClick={() => navigate(`/album/${review.release_group_id}`)}
                         >
-                          <img
-                            src={getCoverArtUrl(review.release_group_id, '250')}
-                            alt={review.album_title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/placeholder.svg';
-                            }}
+                          <AlbumCoverWithFallback
+                            releaseGroupId={review.release_group_id}
+                            title={review.album_title}
+                            size="250"
+                            className="w-20 h-20 rounded-lg"
                           />
                         </div>
 
@@ -288,10 +286,11 @@ const ProfileReviews = () => {
           <div className="space-y-4">
             {editingReview && (
               <div className="flex items-center gap-3">
-                <img
-                  src={getCoverArtUrl(editingReview.release_group_id, '250')}
-                  alt={editingReview.album_title}
-                  className="w-12 h-12 rounded object-cover"
+                <AlbumCoverWithFallback
+                  releaseGroupId={editingReview.release_group_id}
+                  title={editingReview.album_title}
+                  size="250"
+                  className="w-12 h-12 rounded"
                 />
                 <div>
                   <p className="font-medium text-sm">{editingReview.album_title}</p>

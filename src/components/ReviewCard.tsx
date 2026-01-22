@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
 import { Heart, MessageCircle, Star } from "lucide-react";
+import { AlbumCoverWithFallback } from "./AlbumCoverWithFallback";
 
 interface ReviewCardProps {
   id: string;
   albumTitle: string;
   albumCover: string;
+  releaseGroupId?: string;
   artist: string;
   username: string;
   userAvatar: string;
@@ -18,6 +20,7 @@ interface ReviewCardProps {
 export function ReviewCard({
   albumTitle,
   albumCover,
+  releaseGroupId,
   artist,
   username,
   userAvatar,
@@ -33,14 +36,23 @@ export function ReviewCard({
       animate={{ opacity: 1, y: 0 }}
       className="flex gap-4 rounded-xl bg-card p-4 transition-colors hover:bg-surface-elevated"
     >
-      <img
-        src={albumCover}
-        alt={albumTitle}
-        className="h-24 w-24 rounded-lg object-cover shadow-lg bg-muted"
-        onError={(e) => {
-          e.currentTarget.src = '/placeholder.svg';
-        }}
-      />
+      {releaseGroupId ? (
+        <AlbumCoverWithFallback
+          releaseGroupId={releaseGroupId}
+          title={albumTitle}
+          size="250"
+          className="h-24 w-24 rounded-lg shadow-lg"
+        />
+      ) : (
+        <img
+          src={albumCover}
+          alt={albumTitle}
+          className="h-24 w-24 rounded-lg object-cover shadow-lg bg-muted"
+          onError={(e) => {
+            e.currentTarget.src = '/placeholder.svg';
+          }}
+        />
+      )}
       
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-4">

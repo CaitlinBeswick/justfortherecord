@@ -3,13 +3,14 @@ import { useState } from "react";
 import { Heart, BookOpen, Users, Star } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImageAttribution } from "@/components/ImageAttribution";
-import { getAlbumInitials } from "@/components/AlbumCoverWithFallback";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
+import { getCoverArtUrl } from "@/services/musicbrainz";
 
 interface AlbumCardProps {
   id: string;
   title: string;
   artist: string;
-  coverUrl: string;
+  coverUrl?: string;
   rating?: number;
   year?: number;
   loved?: boolean;
@@ -19,6 +20,7 @@ interface AlbumCardProps {
 }
 
 export function AlbumCard({
+  id,
   title,
   artist,
   coverUrl,
@@ -29,7 +31,8 @@ export function AlbumCard({
   collabArtist,
   onClick,
 }: AlbumCardProps) {
-  const [imageError, setImageError] = useState(false);
+  // Use provided coverUrl or generate from id
+  const imageUrl = coverUrl || getCoverArtUrl(id, '500');
 
   return (
     <motion.div
@@ -39,23 +42,17 @@ export function AlbumCard({
       onClick={onClick}
     >
       <div className="relative aspect-square overflow-hidden bg-secondary">
-        {imageError ? (
-          <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-            <span className="font-serif text-3xl text-primary/60">{getAlbumInitials(title)}</span>
+        <AlbumCoverWithFallback
+          releaseGroupId={id}
+          title={title}
+          size="500"
+          className="h-full w-full"
+          imageClassName="object-cover transition-transform duration-500 group-hover:scale-105"
+        >
+          <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <ImageAttribution type="cover" compact />
           </div>
-        ) : (
-          <>
-            <img
-              src={coverUrl}
-              alt={`${title} by ${artist}`}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              onError={() => setImageError(true)}
-            />
-            <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ImageAttribution type="cover" compact />
-            </div>
-          </>
-        )}
+        </AlbumCoverWithFallback>
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         
         {/* Indicators */}

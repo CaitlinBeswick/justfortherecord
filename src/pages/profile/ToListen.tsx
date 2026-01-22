@@ -7,7 +7,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
-import { getCoverArtUrl } from "@/services/musicbrainz";
+
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { supabase } from "@/integrations/supabase/client";
@@ -167,7 +167,6 @@ const ToListen = () => {
                           id={item.release_group_id}
                           title={item.album_title}
                           artist={item.artist_name}
-                          coverUrl={getCoverArtUrl(item.release_group_id)}
                           onClick={() => navigate(`/album/${item.release_group_id}`)}
                         />
                       </motion.div>
