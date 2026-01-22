@@ -4,7 +4,7 @@ import { Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus } from "lucide-react
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { getCoverArtUrl } from "@/services/musicbrainz";
+import { AlbumCoverWithFallback } from "./AlbumCoverWithFallback";
 import { formatDistanceToNow } from "date-fns";
 import { ArtistImage } from "./ArtistImage";
 
@@ -239,16 +239,14 @@ export function UserActivityFeed() {
               {/* Album Cover (for non-follow activities) */}
               {activity.albumId && (
                 <div 
-                  className="w-12 h-12 rounded overflow-hidden shrink-0 cursor-pointer"
+                  className="shrink-0 cursor-pointer"
                   onClick={() => activity.albumId && navigate(`/album/${activity.albumId}`)}
                 >
-                  <img
-                    src={getCoverArtUrl(activity.albumId, '250')}
-                    alt={activity.albumTitle}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
+                  <AlbumCoverWithFallback
+                    releaseGroupId={activity.albumId}
+                    title={activity.albumTitle || ''}
+                    size="250"
+                    className="w-12 h-12 rounded"
                   />
                 </div>
               )}

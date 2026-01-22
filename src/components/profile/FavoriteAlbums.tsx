@@ -3,7 +3,7 @@ import { motion, Reorder } from "framer-motion";
 import { Plus, X, Search, Loader2, GripVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFavoriteAlbums } from "@/hooks/useFavoriteAlbums";
-import { getCoverArtUrl } from "@/services/musicbrainz";
+import { AlbumCoverWithFallback, getAlbumInitials } from "@/components/AlbumCoverWithFallback";
 import { useDebounce } from "@/hooks/use-debounce";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -169,13 +169,14 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
               >
                 {slot.release_group_id ? (
                   <div className="relative cursor-grab active:cursor-grabbing">
-                    <img
-                      src={getCoverArtUrl(slot.release_group_id, '250')}
-                      alt={slot.album_title || ''}
-                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover border border-border/50 transition-transform group-hover:scale-105"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
-                      }}
+                    <AlbumCoverWithFallback
+                      releaseGroupId={slot.release_group_id}
+                      title={slot.album_title || ''}
+                      size="250"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-105"
+                    />
+                    <div 
+                      className="absolute inset-0 rounded-lg cursor-pointer"
                       onClick={(e) => {
                         if (!isDragging) {
                           e.stopPropagation();
@@ -224,13 +225,11 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                     className="relative cursor-pointer"
                     onClick={() => navigate(`/album/${slot.release_group_id}`)}
                   >
-                    <img
-                      src={getCoverArtUrl(slot.release_group_id, '250')}
-                      alt={slot.album_title || ''}
-                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover border border-border/50 transition-transform group-hover:scale-105"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
-                      }}
+                    <AlbumCoverWithFallback
+                      releaseGroupId={slot.release_group_id}
+                      title={slot.album_title || ''}
+                      size="250"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-105"
                     />
                     {isOwner && (
                       <button
@@ -293,13 +292,11 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                     disabled={isPending}
                     className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-secondary transition-colors text-left"
                   >
-                    <img
-                      src={getCoverArtUrl(album.release_group_id, '250')}
-                      alt={album.album_title}
-                      className="w-10 h-10 rounded object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
-                      }}
+                    <AlbumCoverWithFallback
+                      releaseGroupId={album.release_group_id}
+                      title={album.album_title}
+                      size="250"
+                      className="w-10 h-10 rounded"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{album.album_title}</p>

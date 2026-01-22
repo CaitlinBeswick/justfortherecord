@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { getCoverArtUrl } from "@/services/musicbrainz";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { format, startOfYear, isAfter } from "date-fns";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -583,16 +583,14 @@ export function DiaryContent() {
                 </div>
 
                 <div 
-                  className="w-10 h-10 rounded overflow-hidden shrink-0 cursor-pointer"
+                  className="shrink-0 cursor-pointer"
                   onClick={() => entry.release_group_id && navigate(`/album/${entry.release_group_id}`)}
                 >
-                  <img 
-                    src={entry.release_group_id ? getCoverArtUrl(entry.release_group_id, '250') : '/placeholder.svg'}
-                    alt={entry.album_title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
+                  <AlbumCoverWithFallback
+                    releaseGroupId={entry.release_group_id}
+                    title={entry.album_title}
+                    size="250"
+                    className="w-10 h-10 rounded"
                   />
                 </div>
 
