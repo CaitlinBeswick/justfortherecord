@@ -1,25 +1,128 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, EyeOff, Edit2, RotateCcw } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Eye, EyeOff, Edit2, RotateCcw, Save, Loader2, Send } from "lucide-react";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-interface DigestEmailPreviewProps {
-  onSubjectChange?: (subject: string) => void;
-}
-
-export function DigestEmailPreview({ onSubjectChange }: DigestEmailPreviewProps) {
+export function DigestEmailPreview() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showPreview, setShowPreview] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
   
-  // Editable content
+  // Local state for editing
   const [subject, setSubject] = useState("Your Weekly Digest from Just For The Record");
   const [greeting, setGreeting] = useState("Hey {userName}, here's what happened this week");
   const [customNote, setCustomNote] = useState("");
   const [ctaText, setCtaText] = useState("Open Just For The Record");
+  
+  // Fetch saved settings
+  const { data: savedSettings, isLoading } = useQuery({
+    queryKey: ["digest-email-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("digest_email_settings")
+        .select("*")
+        .limit(1)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+  
+  // Update local state when settings are loaded
+  useEffect(() => {
+    if (savedSettings) {
+      setSubject(savedSettings.subject);
+      setGreeting(savedSettings.greeting);
+      setCustomNote(savedSettings.custom_note || "");
+      setCtaText(savedSettings.cta_text);
+    }
+  }, [savedSettings]);
+  
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from("digest_email_settings")
+        .update({
+          subject,
+          greeting,
+          custom_note: customNote || null,
+          cta_text: ctaText,
+          updated_by: user?.id,
+        })
+        .eq("id", savedSettings?.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["digest-email-settings"] });
+      toast({
+        title: "Settings saved",
+        description: "Your email template settings have been saved.",
+      });
+      setIsEditing(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to save",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Send test digest mutation
+  const handleSendTestDigest = async () => {
+    setIsSendingTest(true);
+    setTestDialogOpen(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("send-weekly-digest", {
+        body: { testMode: true }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Test digest sent!",
+        description: `Test email sent to your email address.`,
+      });
+    } catch (error) {
+      console.error("Failed to send test digest:", error);
+      toast({
+        title: "Failed to send test",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
   
   // Sample data for preview
   const sampleUserActivity = {
@@ -53,6 +156,13 @@ export function DigestEmailPreview({ onSubjectChange }: DigestEmailPreviewProps)
     setCustomNote("");
     setCtaText("Open Just For The Record");
   };
+
+  const hasChanges = savedSettings && (
+    subject !== savedSettings.subject ||
+    greeting !== savedSettings.greeting ||
+    (customNote || null) !== (savedSettings.custom_note || null) ||
+    ctaText !== savedSettings.cta_text
+  );
 
   // Generate the email HTML
   const generateEmailHtml = () => {
@@ -239,6 +349,16 @@ export function DigestEmailPreview({ onSubjectChange }: DigestEmailPreviewProps)
     `;
   };
 
+  if (isLoading) {
+    return (
+      <Card className="mb-8">
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -248,13 +368,45 @@ export function DigestEmailPreview({ onSubjectChange }: DigestEmailPreviewProps)
             <CardDescription>Preview and customize the weekly digest email template</CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <AlertDialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isSendingTest}>
+                  {isSendingTest ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Test to Me
+                    </>
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Send Test Digest?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will send a test weekly digest email to your email address only,
+                    using the current saved template settings.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSendTestDigest}>
+                    Send Test Email
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsEditing(!isEditing)}
             >
               <Edit2 className="h-4 w-4 mr-2" />
-              {isEditing ? "Done Editing" : "Edit Template"}
+              {isEditing ? "Cancel" : "Edit Template"}
             </Button>
             <Button
               variant="outline"
@@ -286,10 +438,7 @@ export function DigestEmailPreview({ onSubjectChange }: DigestEmailPreviewProps)
                 <Input
                   id="subject"
                   value={subject}
-                  onChange={(e) => {
-                    setSubject(e.target.value);
-                    onSubjectChange?.(e.target.value);
-                  }}
+                  onChange={(e) => setSubject(e.target.value)}
                   placeholder="Your Weekly Digest from Just For The Record"
                 />
               </div>
@@ -335,10 +484,22 @@ export function DigestEmailPreview({ onSubjectChange }: DigestEmailPreviewProps)
                 />
               </div>
               
-              <div className="flex justify-end">
+              <div className="flex justify-between">
                 <Button variant="ghost" size="sm" onClick={resetToDefaults}>
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Reset to Defaults
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={() => saveMutation.mutate()}
+                  disabled={!hasChanges || saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save Changes
                 </Button>
               </div>
             </div>

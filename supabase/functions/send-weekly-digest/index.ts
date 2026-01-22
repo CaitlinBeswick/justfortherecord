@@ -48,6 +48,17 @@ serve(async (req) => {
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   
+  // Parse request body for test mode
+  let testMode = false;
+  let requestingUserId: string | null = null;
+  
+  try {
+    const body = await req.json();
+    testMode = body?.testMode === true;
+  } catch {
+    // No body or invalid JSON, continue with defaults
+  }
+  
   // Check authorization - allow service role key OR admin users
   const authHeader = req.headers.get('Authorization');
   
@@ -68,6 +79,8 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    requestingUserId = claimsData.user.id;
     
     // Check if user is admin
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -104,19 +117,54 @@ serve(async (req) => {
     const resend = new Resend(resendApiKey);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get all users who opted into weekly digest
-    const { data: digestUsers, error: usersError } = await supabase
-      .from('profiles')
-      .select('id, display_name, username')
-      .eq('email_notifications_enabled', true)
-      .eq('email_weekly_digest', true);
+    // Fetch email template settings
+    const { data: emailSettings } = await supabase
+      .from('digest_email_settings')
+      .select('*')
+      .limit(1)
+      .single();
+    
+    const templateSettings = {
+      subject: emailSettings?.subject || 'Your Weekly Digest from Just For The Record',
+      greeting: emailSettings?.greeting || 'Hey {userName}, here\'s what happened this week',
+      customNote: emailSettings?.custom_note || null,
+      ctaText: emailSettings?.cta_text || 'Open Just For The Record',
+    };
 
-    if (usersError) {
-      throw new Error(`Failed to fetch digest users: ${usersError.message}`);
+    // Get users to send digest to
+    let digestUsers;
+    
+    if (testMode && requestingUserId) {
+      // In test mode, only send to the requesting admin
+      const { data: adminProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, display_name, username')
+        .eq('id', requestingUserId)
+        .single();
+      
+      if (profileError || !adminProfile) {
+        throw new Error('Could not find admin profile');
+      }
+      
+      digestUsers = [adminProfile];
+      console.log(`Test mode: sending digest to admin only`);
+    } else {
+      // Normal mode: get all opted-in users
+      const { data, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, display_name, username')
+        .eq('email_notifications_enabled', true)
+        .eq('email_weekly_digest', true);
+
+      if (usersError) {
+        throw new Error(`Failed to fetch digest users: ${usersError.message}`);
+      }
+      
+      digestUsers = data;
     }
 
     if (!digestUsers || digestUsers.length === 0) {
-      console.log('No users opted into weekly digest');
+      console.log('No users to send digest to');
       return new Response(
         JSON.stringify({ message: 'No digest subscribers' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -453,6 +501,16 @@ serve(async (req) => {
           `;
         }
 
+        // Custom note section from template settings
+        const customNoteHtml = templateSettings.customNote ? `
+          <div style="margin-bottom: 32px; background-color: ${primaryColor}10; border: 1px solid ${primaryColor}30; border-radius: 12px; padding: 24px;">
+            <p style="color: ${textColor}; font-size: 15px; margin: 0; line-height: 1.6;">${templateSettings.customNote}</p>
+          </div>
+        ` : '';
+        
+        // Personalize greeting from template settings
+        const personalizedGreeting = templateSettings.greeting.replace('{userName}', userName);
+
         const emailHtml = `
           <!DOCTYPE html>
           <html>
@@ -467,9 +525,10 @@ serve(async (req) => {
               <div style="text-align: center; margin-bottom: 32px;">
                 <img src="${logoDataUri}" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" />
                 <h1 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 28px; margin: 0 0 8px 0; font-weight: 500;">Your Weekly Digest</h1>
-                <p style="color: ${mutedColor}; font-size: 16px; margin: 0;">Hey ${userName}, here's what happened this week</p>
+                <p style="color: ${mutedColor}; font-size: 16px; margin: 0;">${personalizedGreeting}</p>
               </div>
               
+              ${customNoteHtml}
               ${userSummaryHtml}
               ${releasesHtml}
               ${activityHtml}
@@ -478,7 +537,7 @@ serve(async (req) => {
               
               <div style="text-align: center; margin: 32px 0;">
                 <a href="${baseUrl}" style="display: inline-block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px;">
-                  Open Just For The Record
+                  ${templateSettings.ctaText}
                 </a>
               </div>
               
@@ -497,7 +556,7 @@ serve(async (req) => {
         const emailResponse = await resend.emails.send({
           from: 'Just For The Record <notifications@resend.dev>',
           to: [userEmail],
-          subject: `Your Weekly Digest from Just For The Record`,
+          subject: templateSettings.subject,
           html: emailHtml,
         }) as { data?: { id: string } | null; error?: { message: string } | null };
 
