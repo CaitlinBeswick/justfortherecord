@@ -173,7 +173,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                       releaseGroupId={slot.release_group_id}
                       title={slot.album_title || ''}
                       size="250"
-                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-105"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
                     />
                     <div 
                       className="absolute inset-0 rounded-lg cursor-pointer"
@@ -229,7 +229,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                       releaseGroupId={slot.release_group_id}
                       title={slot.album_title || ''}
                       size="250"
-                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-105"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
                     />
                     {isOwner && (
                       <button

@@ -41,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Profile {
   id: string;
@@ -653,6 +654,7 @@ const UserProfile = () => {
             >
               {/* Centered profile layout */}
               <div className="flex flex-col items-center text-center">
+                <TooltipProvider delayDuration={300}>
                 {/* Conditional layout: flanking if goal exists, stacked if not */}
                 {canViewProfile && profile.show_diary && profile.yearly_listen_goal ? (
                   /* Main row: Stats | Avatar | Goal */
@@ -660,22 +662,37 @@ const UserProfile = () => {
                     {/* Left side: Albums, Artists, Following */}
                     <div className="hidden sm:flex items-center gap-4 md:gap-6 pt-10">
                       {profile.show_albums && (
-                        <button onClick={() => setActiveTab('albums')} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                          <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
-                          <p className="text-xs text-muted-foreground">Albums</p>
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => setActiveTab('albums')} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                              <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
+                              <p className="text-xs text-muted-foreground">Albums</p>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Albums they've listened to or rated</p></TooltipContent>
+                        </Tooltip>
                       )}
                       {profile.show_artists && (
-                        <button onClick={() => setActiveTab('artists')} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                          <p className="text-xl md:text-2xl font-semibold text-foreground">{followedArtists.length}</p>
-                          <p className="text-xs text-muted-foreground">Artists</p>
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => setActiveTab('artists')} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                              <p className="text-xl md:text-2xl font-semibold text-foreground">{followedArtists.length}</p>
+                              <p className="text-xs text-muted-foreground">Artists</p>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Artists they're following</p></TooltipContent>
+                        </Tooltip>
                       )}
                       {profile.show_friends_count && (
-                        <button onClick={() => setActiveTab('following')} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                          <p className="text-xl md:text-2xl font-semibold text-foreground">{userFriends.length}</p>
-                          <p className="text-xs text-muted-foreground">Following</p>
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => setActiveTab('following')} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                              <p className="text-xl md:text-2xl font-semibold text-foreground">{userFriends.length}</p>
+                              <p className="text-xs text-muted-foreground">Following</p>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Friends they're connected with</p></TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
 
@@ -694,24 +711,29 @@ const UserProfile = () => {
 
                     {/* Right side: Listening Goal */}
                     <div className="hidden sm:flex items-center min-w-[120px] pt-10">
-                      <div className={`flex items-center gap-3 transition-transform duration-200 hover:scale-105 cursor-default ${
-                        (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]' : ''
-                      }`}>
-                        <Target className={`h-5 w-5 shrink-0 ${
-                          (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
-                        }`} />
-                        <div className="text-left">
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
-                            <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
-                          </div>
-                          <Progress 
-                            value={Math.min((thisYearCount / profile.yearly_listen_goal) * 100, 100)} 
-                            className="h-1.5 mt-1 w-20"
-                          />
-                          <p className="text-xs text-muted-foreground mt-0.5">{currentYear} Goal</p>
-                        </div>
-                      </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button onClick={() => setActiveTab('diary')} className={`flex items-center gap-3 transition-transform duration-200 hover:scale-[1.15] cursor-pointer ${
+                            (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]' : ''
+                          }`}>
+                            <Target className={`h-5 w-5 shrink-0 ${
+                              (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
+                            }`} />
+                            <div className="text-left">
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
+                                <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
+                              </div>
+                              <Progress 
+                                value={Math.min((thisYearCount / profile.yearly_listen_goal) * 100, 100)} 
+                                className="h-1.5 mt-1 w-20"
+                              />
+                              <p className="text-xs text-muted-foreground mt-0.5">{currentYear} Goal</p>
+                            </div>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Their {currentYear} listening goal progress</p></TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
                 ) : (
@@ -731,22 +753,37 @@ const UserProfile = () => {
                     {/* Stats below avatar when no goal */}
                     <div className="hidden sm:flex items-center gap-6 mt-4">
                       {canViewProfile && profile.show_albums && (
-                        <button onClick={() => setActiveTab('albums')} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                          <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
-                          <p className="text-xs text-muted-foreground">Albums</p>
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => setActiveTab('albums')} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                              <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
+                              <p className="text-xs text-muted-foreground">Albums</p>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Albums they've listened to or rated</p></TooltipContent>
+                        </Tooltip>
                       )}
                       {canViewProfile && profile.show_artists && (
-                        <button onClick={() => setActiveTab('artists')} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                          <p className="text-xl md:text-2xl font-semibold text-foreground">{followedArtists.length}</p>
-                          <p className="text-xs text-muted-foreground">Artists</p>
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => setActiveTab('artists')} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                              <p className="text-xl md:text-2xl font-semibold text-foreground">{followedArtists.length}</p>
+                              <p className="text-xs text-muted-foreground">Artists</p>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Artists they're following</p></TooltipContent>
+                        </Tooltip>
                       )}
                       {profile.show_friends_count && (
-                        <button onClick={() => setActiveTab('following')} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                          <p className="text-xl md:text-2xl font-semibold text-foreground">{userFriends.length}</p>
-                          <p className="text-xs text-muted-foreground">Following</p>
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => setActiveTab('following')} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                              <p className="text-xl md:text-2xl font-semibold text-foreground">{userFriends.length}</p>
+                              <p className="text-xs text-muted-foreground">Following</p>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Friends they're connected with</p></TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
                   </>
@@ -773,7 +810,7 @@ const UserProfile = () => {
                     </button>
                   )}
                   {canViewProfile && profile.show_diary && profile.yearly_listen_goal && (
-                    <div className={`flex items-center gap-2 pl-4 border-l border-border/50 ${
+                    <button onClick={() => setActiveTab('diary')} className={`flex items-center gap-2 pl-4 border-l border-border/50 ${
                       (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]' : ''
                     }`}>
                       <Target className={`h-4 w-4 shrink-0 ${
@@ -789,9 +826,10 @@ const UserProfile = () => {
                           className="h-1 mt-0.5 w-16"
                         />
                       </div>
-                    </div>
+                    </button>
                   )}
                 </div>
+                </TooltipProvider>
                 
                 {/* Name + Actions */}
                 <div className="mt-4 flex items-center gap-2 flex-wrap justify-center">

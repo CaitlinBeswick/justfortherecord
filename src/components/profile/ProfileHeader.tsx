@@ -9,6 +9,7 @@ import { ProfileCardDialog } from "@/components/profile/ProfileCardDialog";
 import { Progress } from "@/components/ui/progress";
 import { startOfYear, isAfter } from "date-fns";
 import { VinylBackground } from "@/components/VinylBackground";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 interface Profile {
   id: string;
   username: string | null;
@@ -129,24 +130,40 @@ export const ProfileHeader = () => {
       }} className="max-w-4xl mx-auto">
           {/* Centered profile layout */}
           <div className="flex flex-col items-center text-center">
+            <TooltipProvider delayDuration={300}>
             {/* Conditional layout: flanking if goal exists, stacked if not */}
             {profile?.yearly_listen_goal ? (
               /* Main row: Stats | Avatar | Goal */
               <div className="flex items-center justify-center gap-6 md:gap-10">
                 {/* Left side: Albums, Artists, Following */}
                 <div className="hidden sm:flex items-center gap-4 md:gap-6 pt-10">
-                  <button onClick={() => navigate("/profile/albums")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                    <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
-                    <p className="text-xs text-muted-foreground">Albums</p>
-                  </button>
-                  <button onClick={() => navigate("/profile/artists")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                    <p className="text-xl md:text-2xl font-semibold text-foreground">{artistsCount}</p>
-                    <p className="text-xs text-muted-foreground">Artists</p>
-                  </button>
-                  <button onClick={() => navigate("/profile/friends")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                    <p className="text-xl md:text-2xl font-semibold text-foreground">{followingCount}</p>
-                    <p className="text-xs text-muted-foreground">Following</p>
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => navigate("/profile/albums")} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                        <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
+                        <p className="text-xs text-muted-foreground">Albums</p>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Total albums you've listened to or rated</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => navigate("/profile/artists")} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                        <p className="text-xl md:text-2xl font-semibold text-foreground">{artistsCount}</p>
+                        <p className="text-xs text-muted-foreground">Artists</p>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Artists you're following for new releases</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => navigate("/profile/friends")} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                        <p className="text-xl md:text-2xl font-semibold text-foreground">{followingCount}</p>
+                        <p className="text-xs text-muted-foreground">Following</p>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Friends you're connected with</p></TooltipContent>
+                  </Tooltip>
                 </div>
 
                 {/* Avatar */}
@@ -161,21 +178,26 @@ export const ProfileHeader = () => {
                 {/* Right side: Listening Goal */}
                 <div className="hidden sm:flex items-center min-w-[120px] pt-10">
                   {thisYearCount !== undefined && (
-                    <div className={`flex items-center gap-3 transition-transform duration-200 hover:scale-105 cursor-default ${
-                      (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]' : ''
-                    }`}>
-                      <Target className={`h-5 w-5 shrink-0 ${
-                        (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
-                      }`} />
-                      <div className="text-left">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
-                          <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
-                        </div>
-                        <Progress value={Math.min(thisYearCount / profile.yearly_listen_goal * 100, 100)} className="h-1.5 mt-1 w-20" />
-                        <p className="text-xs text-muted-foreground mt-0.5">{currentYear} Goal</p>
-                      </div>
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button onClick={() => navigate("/profile")} className={`flex items-center gap-3 transition-transform duration-200 hover:scale-[1.15] cursor-pointer ${
+                          (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]' : ''
+                        }`}>
+                          <Target className={`h-5 w-5 shrink-0 ${
+                            (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
+                          }`} />
+                          <div className="text-left">
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
+                              <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
+                            </div>
+                            <Progress value={Math.min(thisYearCount / profile.yearly_listen_goal * 100, 100)} className="h-1.5 mt-1 w-20" />
+                            <p className="text-xs text-muted-foreground mt-0.5">{currentYear} Goal</p>
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Your {currentYear} listening goal progress</p></TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               </div>
@@ -191,18 +213,33 @@ export const ProfileHeader = () => {
                 )}
                 {/* Stats below avatar when no goal */}
                 <div className="hidden sm:flex items-center gap-6 mt-4">
-                  <button onClick={() => navigate("/profile/albums")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                    <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
-                    <p className="text-xs text-muted-foreground">Albums</p>
-                  </button>
-                  <button onClick={() => navigate("/profile/artists")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                    <p className="text-xl md:text-2xl font-semibold text-foreground">{artistsCount}</p>
-                    <p className="text-xs text-muted-foreground">Artists</p>
-                  </button>
-                  <button onClick={() => navigate("/profile/friends")} className="text-center transition-transform duration-200 hover:scale-110 cursor-pointer">
-                    <p className="text-xl md:text-2xl font-semibold text-foreground">{followingCount}</p>
-                    <p className="text-xs text-muted-foreground">Following</p>
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => navigate("/profile/albums")} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                        <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
+                        <p className="text-xs text-muted-foreground">Albums</p>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Total albums you've listened to or rated</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => navigate("/profile/artists")} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                        <p className="text-xl md:text-2xl font-semibold text-foreground">{artistsCount}</p>
+                        <p className="text-xs text-muted-foreground">Artists</p>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Artists you're following for new releases</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => navigate("/profile/friends")} className="text-center transition-transform duration-200 hover:scale-[1.2] cursor-pointer">
+                        <p className="text-xl md:text-2xl font-semibold text-foreground">{followingCount}</p>
+                        <p className="text-xs text-muted-foreground">Following</p>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Friends you're connected with</p></TooltipContent>
+                  </Tooltip>
                 </div>
               </>
             )}
@@ -222,7 +259,7 @@ export const ProfileHeader = () => {
                 <p className="text-xs text-muted-foreground">Following</p>
               </button>
               {profile?.yearly_listen_goal && thisYearCount !== undefined && (
-                <div className={`flex items-center gap-2 pl-4 border-l border-border/50 ${
+                <button onClick={() => navigate("/profile")} className={`flex items-center gap-2 pl-4 border-l border-border/50 ${
                   (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]' : ''
                 }`}>
                   <Target className={`h-4 w-4 shrink-0 ${
@@ -235,9 +272,10 @@ export const ProfileHeader = () => {
                     </div>
                     <Progress value={Math.min(thisYearCount / profile.yearly_listen_goal * 100, 100)} className="h-1 mt-0.5 w-16" />
                   </div>
-                </div>
+                </button>
               )}
             </div>
+            </TooltipProvider>
             
             {/* Name + Actions */}
             <div className="mt-4 flex items-center gap-2">
@@ -258,15 +296,16 @@ export const ProfileHeader = () => {
             {/* Location */}
             {profile?.location && <p className="text-sm text-muted-foreground/60 mt-1">📍 {profile.location}</p>}
 
-            {/* Genres + Favorite Albums side by side */}
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-6 w-full">
-              {/* Genres */}
-              {profile?.favorite_genres && profile.favorite_genres.length > 0 && <div className="flex flex-wrap gap-2 justify-center">
-                  {profile.favorite_genres.map(genre => <span key={genre} className="px-3 py-1 rounded-full text-xs bg-primary text-primary-foreground">
-                      {genre}
-                    </span>)}
-                </div>}
-            </div>
+            {/* Genres */}
+            {profile?.favorite_genres && profile.favorite_genres.length > 0 && (
+              <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                {profile.favorite_genres.map(genre => (
+                  <span key={genre} className="px-3 py-1 rounded-full text-xs bg-primary text-primary-foreground transition-transform duration-200 hover:scale-[1.2] cursor-default">
+                    {genre}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Favorite Albums */}
             <div className="mt-6 w-full flex justify-center">
