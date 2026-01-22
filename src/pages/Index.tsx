@@ -1,5 +1,4 @@
 import { motion, useAnimation } from "framer-motion";
-import { useLayoutEffect, useRef, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ArrowRight, Activity, User, ChevronRight } from "lucide-react";
 import { ActivityFeed } from "@/components/ActivityFeed";
@@ -26,8 +25,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const titleControls = useAnimation();
-  const impactLetterRef = useRef<HTMLSpanElement | null>(null);
-  const [impactTargetX, setImpactTargetX] = useState<number | undefined>(undefined);
 
   const handleVinylImpact = async () => {
     // Shake the title on impact
@@ -36,19 +33,6 @@ const Index = () => {
       transition: { duration: 0.4, ease: "easeOut" }
     });
   };
-
-  useLayoutEffect(() => {
-    const compute = () => {
-      const el = impactLetterRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      setImpactTargetX(rect.left + rect.width / 2);
-    };
-
-    compute();
-    window.addEventListener("resize", compute);
-    return () => window.removeEventListener("resize", compute);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -63,7 +47,7 @@ const Index = () => {
         <div className="relative container mx-auto px-4 py-20">
           <div className="relative">
             {/* Rolling Vinyl Animation */}
-            <RollingVinylLogo onImpact={handleVinylImpact} impactTargetX={impactTargetX} />
+            <RollingVinylLogo onImpact={handleVinylImpact} />
             
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -75,7 +59,7 @@ const Index = () => {
                 animate={titleControls}
                 className="font-serif text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight"
               >
-                Tra<span ref={impactLetterRef} className="inline-block">c</span>k the music
+                Track the music
                 <br />
                 <span className="text-primary glow-text">you love</span>
               </motion.h1>
