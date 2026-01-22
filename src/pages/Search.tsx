@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { Footer } from "@/components/Footer";
+import { VinylBackground } from "@/components/VinylBackground";
 
 type SearchTab = "all" | "albums" | "artists";
 
@@ -220,8 +221,9 @@ const Search = () => {
 
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <div className="gradient-hero absolute inset-0" />
+      <VinylBackground fadeHeight="200%" density="sparse" />
       <Navbar />
       
       <main className="relative container mx-auto px-4 pt-24 pb-20">
