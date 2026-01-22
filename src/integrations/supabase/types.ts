@@ -56,6 +56,33 @@ export type Database = {
         }
         Relationships: []
       }
+      album_ratings_agg: {
+        Row: {
+          album_title: string
+          artist_name: string
+          avg_rating: number
+          rating_count: number
+          release_group_id: string
+          updated_at: string
+        }
+        Insert: {
+          album_title: string
+          artist_name: string
+          avg_rating: number
+          rating_count: number
+          release_group_id: string
+          updated_at?: string
+        }
+        Update: {
+          album_title?: string
+          artist_name?: string
+          avg_rating?: number
+          rating_count?: number
+          release_group_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_updates: {
         Row: {
           created_at: string
@@ -161,6 +188,30 @@ export type Database = {
           review_text?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      artist_ratings_agg: {
+        Row: {
+          artist_id: string
+          artist_name: string
+          avg_rating: number
+          rating_count: number
+          updated_at: string
+        }
+        Insert: {
+          artist_id: string
+          artist_name: string
+          avg_rating: number
+          rating_count: number
+          updated_at?: string
+        }
+        Update: {
+          artist_id?: string
+          artist_name?: string
+          avg_rating?: number
+          rating_count?: number
+          updated_at?: string
         }
         Relationships: []
       }

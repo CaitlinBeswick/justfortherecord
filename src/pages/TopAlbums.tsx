@@ -45,47 +45,14 @@ const TopAlbums = () => {
     queryKey: ['top-rated-albums-full'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('album_ratings')
-        .select('release_group_id, album_title, artist_name, rating');
-      
+        .from('album_ratings_agg')
+        .select('release_group_id, album_title, artist_name, avg_rating, rating_count')
+        .order('avg_rating', { ascending: false })
+        .order('rating_count', { ascending: false })
+        .limit(250);
+
       if (error) throw error;
-
-      // Aggregate ratings by album
-      const albumMap = new Map<string, { title: string; artist: string; ratings: number[] }>();
-      
-      data?.forEach(row => {
-        const existing = albumMap.get(row.release_group_id);
-        if (existing) {
-          existing.ratings.push(Number(row.rating));
-        } else {
-          albumMap.set(row.release_group_id, {
-            title: row.album_title,
-            artist: row.artist_name,
-            ratings: [Number(row.rating)]
-          });
-        }
-      });
-
-      // Convert to array and calculate averages
-      const albums: AlbumRating[] = [];
-      albumMap.forEach((value, key) => {
-        const avg = value.ratings.reduce((a, b) => a + b, 0) / value.ratings.length;
-        albums.push({
-          release_group_id: key,
-          album_title: value.title,
-          artist_name: value.artist,
-          avg_rating: avg,
-          rating_count: value.ratings.length
-        });
-      });
-
-      // Sort by average rating (desc), then by count (desc)
-      albums.sort((a, b) => {
-        if (b.avg_rating !== a.avg_rating) return b.avg_rating - a.avg_rating;
-        return b.rating_count - a.rating_count;
-      });
-
-      return albums.slice(0, 250);
+      return (data || []) as AlbumRating[];
     },
     staleTime: 1000 * 60 * 5,
   });

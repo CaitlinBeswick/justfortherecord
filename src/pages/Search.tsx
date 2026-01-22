@@ -21,7 +21,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { Footer } from "@/components/Footer";
-import { VinylBackground } from "@/components/VinylBackground";
 
 type SearchTab = "all" | "albums" | "artists";
 
@@ -144,44 +143,14 @@ const Search = () => {
     queryKey: ['top-rated-albums-preview'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('album_ratings')
-        .select('release_group_id, album_title, artist_name, rating');
-      
+        .from('album_ratings_agg')
+        .select('release_group_id, album_title, artist_name, avg_rating, rating_count')
+        .order('avg_rating', { ascending: false })
+        .order('rating_count', { ascending: false })
+        .limit(20);
+
       if (error) throw error;
-
-      const albumMap = new Map<string, { title: string; artist: string; ratings: number[] }>();
-      
-      data?.forEach(row => {
-        const existing = albumMap.get(row.release_group_id);
-        if (existing) {
-          existing.ratings.push(Number(row.rating));
-        } else {
-          albumMap.set(row.release_group_id, {
-            title: row.album_title,
-            artist: row.artist_name,
-            ratings: [Number(row.rating)]
-          });
-        }
-      });
-
-      const albums: TopAlbumRating[] = [];
-      albumMap.forEach((value, key) => {
-        const avg = value.ratings.reduce((a, b) => a + b, 0) / value.ratings.length;
-        albums.push({
-          release_group_id: key,
-          album_title: value.title,
-          artist_name: value.artist,
-          avg_rating: avg,
-          rating_count: value.ratings.length
-        });
-      });
-
-      albums.sort((a, b) => {
-        if (b.avg_rating !== a.avg_rating) return b.avg_rating - a.avg_rating;
-        return b.rating_count - a.rating_count;
-      });
-
-      return albums.slice(0, 20);
+      return (data || []) as TopAlbumRating[];
     },
     staleTime: 1000 * 60 * 5,
   });
@@ -190,23 +159,15 @@ const Search = () => {
   const { data: topArtists = [], isLoading: topArtistsLoading } = useQuery({
     queryKey: ['top-rated-artists-preview'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('artist_ratings').select('artist_id, artist_name, rating');
+      const { data, error } = await supabase
+        .from('artist_ratings_agg')
+        .select('artist_id, artist_name, avg_rating, rating_count')
+        .order('avg_rating', { ascending: false })
+        .order('rating_count', { ascending: false })
+        .limit(20);
+
       if (error) throw error;
-
-      const artistMap = new Map<string, { name: string; ratings: number[] }>();
-      data?.forEach(row => {
-        const existing = artistMap.get(row.artist_id);
-        if (existing) existing.ratings.push(Number(row.rating));
-        else artistMap.set(row.artist_id, { name: row.artist_name, ratings: [Number(row.rating)] });
-      });
-
-      const result: TopArtistRating[] = [];
-      artistMap.forEach((value, key) => {
-        const avg = value.ratings.reduce((a, b) => a + b, 0) / value.ratings.length;
-        result.push({ artist_id: key, artist_name: value.name, avg_rating: avg, rating_count: value.ratings.length });
-      });
-      result.sort((a, b) => b.avg_rating !== a.avg_rating ? b.avg_rating - a.avg_rating : b.rating_count - a.rating_count);
-      return result.slice(0, 20);
+      return (data || []) as TopArtistRating[];
     },
     staleTime: 1000 * 60 * 5,
   });
@@ -221,9 +182,7 @@ const Search = () => {
 
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="gradient-hero absolute inset-0" />
-      <VinylBackground fadeHeight="200%" density="sparse" />
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
       <main className="relative container mx-auto px-4 pt-24 pb-20">

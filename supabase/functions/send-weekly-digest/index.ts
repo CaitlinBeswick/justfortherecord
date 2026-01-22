@@ -129,7 +129,8 @@ serve(async (req) => {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const oneWeekAgoStr = oneWeekAgo.toISOString();
 
-    const baseUrl = 'https://justfortherecord.lovable.app';
+         const baseUrl = 'https://justfortherecord.lovable.app';
+         const logoUrl = `${baseUrl}/email-logo.png?v=2`;
     let emailsSent = 0;
     let emailsFailed = 0;
 
@@ -463,7 +464,7 @@ serve(async (req) => {
             <div style="max-width: 600px; margin: 0 auto;">
               <!-- Header with Logo -->
               <div style="text-align: center; margin-bottom: 32px;">
-                <img src="${baseUrl}/email-logo.png" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px;" />
+                <img src="${logoUrl}" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" />
                 <h1 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 28px; margin: 0 0 8px 0; font-weight: 500;">Your Weekly Digest</h1>
                 <p style="color: ${mutedColor}; font-size: 16px; margin: 0;">Hey ${userName}, here's what happened this week</p>
               </div>
