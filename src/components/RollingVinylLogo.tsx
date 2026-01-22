@@ -1,12 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
 
-interface Spark {
+interface FrictionSpark {
   id: number;
-  x: number;
-  y: number;
-  angle: number;
-  delay: number;
+  offsetX: number;
 }
 
 interface TrailDot {
@@ -20,7 +17,7 @@ interface RollingVinylLogoProps {
 
 export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
-  const [sparks, setSparks] = useState<Spark[]>([]);
+  const [frictionSparks, setFrictionSparks] = useState<FrictionSpark[]>([]);
   const [trail, setTrail] = useState<TrailDot[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showImpactSparks, setShowImpactSparks] = useState(false);
@@ -30,37 +27,35 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     if (isAnimating) return;
     
     setIsAnimating(true);
-    setSparks([]);
+    setFrictionSparks([]);
     setTrail([]);
     setShowImpactSparks(false);
 
     // Reset position
     await controls.set({ x: 100, rotate: 0 });
 
-    // Start spark and trail generation
+    // Start friction spark and trail generation
     let trailX = 100;
     const sparkInterval = setInterval(() => {
-      const newSpark: Spark = {
+      // Add friction sparks underneath the vinyl
+      const newSpark: FrictionSpark = {
         id: Date.now() + Math.random(),
-        x: 0,
-        y: 0,
-        angle: Math.random() * 60 - 30,
-        delay: 0,
+        offsetX: Math.random() * 40 - 20,
       };
-      setSparks(prev => [...prev.slice(-8), newSpark]);
+      setFrictionSparks(prev => [...prev.slice(-12), newSpark]);
       
       // Add trail dot
-      trailX -= 28;
+      trailX -= 22;
       setTrail(prev => [...prev, { id: Date.now(), x: trailX }]);
-    }, 80);
+    }, 60);
 
-    // Roll in from right to left
+    // Roll in from right to left - stop at the 'c' in Track
     await controls.start({
-      x: -600,
-      rotate: -1080,
+      x: -340,
+      rotate: -720,
       transition: {
-        x: { duration: 2.2, ease: [0.25, 0.1, 0.25, 1] },
-        rotate: { duration: 2.2, ease: "linear" },
+        x: { duration: 1.8, ease: [0.25, 0.1, 0.25, 1] },
+        rotate: { duration: 1.8, ease: "linear" },
       },
     });
 
@@ -72,8 +67,8 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     // Bounce back slightly with deceleration
     await controls.start({
-      x: -520,
-      rotate: -980,
+      x: -280,
+      rotate: -640,
       transition: {
         x: { duration: 0.4, ease: "easeOut" },
         rotate: { duration: 0.4, ease: "easeOut" },
@@ -82,8 +77,8 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     // Small settle
     await controls.start({
-      x: -560,
-      rotate: -1020,
+      x: -310,
+      rotate: -680,
       transition: {
         x: { duration: 0.3, ease: "easeInOut" },
         rotate: { duration: 0.3, ease: "easeInOut" },
@@ -136,20 +131,24 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     </svg>
   );
 
-  // Rolling spark effect
-  const RollingSpark = ({ spark }: { spark: Spark }) => (
+  // Red friction sparks underneath the vinyl
+  const FrictionSparkComponent = ({ spark }: { spark: FrictionSpark }) => (
     <motion.div
       key={spark.id}
-      initial={{ opacity: 1, scale: 1, x: 80, y: 80 }}
+      initial={{ opacity: 1, scale: 1, x: 80 + spark.offsetX, y: 155 }}
       animate={{
         opacity: 0,
         scale: 0,
-        x: 80 + Math.cos((spark.angle * Math.PI) / 180) * 60,
-        y: 80 + Math.sin((spark.angle * Math.PI) / 180) * 50,
+        x: 80 + spark.offsetX + (Math.random() * 30 - 15),
+        y: 155 + Math.random() * 20,
       }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="absolute w-3 h-3 rounded-full bg-primary"
-      style={{ filter: "blur(1px)" }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="absolute w-2 h-2 rounded-full"
+      style={{ 
+        background: "#ef4444",
+        filter: "blur(1px)",
+        boxShadow: "0 0 6px #ef4444",
+      }}
     />
   );
 
@@ -222,10 +221,10 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
           whileHover={{ scale: isAnimating ? 1 : 1.05 }}
           title="Click to replay animation"
         >
-          {/* Sparks trail */}
+          {/* Red friction sparks underneath */}
           <div className="absolute inset-0 pointer-events-none">
-            {sparks.map((spark) => (
-              <RollingSpark key={spark.id} spark={spark} />
+            {frictionSparks.map((spark) => (
+              <FrictionSparkComponent key={spark.id} spark={spark} />
             ))}
           </div>
           
