@@ -213,7 +213,7 @@ export const ProfileHeader = () => {
                           </div>
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent><p>Your {currentYear} listening goal progress</p></TooltipContent>
+                      <TooltipContent><p>{goalComplete ? 'Goal Complete! 🎉' : `Your ${currentYear} listening goal progress`}</p></TooltipContent>
                     </Tooltip>
                   )}
                 </div>

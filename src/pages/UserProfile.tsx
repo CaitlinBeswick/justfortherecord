@@ -736,7 +736,7 @@ const UserProfile = () => {
                             </div>
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent><p>Their {currentYear} listening goal progress</p></TooltipContent>
+                        <TooltipContent><p>{thisYearCount >= profile.yearly_listen_goal ? 'Goal Complete! 🎉' : `Their ${currentYear} listening goal progress`}</p></TooltipContent>
                       </Tooltip>
                     </div>
                   </div>
