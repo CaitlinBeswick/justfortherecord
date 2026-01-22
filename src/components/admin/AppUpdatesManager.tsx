@@ -57,7 +57,7 @@ const initialFormData: FormData = {
   title: "",
   description: "",
   version: "",
-  is_active: true,
+  is_active: false, // Default to inactive - admin will set live manually
   link: "",
 };
 

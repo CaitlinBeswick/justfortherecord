@@ -12,9 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { AppUpdatesManager } from "@/components/admin/AppUpdatesManager";
-import { SendTestDigestButton } from "@/components/admin/SendTestDigestButton";
 import { EmailHealthCheck } from "@/components/admin/EmailHealthCheck";
 import { DigestEmailPreview } from "@/components/admin/DigestEmailPreview";
+import { DigestEmailHistory } from "@/components/admin/DigestEmailHistory";
 
 interface ContactSubmission {
   id: string;
@@ -134,10 +134,7 @@ const Admin = () => {
                 <h1 className="font-serif text-3xl text-foreground">Admin Dashboard</h1>
                 <p className="text-muted-foreground">Manage contact form submissions and app updates</p>
               </div>
-              <div className="flex items-center gap-2">
-                <EmailHealthCheck />
-                <SendTestDigestButton />
-              </div>
+              <EmailHealthCheck />
             </div>
 
             {/* Stats */}
@@ -170,6 +167,11 @@ const Admin = () => {
 
             {/* Digest Email Preview */}
             <DigestEmailPreview />
+
+            {/* Digest Email History */}
+            <div className="mb-8">
+              <DigestEmailHistory />
+            </div>
 
             {/* App Updates Section */}
             <div className="mb-8">
