@@ -463,9 +463,7 @@ serve(async (req) => {
             <div style="max-width: 600px; margin: 0 auto;">
               <!-- Header with Logo -->
               <div style="text-align: center; margin-bottom: 32px;">
-                <div style="display: inline-block; background-color: ${primaryColor}; width: 48px; height: 48px; border-radius: 12px; margin-bottom: 16px; line-height: 48px;">
-                  <span style="color: white; font-size: 24px; font-weight: 700;">J</span>
-                </div>
+                <img src="${baseUrl}/email-logo.png" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px;" />
                 <h1 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 28px; margin: 0 0 8px 0; font-weight: 500;">Your Weekly Digest</h1>
                 <p style="color: ${mutedColor}; font-size: 16px; margin: 0;">Hey ${userName}, here's what happened this week</p>
               </div>
@@ -497,7 +495,7 @@ serve(async (req) => {
         const emailResponse = await resend.emails.send({
           from: 'Just For The Record <notifications@resend.dev>',
           to: [userEmail],
-          subject: `Your Weekly Digest - ${newReleases.length} new releases, ${friendActivity.length} friend listens`,
+          subject: `Your Weekly Digest from Just For The Record`,
           html: emailHtml,
         }) as { data?: { id: string } | null; error?: { message: string } | null };
 
