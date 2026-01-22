@@ -1,23 +1,36 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
 
 interface FrictionSpark {
   id: number;
   offsetX: number;
-  angle: number;
-  speed: number;
+  length: number;
+  thickness: number;
+  driftY: number;
 }
 
 interface RollingVinylLogoProps {
   onImpact?: () => void;
+  /** viewport X coordinate (px) of the letter we should "hit" (typically center of the letter) */
+  impactTargetX?: number;
+  /** SVG render size in px */
+  size?: number;
 }
 
-export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
+export function RollingVinylLogo({ onImpact, impactTargetX, size = 160 }: RollingVinylLogoProps) {
   const controls = useAnimation();
   const [frictionSparks, setFrictionSparks] = useState<FrictionSpark[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showImpactSparks, setShowImpactSparks] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
+
+  const impactX = useMemo(() => {
+    // When x=0, the vinyl sits flush against the right edge.
+    // We want the vinyl's CENTER to align with impactTargetX.
+    if (typeof impactTargetX !== "number") return -420;
+    const vw = window.innerWidth;
+    return impactTargetX - vw + size / 2;
+  }, [impactTargetX, size]);
 
   const runAnimation = useCallback(async () => {
     if (isAnimating) return;
@@ -29,21 +42,22 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Reset position
     await controls.set({ x: 100, rotate: 0 });
 
-    // Start friction spark generation - intense brake sparks
+    // Start friction spark generation - brake sparks scraping along a horizontal plane
     const sparkInterval = setInterval(() => {
       // Create multiple sparks per interval for more intensity
-      const newSparks: FrictionSpark[] = Array.from({ length: 3 }).map(() => ({
+      const newSparks: FrictionSpark[] = Array.from({ length: 4 }).map(() => ({
         id: Date.now() + Math.random(),
-        offsetX: Math.random() * 60 - 30,
-        angle: 150 + Math.random() * 60, // Spray backwards and down (150-210 degrees)
-        speed: 40 + Math.random() * 60,
+        offsetX: Math.random() * 70 - 35,
+        length: 14 + Math.random() * 22,
+        thickness: 1 + Math.random() * 2,
+        driftY: Math.random() * 6 - 3,
       }));
       setFrictionSparks(prev => [...prev.slice(-20), ...newSparks]);
     }, 40);
 
-    // Roll in from right to left - adjusted to hit the 'c' properly
+    // Roll in from right to left - hit the target letter
     await controls.start({
-      x: -420,
+      x: impactX,
       rotate: -900,
       transition: {
         x: { duration: 2.0, ease: [0.25, 0.1, 0.25, 1] },
@@ -59,7 +73,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     // Bounce back slightly with deceleration
     await controls.start({
-      x: -350,
+      x: impactX + 70,
       rotate: -800,
       transition: {
         x: { duration: 0.4, ease: "easeOut" },
@@ -69,7 +83,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     // Small settle
     await controls.start({
-      x: -385,
+      x: impactX + 35,
       rotate: -850,
       transition: {
         x: { duration: 0.3, ease: "easeInOut" },
@@ -109,9 +123,9 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     }
   };
 
-  // SVG vinyl logo (doubled size: 160x160)
+  // SVG vinyl logo
   const VinylSVG = () => (
-    <svg width="160" height="160" viewBox="0 0 64 64" className="drop-shadow-lg">
+    <svg width={size} height={size} viewBox="0 0 64 64" className="drop-shadow-lg">
       <circle cx="32" cy="32" r="30" fill="#1a1a1a" />
       <circle cx="32" cy="32" r="26" fill="none" stroke="#333" strokeWidth="0.5" />
       <circle cx="32" cy="32" r="22" fill="none" stroke="#333" strokeWidth="0.5" />
@@ -122,35 +136,34 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     </svg>
   );
 
-  // Intense red brake sparks that spray out from underneath
+  // Brake sparks that scrape along a horizontal line under the vinyl
   const BrakeSpark = ({ spark }: { spark: FrictionSpark }) => {
-    const startX = 80 + spark.offsetX;
-    const startY = 150;
-    const endX = startX + Math.cos((spark.angle * Math.PI) / 180) * spark.speed;
-    const endY = startY - Math.sin((spark.angle * Math.PI) / 180) * spark.speed;
-    
+    const center = size / 2;
+    const startX = center + spark.offsetX;
+    const startY = size - 10;
+
     return (
       <motion.div
         key={spark.id}
-        initial={{ 
-          opacity: 1, 
-          scale: 1, 
-          x: startX, 
+        initial={{
+          opacity: 1,
+          x: startX,
           y: startY,
+          scaleX: 1,
         }}
         animate={{
           opacity: 0,
-          scale: 0,
-          x: endX,
-          y: endY,
+          x: startX - (60 + spark.length),
+          y: startY + spark.driftY,
+          scaleX: 0.4,
         }}
-        transition={{ duration: 0.25 + Math.random() * 0.15, ease: "easeOut" }}
-        className="absolute rounded-full"
-        style={{ 
-          width: 2 + Math.random() * 4,
-          height: 2 + Math.random() * 4,
-          background: `hsl(${Math.random() * 20}, 100%, ${50 + Math.random() * 20}%)`,
-          boxShadow: "0 0 4px #ef4444, 0 0 8px #dc2626",
+        transition={{ duration: 0.22 + Math.random() * 0.12, ease: "easeOut" }}
+        className="absolute origin-left rounded-full bg-destructive"
+        style={{
+          width: spark.length,
+          height: spark.thickness,
+          filter: "blur(0.4px)",
+          boxShadow: "0 0 10px hsl(var(--destructive) / 0.55)",
         }}
       />
     );
@@ -176,11 +189,10 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
                 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.015 }}
-                className="absolute w-4 h-4 rounded-full"
+                className="absolute w-4 h-4 rounded-full bg-destructive"
                 style={{
-                  background: i % 2 === 0 ? "#ef4444" : "#dc2626",
                   filter: "blur(1px)",
-                  boxShadow: "0 0 10px #ef4444",
+                  boxShadow: "0 0 10px hsl(var(--destructive) / 0.7)",
                 }}
               />
             );
