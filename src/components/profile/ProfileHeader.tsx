@@ -133,15 +133,15 @@ export const ProfileHeader = () => {
             <div className="flex items-center justify-center gap-6 md:gap-10">
               {/* Left side: Albums, Artists, Following */}
               <div className="hidden sm:flex items-center gap-4 md:gap-6 pt-10">
-                <div className="text-center">
+                <div className="text-center transition-transform duration-200 hover:scale-110 cursor-default">
                   <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
                   <p className="text-xs text-muted-foreground">Albums</p>
                 </div>
-                <div className="text-center">
+                <div className="text-center transition-transform duration-200 hover:scale-110 cursor-default">
                   <p className="text-xl md:text-2xl font-semibold text-foreground">{artistsCount}</p>
                   <p className="text-xs text-muted-foreground">Artists</p>
                 </div>
-                <div className="text-center">
+                <div className="text-center transition-transform duration-200 hover:scale-110 cursor-default">
                   <p className="text-xl md:text-2xl font-semibold text-foreground">{followingCount}</p>
                   <p className="text-xs text-muted-foreground">Following</p>
                 </div>
@@ -159,7 +159,7 @@ export const ProfileHeader = () => {
               {/* Right side: Listening Goal */}
               <div className="hidden sm:flex items-center min-w-[120px] pt-10">
                 {profile?.yearly_listen_goal && thisYearCount !== undefined ? (
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 transition-transform duration-200 hover:scale-105 cursor-default">
                     <Target className="h-5 w-5 text-primary shrink-0" />
                     <div className="text-left">
                       <div className="flex items-baseline gap-1">
