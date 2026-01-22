@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { AppUpdatesManager } from "@/components/admin/AppUpdatesManager";
 import { SendTestDigestButton } from "@/components/admin/SendTestDigestButton";
+import { EmailHealthCheck } from "@/components/admin/EmailHealthCheck";
 
 interface ContactSubmission {
   id: string;
@@ -132,7 +133,10 @@ const Admin = () => {
                 <h1 className="font-serif text-3xl text-foreground">Admin Dashboard</h1>
                 <p className="text-muted-foreground">Manage contact form submissions and app updates</p>
               </div>
-              <SendTestDigestButton />
+              <div className="flex items-center gap-2">
+                <EmailHealthCheck />
+                <SendTestDigestButton />
+              </div>
             </div>
 
             {/* Stats */}
