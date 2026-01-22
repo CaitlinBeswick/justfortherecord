@@ -4,11 +4,8 @@ import { motion, useAnimation, AnimatePresence } from "framer-motion";
 interface FrictionSpark {
   id: number;
   offsetX: number;
-}
-
-interface TrailDot {
-  id: number;
-  x: number;
+  angle: number;
+  speed: number;
 }
 
 interface RollingVinylLogoProps {
@@ -18,7 +15,6 @@ interface RollingVinylLogoProps {
 export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
   const [frictionSparks, setFrictionSparks] = useState<FrictionSpark[]>([]);
-  const [trail, setTrail] = useState<TrailDot[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showImpactSparks, setShowImpactSparks] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
@@ -28,34 +24,30 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     
     setIsAnimating(true);
     setFrictionSparks([]);
-    setTrail([]);
     setShowImpactSparks(false);
 
     // Reset position
     await controls.set({ x: 100, rotate: 0 });
 
-    // Start friction spark and trail generation
-    let trailX = 100;
+    // Start friction spark generation - intense brake sparks
     const sparkInterval = setInterval(() => {
-      // Add friction sparks underneath the vinyl
-      const newSpark: FrictionSpark = {
+      // Create multiple sparks per interval for more intensity
+      const newSparks: FrictionSpark[] = Array.from({ length: 3 }).map(() => ({
         id: Date.now() + Math.random(),
-        offsetX: Math.random() * 40 - 20,
-      };
-      setFrictionSparks(prev => [...prev.slice(-12), newSpark]);
-      
-      // Add trail dot
-      trailX -= 22;
-      setTrail(prev => [...prev, { id: Date.now(), x: trailX }]);
-    }, 60);
+        offsetX: Math.random() * 60 - 30,
+        angle: 150 + Math.random() * 60, // Spray backwards and down (150-210 degrees)
+        speed: 40 + Math.random() * 60,
+      }));
+      setFrictionSparks(prev => [...prev.slice(-20), ...newSparks]);
+    }, 40);
 
-    // Roll in from right to left - stop at the 'c' in Track
+    // Roll in from right to left - adjusted to hit the 'c' properly
     await controls.start({
-      x: -340,
-      rotate: -720,
+      x: -420,
+      rotate: -900,
       transition: {
-        x: { duration: 1.8, ease: [0.25, 0.1, 0.25, 1] },
-        rotate: { duration: 1.8, ease: "linear" },
+        x: { duration: 2.0, ease: [0.25, 0.1, 0.25, 1] },
+        rotate: { duration: 2.0, ease: "linear" },
       },
     });
 
@@ -67,8 +59,8 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     // Bounce back slightly with deceleration
     await controls.start({
-      x: -280,
-      rotate: -640,
+      x: -350,
+      rotate: -800,
       transition: {
         x: { duration: 0.4, ease: "easeOut" },
         rotate: { duration: 0.4, ease: "easeOut" },
@@ -77,8 +69,8 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     // Small settle
     await controls.start({
-      x: -310,
-      rotate: -680,
+      x: -385,
+      rotate: -850,
       transition: {
         x: { duration: 0.3, ease: "easeInOut" },
         rotate: { duration: 0.3, ease: "easeInOut" },
@@ -101,8 +93,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       },
     });
 
-    // Clear trail as we return
-    setTrail([]);
+    setFrictionSparks([]);
     setIsAnimating(false);
   }, [controls, isAnimating, onImpact]);
 
@@ -131,51 +122,48 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     </svg>
   );
 
-  // Red friction sparks underneath the vinyl
-  const FrictionSparkComponent = ({ spark }: { spark: FrictionSpark }) => (
-    <motion.div
-      key={spark.id}
-      initial={{ opacity: 1, scale: 1, x: 80 + spark.offsetX, y: 155 }}
-      animate={{
-        opacity: 0,
-        scale: 0,
-        x: 80 + spark.offsetX + (Math.random() * 30 - 15),
-        y: 155 + Math.random() * 20,
-      }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className="absolute w-2 h-2 rounded-full"
-      style={{ 
-        background: "#ef4444",
-        filter: "blur(1px)",
-        boxShadow: "0 0 6px #ef4444",
-      }}
-    />
-  );
-
-  // Trail dot component
-  const TrailDot = ({ dot }: { dot: TrailDot }) => (
-    <motion.div
-      key={dot.id}
-      initial={{ opacity: 0.4, scale: 1 }}
-      animate={{ opacity: 0, scale: 0.5 }}
-      transition={{ duration: 2, ease: "easeOut" }}
-      className="absolute w-2 h-2 rounded-full bg-primary/30"
-      style={{ 
-        right: -dot.x,
-        top: "50%",
-        transform: "translateY(-50%)",
-      }}
-    />
-  );
+  // Intense red brake sparks that spray out from underneath
+  const BrakeSpark = ({ spark }: { spark: FrictionSpark }) => {
+    const startX = 80 + spark.offsetX;
+    const startY = 150;
+    const endX = startX + Math.cos((spark.angle * Math.PI) / 180) * spark.speed;
+    const endY = startY - Math.sin((spark.angle * Math.PI) / 180) * spark.speed;
+    
+    return (
+      <motion.div
+        key={spark.id}
+        initial={{ 
+          opacity: 1, 
+          scale: 1, 
+          x: startX, 
+          y: startY,
+        }}
+        animate={{
+          opacity: 0,
+          scale: 0,
+          x: endX,
+          y: endY,
+        }}
+        transition={{ duration: 0.25 + Math.random() * 0.15, ease: "easeOut" }}
+        className="absolute rounded-full"
+        style={{ 
+          width: 2 + Math.random() * 4,
+          height: 2 + Math.random() * 4,
+          background: `hsl(${Math.random() * 20}, 100%, ${50 + Math.random() * 20}%)`,
+          boxShadow: "0 0 4px #ef4444, 0 0 8px #dc2626",
+        }}
+      />
+    );
+  };
 
   // Impact spark burst
   const ImpactSparks = () => (
     <AnimatePresence>
       {showImpactSparks && (
         <>
-          {Array.from({ length: 12 }).map((_, i) => {
-            const angle = (i / 12) * 360 + Math.random() * 30;
-            const distance = 40 + Math.random() * 50;
+          {Array.from({ length: 16 }).map((_, i) => {
+            const angle = (i / 16) * 360 + Math.random() * 20;
+            const distance = 50 + Math.random() * 60;
             return (
               <motion.div
                 key={`impact-${i}`}
@@ -187,12 +175,12 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
                   y: 80 + Math.sin((angle * Math.PI) / 180) * distance,
                 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.02 }}
+                transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.015 }}
                 className="absolute w-4 h-4 rounded-full"
                 style={{
-                  background: i % 3 === 0 ? "hsl(var(--primary))" : i % 3 === 1 ? "#fbbf24" : "#fb923c",
+                  background: i % 2 === 0 ? "#ef4444" : "#dc2626",
                   filter: "blur(1px)",
-                  boxShadow: "0 0 8px currentColor",
+                  boxShadow: "0 0 10px #ef4444",
                 }}
               />
             );
@@ -204,13 +192,6 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
   return (
     <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none z-10" style={{ width: "100vw" }}>
-      {/* Trail container */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2">
-        {trail.map((dot) => (
-          <TrailDot key={dot.id} dot={dot} />
-        ))}
-      </div>
-      
       <div className="relative flex justify-end">
         {/* Rolling sparks container */}
         <motion.div
@@ -221,10 +202,10 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
           whileHover={{ scale: isAnimating ? 1 : 1.05 }}
           title="Click to replay animation"
         >
-          {/* Red friction sparks underneath */}
-          <div className="absolute inset-0 pointer-events-none">
+          {/* Red brake sparks underneath */}
+          <div className="absolute inset-0 pointer-events-none overflow-visible">
             {frictionSparks.map((spark) => (
-              <FrictionSparkComponent key={spark.id} spark={spark} />
+              <BrakeSpark key={spark.id} spark={spark} />
             ))}
           </div>
           
