@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
 
 interface Spark {
@@ -9,89 +9,94 @@ interface Spark {
   delay: number;
 }
 
-export function RollingVinylLogo() {
+interface RollingVinylLogoProps {
+  onImpact?: () => void;
+}
+
+export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
   const [sparks, setSparks] = useState<Spark[]>([]);
-  const [hasPlayed, setHasPlayed] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [showImpactSparks, setShowImpactSparks] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
 
-  // Generate sparks during rolling
-  useEffect(() => {
-    if (hasPlayed) return;
+  const runAnimation = useCallback(async () => {
+    if (isAnimating) return;
     
+    setIsAnimating(true);
+    setSparks([]);
+    setShowImpactSparks(false);
+
+    // Reset position
+    await controls.set({ x: 100, rotate: 0 });
+
+    // Start spark generation
     const sparkInterval = setInterval(() => {
       const newSpark: Spark = {
         id: Date.now() + Math.random(),
         x: 0,
         y: 0,
-        angle: Math.random() * 60 - 30, // Spray behind the vinyl
+        angle: Math.random() * 60 - 30,
         delay: 0,
       };
       setSparks(prev => [...prev.slice(-8), newSpark]);
     }, 80);
 
-    // Stop sparks after roll-in animation
-    const timeout = setTimeout(() => {
-      clearInterval(sparkInterval);
-    }, 2200);
+    // Roll in from right to left
+    await controls.start({
+      x: -500,
+      rotate: -1080,
+      transition: {
+        x: { duration: 2.2, ease: [0.25, 0.1, 0.25, 1] },
+        rotate: { duration: 2.2, ease: "linear" },
+      },
+    });
 
-    return () => {
-      clearInterval(sparkInterval);
-      clearTimeout(timeout);
-    };
-  }, [hasPlayed]);
+    clearInterval(sparkInterval);
 
-  // Run the animation sequence
+    // Impact! Show sparks and trigger callback
+    setShowImpactSparks(true);
+    onImpact?.();
+
+    // Bounce back slightly with deceleration
+    await controls.start({
+      x: -420,
+      rotate: -980,
+      transition: {
+        x: { duration: 0.4, ease: "easeOut" },
+        rotate: { duration: 0.4, ease: "easeOut" },
+      },
+    });
+
+    // Small settle
+    await controls.start({
+      x: -450,
+      rotate: -1020,
+      transition: {
+        x: { duration: 0.3, ease: "easeInOut" },
+        rotate: { duration: 0.3, ease: "easeInOut" },
+      },
+    });
+
+    setIsAnimating(false);
+    
+    // Hide impact sparks after animation
+    setTimeout(() => setShowImpactSparks(false), 600);
+  }, [controls, isAnimating, onImpact]);
+
+  // Run animation on mount and when key changes
   useEffect(() => {
-    if (hasPlayed) return;
-
-    const runAnimation = async () => {
-      // Roll in from right to left (rotating as it moves)
-      // Need to travel from off-screen right to near the title
-      await controls.start({
-        x: -500, // Roll far left to hit the title area
-        rotate: -1080, // 3 full rotations for the distance
-        transition: {
-          x: { duration: 2.2, ease: [0.25, 0.1, 0.25, 1] },
-          rotate: { duration: 2.2, ease: "linear" },
-        },
-      });
-
-      // Impact! Show sparks
-      setShowImpactSparks(true);
-
-      // Bounce back slightly with deceleration
-      await controls.start({
-        x: -420, // Roll back a bit
-        rotate: -980, // Roll back rotation
-        transition: {
-          x: { duration: 0.4, ease: "easeOut" },
-          rotate: { duration: 0.4, ease: "easeOut" },
-        },
-      });
-
-      // Small settle
-      await controls.start({
-        x: -450,
-        rotate: -1020,
-        transition: {
-          x: { duration: 0.3, ease: "easeInOut" },
-          rotate: { duration: 0.3, ease: "easeInOut" },
-        },
-      });
-
-      setHasPlayed(true);
-      
-      // Hide impact sparks after animation
-      setTimeout(() => setShowImpactSparks(false), 600);
-    };
-
-    // Delay start slightly for page load
     const startDelay = setTimeout(runAnimation, 500);
     return () => clearTimeout(startDelay);
-  }, [controls, hasPlayed]);
+  }, [animationKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // SVG vinyl logo (same as digest email)
+  const handleClick = () => {
+    if (!isAnimating) {
+      setAnimationKey(prev => prev + 1);
+    }
+  };
+
+  // SVG vinyl logo
   const VinylSVG = () => (
     <svg width="80" height="80" viewBox="0 0 64 64" className="drop-shadow-lg">
       <circle cx="32" cy="32" r="30" fill="#1a1a1a" />
@@ -162,10 +167,13 @@ export function RollingVinylLogo() {
         <motion.div
           initial={{ x: 100 }} 
           animate={controls}
-          className="relative"
+          onClick={handleClick}
+          className="relative pointer-events-auto cursor-pointer"
+          whileHover={{ scale: isAnimating ? 1 : 1.05 }}
+          title="Click to replay animation"
         >
           {/* Sparks trail */}
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 pointer-events-none">
             {sparks.map((spark) => (
               <RollingSpark key={spark.id} spark={spark} />
             ))}
