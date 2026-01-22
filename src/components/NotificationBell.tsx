@@ -40,8 +40,15 @@ export function NotificationBell() {
         navigate(`/user/${data.requester_id}`);
       }
     } else if (notification.type === 'app_update') {
-      // Navigate to What's New page for app updates
-      navigate('/whats-new');
+      const data = (notification.data && typeof notification.data === 'object')
+        ? (notification.data as Record<string, unknown>)
+        : null;
+      const link = data?.link;
+      if (typeof link === 'string' && link.startsWith('/')) {
+        navigate(link);
+      } else {
+        navigate('/whats-new');
+      }
     }
   };
 

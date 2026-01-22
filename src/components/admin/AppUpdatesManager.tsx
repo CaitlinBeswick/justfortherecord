@@ -41,6 +41,7 @@ interface AppUpdate {
   description: string;
   version: string | null;
   is_active: boolean;
+  link?: string | null;
   created_at: string;
 }
 
@@ -49,6 +50,7 @@ interface FormData {
   description: string;
   version: string;
   is_active: boolean;
+  link: string;
 }
 
 const initialFormData: FormData = {
@@ -56,6 +58,7 @@ const initialFormData: FormData = {
   description: "",
   version: "",
   is_active: true,
+  link: "",
 };
 
 export function AppUpdatesManager() {
@@ -87,6 +90,7 @@ export function AppUpdatesManager() {
         description: data.description.trim(),
         version: data.version.trim() || null,
         is_active: data.is_active,
+        link: data.link.trim() || null,
       });
       if (error) throw error;
     },
@@ -109,6 +113,7 @@ export function AppUpdatesManager() {
           description: data.description.trim(),
           version: data.version.trim() || null,
           is_active: data.is_active,
+          link: data.link.trim() || null,
         })
         .eq("id", id);
       if (error) throw error;
@@ -147,6 +152,7 @@ export function AppUpdatesManager() {
           title: update.title,
           description: update.description,
           version: update.version,
+          link: update.link || null,
         },
       });
 
@@ -181,6 +187,7 @@ export function AppUpdatesManager() {
       description: update.description,
       version: update.version || "",
       is_active: update.is_active,
+      link: update.link || "",
     });
     setIsDialogOpen(true);
   };
@@ -345,6 +352,18 @@ export function AppUpdatesManager() {
                 onChange={(e) => setFormData({ ...formData, version: e.target.value })}
                 placeholder="e.g. 1.3.0"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="link">Link destination (optional)</Label>
+              <Input
+                id="link"
+                value={formData.link}
+                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                placeholder="e.g. /profile/settings"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use a relative path inside the app. If set, the update will be clickable in What's New and notifications.
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <Switch

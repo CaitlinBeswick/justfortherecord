@@ -11,6 +11,7 @@ interface BroadcastRequest {
   title: string;
   description: string;
   version?: string;
+  link?: string | null;
 }
 
 serve(async (req) => {
@@ -23,7 +24,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { app_update_id, title, description, version }: BroadcastRequest = await req.json();
+    const { app_update_id, title, description, version, link }: BroadcastRequest = await req.json();
 
     if (!app_update_id || !title || !description) {
       return new Response(
@@ -52,11 +53,12 @@ serve(async (req) => {
     const notifications = profiles.map(profile => ({
       user_id: profile.id,
       type: 'app_update',
-      title: `✨ ${title}`,
+      title,
       message: description,
       data: {
         app_update_id,
         version: version || null,
+        link: link || null,
       },
       read: false,
     }));

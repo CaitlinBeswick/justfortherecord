@@ -20,45 +20,14 @@ const TopArtists = () => {
     queryKey: ['top-rated-artists-full'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('artist_ratings')
-        .select('artist_id, artist_name, rating');
-      
+        .from('artist_ratings_agg')
+        .select('artist_id, artist_name, avg_rating, rating_count')
+        .order('avg_rating', { ascending: false })
+        .order('rating_count', { ascending: false })
+        .limit(250);
+
       if (error) throw error;
-
-      // Aggregate ratings by artist
-      const artistMap = new Map<string, { name: string; ratings: number[] }>();
-      
-      data?.forEach(row => {
-        const existing = artistMap.get(row.artist_id);
-        if (existing) {
-          existing.ratings.push(Number(row.rating));
-        } else {
-          artistMap.set(row.artist_id, {
-            name: row.artist_name,
-            ratings: [Number(row.rating)]
-          });
-        }
-      });
-
-      // Convert to array and calculate averages
-      const artists: ArtistRating[] = [];
-      artistMap.forEach((value, key) => {
-        const avg = value.ratings.reduce((a, b) => a + b, 0) / value.ratings.length;
-        artists.push({
-          artist_id: key,
-          artist_name: value.name,
-          avg_rating: avg,
-          rating_count: value.ratings.length
-        });
-      });
-
-      // Sort by average rating (desc), then by count (desc)
-      artists.sort((a, b) => {
-        if (b.avg_rating !== a.avg_rating) return b.avg_rating - a.avg_rating;
-        return b.rating_count - a.rating_count;
-      });
-
-      return artists.slice(0, 250);
+      return (data || []) as ArtistRating[];
     },
     staleTime: 1000 * 60 * 5,
   });
