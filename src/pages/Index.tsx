@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useAnimation } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ArrowRight, Activity, User, ChevronRight } from "lucide-react";
 import { ActivityFeed } from "@/components/ActivityFeed";
@@ -24,6 +24,15 @@ const containerVariants = {
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const titleControls = useAnimation();
+
+  const handleVinylImpact = async () => {
+    // Shake the title on impact
+    await titleControls.start({
+      x: [0, -8, 6, -4, 2, 0],
+      transition: { duration: 0.4, ease: "easeOut" }
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -38,7 +47,7 @@ const Index = () => {
         <div className="relative container mx-auto px-4 py-20">
           <div className="relative">
             {/* Rolling Vinyl Animation */}
-            <RollingVinylLogo />
+            <RollingVinylLogo onImpact={handleVinylImpact} />
             
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -46,11 +55,14 @@ const Index = () => {
               transition={{ duration: 0.6 }}
               className="max-w-2xl"
             >
-              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight">
+              <motion.h1 
+                animate={titleControls}
+                className="font-serif text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight"
+              >
                 Track the music
                 <br />
                 <span className="text-primary glow-text">you love</span>
-              </h1>
+              </motion.h1>
               <p className="mt-6 text-lg text-muted-foreground max-w-md">
                 Log albums, review music and discover new artists.<br />Your personal music diary, beautifully organised.
               </p>
