@@ -1,17 +1,17 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Music, Heart, ArrowUpDown, Search, Filter } from "lucide-react";
+import { Loader2, Plus, Music, Heart, ArrowUpDown, Search } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getCoverArtUrl } from "@/services/musicbrainz";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { useMultipleAverageRatings } from "@/hooks/useAverageRating";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import {
   Select,
   SelectContent,
@@ -299,13 +299,11 @@ const Albums = () => {
                         onClick={() => navigate(`/album/${album.release_group_id}`)}
                       >
                         <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
-                          <img
-                            src={getCoverArtUrl(album.release_group_id)}
-                            alt={album.album_title}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/placeholder.svg';
-                            }}
+                          <AlbumCoverWithFallback
+                            releaseGroupId={album.release_group_id}
+                            title={album.album_title}
+                            className="aspect-square w-full rounded-lg"
+                            imageClassName="object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                           <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
