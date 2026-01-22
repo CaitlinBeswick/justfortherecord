@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Disc3, Heart, BookOpen, Users, Star } from "lucide-react";
+import { Heart, BookOpen, Users, Star } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImageAttribution } from "@/components/ImageAttribution";
+import { getAlbumInitials } from "@/components/AlbumCoverWithFallback";
 
 interface AlbumCardProps {
   id: string;
@@ -30,14 +31,6 @@ export function AlbumCard({
 }: AlbumCardProps) {
   const [imageError, setImageError] = useState(false);
 
-  // Get initials from album title
-  const getInitials = (albumTitle: string) => {
-    const words = albumTitle.trim().split(/\s+/).filter(w => w.length > 0);
-    if (words.length === 0) return '?';
-    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
-    return (words[0][0] + words[1][0]).toUpperCase();
-  };
-
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -48,7 +41,7 @@ export function AlbumCard({
       <div className="relative aspect-square overflow-hidden bg-secondary">
         {imageError ? (
           <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-            <span className="font-serif text-3xl text-primary/60">{getInitials(title)}</span>
+            <span className="font-serif text-3xl text-primary/60">{getAlbumInitials(title)}</span>
           </div>
         ) : (
           <>

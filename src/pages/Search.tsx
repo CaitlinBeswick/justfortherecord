@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistCard } from "@/components/ArtistCard";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search as SearchIcon, Disc3, Users, Loader2, Trophy, Star, ArrowRight, Clock, X } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
@@ -9,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { 
   searchArtists, 
   searchReleases, 
-  getCoverArtUrl, 
+  getCoverArtUrl,
   getArtistNames, 
   getYear,
   MBArtist,
@@ -21,7 +22,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { Footer } from "@/components/Footer";
-import { VinylBackground } from "@/components/VinylBackground";
 
 type SearchTab = "all" | "albums" | "artists";
 
@@ -51,36 +51,6 @@ interface TopArtistRating {
   artist_name: string;
   avg_rating: number;
   rating_count: number;
-}
-
-function AlbumCoverSquare({ releaseGroupId, title }: { releaseGroupId: string; title: string }) {
-  const [hasError, setHasError] = useState(false);
-  const imageUrl = getCoverArtUrl(releaseGroupId, '250');
-
-  // Get initials from album title
-  const getInitials = (albumTitle: string) => {
-    const words = albumTitle.trim().split(/\s+/).filter(w => w.length > 0);
-    if (words.length === 0) return '?';
-    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
-    return (words[0][0] + words[1][0]).toUpperCase();
-  };
-
-  if (hasError) {
-    return (
-      <div className="aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-        <span className="font-serif text-2xl text-primary/60">{getInitials(title)}</span>
-      </div>
-    );
-  }
-
-  return (
-    <img 
-      src={imageUrl} 
-      alt={title}
-      className="aspect-square rounded-lg object-cover w-full"
-      onError={() => setHasError(true)}
-    />
-  );
 }
 
 const Search = () => {
@@ -192,8 +162,6 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="gradient-hero absolute inset-0" />
-      <VinylBackground fadeHeight="200%" density="sparse" />
       <Navbar />
       
       <main className="relative container mx-auto px-4 pt-24 pb-20">
@@ -330,7 +298,12 @@ const Search = () => {
                           className="cursor-pointer group"
                         >
                           <div className="relative mb-2">
-                            <AlbumCoverSquare releaseGroupId={album.release_group_id} title={album.album_title} />
+                            <AlbumCoverWithFallback 
+                              releaseGroupId={album.release_group_id} 
+                              title={album.album_title}
+                              className="aspect-square rounded-lg"
+                              fallbackClassName="font-serif text-2xl text-primary/60"
+                            />
                             <div className={`absolute top-2 left-2 text-xs font-bold px-1.5 py-0.5 rounded ${
                               index === 0 ? 'bg-yellow-500 text-yellow-950' :
                               index === 1 ? 'bg-gray-300 text-gray-700' :
