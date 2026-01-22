@@ -6,7 +6,7 @@ interface RollingVinylLogoProps {
   size?: number;
 }
 
-export function RollingVinylLogo({ onImpact, size = 160 }: RollingVinylLogoProps) {
+export function RollingVinylLogo({ onImpact, size = 185 }: RollingVinylLogoProps) {
   const controls = useAnimation();
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
