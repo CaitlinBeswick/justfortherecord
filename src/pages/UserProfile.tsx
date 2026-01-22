@@ -651,20 +651,104 @@ const UserProfile = () => {
               transition={{ duration: 0.4 }}
               className="max-w-4xl mx-auto"
             >
-              {/* Centered profile layout */}
+              {/* Centered profile layout with stats flanking avatar */}
               <div className="flex flex-col items-center text-center">
-                {/* Avatar */}
-                {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt="Profile"
-                    className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-border/50"
-                  />
-                ) : (
-                  <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-secondary flex items-center justify-center border-4 border-border/50">
-                    <User className="h-12 w-12 text-muted-foreground" />
+                {/* Main row: Stats | Avatar | Goal */}
+                <div className="flex items-center justify-center gap-6 md:gap-10">
+                  {/* Left side: Albums, Artists, Following */}
+                  <div className="hidden sm:flex items-center gap-4 md:gap-6">
+                    {canViewProfile && profile.show_albums && (
+                      <div className="text-center">
+                        <p className="text-xl md:text-2xl font-semibold text-foreground">{albumCount}</p>
+                        <p className="text-xs text-muted-foreground">Albums</p>
+                      </div>
+                    )}
+                    {canViewProfile && profile.show_artists && (
+                      <div className="text-center">
+                        <p className="text-xl md:text-2xl font-semibold text-foreground">{followedArtists.length}</p>
+                        <p className="text-xs text-muted-foreground">Artists</p>
+                      </div>
+                    )}
+                    {profile.show_friends_count && (
+                      <div className="text-center">
+                        <p className="text-xl md:text-2xl font-semibold text-foreground">{userFriends.length}</p>
+                        <p className="text-xs text-muted-foreground">Following</p>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {/* Avatar */}
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt="Profile"
+                      className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-border/50 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-secondary flex items-center justify-center border-4 border-border/50 shrink-0">
+                      <User className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
+
+                  {/* Right side: Listening Goal */}
+                  <div className="hidden sm:flex items-center gap-3 min-w-[100px]">
+                    {canViewProfile && profile.show_diary && profile.yearly_listen_goal ? (
+                      <div className="flex items-center gap-3">
+                        <Target className="h-5 w-5 text-primary shrink-0" />
+                        <div className="text-left">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
+                            <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
+                          </div>
+                          <Progress 
+                            value={Math.min((thisYearCount / profile.yearly_listen_goal) * 100, 100)} 
+                            className="h-1.5 mt-1 w-20"
+                          />
+                          <p className="text-xs text-muted-foreground mt-0.5">{currentYear} Goal</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="min-w-[100px]" /> /* Spacer to keep avatar centered */
+                    )}
+                  </div>
+                </div>
+
+                {/* Mobile stats row - shown below avatar on small screens */}
+                <div className="flex sm:hidden flex-wrap items-center justify-center gap-4 mt-4">
+                  {canViewProfile && profile.show_albums && (
+                    <div className="text-center">
+                      <p className="text-xl font-semibold text-foreground">{albumCount}</p>
+                      <p className="text-xs text-muted-foreground">Albums</p>
+                    </div>
+                  )}
+                  {canViewProfile && profile.show_artists && (
+                    <div className="text-center">
+                      <p className="text-xl font-semibold text-foreground">{followedArtists.length}</p>
+                      <p className="text-xs text-muted-foreground">Artists</p>
+                    </div>
+                  )}
+                  {profile.show_friends_count && (
+                    <div className="text-center">
+                      <p className="text-xl font-semibold text-foreground">{userFriends.length}</p>
+                      <p className="text-xs text-muted-foreground">Following</p>
+                    </div>
+                  )}
+                  {canViewProfile && profile.show_diary && profile.yearly_listen_goal && (
+                    <div className="flex items-center gap-2 pl-4 border-l border-border/50">
+                      <Target className="h-4 w-4 text-primary shrink-0" />
+                      <div className="text-left">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-base font-semibold text-foreground">{thisYearCount}</span>
+                          <span className="text-xs text-muted-foreground">/ {profile.yearly_listen_goal}</span>
+                        </div>
+                        <Progress 
+                          value={Math.min((thisYearCount / profile.yearly_listen_goal) * 100, 100)} 
+                          className="h-1 mt-0.5 w-16"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 {/* Name + Actions */}
                 <div className="mt-4 flex items-center gap-2 flex-wrap justify-center">
@@ -763,46 +847,6 @@ const UserProfile = () => {
                 {profile.location && (
                   <p className="text-sm text-muted-foreground/60 mt-1">📍 {profile.location}</p>
                 )}
-
-                {/* Stats Row */}
-                <div className="flex flex-wrap items-center justify-center gap-6 mt-6">
-                  {canViewProfile && profile.show_albums && (
-                    <div className="text-center">
-                      <p className="text-xl sm:text-2xl font-semibold text-foreground">{albumCount}</p>
-                      <p className="text-xs text-muted-foreground">Albums</p>
-                    </div>
-                  )}
-                  {canViewProfile && profile.show_artists && (
-                    <div className="text-center">
-                      <p className="text-xl sm:text-2xl font-semibold text-foreground">{followedArtists.length}</p>
-                      <p className="text-xs text-muted-foreground">Artists</p>
-                    </div>
-                  )}
-                  {profile.show_friends_count && (
-                    <div className="text-center">
-                      <p className="text-xl sm:text-2xl font-semibold text-foreground">{userFriends.length}</p>
-                      <p className="text-xs text-muted-foreground">Following</p>
-                    </div>
-                  )}
-                  
-                  {/* Listening Challenge */}
-                  {canViewProfile && profile.show_diary && profile.yearly_listen_goal && (
-                    <div className="flex items-center gap-3 pl-6 border-l border-border/50">
-                      <Target className="h-5 w-5 text-primary shrink-0" />
-                      <div className="min-w-[80px] text-left">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-lg font-semibold text-foreground">{thisYearCount}</span>
-                          <span className="text-sm text-muted-foreground">/ {profile.yearly_listen_goal}</span>
-                        </div>
-                        <Progress 
-                          value={Math.min((thisYearCount / profile.yearly_listen_goal) * 100, 100)} 
-                          className="h-1.5 mt-1"
-                        />
-                        <p className="text-xs text-muted-foreground mt-0.5">{currentYear} Goal</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
 
                 {/* Genres */}
                 {profile.favorite_genres && profile.favorite_genres.length > 0 && (
