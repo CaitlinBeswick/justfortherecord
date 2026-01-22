@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { AppUpdatesManager } from "@/components/admin/AppUpdatesManager";
 import { SendTestDigestButton } from "@/components/admin/SendTestDigestButton";
 import { EmailHealthCheck } from "@/components/admin/EmailHealthCheck";
+import { DigestEmailPreview } from "@/components/admin/DigestEmailPreview";
 
 interface ContactSubmission {
   id: string;
@@ -166,6 +167,9 @@ const Admin = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Digest Email Preview */}
+            <DigestEmailPreview />
 
             {/* App Updates Section */}
             <div className="mb-8">
