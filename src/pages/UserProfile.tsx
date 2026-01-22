@@ -10,12 +10,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { getCoverArtUrl, getArtistImage } from "@/services/musicbrainz";
+import { getArtistImage } from "@/services/musicbrainz";
 import { useFriendships } from "@/hooks/useFriendships";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { Button } from "@/components/ui/button";
 import { format, startOfYear, isAfter } from "date-fns";
 import { FavoriteAlbums } from "@/components/profile/FavoriteAlbums";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
@@ -946,16 +947,12 @@ const UserProfile = () => {
                                 {format(new Date(entry.listened_on), 'MMM')}
                               </p>
                             </div>
-                            <div className="w-10 h-10 rounded overflow-hidden shrink-0">
-                              <img 
-                                src={getCoverArtUrl(entry.release_group_id, '250')}
-                                alt={entry.album_title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = '/placeholder.svg';
-                                }}
-                              />
-                            </div>
+                            <AlbumCoverWithFallback
+                              releaseGroupId={entry.release_group_id}
+                              title={entry.album_title}
+                              size="250"
+                              className="w-10 h-10 rounded shrink-0"
+                            />
                             <div className="flex-1 min-w-0">
                               <h3 className="text-sm font-medium text-foreground truncate">{entry.album_title}</h3>
                               <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
@@ -1084,13 +1081,11 @@ const UserProfile = () => {
                           onClick={() => navigate(`/album/${album.release_group_id}`)}
                         >
                           <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
-                            <img
-                              src={getCoverArtUrl(album.release_group_id)}
-                              alt={album.album_title}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/placeholder.svg';
-                              }}
+                            <AlbumCoverWithFallback
+                              releaseGroupId={album.release_group_id}
+                              title={album.album_title}
+                              className="aspect-square w-full rounded-lg"
+                              imageClassName="object-cover transition-transform duration-300 group-hover:scale-105"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1172,13 +1167,11 @@ const UserProfile = () => {
                           onClick={() => navigate(`/album/${item.release_group_id}`)}
                         >
                           <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
-                            <img
-                              src={getCoverArtUrl(item.release_group_id)}
-                              alt={item.album_title}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/placeholder.svg';
-                              }}
+                            <AlbumCoverWithFallback
+                              releaseGroupId={item.release_group_id}
+                              title={item.album_title}
+                              className="aspect-square w-full rounded-lg"
+                              imageClassName="object-cover transition-transform duration-300 group-hover:scale-105"
                             />
                           </div>
                           <div className="mt-2">
