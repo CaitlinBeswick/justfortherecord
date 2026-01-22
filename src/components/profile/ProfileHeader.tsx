@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Settings, User, Share2, Target, Trophy } from "lucide-react";
+import { TrophyWithConfetti } from "@/components/profile/TrophyWithConfetti";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -197,7 +198,7 @@ export const ProfileHeader = () => {
                           (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]' : ''
                         }`}>
                           {goalComplete ? (
-                            <Trophy className="h-5 w-5 shrink-0 text-yellow-500 animate-pulse" />
+                            <TrophyWithConfetti className="h-5 w-5" />
                           ) : (
                             <Target className={`h-5 w-5 shrink-0 ${
                               (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
@@ -280,7 +281,7 @@ export const ProfileHeader = () => {
                   (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]' : ''
                 }`}>
                   {goalComplete ? (
-                    <Trophy className="h-4 w-4 shrink-0 text-yellow-500 animate-pulse" />
+                    <TrophyWithConfetti className="h-4 w-4" />
                   ) : (
                     <Target className={`h-4 w-4 shrink-0 ${
                       (thisYearCount / profile.yearly_listen_goal) >= 0.75 ? 'text-primary animate-pulse' : 'text-primary'
