@@ -12,6 +12,7 @@ import { startOfYear, isAfter } from "date-fns";
 import { VinylBackground } from "@/components/VinylBackground";
 import { GoalCelebration } from "@/components/profile/GoalCelebration";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import ProBadge from "@/components/ProBadge";
 interface Profile {
   id: string;
   username: string | null;
@@ -299,9 +300,10 @@ export const ProfileHeader = () => {
             </div>
             </TooltipProvider>
             
-            {/* Name + Actions */}
+            {/* Name + Pro Badge + Actions */}
             <div className="mt-4 flex items-center gap-2">
               <h1 className="font-serif text-2xl text-secondary-foreground sm:text-5xl">{displayName}</h1>
+              <ProBadge className="hidden sm:flex" />
               <ProfileCardDialog displayName={displayName}>
                 <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground" title="Share Profile">
                   <Share2 className="h-4 w-4" />
