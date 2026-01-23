@@ -42,7 +42,7 @@ const Index = () => {
       <section className="relative pt-16 overflow-hidden">
         <div className="gradient-hero absolute inset-0" />
         
-        <VinylBackground density="sparse" />
+        <VinylBackground density="sparse" showHeroVinyl />
         
         <div className="relative container mx-auto px-4 py-20">
           <div className="relative">
