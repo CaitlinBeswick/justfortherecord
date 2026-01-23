@@ -9,8 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
-import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell, Wand2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell, Wand2, FlaskConical } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -69,6 +70,7 @@ interface AIDraftState {
 
 export function AppUpdatesManager() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUpdate, setEditingUpdate] = useState<AppUpdate | null>(null);
@@ -76,6 +78,7 @@ export function AppUpdatesManager() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isExpanded, setIsExpanded] = useState(false);
   const [broadcastingId, setBroadcastingId] = useState<string | null>(null);
+  const [testingId, setTestingId] = useState<string | null>(null);
   const [aiDraft, setAiDraft] = useState<AIDraftState>({
     isOpen: false,
     briefNote: "",
@@ -221,6 +224,44 @@ export function AppUpdatesManager() {
     }
   };
 
+  const handleTestNotification = async (update: AppUpdate) => {
+    if (!user) return;
+    setTestingId(update.id);
+    try {
+      // Insert a notification directly for the current admin user only
+      const { error } = await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'app_update',
+        title: update.title,
+        message: update.description,
+        data: {
+          app_update_id: update.id,
+          version: update.version,
+          link: update.link,
+        },
+      });
+
+      if (error) throw error;
+
+      // Invalidate notifications query to show the new notification
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
+      toast({
+        title: "Test notification sent!",
+        description: "Check your notification bell to preview how it will appear.",
+      });
+    } catch (err) {
+      console.error('Failed to send test:', err);
+      toast({
+        title: "Failed to send test",
+        description: "Could not create test notification",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingId(null);
+    }
+  };
+
   const openCreateDialog = () => {
     setEditingUpdate(null);
     setFormData(initialFormData);
@@ -310,6 +351,19 @@ export function AppUpdatesManager() {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleTestNotification(update)}
+                      disabled={testingId === update.id}
+                      title="Send test notification to yourself"
+                    >
+                      {testingId === update.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <FlaskConical className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
