@@ -9,7 +9,7 @@ import { ListeningGoalPopup } from "@/components/profile/ListeningGoalPopup";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { VinylBackground } from "@/components/VinylBackground";
 import { Footer } from "@/components/Footer";
-import { HeroVinylEmblem } from "@/components/HeroVinylEmblem";
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -31,9 +31,8 @@ const Index = () => {
       <section className="relative pt-16 overflow-hidden">
         <div className="gradient-hero absolute inset-0" />
         
-        {/* Enable the dedicated hero vinyl so the emblem can align 1:1 with it */}
-        <VinylBackground density="sparse" showHeroVinyl />
-        <HeroVinylEmblem />
+        <VinylBackground density="sparse" />
+        
         
         <div className="relative container mx-auto px-4 py-20">
            <div>
