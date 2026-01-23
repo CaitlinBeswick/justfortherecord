@@ -155,7 +155,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
             axis="x"
             values={orderedSlots}
             onReorder={handleReorder}
-            className="flex gap-2 md:gap-3 justify-center md:justify-start"
+            className="flex flex-wrap gap-2 md:gap-3 justify-center md:justify-start"
           >
             {orderedSlots.map((slot) => (
               <Reorder.Item
@@ -173,7 +173,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                       releaseGroupId={slot.release_group_id}
                       title={slot.album_title || ''}
                       size="250"
-                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
+                      className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
                     />
                     <div 
                       className="absolute inset-0 rounded-lg cursor-pointer"
@@ -202,7 +202,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                 ) : (
                   <button
                     onClick={() => setEditingPosition(slot.position)}
-                    className="w-20 h-20 md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
@@ -211,7 +211,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
             ))}
           </Reorder.Group>
         ) : (
-          <div className="flex gap-2 md:gap-3 justify-center md:justify-start">
+          <div className="flex flex-wrap gap-2 md:gap-3 justify-center md:justify-start">
             {orderedSlots.map((slot) => (
               <motion.div
                 key={slot.position}
@@ -229,7 +229,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                       releaseGroupId={slot.release_group_id}
                       title={slot.album_title || ''}
                       size="250"
-                      className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
+                      className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
                     />
                     {isOwner && (
                       <button
@@ -248,12 +248,12 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                 ) : isOwner ? (
                   <button
                     onClick={() => setEditingPosition(slot.position)}
-                    className="w-20 h-20 md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
                 ) : (
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-border/30 bg-secondary/30" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border border-border/30 bg-secondary/30" />
                 )}
               </motion.div>
             ))}
