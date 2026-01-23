@@ -7,7 +7,7 @@ const Pricing = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 pt-24 pb-12">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Crown className="h-8 w-8 text-amber-500" />
