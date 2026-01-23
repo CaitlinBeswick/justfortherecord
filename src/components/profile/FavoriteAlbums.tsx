@@ -155,7 +155,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
             axis="x"
             values={orderedSlots}
             onReorder={handleReorder}
-            className="flex flex-wrap gap-2 md:gap-3 justify-center md:justify-start"
+            className="flex gap-3 md:gap-3 justify-start overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:overflow-visible md:flex-wrap md:justify-start"
           >
             {orderedSlots.map((slot) => (
               <Reorder.Item
@@ -164,7 +164,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
                 onDragStart={() => setIsDragging(true)}
                 onDragEnd={handleDragEnd}
                 dragListener={!!slot.release_group_id}
-                className="relative group"
+                className="relative group flex-shrink-0 snap-start"
                 whileDrag={{ scale: 1.05, zIndex: 50 }}
               >
                 {slot.release_group_id ? (
@@ -211,14 +211,14 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
             ))}
           </Reorder.Group>
         ) : (
-          <div className="flex flex-wrap gap-2 md:gap-3 justify-center md:justify-start">
+          <div className="flex gap-3 md:gap-3 justify-start overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:overflow-visible md:flex-wrap md:justify-start">
             {orderedSlots.map((slot) => (
               <motion.div
                 key={slot.position}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: slot.position * 0.05 }}
-                className="relative group"
+                className="relative group flex-shrink-0 snap-start"
               >
                 {slot.release_group_id ? (
                   <div 
