@@ -18,6 +18,8 @@ import { Separator } from "@/components/ui/separator";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { AnnualStats } from "@/components/profile/AnnualStats";
 import { ProInsights } from "@/components/profile/ProInsights";
+import { ProFeatureGate } from "@/components/ProFeatureGate";
+import ProBadge from "@/components/ProBadge";
 import { toast as sonnerToast } from "sonner";
 
 interface Profile {
@@ -1088,18 +1090,19 @@ const ProfileSettings = () => {
 
               <Separator className="my-6" />
 
-              {/* Insights Section */}
+              {/* Pro Insights Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold text-foreground">Listening Insights</h2>
+                  <h2 className="text-lg font-semibold text-foreground">Pro Insights</h2>
+                  <ProBadge className="ml-1" />
                 </div>
                 <ProInsights />
               </div>
 
               <Separator className="my-6" />
 
-              {/* Annual Stats - Collapsible */}
+              {/* Annual Stats - Collapsible (Pro Only) */}
               <div className="space-y-4">
                 <button
                   type="button"
@@ -1109,6 +1112,7 @@ const ProfileSettings = () => {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-primary" />
                     <h2 className="text-lg font-semibold text-foreground">Year in Review</h2>
+                    <ProBadge className="ml-1" />
                   </div>
                   {isStatsExpanded ? (
                     <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -1124,7 +1128,13 @@ const ProfileSettings = () => {
                     exit={{ opacity: 0, height: 0 }}
                     className="pl-4 border-l-2 border-primary/20"
                   >
-                    <AnnualStats />
+                    <ProFeatureGate
+                      featureName="Year in Review"
+                      description="Unlock detailed annual listening reports, decade breakdowns, and more with Pro."
+                      blur
+                    >
+                      <AnnualStats />
+                    </ProFeatureGate>
                   </motion.div>
                 )}
               </div>
