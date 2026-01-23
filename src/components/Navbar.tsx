@@ -111,6 +111,7 @@ export function Navbar() {
                     My Profile
                   </Link>
                 </DropdownMenuItem>
+                {/* Membership option temporarily disabled
                 {!isPro && (
                   <DropdownMenuItem asChild>
                     <Link to="/pricing" className="flex items-center gap-2 cursor-pointer">
@@ -119,6 +120,7 @@ export function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                 )}
+                */}
                 {isAdmin && (
                   <>
                     <DropdownMenuSeparator />

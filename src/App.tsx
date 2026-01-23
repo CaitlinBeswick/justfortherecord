@@ -79,7 +79,7 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/whats-new" element={<WhatsNew />} />
-              <Route path="/pricing" element={<Pricing />} />
+              {/* Pricing route temporarily disabled - <Route path="/pricing" element={<Pricing />} /> */}
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
