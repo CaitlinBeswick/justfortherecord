@@ -9,7 +9,6 @@ import { ListeningGoalPopup } from "@/components/profile/ListeningGoalPopup";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { VinylBackground } from "@/components/VinylBackground";
 import { Footer } from "@/components/Footer";
-import { RollingVinylLogo } from "@/components/RollingVinylLogo";
 import { HeroVinylOutline } from "@/components/HeroVinylOutline";
 
 const containerVariants = {
@@ -27,14 +26,6 @@ const Index = () => {
   const { user } = useAuth();
   const titleControls = useAnimation();
 
-  const handleVinylImpact = async () => {
-    // Shake the title on impact
-    await titleControls.start({
-      x: [0, -8, 6, -4, 2, 0],
-      transition: { duration: 0.4, ease: "easeOut" }
-    });
-  };
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -45,9 +36,6 @@ const Index = () => {
         
         <VinylBackground density="sparse" />
         <HeroVinylOutline centerLeftPercent={21} />
-        
-        {/* Rolling Vinyl Animation (anchored to the hero section for consistent alignment) */}
-        <RollingVinylLogo onImpact={handleVinylImpact} />
         
         <div className="relative container mx-auto px-4 py-20">
            <div>
