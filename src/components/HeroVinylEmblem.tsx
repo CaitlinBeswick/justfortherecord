@@ -12,9 +12,10 @@ export function HeroVinylEmblem({ className = "" }: HeroVinylEmblemProps) {
       transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
       className={`absolute pointer-events-none select-none ${className}`}
       style={{
-        top: "45%",
-        right: "10%",
-        transform: "translateY(-50%)",
+        // Match VinylBackground's hero vinyl positioning for true overlap
+        top: "50%",
+        left: "21%",
+        transform: "translate(-50%, -50%)",
       }}
     >
       {/* Outer glow */}

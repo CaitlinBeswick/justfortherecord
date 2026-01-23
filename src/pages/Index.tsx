@@ -31,7 +31,8 @@ const Index = () => {
       <section className="relative pt-16 overflow-hidden">
         <div className="gradient-hero absolute inset-0" />
         
-        <VinylBackground density="sparse" />
+        {/* Enable the dedicated hero vinyl so the emblem can align 1:1 with it */}
+        <VinylBackground density="sparse" showHeroVinyl />
         <HeroVinylEmblem />
         
         <div className="relative container mx-auto px-4 py-20">
