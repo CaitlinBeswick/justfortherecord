@@ -27,6 +27,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const [animationKey, setAnimationKey] = useState(0);
   const [showGlow, setShowGlow] = useState(false);
   const [size, setSize] = useState(() => getResponsiveSize(window.innerWidth));
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 480);
 
   const getAvailableWidth = useCallback(() => {
     // Prefer the actual containing block width.
@@ -40,7 +41,9 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     if (!el) return;
 
     const update = () => {
-      if (!isAnimating) setSize(getResponsiveSize(getAvailableWidth()));
+      const width = getAvailableWidth();
+      setIsMobile(width < 480);
+      if (!isAnimating) setSize(getResponsiveSize(width));
     };
 
     update();
@@ -159,17 +162,23 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     setIsAnimating(false);
   }, [controls, getAvailableWidth, isAnimating, onImpact]);
 
-  // Run animation on mount and when key changes
+  // Run animation on mount and when key changes (only on non-mobile)
   useEffect(() => {
+    if (isMobile) return;
     const startDelay = setTimeout(runAnimation, 500);
     return () => clearTimeout(startDelay);
-  }, [animationKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [animationKey, isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClick = () => {
-    if (!isAnimating) {
+    if (!isAnimating && !isMobile) {
       setAnimationKey(prev => prev + 1);
     }
   };
+
+  // Don't render anything on mobile
+  if (isMobile) {
+    return null;
+  }
 
   // SVG vinyl logo - uses current size
   const VinylSVG = () => (
