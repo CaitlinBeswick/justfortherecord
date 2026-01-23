@@ -3,27 +3,51 @@ import { motion, useAnimation } from "framer-motion";
 
 interface RollingVinylLogoProps {
   onImpact?: () => void;
-  size?: number;
 }
 
-export function RollingVinylLogo({ onImpact, size = 195 }: RollingVinylLogoProps) {
+// Calculate responsive size based on viewport width
+const getResponsiveSize = () => {
+  const vw = window.innerWidth;
+  if (vw < 480) return 80;
+  if (vw < 640) return 100;
+  if (vw < 768) return 120;
+  if (vw < 1024) return 150;
+  return 195;
+};
+
+export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const [showGlow, setShowGlow] = useState(false);
+  const [size, setSize] = useState(getResponsiveSize);
+
+  // Update size on resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (!isAnimating) {
+        setSize(getResponsiveSize());
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isAnimating]);
 
   const runAnimation = useCallback(async () => {
     if (isAnimating) return;
     
+    const currentSize = getResponsiveSize();
+    setSize(currentSize);
     setIsAnimating(true);
     setShowGlow(false);
 
-    // Reset position and scale
-    await controls.set({ x: size + 50, rotate: 0, scaleX: 1, scaleY: 1 });
-
-    // Calculate halfway point (center of viewport)
     const vw = window.innerWidth;
-    const impactX = -(vw / 2) + size / 2;
+    
+    // Reset position - start off screen to the right
+    await controls.set({ x: currentSize + 50, rotate: 0, scaleX: 1, scaleY: 1 });
+
+    // Impact point - center of viewport (using percentage-based calculation)
+    const impactX = -(vw * 0.5) + currentSize / 2;
 
     // Roll in from right to center
     await controls.start({
@@ -51,9 +75,12 @@ export function RollingVinylLogo({ onImpact, size = 195 }: RollingVinylLogoProps
       transition: { duration: 0.1, ease: "easeInOut" },
     });
 
+    // Bounce amount relative to size
+    const bounceAmount = currentSize * 0.4;
+    
     // Restore shape while bouncing back
     await controls.start({
-      x: impactX + 80,
+      x: impactX + bounceAmount,
       rotate: -620,
       scaleX: 1,
       scaleY: 1,
@@ -67,7 +94,7 @@ export function RollingVinylLogo({ onImpact, size = 195 }: RollingVinylLogoProps
 
     // Small settle
     await controls.start({
-      x: impactX + 50,
+      x: impactX + bounceAmount * 0.625,
       rotate: -660,
       transition: {
         x: { duration: 0.25, ease: "easeInOut" },
@@ -78,8 +105,8 @@ export function RollingVinylLogo({ onImpact, size = 195 }: RollingVinylLogoProps
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    // Roll back to rest position - align with background vinyl
-    const restX = -(vw * 0.21) + size / 2;
+    // Rest position - align with background vinyl at ~21% from left edge
+    const restX = -(vw * 0.21) + currentSize / 2;
     await controls.start({
       x: restX,
       rotate: -200,
@@ -92,7 +119,7 @@ export function RollingVinylLogo({ onImpact, size = 195 }: RollingVinylLogoProps
     // Show glow effect
     setShowGlow(true);
     setIsAnimating(false);
-  }, [controls, isAnimating, onImpact, size]);
+  }, [controls, isAnimating, onImpact]);
 
   // Run animation on mount and when key changes
   useEffect(() => {
@@ -106,7 +133,7 @@ export function RollingVinylLogo({ onImpact, size = 195 }: RollingVinylLogoProps
     }
   };
 
-  // SVG vinyl logo
+  // SVG vinyl logo - uses current size
   const VinylSVG = () => (
     <svg width={size} height={size} viewBox="0 0 64 64" className="drop-shadow-lg">
       <circle cx="32" cy="32" r="30" fill="#1a1a1a" />
