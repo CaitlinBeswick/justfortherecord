@@ -27,7 +27,8 @@ const MOBILE_MEDIA_QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`;
 // Trail configuration
 const TRAIL_COUNT = 4;
 const TRAIL_DELAYS = [0.03, 0.06, 0.09, 0.12]; // seconds behind main vinyl
-const TRAIL_OPACITIES = [0.25, 0.18, 0.12, 0.06];
+const TRAIL_OPACITIES = [0.4, 0.3, 0.2, 0.1];
+const TRAIL_GLOW_INTENSITIES = [20, 15, 10, 6]; // px blur radius for red glow
 
 export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
@@ -271,21 +272,21 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       height={size} 
       viewBox="0 0 64 64" 
       className={isTrail ? "" : "drop-shadow-lg"}
-      style={isTrail ? { filter: "blur(2px)" } : undefined}
+      style={isTrail ? { filter: "blur(1px)" } : undefined}
     >
-      <circle cx="32" cy="32" r="30" fill="#1a1a1a" />
-      <circle cx="32" cy="32" r="26" fill="none" stroke="#333" strokeWidth="0.5" />
-      <circle cx="32" cy="32" r="22" fill="none" stroke="#333" strokeWidth="0.5" />
-      <circle cx="32" cy="32" r="18" fill="none" stroke="#333" strokeWidth="0.5" />
+      <circle cx="32" cy="32" r="30" fill={isTrail ? "hsl(var(--primary) / 0.3)" : "#1a1a1a"} />
+      <circle cx="32" cy="32" r="26" fill="none" stroke={isTrail ? "hsl(var(--primary) / 0.2)" : "#333"} strokeWidth="0.5" />
+      <circle cx="32" cy="32" r="22" fill="none" stroke={isTrail ? "hsl(var(--primary) / 0.2)" : "#333"} strokeWidth="0.5" />
+      <circle cx="32" cy="32" r="18" fill="none" stroke={isTrail ? "hsl(var(--primary) / 0.2)" : "#333"} strokeWidth="0.5" />
       <circle cx="32" cy="32" r="12" fill="hsl(var(--primary))" />
-      <circle cx="32" cy="32" r="4" fill="#1a1a1a" />
-      <circle cx="32" cy="32" r="2" fill="#fff" />
+      <circle cx="32" cy="32" r="4" fill={isTrail ? "hsl(var(--primary) / 0.5)" : "#1a1a1a"} />
+      <circle cx="32" cy="32" r="2" fill={isTrail ? "hsl(var(--primary))" : "#fff"} />
     </svg>
   );
 
   return (
     <div ref={containerRef} className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-      {/* Trail elements - render behind main vinyl */}
+      {/* Trail elements - render behind main vinyl with red glow */}
       {trailControls.map((tc, index) => (
         <motion.div
           key={`trail-${index}`}
@@ -297,6 +298,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
             width: size,
             height: size,
             opacity: TRAIL_OPACITIES[index],
+            filter: `drop-shadow(0 0 ${TRAIL_GLOW_INTENSITIES[index]}px hsl(var(--primary) / 0.7))`,
           }}
         >
           <VinylSVG isTrail />
