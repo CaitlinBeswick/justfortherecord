@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell, Wand2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +61,12 @@ const initialFormData: FormData = {
   link: "",
 };
 
+interface AIDraftState {
+  isOpen: boolean;
+  briefNote: string;
+  isGenerating: boolean;
+}
+
 export function AppUpdatesManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -70,6 +76,47 @@ export function AppUpdatesManager() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isExpanded, setIsExpanded] = useState(false);
   const [broadcastingId, setBroadcastingId] = useState<string | null>(null);
+  const [aiDraft, setAiDraft] = useState<AIDraftState>({
+    isOpen: false,
+    briefNote: "",
+    isGenerating: false,
+  });
+
+  const handleAIDraft = async () => {
+    if (!aiDraft.briefNote.trim()) {
+      toast({ title: "Enter a brief note", description: "Describe what you built in a few words", variant: "destructive" });
+      return;
+    }
+
+    setAiDraft(prev => ({ ...prev, isGenerating: true }));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('draft-app-update', {
+        body: { briefNote: aiDraft.briefNote.trim() },
+      });
+
+      if (error) throw error;
+
+      if (data.title && data.description) {
+        setFormData(prev => ({
+          ...prev,
+          title: data.title,
+          description: data.description,
+        }));
+        setAiDraft({ isOpen: false, briefNote: "", isGenerating: false });
+        toast({ title: "Draft generated!", description: "Review and edit before saving." });
+      }
+    } catch (err) {
+      console.error('AI draft error:', err);
+      toast({
+        title: "Failed to generate",
+        description: err instanceof Error ? err.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setAiDraft(prev => ({ ...prev, isGenerating: false }));
+    }
+  };
 
   const { data: updates = [], isLoading } = useQuery({
     queryKey: ["app-updates"],
@@ -325,6 +372,66 @@ export function AppUpdatesManager() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* AI Draft Section */}
+            {!editingUpdate && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Wand2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">AI Draft Assistant</span>
+                </div>
+                {aiDraft.isOpen ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={aiDraft.briefNote}
+                      onChange={(e) => setAiDraft(prev => ({ ...prev, briefNote: e.target.value }))}
+                      placeholder="e.g. added likes and comments to activity feeds"
+                      rows={2}
+                      className="text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleAIDraft}
+                        disabled={aiDraft.isGenerating}
+                      >
+                        {aiDraft.isGenerating ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Generate
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setAiDraft({ isOpen: false, briefNote: "", isGenerating: false })}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setAiDraft(prev => ({ ...prev, isOpen: true }))}
+                    className="w-full"
+                  >
+                    <Wand2 className="h-3 w-3 mr-2" />
+                    Draft with AI
+                  </Button>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
               <Input
