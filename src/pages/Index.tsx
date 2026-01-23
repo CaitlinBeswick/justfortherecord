@@ -1,4 +1,4 @@
-import { motion, useAnimation } from "framer-motion";
+import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { ArrowRight, Activity, User, ChevronRight } from "lucide-react";
 import { ActivityFeed } from "@/components/ActivityFeed";
@@ -9,8 +9,7 @@ import { ListeningGoalPopup } from "@/components/profile/ListeningGoalPopup";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { VinylBackground } from "@/components/VinylBackground";
 import { Footer } from "@/components/Footer";
-import { HeroVinylOutline } from "@/components/HeroVinylOutline";
-
+import { HeroVinylEmblem } from "@/components/HeroVinylEmblem";
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -24,8 +23,6 @@ const containerVariants = {
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const titleControls = useAnimation();
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -35,7 +32,7 @@ const Index = () => {
         <div className="gradient-hero absolute inset-0" />
         
         <VinylBackground density="sparse" />
-        <HeroVinylOutline centerLeftPercent={21} />
+        <HeroVinylEmblem />
         
         <div className="relative container mx-auto px-4 py-20">
            <div>
@@ -45,14 +42,11 @@ const Index = () => {
               transition={{ duration: 0.6 }}
               className="max-w-2xl"
             >
-              <motion.h1 
-                animate={titleControls}
-                className="font-serif text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight"
-              >
+              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight">
                 Track the music
                 <br />
                 <span className="text-primary glow-text">you love</span>
-              </motion.h1>
+              </h1>
               <p className="mt-6 text-lg text-muted-foreground max-w-md">
                 Log albums, review music and discover new artists.<br />Your personal music diary, beautifully organised.
               </p>
