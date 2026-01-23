@@ -37,7 +37,9 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const [showGlow, setShowGlow] = useState(false);
+  const [showPulsingGlow, setShowPulsingGlow] = useState(false);
   const [size, setSize] = useState(() => getResponsiveSize(window.innerWidth));
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Use a ref to track mobile state to avoid stale closures in animation
   const getIsMobile = useCallback(() => {
@@ -136,6 +138,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     setSize(currentSize);
     setIsAnimating(true);
     setShowGlow(false);
+    setShowPulsingGlow(true); // Start pulsing glow while moving
 
     // For compact mode, reduce animation distances
     const offscreenOffset = compact ? 20 : 50;
@@ -156,9 +159,12 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     const pauseDuration = compact ? 200 : 400;
     const rollOutDuration = compact ? 1.0 : 1.6;
 
-    // Reset all positions (main + trails)
+    // Reset all positions (main + trails) - start off-screen right
     await controls.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 });
     trailControls.forEach(tc => tc.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 }));
+    
+    // Mark as initialized so we show the vinyl
+    setIsInitialized(true);
 
     // Start trail animations with delays
     for (let i = 0; i < TRAIL_COUNT; i++) {
@@ -244,6 +250,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     });
 
     setShowGlow(false);
+    setShowPulsingGlow(false); // Stop pulsing glow when animation ends
     setIsAnimating(false);
   }, [controls, getAvailableWidth, isAnimating, onImpact, trailControls]);
 
@@ -284,6 +291,11 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     </svg>
   );
 
+  // Don't render until initialized (prevents showing vinyl at wrong position)
+  if (!isInitialized) {
+    return <div ref={containerRef} className="absolute inset-0 pointer-events-none z-10 overflow-hidden" />;
+  }
+
   return (
     <div ref={containerRef} className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
       {/* Trail elements - render behind main vinyl with red glow */}
@@ -319,10 +331,24 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
         whileHover={{ scale: isAnimating ? 1 : 1.05 }}
         title="Click to replay animation"
       >
-        <div className={`transition-all duration-700 ${showGlow ? 'drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]' : ''}`}>
+        <div 
+          className={`transition-all duration-300 ${showGlow ? 'drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]' : ''}`}
+          style={showPulsingGlow ? {
+            filter: 'drop-shadow(0 0 15px hsl(var(--primary) / 0.5))',
+            animation: 'pulse-glow 0.6s ease-in-out infinite',
+          } : undefined}
+        >
           <VinylSVG />
         </div>
       </motion.div>
+      
+      {/* Pulsing glow keyframes */}
+      <style>{`
+        @keyframes pulse-glow {
+          0%, 100% { filter: drop-shadow(0 0 12px hsl(var(--primary) / 0.4)); }
+          50% { filter: drop-shadow(0 0 25px hsl(var(--primary) / 0.7)); }
+        }
+      `}</style>
     </div>
   );
 }
