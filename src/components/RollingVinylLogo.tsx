@@ -49,8 +49,8 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     const startX = cw + currentSize + 50;
     // Impact at center of container
     const impactX = cw * 0.5 - currentSize / 2;
-    // Rest at 21% from left of container
-    const restX = cw * 0.21 - currentSize / 2;
+    // Exit off-screen to the right
+    const exitX = cw + currentSize + 50;
     // Bounce amount
     const bounceAmount = currentSize * 0.4;
 
@@ -110,18 +110,19 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    // Roll LEFT to rest position at 21%
+    // Roll RIGHT and exit off-screen
     await controls.start({
-      x: restX,
-      rotate: -900,
+      x: exitX,
+      // Moving right: rotate forward (adds +720deg from the prior -660deg)
+      rotate: 60,
       transition: {
         x: { duration: 1.6, ease: [0.25, 0.1, 0.25, 1] },
         rotate: { duration: 1.6, ease: "linear" },
       },
     });
 
-    // Show glow effect
-    setShowGlow(true);
+    // No glow if we exit the stage
+    setShowGlow(false);
     setIsAnimating(false);
   }, [controls, isAnimating, onImpact]);
 
