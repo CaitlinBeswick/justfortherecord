@@ -302,7 +302,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       {trailControls.map((tc, index) => (
         <motion.div
           key={`trail-${index}`}
-          initial={false}
+          initial={{ x: 9999 }}
           animate={tc}
           className="absolute top-1/2 left-0 pointer-events-none"
           style={{ 
@@ -319,7 +319,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       
       {/* Main vinyl */}
       <motion.div
-        initial={false}
+        initial={{ x: 9999 }}
         animate={controls}
         onClick={handleClick}
         className="absolute top-1/2 left-0 pointer-events-auto cursor-pointer"
