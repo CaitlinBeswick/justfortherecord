@@ -80,6 +80,19 @@ serve(async (req) => {
       }
     }
 
+    // Update the app_updates record with broadcast info
+    const { error: updateError } = await supabase
+      .from('app_updates')
+      .update({
+        broadcasted_at: new Date().toISOString(),
+        broadcast_count: notificationsSent,
+      })
+      .eq('id', app_update_id);
+
+    if (updateError) {
+      console.error('Failed to update broadcast status:', updateError);
+    }
+
     console.log(`Broadcasted app update to ${notificationsSent} users`);
 
     return new Response(
