@@ -20,11 +20,6 @@ const Pricing = () => {
 
         <PricingCard />
 
-        <div className="mt-16 text-center text-sm text-muted-foreground">
-          <p>
-            Questions? <a href="mailto:support@justfortherecord.app" className="text-primary hover:underline">Contact us</a>
-          </p>
-        </div>
       </main>
       <Footer />
     </div>
