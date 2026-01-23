@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, useAnimation } from "framer-motion";
+import { motion, useAnimation, useMotionValue, useTransform } from "framer-motion";
 
 interface RollingVinylLogoProps {
   onImpact?: () => void;
@@ -24,8 +24,14 @@ const isCompactMode = (availableWidth: number) => availableWidth < 360;
 const MOBILE_BREAKPOINT = 480;
 const MOBILE_MEDIA_QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`;
 
+// Trail configuration
+const TRAIL_COUNT = 4;
+const TRAIL_DELAYS = [0.03, 0.06, 0.09, 0.12]; // seconds behind main vinyl
+const TRAIL_OPACITIES = [0.25, 0.18, 0.12, 0.06];
+
 export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
+  const trailControls = [useAnimation(), useAnimation(), useAnimation(), useAnimation()];
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
@@ -96,6 +102,26 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     };
   }, [getAvailableWidth, isAnimating]);
 
+  // Helper to animate trail with delay
+  const animateTrailWithDelay = (
+    trailIndex: number,
+    targetX: number,
+    targetRotate: number,
+    duration: number
+  ) => {
+    const delay = TRAIL_DELAYS[trailIndex];
+    setTimeout(() => {
+      trailControls[trailIndex].start({
+        x: targetX,
+        rotate: targetRotate,
+        transition: {
+          x: { duration },
+          rotate: { duration, ease: "linear" },
+        },
+      });
+    }, delay * 1000);
+  };
+
   const runAnimation = useCallback(async () => {
     // Double-check mobile state at animation start
     if (isAnimating || isMobileRef.current) return;
@@ -129,8 +155,14 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     const pauseDuration = compact ? 200 : 400;
     const rollOutDuration = compact ? 1.0 : 1.6;
 
-    // Reset position
+    // Reset all positions (main + trails)
     await controls.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 });
+    trailControls.forEach(tc => tc.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 }));
+
+    // Start trail animations with delays
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+      animateTrailWithDelay(i, impactX, compact ? -540 : -720, rollInDuration);
+    }
 
     // Roll in from right to center (negative rotation = clockwise when viewed, rolling left)
     await controls.start({
@@ -142,7 +174,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       },
     });
 
-    // Impact! Squash effect
+    // Impact! Squash effect (trails catch up during this pause)
     await controls.start({
       scaleX: 1.2,
       scaleY: 0.85,
@@ -158,6 +190,11 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       transition: { duration: 0.1, ease: "easeInOut" },
     });
 
+    // Start trail animations for bounce
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+      animateTrailWithDelay(i, impactX + bounceAmount, compact ? -480 : -620, bounceBackDuration);
+    }
+
     // Bounce back slightly to the RIGHT (higher x)
     await controls.start({
       x: impactX + bounceAmount,
@@ -172,6 +209,11 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       },
     });
 
+    // Start trail animations for settle
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+      animateTrailWithDelay(i, impactX + bounceAmount * 0.5, compact ? -510 : -660, settleDuration);
+    }
+
     // Small settle back toward center
     await controls.start({
       x: impactX + bounceAmount * 0.5,
@@ -185,6 +227,11 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, pauseDuration));
 
+    // Start trail animations for exit
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+      animateTrailWithDelay(i, exitX, compact ? 30 : 60, rollOutDuration);
+    }
+
     // Roll RIGHT and exit off-screen
     await controls.start({
       x: exitX,
@@ -197,7 +244,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     setShowGlow(false);
     setIsAnimating(false);
-  }, [controls, getAvailableWidth, isAnimating, onImpact]);
+  }, [controls, getAvailableWidth, isAnimating, onImpact, trailControls]);
 
   // Run animation on mount and when key changes (only on non-mobile)
   useEffect(() => {
@@ -218,8 +265,14 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   }
 
   // SVG vinyl logo - uses current size
-  const VinylSVG = () => (
-    <svg width={size} height={size} viewBox="0 0 64 64" className="drop-shadow-lg">
+  const VinylSVG = ({ isTrail = false }: { isTrail?: boolean }) => (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 64 64" 
+      className={isTrail ? "" : "drop-shadow-lg"}
+      style={isTrail ? { filter: "blur(2px)" } : undefined}
+    >
       <circle cx="32" cy="32" r="30" fill="#1a1a1a" />
       <circle cx="32" cy="32" r="26" fill="none" stroke="#333" strokeWidth="0.5" />
       <circle cx="32" cy="32" r="22" fill="none" stroke="#333" strokeWidth="0.5" />
@@ -232,9 +285,26 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
   return (
     <div ref={containerRef} className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+      {/* Trail elements - render behind main vinyl */}
+      {trailControls.map((tc, index) => (
+        <motion.div
+          key={`trail-${index}`}
+          initial={false}
+          animate={tc}
+          className="absolute top-1/2 left-0 pointer-events-none"
+          style={{ 
+            marginTop: -size / 2,
+            width: size,
+            height: size,
+            opacity: TRAIL_OPACITIES[index],
+          }}
+        >
+          <VinylSVG isTrail />
+        </motion.div>
+      ))}
+      
+      {/* Main vinyl */}
       <motion.div
-        // We drive position via `controls.set()` inside `runAnimation()` to avoid
-        // locking in a desktop-sized initial render on mobile.
         initial={false}
         animate={controls}
         onClick={handleClick}
