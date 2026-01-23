@@ -117,8 +117,8 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     const startX = cw + currentSize + offscreenOffset;
     // Impact at center of container (where text is)
     const impactX = cw * 0.5 - currentSize / 2;
-    // Rest position at 21% from left (matching the outline)
-    const restX = cw * 0.21 - currentSize / 2;
+    // Exit off-screen to the right
+    const exitX = cw + currentSize + offscreenOffset;
     // Bounce amount (smaller for compact)
     const bounceAmount = compact ? currentSize * 0.25 : currentSize * 0.4;
 
@@ -127,7 +127,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     const bounceBackDuration = compact ? 0.3 : 0.4;
     const settleDuration = compact ? 0.15 : 0.25;
     const pauseDuration = compact ? 200 : 400;
-    const rollBackDuration = compact ? 0.8 : 1.2;
+    const rollOutDuration = compact ? 1.0 : 1.6;
 
     // Reset position
     await controls.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 });
@@ -185,24 +185,17 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, pauseDuration));
 
-    // Roll LEFT to rest position over the outline (at 21%)
-    const distanceToRest = (impactX + bounceAmount * 0.5) - restX;
-    const additionalRotation = (distanceToRest / (currentSize * Math.PI)) * 360;
-    
+    // Roll RIGHT and exit off-screen
     await controls.start({
-      x: restX,
-      rotate: compact ? -510 - additionalRotation : -660 - additionalRotation,
+      x: exitX,
+      rotate: compact ? 30 : 60,
       transition: {
-        x: { duration: rollBackDuration, ease: [0.25, 0.1, 0.25, 1] },
-        rotate: { duration: rollBackDuration, ease: "linear" },
+        x: { duration: rollOutDuration, ease: [0.25, 0.1, 0.25, 1] },
+        rotate: { duration: rollOutDuration, ease: "linear" },
       },
     });
 
-    // Small pause before glow
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    // Activate the red glow!
-    setShowGlow(true);
+    setShowGlow(false);
     setIsAnimating(false);
   }, [controls, getAvailableWidth, isAnimating, onImpact]);
 
