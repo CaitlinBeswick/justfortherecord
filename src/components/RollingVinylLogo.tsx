@@ -22,6 +22,7 @@ const isCompactMode = (availableWidth: number) => availableWidth < 360;
 
 // Mobile threshold - hide animation on phones
 const MOBILE_BREAKPOINT = 480;
+const MOBILE_MEDIA_QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`;
 
 export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
@@ -32,13 +33,45 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const [size, setSize] = useState(() => getResponsiveSize(window.innerWidth));
   
   // Use a ref to track mobile state to avoid stale closures in animation
-  const isMobileRef = useRef(window.innerWidth < MOBILE_BREAKPOINT);
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
+  const getIsMobile = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia?.(MOBILE_MEDIA_QUERY).matches ?? window.innerWidth < MOBILE_BREAKPOINT;
+  }, []);
+
+  const isMobileRef = useRef(getIsMobile());
+  const [isMobile, setIsMobile] = useState(() => getIsMobile());
 
   const getAvailableWidth = useCallback(() => {
     // Prefer the actual containing block width.
     return containerRef.current?.clientWidth ?? window.innerWidth;
   }, []);
+
+  // Track mobile via media query (more reliable than measuring container width on some devices/browsers)
+  useEffect(() => {
+    const mql = window.matchMedia?.(MOBILE_MEDIA_QUERY);
+
+    const sync = () => {
+      const mobile = mql?.matches ?? window.innerWidth < MOBILE_BREAKPOINT;
+      isMobileRef.current = mobile;
+      setIsMobile(mobile);
+    };
+
+    sync();
+
+    if (!mql) return;
+
+    // Safari <14 uses addListener/removeListener
+    // eslint-disable-next-line deprecation/deprecation
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", sync);
+      return () => mql.removeEventListener("change", sync);
+    }
+
+    // eslint-disable-next-line deprecation/deprecation
+    mql.addListener(sync);
+    // eslint-disable-next-line deprecation/deprecation
+    return () => mql.removeListener(sync);
+  }, [getIsMobile]);
 
   // Update size on resize and ensure correct initial size on mount
   useEffect(() => {
@@ -48,9 +81,6 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     const update = () => {
       const width = getAvailableWidth();
-      const mobile = width < MOBILE_BREAKPOINT;
-      isMobileRef.current = mobile;
-      setIsMobile(mobile);
       if (!isAnimating) setSize(getResponsiveSize(width));
     };
 
