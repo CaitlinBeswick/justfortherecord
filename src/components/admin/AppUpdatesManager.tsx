@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
-import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell, Wand2, FlaskConical } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell, Wand2, FlaskConical, RotateCcw, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
+
 interface AppUpdate {
   id: string;
   title: string;
@@ -44,6 +45,8 @@ interface AppUpdate {
   is_active: boolean;
   link?: string | null;
   created_at: string;
+  broadcasted_at: string | null;
+  broadcast_count: number;
 }
 
 interface FormData {
@@ -79,6 +82,7 @@ export function AppUpdatesManager() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [broadcastingId, setBroadcastingId] = useState<string | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [recallingId, setRecallingId] = useState<string | null>(null);
   const [aiDraft, setAiDraft] = useState<AIDraftState>({
     isOpen: false,
     briefNote: "",
@@ -208,6 +212,9 @@ export function AppUpdatesManager() {
 
       if (error) throw error;
 
+      // Invalidate to refresh the broadcast status
+      queryClient.invalidateQueries({ queryKey: ["app-updates"] });
+
       toast({
         title: "Notification sent!",
         description: `Broadcasted to ${data?.notificationsSent || 0} users.`,
@@ -221,6 +228,35 @@ export function AppUpdatesManager() {
       });
     } finally {
       setBroadcastingId(null);
+    }
+  };
+
+  const handleRecall = async (update: AppUpdate) => {
+    setRecallingId(update.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('recall-app-update', {
+        body: { app_update_id: update.id },
+      });
+
+      if (error) throw error;
+
+      // Invalidate to refresh the broadcast status
+      queryClient.invalidateQueries({ queryKey: ["app-updates"] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
+      toast({
+        title: "Notifications recalled",
+        description: `Removed ${data?.notificationsDeleted || 0} notifications from users.`,
+      });
+    } catch (err) {
+      console.error('Failed to recall:', err);
+      toast({
+        title: "Failed to recall",
+        description: "Could not remove notifications",
+        variant: "destructive",
+      });
+    } finally {
+      setRecallingId(null);
     }
   };
 
@@ -345,9 +381,20 @@ export function AppUpdatesManager() {
                           Inactive
                         </Badge>
                       )}
+                      {update.broadcasted_at && (
+                        <Badge className="text-xs bg-green-500/10 text-green-600 border-green-500/20 gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Sent to {update.broadcast_count} users
+                        </Badge>
+                      )}
                     </div>
                     <CardDescription className="text-xs">
                       {format(new Date(update.created_at), "MMM d, yyyy")}
+                      {update.broadcasted_at && (
+                        <span className="ml-2 text-green-600">
+                          • Broadcasted {format(new Date(update.broadcasted_at), "MMM d 'at' h:mm a")}
+                        </span>
+                      )}
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-1">
@@ -364,19 +411,35 @@ export function AppUpdatesManager() {
                         <FlaskConical className="h-4 w-4 text-muted-foreground" />
                       )}
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleBroadcast(update)}
-                      disabled={broadcastingId === update.id}
-                      title="Send to all users' notification bell"
-                    >
-                      {broadcastingId === update.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Bell className="h-4 w-4" />
-                      )}
-                    </Button>
+                    {update.broadcasted_at ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRecall(update)}
+                        disabled={recallingId === update.id}
+                        title="Recall notifications from all users"
+                      >
+                        {recallingId === update.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RotateCcw className="h-4 w-4 text-orange-500" />
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleBroadcast(update)}
+                        disabled={broadcastingId === update.id}
+                        title="Send to all users' notification bell"
+                      >
+                        {broadcastingId === update.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Bell className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(update)}>
                       <Pencil className="h-4 w-4" />
                     </Button>

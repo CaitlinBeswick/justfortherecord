@@ -150,6 +150,8 @@ export type Database = {
       }
       app_updates: {
         Row: {
+          broadcast_count: number | null
+          broadcasted_at: string | null
           created_at: string
           description: string
           id: string
@@ -159,6 +161,8 @@ export type Database = {
           version: string | null
         }
         Insert: {
+          broadcast_count?: number | null
+          broadcasted_at?: string | null
           created_at?: string
           description: string
           id?: string
@@ -168,6 +172,8 @@ export type Database = {
           version?: string | null
         }
         Update: {
+          broadcast_count?: number | null
+          broadcasted_at?: string | null
           created_at?: string
           description?: string
           id?: string
