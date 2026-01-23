@@ -20,6 +20,9 @@ const getResponsiveSize = (availableWidth: number) => {
 // Check if we're in compact mobile mode (reduced animation)
 const isCompactMode = (availableWidth: number) => availableWidth < 360;
 
+// Mobile threshold - hide animation on phones
+const MOBILE_BREAKPOINT = 480;
+
 export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -27,7 +30,10 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const [animationKey, setAnimationKey] = useState(0);
   const [showGlow, setShowGlow] = useState(false);
   const [size, setSize] = useState(() => getResponsiveSize(window.innerWidth));
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 480);
+  
+  // Use a ref to track mobile state to avoid stale closures in animation
+  const isMobileRef = useRef(window.innerWidth < MOBILE_BREAKPOINT);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
 
   const getAvailableWidth = useCallback(() => {
     // Prefer the actual containing block width.
@@ -42,7 +48,9 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     const update = () => {
       const width = getAvailableWidth();
-      setIsMobile(width < 480);
+      const mobile = width < MOBILE_BREAKPOINT;
+      isMobileRef.current = mobile;
+      setIsMobile(mobile);
       if (!isAnimating) setSize(getResponsiveSize(width));
     };
 
@@ -59,9 +67,13 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   }, [getAvailableWidth, isAnimating]);
 
   const runAnimation = useCallback(async () => {
-    if (isAnimating) return;
+    // Double-check mobile state at animation start
+    if (isAnimating || isMobileRef.current) return;
 
     const cw = getAvailableWidth();
+    
+    // Also check width directly in case ref wasn't updated
+    if (cw < MOBILE_BREAKPOINT) return;
     const currentSize = getResponsiveSize(cw);
     const compact = isCompactMode(cw);
     setSize(currentSize);
