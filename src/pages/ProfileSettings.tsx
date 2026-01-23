@@ -1088,18 +1088,7 @@ const ProfileSettings = () => {
 
               <Separator className="my-6" />
 
-              {/* Listening Insights Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold text-foreground">Listening Insights</h2>
-                </div>
-                <ProInsights />
-              </div>
-
-              <Separator className="my-6" />
-
-              {/* Annual Stats - Collapsible */}
+              {/* Listening Stats - Combined Section */}
               <div className="space-y-4">
                 <button
                   type="button"
@@ -1107,8 +1096,8 @@ const ProfileSettings = () => {
                   className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-semibold text-foreground">Year in Review</h2>
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Listening Stats</h2>
                   </div>
                   {isStatsExpanded ? (
                     <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -1122,8 +1111,10 @@ const ProfileSettings = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="pl-4 border-l-2 border-primary/20"
+                    className="space-y-8"
                   >
+                    <ProInsights />
+                    <Separator />
                     <AnnualStats />
                   </motion.div>
                 )}
