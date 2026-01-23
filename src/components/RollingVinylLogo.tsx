@@ -110,18 +110,15 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     setIsAnimating(true);
     setShowGlow(false);
 
-    // IMPORTANT: use the hero section width (containing block) so we match the outline's % positioning.
-    // (already computed above)
-    
     // For compact mode, reduce animation distances
     const offscreenOffset = compact ? 20 : 50;
     
     // Start off-screen to the right
     const startX = cw + currentSize + offscreenOffset;
-    // Impact at center of container
+    // Impact at center of container (where text is)
     const impactX = cw * 0.5 - currentSize / 2;
-    // Exit off-screen to the right
-    const exitX = cw + currentSize + offscreenOffset;
+    // Rest position at 21% from left (matching the outline)
+    const restX = cw * 0.21 - currentSize / 2;
     // Bounce amount (smaller for compact)
     const bounceAmount = compact ? currentSize * 0.25 : currentSize * 0.4;
 
@@ -130,7 +127,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     const bounceBackDuration = compact ? 0.3 : 0.4;
     const settleDuration = compact ? 0.15 : 0.25;
     const pauseDuration = compact ? 200 : 400;
-    const rollOutDuration = compact ? 1.0 : 1.6;
+    const rollBackDuration = compact ? 0.8 : 1.2;
 
     // Reset position
     await controls.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 });
@@ -188,19 +185,24 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, pauseDuration));
 
-    // Roll RIGHT and exit off-screen
+    // Roll LEFT to rest position over the outline (at 21%)
+    const distanceToRest = (impactX + bounceAmount * 0.5) - restX;
+    const additionalRotation = (distanceToRest / (currentSize * Math.PI)) * 360;
+    
     await controls.start({
-      x: exitX,
-      // Moving right: rotate forward (adds +720deg from the prior -660deg)
-      rotate: compact ? 30 : 60,
+      x: restX,
+      rotate: compact ? -510 - additionalRotation : -660 - additionalRotation,
       transition: {
-        x: { duration: rollOutDuration, ease: [0.25, 0.1, 0.25, 1] },
-        rotate: { duration: rollOutDuration, ease: "linear" },
+        x: { duration: rollBackDuration, ease: [0.25, 0.1, 0.25, 1] },
+        rotate: { duration: rollBackDuration, ease: "linear" },
       },
     });
 
-    // No glow if we exit the stage
-    setShowGlow(false);
+    // Small pause before glow
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Activate the red glow!
+    setShowGlow(true);
     setIsAnimating(false);
   }, [controls, getAvailableWidth, isAnimating, onImpact]);
 
