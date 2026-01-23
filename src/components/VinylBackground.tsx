@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 
 // Vintage label colors for variety
 const labelColors = [
@@ -9,6 +9,16 @@ const labelColors = [
   { fill: 'hsl(0, 60%, 50%)', stroke: 'hsl(0, 65%, 40%)' },     // Red (Capitol-style)
   { fill: 'hsl(280, 40%, 55%)', stroke: 'hsl(280, 45%, 45%)' }, // Purple (Motown-style)
 ];
+
+// Calculate responsive size for hero vinyl (matches RollingVinylLogo)
+const getResponsiveHeroSize = () => {
+  const vw = window.innerWidth;
+  if (vw < 480) return 80;
+  if (vw < 640) return 100;
+  if (vw < 768) return 120;
+  if (vw < 1024) return 150;
+  return 195;
+};
 
 // Realistic vinyl record SVG with grooves, colored label, and highlight
 const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolean; colorIndex?: number }) => {
@@ -260,9 +270,19 @@ interface VinylBackgroundProps {
   className?: string;
   fadeHeight?: string;
   density?: 'sparse' | 'dense';
+  showHeroVinyl?: boolean; // Responsive vinyl that aligns with RollingVinylLogo
 }
 
-export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse" }: VinylBackgroundProps) {
+export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false }: VinylBackgroundProps) {
+  // Responsive hero vinyl size (matches RollingVinylLogo)
+  const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
+  
+  useEffect(() => {
+    const handleResize = () => setHeroSize(getResponsiveHeroSize());
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Select vinyl arrays based on density
   const accentVinyls = density === 'dense' ? denseAccentVinyls : sparseAccentVinyls;
   const mediumVinyls = density === 'dense' ? denseMediumVinyls : sparseMediumVinyls;
@@ -290,6 +310,25 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
         height: fadeHeight,
       }}
     >
+      {/* Hero vinyl - responsive, aligns with RollingVinylLogo rest position */}
+      {showHeroVinyl && (
+        <div
+          className="absolute animate-spin-slow vinyl-disc"
+          style={{
+            top: '50%',
+            left: '21%',
+            transform: 'translate(-50%, -50%)',
+            width: `${heroSize}px`,
+            height: `${heroSize}px`,
+            opacity: 0.15,
+            animationDuration: '70s',
+            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
+          }}
+        >
+          <VinylSVG detailed colorIndex={4} />
+        </div>
+      )}
+
       {/* Large accent vinyls spread across page */}
       {accentVinyls.map((vinyl, i) => (
         <div
