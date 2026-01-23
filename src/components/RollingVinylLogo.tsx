@@ -43,14 +43,19 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     const vw = window.innerWidth;
     
-    // Reset position - start off screen to the right (left-anchored coordinate system)
-    await controls.set({ x: vw + currentSize + 50, rotate: 0, scaleX: 1, scaleY: 1 });
+    // Start off-screen to the right
+    const startX = vw + 50;
+    // Impact at center of viewport (center the vinyl there)
+    const impactX = (vw - currentSize) / 2;
+    // Rest at 21% from left (center the vinyl there)
+    const restX = vw * 0.21 - currentSize / 2;
+    // Bounce amount
+    const bounceAmount = currentSize * 0.4;
 
-    // Impact point: center of viewport
-    // x is translateX of an element laid out from the left, so x represents its LEFT edge.
-    const impactX = vw * 0.5 - currentSize / 2;
+    // Reset position
+    await controls.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 });
 
-    // Roll in from right to center
+    // Roll in from right to center (negative rotation = clockwise when viewed, rolling left)
     await controls.start({
       x: impactX,
       rotate: -720,
@@ -76,10 +81,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       transition: { duration: 0.1, ease: "easeInOut" },
     });
 
-    // Bounce amount relative to size
-    const bounceAmount = currentSize * 0.4;
-    
-    // Restore shape while bouncing back
+    // Bounce back slightly to the RIGHT (higher x)
     await controls.start({
       x: impactX + bounceAmount,
       rotate: -620,
@@ -93,9 +95,9 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       },
     });
 
-    // Small settle
+    // Small settle back toward center
     await controls.start({
-      x: impactX + bounceAmount * 0.625,
+      x: impactX + bounceAmount * 0.5,
       rotate: -660,
       transition: {
         x: { duration: 0.25, ease: "easeInOut" },
@@ -106,11 +108,10 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    // Rest position: align center to 21% from left edge (match VinylBackground hero vinyl)
-    const restX = vw * 0.21 - currentSize / 2;
+    // Roll LEFT to rest position at 21%
     await controls.start({
       x: restX,
-      rotate: -200,
+      rotate: -900,
       transition: {
         x: { duration: 1.6, ease: [0.25, 0.1, 0.25, 1] },
         rotate: { duration: 1.6, ease: "linear" },
