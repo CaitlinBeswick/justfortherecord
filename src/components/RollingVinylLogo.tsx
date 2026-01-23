@@ -148,24 +148,24 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   );
 
   return (
-    <div
-      className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none z-10 overflow-visible w-full"
-    >
-      <div className="relative overflow-visible w-full">
-        <motion.div
-          initial={{ x: window.innerWidth + size + 50, rotate: 0 }}
-          animate={controls}
-          onClick={handleClick}
-          className="relative pointer-events-auto cursor-pointer"
-          whileHover={{ scale: isAnimating ? 1 : 1.05 }}
-          title="Click to replay animation"
-          style={{ originX: 0.5, originY: 0.5 }}
-        >
-          <div className={`transition-all duration-700 ${showGlow ? 'drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]' : ''}`}>
-            <VinylSVG />
-          </div>
-        </motion.div>
-      </div>
+    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+      <motion.div
+        initial={{ x: window.innerWidth + size + 50, y: 0, rotate: 0 }}
+        animate={controls}
+        onClick={handleClick}
+        className="absolute top-1/2 left-0 pointer-events-auto cursor-pointer"
+        style={{ 
+          marginTop: -size / 2,
+          width: size,
+          height: size,
+        }}
+        whileHover={{ scale: isAnimating ? 1 : 1.05 }}
+        title="Click to replay animation"
+      >
+        <div className={`transition-all duration-700 ${showGlow ? 'drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]' : ''}`}>
+          <VinylSVG />
+        </div>
+      </motion.div>
     </div>
   );
 }
