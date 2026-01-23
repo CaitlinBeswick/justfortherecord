@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, TrendingDown, Flame, Clock, Music2, Repeat, Star, Calendar, Lightbulb } from "lucide-react";
 import { useMemo } from "react";
-import { ProFeatureGate } from "@/components/ProFeatureGate";
+
 
 interface ProInsightsProps {
   userId?: string;
@@ -364,13 +364,5 @@ export function ProInsights({ userId }: ProInsightsProps) {
     </motion.div>
   );
 
-  return (
-    <ProFeatureGate
-      featureName="Pro Insights"
-      description="Get personalized listening trends, streak tracking, and smart recommendations with Pro."
-      blur
-    >
-      {content}
-    </ProFeatureGate>
-  );
+  return content;
 }
