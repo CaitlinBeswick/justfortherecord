@@ -13,17 +13,17 @@ export function HeroVinylEmblem({ className = "" }: HeroVinylEmblemProps) {
       className={`absolute pointer-events-none select-none ${className}`}
       style={{
         top: "50%",
-        left: "15%",
-        transform: "translate(-50%, -50%)",
+        right: "8%",
+        transform: "translateY(-50%)",
       }}
     >
       {/* Outer glow */}
       <div className="absolute inset-0 blur-2xl opacity-20 bg-primary rounded-full scale-110" />
       
-      {/* Main vinyl SVG */}
+      {/* Main vinyl SVG with slow spin animation */}
       <svg
         viewBox="0 0 120 120"
-        className="w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 drop-shadow-lg"
+        className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-52 lg:h-52 drop-shadow-lg animate-vinyl-spin"
         aria-hidden="true"
       >
         {/* Outer record */}
