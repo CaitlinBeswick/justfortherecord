@@ -301,6 +301,19 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     return smallVinyls.map(() => Math.floor(Math.random() * labelColors.length));
   }, [smallVinyls.length]);
 
+  // VinylBackground often extends beyond the section height (e.g. 150%).
+  // To place the hero vinyl at the *visual* mid-point of the section, we compensate for that.
+  const heroTop = useMemo(() => {
+    if (!showHeroVinyl) return '50%';
+    const match = /^([0-9.]+)%$/.exec(fadeHeight.trim());
+    if (!match) return '50%';
+    const multiplier = Number(match[1]) / 100;
+    if (!Number.isFinite(multiplier) || multiplier <= 0) return '50%';
+    // We want 50% of section height, expressed as a % of the extended background height.
+    const pct = 50 / multiplier;
+    return `${pct}%`;
+  }, [fadeHeight, showHeroVinyl]);
+
   return (
     <div 
       className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
@@ -315,7 +328,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
         <div
           className="absolute animate-spin-slow vinyl-disc"
           style={{
-            top: '50%',
+            top: heroTop,
             left: '21%',
             transform: 'translate(-50%, -50%)',
             width: `${heroSize}px`,
