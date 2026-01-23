@@ -109,6 +109,66 @@ export function useActivityInteractions(activityType: ActivityType, activityId: 
   const likeCount = likes.length;
   const commentCount = comments.length;
 
+  // Helper to get activity owner
+  const getActivityOwner = async (): Promise<string | null> => {
+    let result: { user_id: string } | null = null;
+    
+    if (activityType === 'diary_entry') {
+      const { data } = await supabase
+        .from('diary_entries')
+        .select('user_id')
+        .eq('id', activityId)
+        .single();
+      result = data;
+    } else if (activityType === 'album_rating') {
+      const { data } = await supabase
+        .from('album_ratings')
+        .select('user_id')
+        .eq('id', activityId)
+        .single();
+      result = data;
+    } else if (activityType === 'artist_follow') {
+      const { data } = await supabase
+        .from('artist_follows')
+        .select('user_id')
+        .eq('id', activityId)
+        .single();
+      result = data;
+    }
+    
+    return result?.user_id ?? null;
+  };
+
+  // Create notification for activity owner
+  const createNotification = async (type: 'like' | 'comment', activityOwnerId: string) => {
+    if (!user || activityOwnerId === user.id) return; // Don't notify self
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name, username')
+      .eq('id', user.id)
+      .single();
+
+    const displayName = profile?.display_name || profile?.username || 'Someone';
+    const activityLabel = activityType.replace('_', ' ');
+
+    const notification = {
+      user_id: activityOwnerId,
+      type: type === 'like' ? 'activity_like' : 'activity_comment',
+      title: type === 'like' ? 'New like on your activity' : 'New comment on your activity',
+      message: type === 'like' 
+        ? `${displayName} liked your ${activityLabel}`
+        : `${displayName} commented on your ${activityLabel}`,
+      data: {
+        activity_type: activityType,
+        activity_id: activityId,
+        from_user_id: user.id,
+      },
+    };
+
+    await supabase.from('notifications').insert(notification);
+  };
+
   // Toggle like mutation
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -135,6 +195,12 @@ export function useActivityInteractions(activityType: ActivityType, activityId: 
           });
 
         if (error) throw error;
+
+        // Create notification for activity owner
+        const ownerId = await getActivityOwner();
+        if (ownerId) {
+          await createNotification('like', ownerId);
+        }
       }
     },
     onSuccess: () => {
@@ -165,6 +231,43 @@ export function useActivityInteractions(activityType: ActivityType, activityId: 
         });
 
       if (error) throw error;
+
+      // Get activity owner for notification
+      const ownerId = await getActivityOwner();
+      if (ownerId) {
+        await createNotification('comment', ownerId);
+      }
+
+      // If replying, also notify the parent comment author
+      if (parentCommentId) {
+        const { data: parentComment } = await supabase
+          .from('activity_comments')
+          .select('user_id')
+          .eq('id', parentCommentId)
+          .single();
+
+        if (parentComment && parentComment.user_id !== user.id && parentComment.user_id !== ownerId) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('display_name, username')
+            .eq('id', user.id)
+            .single();
+
+          const displayName = profile?.display_name || profile?.username || 'Someone';
+
+          await supabase.from('notifications').insert({
+            user_id: parentComment.user_id,
+            type: 'comment_reply',
+            title: 'New reply to your comment',
+            message: `${displayName} replied to your comment`,
+            data: {
+              activity_type: activityType,
+              activity_id: activityId,
+              from_user_id: user.id,
+            },
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activity-comments', activityType, activityId] });
