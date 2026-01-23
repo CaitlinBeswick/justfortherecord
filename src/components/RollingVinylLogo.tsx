@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 
 interface RollingVinylLogoProps {
@@ -17,6 +17,7 @@ const getResponsiveSize = () => {
 
 export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const [showGlow, setShowGlow] = useState(false);
@@ -41,14 +42,15 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     setIsAnimating(true);
     setShowGlow(false);
 
-    const vw = window.innerWidth;
+    // IMPORTANT: use the hero section width (containing block) so we match the outline's % positioning.
+    const cw = containerRef.current?.clientWidth ?? window.innerWidth;
     
     // Start off-screen to the right
-    const startX = vw + 50;
-    // Impact at center of viewport (center the vinyl there)
-    const impactX = (vw - currentSize) / 2;
-    // Rest at 21% from left (center the vinyl there)
-    const restX = vw * 0.21 - currentSize / 2;
+    const startX = cw + currentSize + 50;
+    // Impact at center of container
+    const impactX = cw * 0.5 - currentSize / 2;
+    // Rest at 21% from left of container
+    const restX = cw * 0.21 - currentSize / 2;
     // Bounce amount
     const bounceAmount = currentSize * 0.4;
 
@@ -149,7 +151,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   );
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+    <div ref={containerRef} className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
       <motion.div
         initial={{ x: window.innerWidth + size + 50, y: 0, rotate: 0 }}
         animate={controls}
