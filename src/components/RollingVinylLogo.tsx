@@ -21,10 +21,13 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const [showGlow, setShowGlow] = useState(false);
-  const [size, setSize] = useState(getResponsiveSize);
+  const [size, setSize] = useState(() => getResponsiveSize());
 
-  // Update size on resize
+  // Update size on resize and ensure correct initial size on mount
   useEffect(() => {
+    // Set correct size on mount (important for mobile)
+    setSize(getResponsiveSize());
+    
     const handleResize = () => {
       if (!isAnimating) {
         setSize(getResponsiveSize());
