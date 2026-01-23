@@ -8,12 +8,17 @@ interface RollingVinylLogoProps {
 // Calculate responsive size based on *available container width* (not window width).
 // This is important for mobile preview/iframes where window.innerWidth can be misleading.
 const getResponsiveSize = (availableWidth: number) => {
+  // Mobile-safe fallback: cap at 64px for very small screens
+  if (availableWidth < 360) return 64;
   if (availableWidth < 480) return 80;
   if (availableWidth < 640) return 100;
   if (availableWidth < 768) return 120;
   if (availableWidth < 1024) return 150;
   return 195;
 };
+
+// Check if we're in compact mobile mode (reduced animation)
+const isCompactMode = (availableWidth: number) => availableWidth < 360;
 
 export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const controls = useAnimation();
@@ -55,6 +60,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     const cw = getAvailableWidth();
     const currentSize = getResponsiveSize(cw);
+    const compact = isCompactMode(cw);
     setSize(currentSize);
     setIsAnimating(true);
     setShowGlow(false);
@@ -62,14 +68,24 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // IMPORTANT: use the hero section width (containing block) so we match the outline's % positioning.
     // (already computed above)
     
+    // For compact mode, reduce animation distances
+    const offscreenOffset = compact ? 20 : 50;
+    
     // Start off-screen to the right
-    const startX = cw + currentSize + 50;
+    const startX = cw + currentSize + offscreenOffset;
     // Impact at center of container
     const impactX = cw * 0.5 - currentSize / 2;
     // Exit off-screen to the right
-    const exitX = cw + currentSize + 50;
-    // Bounce amount
-    const bounceAmount = currentSize * 0.4;
+    const exitX = cw + currentSize + offscreenOffset;
+    // Bounce amount (smaller for compact)
+    const bounceAmount = compact ? currentSize * 0.25 : currentSize * 0.4;
+
+    // Animation durations (faster for compact mode)
+    const rollInDuration = compact ? 1.2 : 1.8;
+    const bounceBackDuration = compact ? 0.3 : 0.4;
+    const settleDuration = compact ? 0.15 : 0.25;
+    const pauseDuration = compact ? 200 : 400;
+    const rollOutDuration = compact ? 1.0 : 1.6;
 
     // Reset position
     await controls.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 });
@@ -77,10 +93,10 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Roll in from right to center (negative rotation = clockwise when viewed, rolling left)
     await controls.start({
       x: impactX,
-      rotate: -720,
+      rotate: compact ? -540 : -720,
       transition: {
-        x: { duration: 1.8, ease: [0.25, 0.1, 0.25, 1] },
-        rotate: { duration: 1.8, ease: "linear" },
+        x: { duration: rollInDuration, ease: [0.25, 0.1, 0.25, 1] },
+        rotate: { duration: rollInDuration, ease: "linear" },
       },
     });
 
@@ -103,12 +119,12 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Bounce back slightly to the RIGHT (higher x)
     await controls.start({
       x: impactX + bounceAmount,
-      rotate: -620,
+      rotate: compact ? -480 : -620,
       scaleX: 1,
       scaleY: 1,
       transition: {
-        x: { duration: 0.4, ease: "easeOut" },
-        rotate: { duration: 0.4, ease: "easeOut" },
+        x: { duration: bounceBackDuration, ease: "easeOut" },
+        rotate: { duration: bounceBackDuration, ease: "easeOut" },
         scaleX: { duration: 0.15, ease: "easeOut" },
         scaleY: { duration: 0.15, ease: "easeOut" },
       },
@@ -117,24 +133,24 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Small settle back toward center
     await controls.start({
       x: impactX + bounceAmount * 0.5,
-      rotate: -660,
+      rotate: compact ? -510 : -660,
       transition: {
-        x: { duration: 0.25, ease: "easeInOut" },
-        rotate: { duration: 0.25, ease: "easeInOut" },
+        x: { duration: settleDuration, ease: "easeInOut" },
+        rotate: { duration: settleDuration, ease: "easeInOut" },
       },
     });
 
     // Pause briefly
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, pauseDuration));
 
     // Roll RIGHT and exit off-screen
     await controls.start({
       x: exitX,
       // Moving right: rotate forward (adds +720deg from the prior -660deg)
-      rotate: 60,
+      rotate: compact ? 30 : 60,
       transition: {
-        x: { duration: 1.6, ease: [0.25, 0.1, 0.25, 1] },
-        rotate: { duration: 1.6, ease: "linear" },
+        x: { duration: rollOutDuration, ease: [0.25, 0.1, 0.25, 1] },
+        rotate: { duration: rollOutDuration, ease: "linear" },
       },
     });
 
