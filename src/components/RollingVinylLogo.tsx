@@ -39,7 +39,6 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const [showGlow, setShowGlow] = useState(false);
   const [showPulsingGlow, setShowPulsingGlow] = useState(false);
   const [size, setSize] = useState(() => getResponsiveSize(window.innerWidth));
-  const [isInitialized, setIsInitialized] = useState(false);
   
   // Use a ref to track mobile state to avoid stale closures in animation
   const getIsMobile = useCallback(() => {
@@ -162,9 +161,6 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Reset all positions (main + trails) - start off-screen right
     await controls.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 });
     trailControls.forEach(tc => tc.set({ x: startX, rotate: 0, scaleX: 1, scaleY: 1 }));
-    
-    // Mark as initialized so we show the vinyl
-    setIsInitialized(true);
 
     // Start trail animations with delays
     for (let i = 0; i < TRAIL_COUNT; i++) {
@@ -290,11 +286,6 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
       <circle cx="32" cy="32" r="2" fill={isTrail ? "hsl(var(--primary))" : "#fff"} />
     </svg>
   );
-
-  // Don't render until initialized (prevents showing vinyl at wrong position)
-  if (!isInitialized) {
-    return <div ref={containerRef} className="absolute inset-0 pointer-events-none z-10 overflow-hidden" />;
-  }
 
   return (
     <div ref={containerRef} className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
