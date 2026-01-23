@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 
 interface FavoriteAlbumsProps {
   userId?: string;
+  allowReorder?: boolean;
 }
 
 interface FavoriteSlot {
@@ -26,9 +27,10 @@ interface FavoriteSlot {
   artist_name: string | null;
 }
 
-export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
+export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsProps) => {
   const navigate = useNavigate();
   const { favorites, isLoading, isOwner, setFavorite, removeFavorite, isPending, reorderFavorites } = useFavoriteAlbums(userId);
+  const canReorder = isOwner && allowReorder;
   const [editingPosition, setEditingPosition] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -150,7 +152,7 @@ export const FavoriteAlbums = ({ userId }: FavoriteAlbumsProps) => {
       <div className="mt-6">
         <h3 className="text-sm font-medium text-muted-foreground mb-3">Favorite Albums</h3>
         
-        {isOwner && filledSlots.length > 1 ? (
+        {canReorder && filledSlots.length > 1 ? (
           <Reorder.Group
             axis="x"
             values={orderedSlots}
