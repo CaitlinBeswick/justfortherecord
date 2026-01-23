@@ -1,4 +1,4 @@
-import { Bell, Check, Trash2, X, Disc3, UserPlus, Sparkles } from "lucide-react";
+import { Bell, Check, Trash2, X, Disc3, UserPlus, Sparkles, Heart, MessageCircle } from "lucide-react";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -60,6 +60,11 @@ export function NotificationBell() {
         return <UserPlus className="h-4 w-4 text-primary" />;
       case 'app_update':
         return <Sparkles className="h-4 w-4 text-primary" />;
+      case 'activity_like':
+        return <Heart className="h-4 w-4 text-primary" />;
+      case 'activity_comment':
+      case 'comment_reply':
+        return <MessageCircle className="h-4 w-4 text-primary" />;
       default:
         return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
