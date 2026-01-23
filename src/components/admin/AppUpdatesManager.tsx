@@ -469,16 +469,34 @@ export function AppUpdatesManager() {
                   onChange={(e) => setFormData({ ...formData, link: e.target.value })}
                 >
                   <option value="">Select a destination...</option>
-                  <option value="/profile/settings">Settings</option>
-                  <option value="/whats-new">What's New</option>
-                  <option value="/search">Explore Music</option>
-                  <option value="/albums">Albums</option>
-                  <option value="/artists">Artists</option>
-                  <option value="/top-albums">Top 250 Albums</option>
-                  <option value="/top-artists">Top 250 Artists</option>
-                  <option value="/profile">Profile</option>
-                  <option value="/profile/diary">Diary</option>
-                  <option value="/profile/lists">Lists</option>
+                  <optgroup label="Home">
+                    <option value="/">Home</option>
+                  </optgroup>
+                  <optgroup label="Activity">
+                    <option value="/activity/following">Following Activity</option>
+                    <option value="/activity/you">Your Activity</option>
+                  </optgroup>
+                  <optgroup label="Discover">
+                    <option value="/search">Explore Music</option>
+                    <option value="/albums">Albums</option>
+                    <option value="/artists">Artists</option>
+                    <option value="/top-albums">Top 250 Albums</option>
+                    <option value="/top-artists">Top 250 Artists</option>
+                  </optgroup>
+                  <optgroup label="Profile">
+                    <option value="/profile">Profile</option>
+                    <option value="/profile/diary">Diary</option>
+                    <option value="/profile/to-listen">To Listen</option>
+                    <option value="/profile/albums">Albums</option>
+                    <option value="/profile/artists">Artists</option>
+                    <option value="/profile/lists">Lists</option>
+                    <option value="/profile/friends">Friends</option>
+                    <option value="/profile/settings">Settings</option>
+                  </optgroup>
+                  <optgroup label="Other">
+                    <option value="/whats-new">What's New</option>
+                    <option value="/pricing">Pricing</option>
+                  </optgroup>
                 </select>
               </div>
               <Input
