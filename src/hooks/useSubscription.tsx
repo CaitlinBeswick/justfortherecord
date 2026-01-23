@@ -21,11 +21,11 @@ interface SubscriptionContextType extends SubscriptionState {
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
-// Stripe product and price IDs
+// Stripe product and price IDs (LIVE MODE)
 export const STRIPE_CONFIG = {
-  product_id: "prod_TqRyALfsBLFHBj",
+  product_id: "prod_TqSrlvK1Q9mRcO",
   prices: {
-    monthly: "price_1Ssl4tGkkK5dX5nqaVQwBIar",
+    monthly: "price_1Sslw8KILKeJfkeH7oFahkOB",
     // yearly: "price_xxx" // Add when created in Stripe Dashboard
   }
 };
