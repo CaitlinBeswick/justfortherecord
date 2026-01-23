@@ -5,13 +5,13 @@ interface RollingVinylLogoProps {
   onImpact?: () => void;
 }
 
-// Calculate responsive size based on viewport width
-const getResponsiveSize = () => {
-  const vw = window.innerWidth;
-  if (vw < 480) return 80;
-  if (vw < 640) return 100;
-  if (vw < 768) return 120;
-  if (vw < 1024) return 150;
+// Calculate responsive size based on *available container width* (not window width).
+// This is important for mobile preview/iframes where window.innerWidth can be misleading.
+const getResponsiveSize = (availableWidth: number) => {
+  if (availableWidth < 480) return 80;
+  if (availableWidth < 640) return 100;
+  if (availableWidth < 768) return 120;
+  if (availableWidth < 1024) return 150;
   return 195;
 };
 
@@ -21,32 +21,46 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const [showGlow, setShowGlow] = useState(false);
-  const [size, setSize] = useState(() => getResponsiveSize());
+  const [size, setSize] = useState(() => getResponsiveSize(window.innerWidth));
+
+  const getAvailableWidth = useCallback(() => {
+    // Prefer the actual containing block width.
+    return containerRef.current?.clientWidth ?? window.innerWidth;
+  }, []);
 
   // Update size on resize and ensure correct initial size on mount
   useEffect(() => {
-    // Set correct size on mount (important for mobile)
-    setSize(getResponsiveSize());
-    
-    const handleResize = () => {
-      if (!isAnimating) {
-        setSize(getResponsiveSize());
-      }
+    // Observe the container so the size responds to layout/viewport changes reliably (esp. mobile previews).
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      if (!isAnimating) setSize(getResponsiveSize(getAvailableWidth()));
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isAnimating]);
+
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      ro.disconnect();
+    };
+  }, [getAvailableWidth, isAnimating]);
 
   const runAnimation = useCallback(async () => {
     if (isAnimating) return;
-    
-    const currentSize = getResponsiveSize();
+
+    const cw = getAvailableWidth();
+    const currentSize = getResponsiveSize(cw);
     setSize(currentSize);
     setIsAnimating(true);
     setShowGlow(false);
 
     // IMPORTANT: use the hero section width (containing block) so we match the outline's % positioning.
-    const cw = containerRef.current?.clientWidth ?? window.innerWidth;
+    // (already computed above)
     
     // Start off-screen to the right
     const startX = cw + currentSize + 50;
@@ -127,7 +141,7 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // No glow if we exit the stage
     setShowGlow(false);
     setIsAnimating(false);
-  }, [controls, isAnimating, onImpact]);
+  }, [controls, getAvailableWidth, isAnimating, onImpact]);
 
   // Run animation on mount and when key changes
   useEffect(() => {
@@ -157,7 +171,9 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   return (
     <div ref={containerRef} className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
       <motion.div
-        initial={{ x: window.innerWidth + size + 50, y: 0, rotate: 0 }}
+        // We drive position via `controls.set()` inside `runAnimation()` to avoid
+        // locking in a desktop-sized initial render on mobile.
+        initial={false}
         animate={controls}
         onClick={handleClick}
         className="absolute top-1/2 left-0 pointer-events-auto cursor-pointer"
