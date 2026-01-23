@@ -322,45 +322,6 @@ export function ProInsights({ userId }: ProInsightsProps) {
         </div>
       </div>
 
-      {/* Rating Insights */}
-      <div className="rounded-xl bg-card border border-border p-4">
-        <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-          <Star className="h-4 w-4 text-primary" />
-          Rating Insights
-        </h4>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Avg Rating</p>
-            <p className="font-medium text-foreground">{ratingInsights.avgRating || "—"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Albums Loved</p>
-            <p className="font-medium text-foreground">{ratingInsights.lovedCount}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Rated 4+</p>
-            <p className="font-medium text-foreground">{ratingInsights.highRatedCount}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Personalized Recommendations */}
-      {recommendations.length > 0 && (
-        <div className="rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 p-4">
-          <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Lightbulb className="h-4 w-4 text-primary" />
-            Personalized Insights
-          </h4>
-          <ul className="space-y-2">
-            {recommendations.map((rec, i) => (
-              <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                {rec}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </motion.div>
   );
 
