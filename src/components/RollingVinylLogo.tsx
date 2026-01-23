@@ -43,11 +43,12 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
 
     const vw = window.innerWidth;
     
-    // Reset position - start off screen to the right
-    await controls.set({ x: currentSize + 50, rotate: 0, scaleX: 1, scaleY: 1 });
+    // Reset position - start off screen to the right (left-anchored coordinate system)
+    await controls.set({ x: vw + currentSize + 50, rotate: 0, scaleX: 1, scaleY: 1 });
 
-    // Impact point - center of viewport (using percentage-based calculation)
-    const impactX = -(vw * 0.5) + currentSize / 2;
+    // Impact point: center of viewport
+    // x is translateX of an element laid out from the left, so x represents its LEFT edge.
+    const impactX = vw * 0.5 - currentSize / 2;
 
     // Roll in from right to center
     await controls.start({
@@ -105,8 +106,8 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    // Rest position - align with background vinyl at ~21% from left edge
-    const restX = -(vw * 0.21) + currentSize / 2;
+    // Rest position: align center to 21% from left edge (match VinylBackground hero vinyl)
+    const restX = vw * 0.21 - currentSize / 2;
     await controls.start({
       x: restX,
       rotate: -200,
@@ -147,13 +148,12 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
   );
 
   return (
-    <div 
-      className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none z-10 overflow-visible" 
-      style={{ width: "100vw" }}
+    <div
+      className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none z-10 overflow-visible w-full"
     >
-      <div className="relative flex justify-end overflow-visible">
+      <div className="relative overflow-visible w-full">
         <motion.div
-          initial={{ x: size + 50, rotate: 0 }}
+          initial={{ x: window.innerWidth + size + 50, rotate: 0 }}
           animate={controls}
           onClick={handleClick}
           className="relative pointer-events-auto cursor-pointer"

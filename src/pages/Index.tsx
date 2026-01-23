@@ -10,6 +10,7 @@ import { WelcomeTour } from "@/components/WelcomeTour";
 import { VinylBackground } from "@/components/VinylBackground";
 import { Footer } from "@/components/Footer";
 import { RollingVinylLogo } from "@/components/RollingVinylLogo";
+import { HeroVinylOutline } from "@/components/HeroVinylOutline";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -42,13 +43,14 @@ const Index = () => {
       <section className="relative pt-16 overflow-hidden">
         <div className="gradient-hero absolute inset-0" />
         
-        <VinylBackground density="sparse" showHeroVinyl />
+        <VinylBackground density="sparse" />
+        <HeroVinylOutline centerLeftPercent={21} />
+        
+        {/* Rolling Vinyl Animation (anchored to the hero section for consistent alignment) */}
+        <RollingVinylLogo onImpact={handleVinylImpact} />
         
         <div className="relative container mx-auto px-4 py-20">
-          <div className="relative">
-            {/* Rolling Vinyl Animation */}
-            <RollingVinylLogo onImpact={handleVinylImpact} />
-            
+           <div>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
