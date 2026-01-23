@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 
+type ExitDirection = 'exitRight' | 'exitLeft' | 'settle';
+
 interface RollingVinylLogoProps {
   onImpact?: () => void;
+  direction?: ExitDirection;
 }
 
 // Calculate responsive size based on viewport width
@@ -15,7 +18,7 @@ const getResponsiveSize = () => {
   return 195;
 };
 
-export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
+export function RollingVinylLogo({ onImpact, direction = 'settle' }: RollingVinylLogoProps) {
   const controls = useAnimation();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -49,8 +52,11 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     const startX = cw + currentSize + 50;
     // Impact at center of container
     const impactX = cw * 0.5 - currentSize / 2;
-    // Exit off-screen to the right
-    const exitX = cw + currentSize + 50;
+    // Exit positions
+    const exitRightX = cw + currentSize + 50;
+    const exitLeftX = -(currentSize + 50);
+    // Settle at 21% from left of container
+    const settleX = cw * 0.21 - currentSize / 2;
     // Bounce amount
     const bounceAmount = currentSize * 0.4;
 
@@ -110,21 +116,42 @@ export function RollingVinylLogo({ onImpact }: RollingVinylLogoProps) {
     // Pause briefly
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    // Roll RIGHT and exit off-screen
-    await controls.start({
-      x: exitX,
-      // Moving right: rotate forward (adds +720deg from the prior -660deg)
-      rotate: 60,
-      transition: {
-        x: { duration: 1.6, ease: [0.25, 0.1, 0.25, 1] },
-        rotate: { duration: 1.6, ease: "linear" },
-      },
-    });
+    // Final movement based on direction
+    if (direction === 'exitRight') {
+      await controls.start({
+        x: exitRightX,
+        rotate: 60, // Rolling right: positive rotation
+        transition: {
+          x: { duration: 1.6, ease: [0.25, 0.1, 0.25, 1] },
+          rotate: { duration: 1.6, ease: "linear" },
+        },
+      });
+      setShowGlow(false);
+    } else if (direction === 'exitLeft') {
+      await controls.start({
+        x: exitLeftX,
+        rotate: -1200, // Rolling left: more negative rotation
+        transition: {
+          x: { duration: 1.6, ease: [0.25, 0.1, 0.25, 1] },
+          rotate: { duration: 1.6, ease: "linear" },
+        },
+      });
+      setShowGlow(false);
+    } else {
+      // 'settle' - roll to 21% position
+      await controls.start({
+        x: settleX,
+        rotate: -900,
+        transition: {
+          x: { duration: 1.6, ease: [0.25, 0.1, 0.25, 1] },
+          rotate: { duration: 1.6, ease: "linear" },
+        },
+      });
+      setShowGlow(true);
+    }
 
-    // No glow if we exit the stage
-    setShowGlow(false);
     setIsAnimating(false);
-  }, [controls, isAnimating, onImpact]);
+  }, [controls, isAnimating, onImpact, direction]);
 
   // Run animation on mount and when key changes
   useEffect(() => {
