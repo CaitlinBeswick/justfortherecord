@@ -13,8 +13,8 @@ export function HeroVinylEmblem({ className = "" }: HeroVinylEmblemProps) {
       className={`absolute pointer-events-none select-none ${className}`}
       style={{
         top: "50%",
-        right: "8%",
-        transform: "translateY(-50%)",
+        left: "21%",
+        transform: "translate(-50%, -50%)",
       }}
     >
       {/* Outer glow */}
