@@ -21,8 +21,7 @@ const Pricing = () => {
         <PricingCard />
 
         <div className="mt-16 text-center text-sm text-muted-foreground">
-          <p>All plans include a 30-day money-back guarantee.</p>
-          <p className="mt-2">
+          <p>
             Questions? <a href="mailto:support@justfortherecord.app" className="text-primary hover:underline">Contact us</a>
           </p>
         </div>
