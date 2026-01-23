@@ -137,4 +137,15 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Slow vinyl spin animation - respects reduced motion */
+  .animate-vinyl-spin {
+    animation: spin-slow 30s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-vinyl-spin {
+      animation: none;
+    }
+  }
 }
