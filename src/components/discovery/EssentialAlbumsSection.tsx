@@ -64,12 +64,15 @@ export function EssentialAlbumsSection({ decade, albums, color }: EssentialAlbum
   };
 
   return (
-    <div className="pl-2">
-      <div className="flex items-center gap-2 mb-3">
-        <Award className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Essentials
-        </span>
+    <div className="bg-card/30 rounded-xl border border-border/50 p-4 sm:p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`p-2 rounded-lg bg-gradient-to-br ${color}`}>
+          <Award className="h-4 w-4 text-white" />
+        </div>
+        <div>
+          <h3 className="font-serif text-lg text-foreground">{decade} Essentials</h3>
+          <p className="text-xs text-muted-foreground">Must-hear albums from the era</p>
+        </div>
       </div>
 
       {isLoading ? (

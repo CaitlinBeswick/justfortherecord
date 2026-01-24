@@ -1,9 +1,8 @@
 import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
-import { EssentialAlbumsSection } from "@/components/discovery/EssentialAlbumsSection";
 import { Footer } from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock, Calendar, Award } from "lucide-react";
+import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock, Calendar } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,73 +42,6 @@ const DECADES = [
   { name: "Pre-1960", range: "1900-1959", color: "from-stone-500 to-neutral-600" },
 ];
 
-// Essential albums for each era - curated classics
-const ESSENTIAL_ALBUMS: Record<string, { title: string; artist: string }[]> = {
-  "2020s": [
-    { title: "Fetch the Bolt Cutters", artist: "Fiona Apple" },
-    { title: "Future Nostalgia", artist: "Dua Lipa" },
-    { title: "folklore", artist: "Taylor Swift" },
-    { title: "RENAISSANCE", artist: "Beyoncé" },
-    { title: "Mr. Morale & The Big Steppers", artist: "Kendrick Lamar" },
-    { title: "SOS", artist: "SZA" },
-  ],
-  "2010s": [
-    { title: "To Pimp a Butterfly", artist: "Kendrick Lamar" },
-    { title: "Blonde", artist: "Frank Ocean" },
-    { title: "Lemonade", artist: "Beyoncé" },
-    { title: "My Beautiful Dark Twisted Fantasy", artist: "Kanye West" },
-    { title: "Random Access Memories", artist: "Daft Punk" },
-    { title: "Channel Orange", artist: "Frank Ocean" },
-  ],
-  "2000s": [
-    { title: "Kid A", artist: "Radiohead" },
-    { title: "In Rainbows", artist: "Radiohead" },
-    { title: "Is This It", artist: "The Strokes" },
-    { title: "Funeral", artist: "Arcade Fire" },
-    { title: "The Blueprint", artist: "JAY-Z" },
-    { title: "Stankonia", artist: "OutKast" },
-  ],
-  "1990s": [
-    { title: "OK Computer", artist: "Radiohead" },
-    { title: "Nevermind", artist: "Nirvana" },
-    { title: "The Miseducation of Lauryn Hill", artist: "Lauryn Hill" },
-    { title: "Illmatic", artist: "Nas" },
-    { title: "Loveless", artist: "My Bloody Valentine" },
-    { title: "Achtung Baby", artist: "U2" },
-  ],
-  "1980s": [
-    { title: "Purple Rain", artist: "Prince" },
-    { title: "Thriller", artist: "Michael Jackson" },
-    { title: "The Joshua Tree", artist: "U2" },
-    { title: "Remain in Light", artist: "Talking Heads" },
-    { title: "Sign o' the Times", artist: "Prince" },
-    { title: "Disintegration", artist: "The Cure" },
-  ],
-  "1970s": [
-    { title: "Rumours", artist: "Fleetwood Mac" },
-    { title: "The Dark Side of the Moon", artist: "Pink Floyd" },
-    { title: "Songs in the Key of Life", artist: "Stevie Wonder" },
-    { title: "Led Zeppelin IV", artist: "Led Zeppelin" },
-    { title: "What's Going On", artist: "Marvin Gaye" },
-    { title: "Horses", artist: "Patti Smith" },
-  ],
-  "1960s": [
-    { title: "Sgt. Pepper's Lonely Hearts Club Band", artist: "The Beatles" },
-    { title: "Pet Sounds", artist: "The Beach Boys" },
-    { title: "Abbey Road", artist: "The Beatles" },
-    { title: "Kind of Blue", artist: "Miles Davis" },
-    { title: "Are You Experienced", artist: "The Jimi Hendrix Experience" },
-    { title: "The Velvet Underground & Nico", artist: "The Velvet Underground" },
-  ],
-  "Pre-1960": [
-    { title: "Kind of Blue", artist: "Miles Davis" },
-    { title: "Time Out", artist: "The Dave Brubeck Quartet" },
-    { title: "Ella and Louis", artist: "Ella Fitzgerald & Louis Armstrong" },
-    { title: "Blue Train", artist: "John Coltrane" },
-    { title: "Birth of the Cool", artist: "Miles Davis" },
-    { title: "Songs for Swingin' Lovers!", artist: "Frank Sinatra" },
-  ],
-};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -763,36 +695,26 @@ const DiscoveryExplore = () => {
             <Calendar className="h-5 w-5 text-primary" />
             <h2 className="font-serif text-xl text-foreground">Browse by Decade</h2>
           </div>
-          
-          <div className="space-y-8">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+          >
             {DECADES.map((decade) => (
-              <div key={decade.name} className="space-y-4">
-                {/* Decade Header */}
-                <motion.button
-                  variants={itemVariants}
-                  onClick={() => navigate(`/discovery/decade/${encodeURIComponent(decade.range)}`)}
-                  className={`relative overflow-hidden rounded-xl p-4 sm:p-6 w-full text-left transition-transform hover:scale-[1.02] bg-gradient-to-br ${decade.color}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="relative z-10 text-white font-bold text-2xl sm:text-3xl">
-                      {decade.name}
-                    </span>
-                    <span className="relative z-10 text-white/80 text-sm font-medium">
-                      View all →
-                    </span>
-                  </div>
-                  <div className="absolute inset-0 bg-black/20" />
-                </motion.button>
-
-                {/* Essential Albums for this decade */}
-                <EssentialAlbumsSection
-                  decade={decade.name}
-                  albums={ESSENTIAL_ALBUMS[decade.name] || []}
-                  color={decade.color}
-                />
-              </div>
+              <motion.button
+                key={decade.name}
+                variants={itemVariants}
+                onClick={() => navigate(`/discovery/decade/${encodeURIComponent(decade.range)}`)}
+                className={`relative overflow-hidden rounded-xl p-6 text-left transition-transform hover:scale-105 bg-gradient-to-br ${decade.color}`}
+              >
+                <span className="relative z-10 text-white font-bold text-2xl">
+                  {decade.name}
+                </span>
+                <div className="absolute inset-0 bg-black/20" />
+              </motion.button>
             ))}
-          </div>
+          </motion.div>
         </motion.div>
       </main>
       
