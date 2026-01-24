@@ -660,6 +660,7 @@ export type Database = {
           id: string
           is_public: boolean
           location: string | null
+          push_notifications_enabled: boolean
           show_albums: boolean
           show_artists: boolean
           show_diary: boolean
@@ -687,6 +688,7 @@ export type Database = {
           id: string
           is_public?: boolean
           location?: string | null
+          push_notifications_enabled?: boolean
           show_albums?: boolean
           show_artists?: boolean
           show_diary?: boolean
@@ -714,6 +716,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           location?: string | null
+          push_notifications_enabled?: boolean
           show_albums?: boolean
           show_artists?: boolean
           show_diary?: boolean
@@ -723,6 +726,36 @@ export type Database = {
           updated_at?: string
           username?: string | null
           yearly_listen_goal?: number | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
