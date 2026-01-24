@@ -6,6 +6,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function normalizeForMatch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function albumKey(title: string, artist: string): string {
+  return normalizeForMatch(`${title}|||${artist}`);
+}
+
+function artistKey(name: string): string {
+  return normalizeForMatch(name);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -115,6 +133,17 @@ serve(async (req) => {
     ]);
     const allKnownArtistsList = Array.from(allKnownArtistsSet).join(", ");
 
+    // Deterministic exclusion sets (used for post-filtering AI output)
+    const excludedAlbumKeys = new Set([
+      ...(allListenedAlbums || []).map((a) => albumKey(a.album_title, a.artist_name)),
+      ...(allRatedAlbums || []).map((a) => albumKey(a.album_title, a.artist_name)),
+      ...(lovedAlbums || []).map((a) => albumKey(a.album_title, a.artist_name)),
+    ]);
+    const excludedArtistKeys = new Set([
+      ...(followedArtists || []).map((a) => artistKey(a.artist_name)),
+      ...(allRatedArtists || []).map((a) => artistKey(a.artist_name)),
+    ]);
+
     if (!topAlbumsList && !followedList && !lovedList) {
       return new Response(JSON.stringify({ 
         recommendations: [],
@@ -219,6 +248,43 @@ Recommend music that matches their taste but explores new territory they likely 
     } catch {
       console.error("Failed to parse AI response:", content);
       recommendations = { albums: [], artists: [] };
+    }
+
+    // Hard filter: never return already-known content when includeKnown is false.
+    // This protects against occasional model mistakes / near-duplicate naming.
+    if (!includeKnown && recommendations) {
+      const seenAlbumKeys = new Set<string>();
+      const seenArtistKeys = new Set<string>();
+
+      const filteredAlbums = Array.isArray(recommendations.albums)
+        ? recommendations.albums
+            .filter((a: any) => a?.title && a?.artist)
+            .filter((a: any) => {
+              const key = albumKey(String(a.title), String(a.artist));
+              if (!key) return false;
+              if (excludedAlbumKeys.has(key)) return false;
+              if (seenAlbumKeys.has(key)) return false;
+              seenAlbumKeys.add(key);
+              return true;
+            })
+            .slice(0, 5)
+        : [];
+
+      const filteredArtists = Array.isArray(recommendations.artists)
+        ? recommendations.artists
+            .filter((a: any) => a?.name)
+            .filter((a: any) => {
+              const key = artistKey(String(a.name));
+              if (!key) return false;
+              if (excludedArtistKeys.has(key)) return false;
+              if (seenArtistKeys.has(key)) return false;
+              seenArtistKeys.add(key);
+              return true;
+            })
+            .slice(0, 5)
+        : [];
+
+      recommendations = { ...recommendations, albums: filteredAlbums, artists: filteredArtists };
     }
 
     return new Response(JSON.stringify({ recommendations }), {
