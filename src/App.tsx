@@ -36,6 +36,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Admin = lazy(() => import("./pages/Admin"));
 const WhatsNew = lazy(() => import("./pages/WhatsNew"));
+const NewReleases = lazy(() => import("./pages/NewReleases"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/whats-new" element={<WhatsNew />} />
+              <Route path="/new-releases" element={<NewReleases />} />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
