@@ -286,6 +286,27 @@ export type Database = {
         }
         Relationships: []
       }
+      artist_release_cache: {
+        Row: {
+          artist_id: string
+          created_at: string
+          fetched_at: string
+          payload: Json
+        }
+        Insert: {
+          artist_id: string
+          created_at?: string
+          fetched_at?: string
+          payload?: Json
+        }
+        Update: {
+          artist_id?: string
+          created_at?: string
+          fetched_at?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       artist_release_type_preferences: {
         Row: {
           artist_id: string
