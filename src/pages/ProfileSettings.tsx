@@ -964,7 +964,7 @@ const ProfileSettings = () => {
                         <div className="space-y-1">
                           <Label>Include Familiar in Recommendations</Label>
                           <p className="text-sm text-muted-foreground">
-                            When enabled, AI recommendations on the Explore page may include albums and artists you've already listened to or rated.
+                            When enabled, recommendations on the Explore page may include albums and artists you've already listened to or rated.
                           </p>
                         </div>
                         <Switch
