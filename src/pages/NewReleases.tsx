@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AlbumCard } from "@/components/AlbumCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Disc3, Filter, Music2, ChevronDown } from "lucide-react";
+import { Calendar, Disc3, Filter, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -36,13 +36,10 @@ interface ArtistFollow {
 }
 
 type TimeFilter = "recent" | "upcoming" | "all";
-type TypeFilter = "Album" | "EP";
-
 const NewReleases = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("recent");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter | "all">("all");
 
   // Fetch followed artists
   const { data: followedArtists = [], isLoading: artistsLoading } = useQuery({
@@ -123,11 +120,6 @@ const NewReleases = () => {
           return false;
         }
 
-        // Type filter (when not "all")
-        if (typeFilter !== "all" && release["primary-type"] !== typeFilter) {
-          return false;
-        }
-
         // Skip compilations and live albums
         const secondaryTypes = release["secondary-types"] || [];
         if (secondaryTypes.includes("Compilation") || secondaryTypes.includes("Live")) {
@@ -162,7 +154,7 @@ const NewReleases = () => {
         }
         return dateB.localeCompare(dateA);
       });
-  }, [allReleases, timeFilter, typeFilter]);
+  }, [allReleases, timeFilter]);
 
   // Group releases by month for display
   const groupedReleases = useMemo(() => {
@@ -260,27 +252,6 @@ const NewReleases = () => {
                 <DropdownMenuRadioItem value="recent">Recent (3 months)</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="upcoming">Upcoming</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="all">All Time</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Type Filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Music2 className="h-4 w-4" />
-                {typeFilter === "all" ? "Albums & EPs" : typeFilter === "Album" ? "Albums" : "EPs"}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuRadioGroup
-                value={typeFilter}
-                onValueChange={(v) => setTypeFilter(v as TypeFilter | "all")}
-              >
-                <DropdownMenuRadioItem value="all">Albums & EPs</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="Album">Albums</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="EP">EPs</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
