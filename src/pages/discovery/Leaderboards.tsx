@@ -25,9 +25,12 @@ const containerVariants = {
   },
 };
 
+// NOTE: We intentionally avoid animating `opacity` here because we also use
+// opacity for the “fade listened/rated” feature. If Framer Motion owns opacity,
+// CSS classes like `opacity-30` won't apply.
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
+  hidden: { y: 20 },
+  visible: { y: 0 },
 };
 
 interface TopAlbumRating {
@@ -221,13 +224,12 @@ const DiscoveryLeaderboards = () => {
                 return (
                   <motion.div
                     key={album.release_group_id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
                     transition={{ delay: index * 0.05 }}
                     onClick={() => navigate(`/album/${album.release_group_id}`)}
-                    className={`shrink-0 w-32 cursor-pointer group transition-opacity ${
-                      shouldFade ? "opacity-30" : ""
-                    }`}
+                    style={{ opacity: shouldFade ? 0.3 : 1 }}
+                    className="shrink-0 w-32 cursor-pointer group transition-opacity"
                   >
                     <div className="relative">
                       <AlbumCoverWithFallback
@@ -332,9 +334,8 @@ const DiscoveryLeaderboards = () => {
                       key={album.release_group_id}
                       variants={itemVariants}
                       onClick={() => navigate(`/album/${album.release_group_id}`)}
-                      className={`cursor-pointer group transition-opacity ${
-                        shouldFade ? "opacity-30" : ""
-                      }`}
+                      style={{ opacity: shouldFade ? 0.3 : 1 }}
+                      className="cursor-pointer group transition-opacity"
                     >
                       <div className="relative">
                         <AlbumCoverWithFallback
@@ -415,9 +416,8 @@ const DiscoveryLeaderboards = () => {
                     <motion.div
                       key={artist.artist_id}
                       variants={itemVariants}
-                      className={`relative transition-opacity ${
-                        shouldFade ? "opacity-30" : ""
-                      }`}
+                      style={{ opacity: shouldFade ? 0.3 : 1 }}
+                      className="relative transition-opacity"
                     >
                       <div
                         className={`absolute top-2 left-2 z-10 text-xs font-bold px-1.5 py-0.5 rounded ${
