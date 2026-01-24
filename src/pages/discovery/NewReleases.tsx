@@ -6,7 +6,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Calendar, ChevronDown, Clock, Disc3, Music, LogIn } from "lucide-react";
+import { Calendar, ChevronDown, Clock, Disc3, Music, LogIn, Eye, EyeOff } from "lucide-react";
 import { AlbumCard } from "@/components/AlbumCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, isAfter, isBefore, addMonths, subMonths } from "date-fns";
@@ -17,6 +17,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface ReleaseGroup {
   id: string;
@@ -39,6 +41,7 @@ const DiscoveryNewReleases = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("recent");
+  const [fadeListened, setFadeListened] = useState(true);
 
   // Fetch followed artists
   const { data: followedArtists = [], isLoading: loadingFollows } = useQuery({
@@ -72,6 +75,28 @@ const DiscoveryNewReleases = () => {
     enabled: !!user && followedArtists.length > 0,
     staleTime: 1000 * 60 * 30,
   });
+
+  // Fetch user's listening status to know which albums are listened
+  const { data: listeningStatus = [] } = useQuery({
+    queryKey: ["listening-status", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("listening_status")
+        .select("release_group_id, is_listened")
+        .eq("user_id", user.id)
+        .eq("is_listened", true);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  // Create a set of listened release group IDs for quick lookup
+  const listenedIds = useMemo(() => {
+    return new Set(listeningStatus.map((s) => s.release_group_id));
+  }, [listeningStatus]);
 
   // Filter releases by time and group by month
   const { filteredReleases, groupedByMonth } = useMemo(() => {
@@ -172,7 +197,24 @@ const DiscoveryNewReleases = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Fade Listened Toggle */}
+              <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg">
+                {fadeListened ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
+                <Label htmlFor="fade-listened" className="text-sm text-muted-foreground cursor-pointer">
+                  Fade listened
+                </Label>
+                <Switch
+                  id="fade-listened"
+                  checked={fadeListened}
+                  onCheckedChange={setFadeListened}
+                />
+              </div>
+
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 bg-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
                   {timeFilter === "recent" && <Clock className="h-4 w-4" />}
@@ -251,20 +293,27 @@ const DiscoveryNewReleases = () => {
                   {month}
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {monthReleases.map((release) => (
-                    <AlbumCard
-                      key={release.id}
-                      id={release.id}
-                      title={release.title}
-                      artist={release.artistName}
-                      year={
-                        release["first-release-date"]
-                          ? parseInt(release["first-release-date"].substring(0, 4))
-                          : undefined
-                      }
-                      onClick={() => navigate(`/album/${release.id}`)}
-                    />
-                  ))}
+                  {monthReleases.map((release) => {
+                    const isListened = listenedIds.has(release.id);
+                    return (
+                      <div
+                        key={release.id}
+                        className={fadeListened && isListened ? "opacity-40" : ""}
+                      >
+                        <AlbumCard
+                          id={release.id}
+                          title={release.title}
+                          artist={release.artistName}
+                          year={
+                            release["first-release-date"]
+                              ? parseInt(release["first-release-date"].substring(0, 4))
+                              : undefined
+                          }
+                          onClick={() => navigate(`/album/${release.id}`)}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
