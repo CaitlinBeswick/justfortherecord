@@ -81,70 +81,151 @@ const GENRE_SUGGESTIONS = [
   "Chill", "Workout", "Study Music", "Sleep", "Party"
 ];
 
-// Push Notifications Section Component
-function PushNotificationsSection() {
+// Notification types configuration
+const NOTIFICATION_TYPES = [
+  {
+    id: 'newReleases',
+    label: 'New Releases',
+    description: 'When artists you follow release new music',
+    supportsPush: true,
+  },
+  {
+    id: 'friendRequests',
+    label: 'Friend Requests',
+    description: 'When someone sends you a friend request or accepts yours',
+    supportsPush: false,
+  },
+  {
+    id: 'friendActivity',
+    label: 'Friend Activity',
+    description: 'Updates about your friends\' listening activity',
+    supportsPush: false,
+  },
+  {
+    id: 'weeklyDigest',
+    label: 'Weekly Digest',
+    description: 'A weekly summary every Friday',
+    supportsPush: false,
+  },
+] as const;
+
+// Notifications Table Component
+interface NotificationsTableProps {
+  emailNewReleases: boolean;
+  setEmailNewReleases: (value: boolean) => void;
+  emailFriendRequests: boolean;
+  setEmailFriendRequests: (value: boolean) => void;
+  emailFriendActivity: boolean;
+  setEmailFriendActivity: (value: boolean) => void;
+  emailWeeklyDigest: boolean;
+  setEmailWeeklyDigest: (value: boolean) => void;
+}
+
+function NotificationsTable({
+  emailNewReleases,
+  setEmailNewReleases,
+  emailFriendRequests,
+  setEmailFriendRequests,
+  emailFriendActivity,
+  setEmailFriendActivity,
+  emailWeeklyDigest,
+  setEmailWeeklyDigest,
+}: NotificationsTableProps) {
   const { 
-    isSupported, 
-    isSubscribed, 
-    isLoading, 
-    permission, 
+    isSupported: pushSupported, 
+    isSubscribed: pushSubscribed, 
+    isLoading: pushLoading, 
+    permission: pushPermission, 
     subscribe, 
     unsubscribe 
   } = usePushNotifications();
 
-  if (!isSupported) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 p-4 rounded-lg border border-border bg-card">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Push Notifications</h2>
-            <p className="text-xs text-muted-foreground">
-              Push notifications are not supported in your browser
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const handleToggle = async () => {
-    if (isSubscribed) {
+  const handlePushToggle = async () => {
+    if (pushSubscribed) {
       await unsubscribe();
     } else {
       await subscribe();
     }
   };
 
+  const emailStates: Record<string, { checked: boolean; onChange: (v: boolean) => void }> = {
+    newReleases: { checked: emailNewReleases, onChange: setEmailNewReleases },
+    friendRequests: { checked: emailFriendRequests, onChange: setEmailFriendRequests },
+    friendActivity: { checked: emailFriendActivity, onChange: setEmailFriendActivity },
+    weeklyDigest: { checked: emailWeeklyDigest, onChange: setEmailWeeklyDigest },
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4 text-primary" />
-              <Label htmlFor="pushNotifications" className="text-sm font-medium cursor-pointer">
-                Enable Push Notifications
-              </Label>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Get instant alerts on your device when artists you follow release new music
-            </p>
-            {permission === 'denied' && (
-              <p className="text-xs text-destructive mt-1">
-                Notifications are blocked. Please enable them in your browser settings.
-              </p>
-            )}
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      className="space-y-4 pl-4 border-l-2 border-primary/20"
+    >
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        {/* Table Header */}
+        <div className="grid grid-cols-[1fr,auto,auto] gap-4 p-4 bg-muted/30 border-b border-border">
+          <div className="text-sm font-medium text-foreground">Notification Type</div>
+          <div className="text-sm font-medium text-foreground text-center w-20 flex items-center justify-center gap-1">
+            <Mail className="h-4 w-4" />
+            <span className="hidden sm:inline">Email</span>
           </div>
-          <Switch
-            id="pushNotifications"
-            checked={isSubscribed}
-            onCheckedChange={handleToggle}
-            disabled={isLoading || permission === 'denied'}
-          />
+          <div className="text-sm font-medium text-foreground text-center w-20 flex items-center justify-center gap-1">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">Push</span>
+          </div>
         </div>
+
+        {/* Table Rows */}
+        {NOTIFICATION_TYPES.map((notif, index) => (
+          <div 
+            key={notif.id}
+            className={`grid grid-cols-[1fr,auto,auto] gap-4 p-4 items-center ${
+              index < NOTIFICATION_TYPES.length - 1 ? 'border-b border-border' : ''
+            }`}
+          >
+            <div className="space-y-0.5">
+              <div className="text-sm font-medium text-foreground">{notif.label}</div>
+              <p className="text-xs text-muted-foreground">{notif.description}</p>
+            </div>
+            
+            {/* Email Toggle */}
+            <div className="flex justify-center w-20">
+              <Switch
+                checked={emailStates[notif.id].checked}
+                onCheckedChange={emailStates[notif.id].onChange}
+              />
+            </div>
+            
+            {/* Push Toggle */}
+            <div className="flex justify-center w-20">
+              {notif.supportsPush ? (
+                pushSupported ? (
+                  <Switch
+                    checked={pushSubscribed}
+                    onCheckedChange={handlePushToggle}
+                    disabled={pushLoading || pushPermission === 'denied'}
+                  />
+                ) : (
+                  <span className="text-xs text-muted-foreground">N/A</span>
+                )
+              ) : (
+                <span className="text-xs text-muted-foreground">—</span>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* Push permission warning */}
+        {pushSupported && pushPermission === 'denied' && (
+          <div className="p-3 bg-destructive/10 border-t border-border">
+            <p className="text-xs text-destructive">
+              Push notifications are blocked. Please enable them in your browser settings.
+            </p>
+          </div>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -791,120 +872,16 @@ const ProfileSettings = () => {
                 </button>
 
                 {isNotificationsExpanded && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-4 pl-4 border-l-2 border-primary/20"
-                  >
-                    {/* Master Toggle */}
-                    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <Bell className="h-4 w-4" />
-                            <Label htmlFor="emailNotificationsEnabled" className="text-sm font-medium cursor-pointer">
-                              Enable Email Notifications
-                            </Label>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Receive notifications via email in addition to in-app notifications
-                          </p>
-                        </div>
-                        <Switch
-                          id="emailNotificationsEnabled"
-                          checked={emailNotificationsEnabled}
-                          onCheckedChange={setEmailNotificationsEnabled}
-                        />
-                      </div>
-                    </div>
-
-                    {emailNotificationsEnabled && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        className="space-y-4 rounded-lg border border-border bg-card p-4"
-                      >
-                        <div className="text-sm font-medium text-foreground">
-                          Notification Types
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Choose which notifications you want to receive via email
-                        </p>
-
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="emailNewReleases" className="text-sm font-normal cursor-pointer">
-                                New Releases
-                              </Label>
-                              <p className="text-xs text-muted-foreground">
-                                When artists you follow release new music
-                              </p>
-                            </div>
-                            <Switch
-                              id="emailNewReleases"
-                              checked={emailNewReleases}
-                              onCheckedChange={setEmailNewReleases}
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="emailFriendRequests" className="text-sm font-normal cursor-pointer">
-                                Friend Requests
-                              </Label>
-                              <p className="text-xs text-muted-foreground">
-                                When someone sends you a friend request or accepts yours
-                              </p>
-                            </div>
-                            <Switch
-                              id="emailFriendRequests"
-                              checked={emailFriendRequests}
-                              onCheckedChange={setEmailFriendRequests}
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="emailFriendActivity" className="text-sm font-normal cursor-pointer">
-                                Friend Activity
-                              </Label>
-                              <p className="text-xs text-muted-foreground">
-                                Updates about your friends' listening activity
-                              </p>
-                            </div>
-                            <Switch
-                              id="emailFriendActivity"
-                              checked={emailFriendActivity}
-                              onCheckedChange={setEmailFriendActivity}
-                            />
-                          </div>
-
-                          <Separator className="my-3" />
-
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="emailWeeklyDigest" className="text-sm font-normal cursor-pointer">
-                                Weekly Digest
-                              </Label>
-                              <p className="text-xs text-muted-foreground">
-                                A weekly summary of new releases and friend activity every Friday
-                              </p>
-                            </div>
-                            <Switch
-                              id="emailWeeklyDigest"
-                              checked={emailWeeklyDigest}
-                              onCheckedChange={setEmailWeeklyDigest}
-                            />
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Push Notifications */}
-                    <PushNotificationsSection />
-                  </motion.div>
+                  <NotificationsTable
+                    emailNewReleases={emailNewReleases}
+                    setEmailNewReleases={setEmailNewReleases}
+                    emailFriendRequests={emailFriendRequests}
+                    setEmailFriendRequests={setEmailFriendRequests}
+                    emailFriendActivity={emailFriendActivity}
+                    setEmailFriendActivity={setEmailFriendActivity}
+                    emailWeeklyDigest={emailWeeklyDigest}
+                    setEmailWeeklyDigest={setEmailWeeklyDigest}
+                  />
                 )}
               </div>
 
