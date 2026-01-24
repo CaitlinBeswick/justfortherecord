@@ -254,12 +254,12 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { user_id, payload }: PushNotificationRequest = await req.json();
+    const { user_id, payload, notification_type }: PushNotificationRequest & { notification_type?: string } = await req.json();
 
     // Check if user has push notifications enabled
     const { data: profile } = await supabase
       .from('profiles')
-      .select('push_notifications_enabled')
+      .select('push_notifications_enabled, push_new_releases, push_friend_requests, push_friend_activity, push_weekly_digest')
       .eq('id', user_id)
       .single();
 
@@ -269,6 +269,36 @@ Deno.serve(async (req) => {
         JSON.stringify({ message: 'Push notifications disabled' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Check specific notification type preferences
+    if (notification_type) {
+      let shouldSendPush = false;
+      switch (notification_type) {
+        case 'new_release':
+          shouldSendPush = profile.push_new_releases ?? true;
+          break;
+        case 'friend_request':
+        case 'friend_accepted':
+          shouldSendPush = profile.push_friend_requests ?? true;
+          break;
+        case 'friend_activity':
+          shouldSendPush = profile.push_friend_activity ?? false;
+          break;
+        case 'weekly_digest':
+          shouldSendPush = profile.push_weekly_digest ?? false;
+          break;
+        default:
+          shouldSendPush = true;
+      }
+
+      if (!shouldSendPush) {
+        console.log(`User ${user_id} has disabled ${notification_type} push notifications`);
+        return new Response(
+          JSON.stringify({ message: 'Notification type disabled' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Get user's push subscriptions

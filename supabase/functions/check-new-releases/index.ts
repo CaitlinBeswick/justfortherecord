@@ -215,6 +215,7 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
               user_id: notification.user_id,
+              notification_type: 'new_release',
               payload: {
                 title: notification.title,
                 body: notification.message,
