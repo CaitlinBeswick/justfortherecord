@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState } from "react";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 
@@ -19,35 +20,44 @@ export function getAlbumInitials(albumTitle: string): string {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-export function AlbumCoverWithFallback({
-  releaseGroupId,
-  title,
-  size = '250',
-  className = "aspect-square w-full rounded-lg",
-  fallbackClassName = "font-serif text-3xl text-primary/60",
-  imageClassName = "object-cover",
-  children,
-}: AlbumCoverWithFallbackProps) {
-  const [hasError, setHasError] = useState(false);
-  const imageUrl = getCoverArtUrl(releaseGroupId, size);
+export const AlbumCoverWithFallback = React.forwardRef<HTMLDivElement, AlbumCoverWithFallbackProps>(
+  (
+    {
+      releaseGroupId,
+      title,
+      size = '250',
+      className = "aspect-square w-full rounded-lg",
+      fallbackClassName = "font-serif text-3xl text-primary/60",
+      imageClassName = "object-cover",
+      children,
+    },
+    ref
+  ) => {
+    const [hasError, setHasError] = useState(false);
+    const imageUrl = getCoverArtUrl(releaseGroupId, size);
 
-  if (hasError) {
+    if (hasError) {
+      return (
+        <div
+          ref={ref}
+          className={`${className} bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center`}
+        >
+          <span className={fallbackClassName}>{getAlbumInitials(title)}</span>
+        </div>
+      );
+    }
+
     return (
-      <div className={`${className} bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center`}>
-        <span className={fallbackClassName}>{getAlbumInitials(title)}</span>
+      <div ref={ref} className={`${className} overflow-hidden relative`}>
+        <img
+          src={imageUrl}
+          alt={title}
+          className={`h-full w-full ${imageClassName}`}
+          onError={() => setHasError(true)}
+        />
+        {children}
       </div>
     );
   }
-
-  return (
-    <div className={`${className} overflow-hidden relative`}>
-      <img 
-        src={imageUrl} 
-        alt={title}
-        className={`h-full w-full ${imageClassName}`}
-        onError={() => setHasError(true)}
-      />
-      {children}
-    </div>
-  );
-}
+);
+AlbumCoverWithFallback.displayName = "AlbumCoverWithFallback";
