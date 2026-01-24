@@ -36,13 +36,13 @@ interface ArtistFollow {
 }
 
 type TimeFilter = "recent" | "upcoming" | "all";
-type TypeFilter = "all" | "Album" | "EP" | "Single";
+type TypeFilter = "Album" | "EP";
 
 const NewReleases = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("recent");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter | "all">("all");
 
   // Fetch followed artists
   const { data: followedArtists = [], isLoading: artistsLoading } = useQuery({
@@ -118,7 +118,12 @@ const NewReleases = () => {
 
     return allReleases
       .filter((release) => {
-        // Type filter
+        // Always exclude Singles
+        if (release["primary-type"] === "Single") {
+          return false;
+        }
+
+        // Type filter (when not "all")
         if (typeFilter !== "all" && release["primary-type"] !== typeFilter) {
           return false;
         }
@@ -264,19 +269,18 @@ const NewReleases = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2">
                 <Music2 className="h-4 w-4" />
-                {typeFilter === "all" ? "All Types" : typeFilter}
+                {typeFilter === "all" ? "Albums & EPs" : typeFilter === "Album" ? "Albums" : "EPs"}
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuRadioGroup
                 value={typeFilter}
-                onValueChange={(v) => setTypeFilter(v as TypeFilter)}
+                onValueChange={(v) => setTypeFilter(v as TypeFilter | "all")}
               >
-                <DropdownMenuRadioItem value="all">All Types</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="all">Albums & EPs</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="Album">Albums</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="EP">EPs</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="Single">Singles</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
