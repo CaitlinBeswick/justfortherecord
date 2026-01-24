@@ -20,6 +20,15 @@ serve(async (req) => {
       });
     }
 
+    // Parse optional mood from request body
+    let mood: string | undefined;
+    try {
+      const body = await req.json();
+      mood = body?.mood;
+    } catch {
+      // No body or invalid JSON, that's fine
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -86,7 +95,17 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a music recommendation expert. Based on a user's listening history and preferences, suggest albums and artists they might enjoy. 
+    // Build mood instruction if provided
+    const moodDescriptions: Record<string, string> = {
+      chill: "calm, relaxed, mellow, atmospheric, and soothing music—think lo-fi, ambient, acoustic, downtempo, soft rock, or dreamy indie",
+      energetic: "upbeat, high-energy, driving music—think punk, dance, electronic bangers, fast-paced rock, hip-hop with heavy beats",
+      experimental: "adventurous, boundary-pushing, avant-garde music—think art rock, noise, free jazz, glitch, unconventional song structures, genre-defying artists",
+    };
+    const moodInstruction = mood && moodDescriptions[mood]
+      ? `\n\nIMPORTANT: The user is in a "${mood}" mood. Prioritize recommendations that feel ${moodDescriptions[mood]}.`
+      : "";
+
+    const systemPrompt = `You are a music recommendation expert. Based on a user's listening history and preferences, suggest albums and artists they might enjoy.${moodInstruction}
     
 Your recommendations should:
 - Be specific album or artist names that actually exist
@@ -111,6 +130,7 @@ Provide exactly 5 album recommendations and 5 artist recommendations.`;
 ${topAlbumsList ? `Highly rated albums: ${topAlbumsList}` : ""}
 ${followedList ? `Followed artists: ${followedList}` : ""}
 ${lovedList ? `Loved albums: ${lovedList}` : ""}
+${mood ? `\nMood: ${mood}` : ""}
 
 Recommend music that matches their taste but explores new territory they likely haven't discovered.`;
 
