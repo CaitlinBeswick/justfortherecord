@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   searchReleases,
   getYear,
@@ -29,6 +29,11 @@ const itemVariants = {
   hidden: { opacity: 0, y: 10 },
   visible: { opacity: 1, y: 0 },
 };
+
+const DISPLAY_LIMIT = 30;
+// We over-fetch because searchReleases filters out Singles and dedupes results,
+// which can drop the displayed count below the requested limit.
+const FETCH_LIMIT = 80;
 
 const DECADE_NAMES: Record<string, string> = {
   "2020-2029": "2020s",
@@ -122,7 +127,6 @@ const ESSENTIAL_ALBUMS: Record<string, { title: string; artist: string }[]> = {
 
 const DiscoveryDecade = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { range: rawRange } = useParams<{ range: string }>();
   const [offset, setOffset] = useState(0);
 
@@ -137,16 +141,19 @@ const DiscoveryDecade = () => {
     };
   }, [rawRange]);
 
-  const decadeColor = DECADE_COLORS[decadeName] || "from-primary to-primary/80";
-  const essentialAlbums = ESSENTIAL_ALBUMS[decadeName] || [];
+  // Essentials are temporarily disabled (UI commented out below) but we keep the
+  // data in this file for later.
+  // const decadeColor = DECADE_COLORS[decadeName] || "from-primary to-primary/80";
+  // const essentialAlbums = ESSENTIAL_ALBUMS[decadeName] || [];
 
   const { data: releases = [], isLoading, error, isFetching } = useQuery({
     queryKey: ["decade-releases", range, offset],
     queryFn: async () => {
       // Use MusicBrainz date range search with offset for pagination
-      // Use 30 albums to ensure complete rows across all grid layouts (divisible by 2,3,5,6)
+      // Display exactly 30 albums to ensure complete rows across all grid layouts (divisible by 2,3,5,6)
       const query = `firstreleasedate:[${startYear} TO ${endYear}] AND primarytype:album`;
-      return (await searchReleases(query, 30, offset)) as MBReleaseGroup[];
+      const results = (await searchReleases(query, FETCH_LIMIT, offset)) as MBReleaseGroup[];
+      return results.slice(0, DISPLAY_LIMIT);
     },
     enabled: !!range,
     staleTime: 1000 * 60 * 10,
@@ -155,7 +162,7 @@ const DiscoveryDecade = () => {
 
   const handleRefresh = () => {
     // Increment offset to get next batch of results
-    setOffset(prev => prev + 30);
+    setOffset((prev) => prev + FETCH_LIMIT);
   };
 
   return (

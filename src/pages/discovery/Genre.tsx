@@ -29,6 +29,11 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+const DISPLAY_LIMIT = 30;
+// We over-fetch because searchReleases filters out Singles and dedupes results,
+// which can drop the displayed count below the requested limit.
+const FETCH_LIMIT = 80;
+
 const DiscoveryGenre = () => {
   const navigate = useNavigate();
   const { genre: rawGenre } = useParams<{ genre: string }>();
@@ -43,9 +48,10 @@ const DiscoveryGenre = () => {
     queryKey: ["genre-releases", genre, offset],
     queryFn: async () => {
       // Use MusicBrainz tag search, which returns releases genuinely tagged with the genre.
-      // Use 30 albums to ensure complete rows across all grid layouts (divisible by 2,3,5,6)
+      // Display exactly 30 albums to ensure complete rows across all grid layouts (divisible by 2,3,5,6)
       const query = `tag:"${genre}"`;
-      return (await searchReleases(query, 30, offset)) as MBReleaseGroup[];
+      const results = (await searchReleases(query, FETCH_LIMIT, offset)) as MBReleaseGroup[];
+      return results.slice(0, DISPLAY_LIMIT);
     },
     enabled: !!genre,
     staleTime: 1000 * 60 * 10,
@@ -54,7 +60,7 @@ const DiscoveryGenre = () => {
 
   const handleRefresh = () => {
     // Increment offset to get next batch of results
-    setOffset(prev => prev + 30);
+    setOffset((prev) => prev + FETCH_LIMIT);
   };
 
   return (
