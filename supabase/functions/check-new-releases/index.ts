@@ -183,13 +183,13 @@ Deno.serve(async (req) => {
 
       console.log(`Successfully created ${notificationsToCreate.length} notifications`);
 
-      // Send email notifications (non-blocking)
+      // Send email and push notifications (non-blocking)
       const supabaseFunctionsUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.functions.supabase.co');
       const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       
       for (const notification of notificationsToCreate) {
         try {
-          // Fire and forget - don't wait for email to complete
+          // Send email notification (fire and forget)
           fetch(`${supabaseFunctionsUrl}/send-notification-email`, {
             method: 'POST',
             headers: {
@@ -204,8 +204,29 @@ Deno.serve(async (req) => {
               data: notification.data,
             }),
           }).catch(err => console.error('Email send error:', err));
-        } catch (emailError) {
-          console.error('Error queuing email notification:', emailError);
+
+          // Send push notification (fire and forget)
+          const pushData = notification.data as { release_group_id?: string; artist_name?: string };
+          fetch(`${supabaseFunctionsUrl}/send-push-notification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${serviceRoleKey}`,
+            },
+            body: JSON.stringify({
+              user_id: notification.user_id,
+              payload: {
+                title: notification.title,
+                body: notification.message,
+                icon: '/favicon.png',
+                badge: '/favicon.png',
+                url: `/album/${pushData?.release_group_id || ''}`,
+                tag: `new-release-${pushData?.release_group_id || Date.now()}`,
+              },
+            }),
+          }).catch(err => console.error('Push send error:', err));
+        } catch (notifError) {
+          console.error('Error queuing notification:', notifError);
         }
       }
     } else {

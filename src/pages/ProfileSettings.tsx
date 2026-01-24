@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { AnnualStats } from "@/components/profile/AnnualStats";
 import { ProInsights } from "@/components/profile/ProInsights";
 import { toast as sonnerToast } from "sonner";
@@ -79,6 +80,73 @@ const GENRE_SUGGESTIONS = [
   // Mood-based
   "Chill", "Workout", "Study Music", "Sleep", "Party"
 ];
+
+// Push Notifications Section Component
+function PushNotificationsSection() {
+  const { 
+    isSupported, 
+    isSubscribed, 
+    isLoading, 
+    permission, 
+    subscribe, 
+    unsubscribe 
+  } = usePushNotifications();
+
+  if (!isSupported) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 p-4 rounded-lg border border-border bg-card">
+          <Bell className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Push Notifications</h2>
+            <p className="text-xs text-muted-foreground">
+              Push notifications are not supported in your browser
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleToggle = async () => {
+    if (isSubscribed) {
+      await unsubscribe();
+    } else {
+      await subscribe();
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-border bg-card p-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-primary" />
+              <Label htmlFor="pushNotifications" className="text-sm font-medium cursor-pointer">
+                Enable Push Notifications
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Get instant alerts on your device when artists you follow release new music
+            </p>
+            {permission === 'denied' && (
+              <p className="text-xs text-destructive mt-1">
+                Notifications are blocked. Please enable them in your browser settings.
+              </p>
+            )}
+          </div>
+          <Switch
+            id="pushNotifications"
+            checked={isSubscribed}
+            onCheckedChange={handleToggle}
+            disabled={isLoading || permission === 'denied'}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const ProfileSettings = () => {
   const navigate = useNavigate();
@@ -836,6 +904,11 @@ const ProfileSettings = () => {
                   </motion.div>
                 )}
               </div>
+
+              <Separator className="my-6" />
+
+              {/* Push Notifications Section */}
+              <PushNotificationsSection />
 
               <Separator className="my-6" />
 
