@@ -20,6 +20,16 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { AnnualStats } from "@/components/profile/AnnualStats";
 import { ProInsights } from "@/components/profile/ProInsights";
 import { toast as sonnerToast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Profile {
   id: string;
@@ -340,6 +350,8 @@ const ProfileSettings = () => {
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
   const [isExportExpanded, setIsExportExpanded] = useState(false);
   const [isPreferencesExpanded, setIsPreferencesExpanded] = useState(false);
+  const [showVisibilityConfirm, setShowVisibilityConfirm] = useState(false);
+  const [pendingVisibility, setPendingVisibility] = useState<'public' | 'friends' | null>(null);
   const [isNotificationsExpanded, setIsNotificationsExpanded] = useState(false);
   
   // Email notification settings state
@@ -1021,43 +1033,26 @@ const ProfileSettings = () => {
                         Profile Visibility
                       </div>
 
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="isPublic" className="text-sm font-normal cursor-pointer">
-                              Public Profile
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              Anyone can view your profile
-                            </p>
-                          </div>
-                          <Switch
-                            id="isPublic"
-                            checked={isPublic}
-                            onCheckedChange={(checked) => {
-                              setIsPublic(checked);
-                              if (!checked) setFriendsOnly(false);
-                            }}
-                          />
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label className="text-sm font-normal">
+                            {friendsOnly ? "Friends Only" : "Public Profile"}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            {friendsOnly 
+                              ? "Only friends can see your full profile" 
+                              : "Anyone can view your profile"
+                            }
+                          </p>
                         </div>
-
-                        {isPublic && (
-                          <div className="flex items-center justify-between pl-4 border-l-2 border-border">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="friendsOnly" className="text-sm font-normal cursor-pointer">
-                                Friends Only
-                              </Label>
-                              <p className="text-xs text-muted-foreground">
-                                Only friends can see your full profile
-                              </p>
-                            </div>
-                            <Switch
-                              id="friendsOnly"
-                              checked={friendsOnly}
-                              onCheckedChange={setFriendsOnly}
-                            />
-                          </div>
-                        )}
+                        <Switch
+                          id="visibilityToggle"
+                          checked={friendsOnly}
+                          onCheckedChange={(checked) => {
+                            setPendingVisibility(checked ? 'friends' : 'public');
+                            setShowVisibilityConfirm(true);
+                          }}
+                        />
                       </div>
                     </div>
 
@@ -1389,6 +1384,46 @@ const ProfileSettings = () => {
           </motion.div>
         </div>
       </main>
+
+      {/* Profile Visibility Confirmation Dialog */}
+      <AlertDialog open={showVisibilityConfirm} onOpenChange={setShowVisibilityConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingVisibility === 'friends' 
+                ? "Switch to Friends Only?" 
+                : "Make Profile Public?"
+              }
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingVisibility === 'friends' 
+                ? "Only your friends will be able to see your full profile. Others will see limited information."
+                : "Anyone will be able to view your profile and activity."
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingVisibility(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingVisibility === 'friends') {
+                  setFriendsOnly(true);
+                  setIsPublic(true);
+                } else {
+                  setFriendsOnly(false);
+                  setIsPublic(true);
+                }
+                setPendingVisibility(null);
+                setShowVisibilityConfirm(false);
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
