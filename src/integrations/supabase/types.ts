@@ -660,7 +660,11 @@ export type Database = {
           id: string
           is_public: boolean
           location: string | null
+          push_friend_activity: boolean
+          push_friend_requests: boolean
+          push_new_releases: boolean
           push_notifications_enabled: boolean
+          push_weekly_digest: boolean
           show_albums: boolean
           show_artists: boolean
           show_diary: boolean
@@ -688,7 +692,11 @@ export type Database = {
           id: string
           is_public?: boolean
           location?: string | null
+          push_friend_activity?: boolean
+          push_friend_requests?: boolean
+          push_new_releases?: boolean
           push_notifications_enabled?: boolean
+          push_weekly_digest?: boolean
           show_albums?: boolean
           show_artists?: boolean
           show_diary?: boolean
@@ -716,7 +724,11 @@ export type Database = {
           id?: string
           is_public?: boolean
           location?: string | null
+          push_friend_activity?: boolean
+          push_friend_requests?: boolean
+          push_new_releases?: boolean
           push_notifications_enabled?: boolean
+          push_weekly_digest?: boolean
           show_albums?: boolean
           show_artists?: boolean
           show_diary?: boolean

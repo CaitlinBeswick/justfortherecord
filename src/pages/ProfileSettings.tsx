@@ -47,6 +47,12 @@ interface Profile {
   email_friend_requests: boolean;
   email_friend_activity: boolean;
   email_weekly_digest: boolean;
+  // Push notification settings
+  push_notifications_enabled: boolean;
+  push_new_releases: boolean;
+  push_friend_requests: boolean;
+  push_friend_activity: boolean;
+  push_weekly_digest: boolean;
 }
 
 const RELEASE_TYPE_OPTIONS = [
@@ -87,25 +93,21 @@ const NOTIFICATION_TYPES = [
     id: 'newReleases',
     label: 'New Releases',
     description: 'When artists you follow release new music',
-    supportsPush: true,
   },
   {
     id: 'friendRequests',
     label: 'Friend Requests',
     description: 'When someone sends you a friend request or accepts yours',
-    supportsPush: false,
   },
   {
     id: 'friendActivity',
     label: 'Friend Activity',
     description: 'Updates about your friends\' listening activity',
-    supportsPush: false,
   },
   {
     id: 'weeklyDigest',
     label: 'Weekly Digest',
     description: 'A weekly summary every Friday',
-    supportsPush: false,
   },
 ] as const;
 
@@ -119,6 +121,14 @@ interface NotificationsTableProps {
   setEmailFriendActivity: (value: boolean) => void;
   emailWeeklyDigest: boolean;
   setEmailWeeklyDigest: (value: boolean) => void;
+  pushNewReleases: boolean;
+  setPushNewReleases: (value: boolean) => void;
+  pushFriendRequests: boolean;
+  setPushFriendRequests: (value: boolean) => void;
+  pushFriendActivity: boolean;
+  setPushFriendActivity: (value: boolean) => void;
+  pushWeeklyDigest: boolean;
+  setPushWeeklyDigest: (value: boolean) => void;
 }
 
 function NotificationsTable({
@@ -130,6 +140,14 @@ function NotificationsTable({
   setEmailFriendActivity,
   emailWeeklyDigest,
   setEmailWeeklyDigest,
+  pushNewReleases,
+  setPushNewReleases,
+  pushFriendRequests,
+  setPushFriendRequests,
+  pushFriendActivity,
+  setPushFriendActivity,
+  pushWeeklyDigest,
+  setPushWeeklyDigest,
 }: NotificationsTableProps) {
   const { 
     isSupported: pushSupported, 
@@ -140,12 +158,21 @@ function NotificationsTable({
     unsubscribe 
   } = usePushNotifications();
 
-  const handlePushToggle = async () => {
-    if (pushSubscribed) {
-      await unsubscribe();
-    } else {
-      await subscribe();
+  const handlePushToggle = async (notifId: string, currentValue: boolean) => {
+    // If push is not yet subscribed, subscribe first
+    if (!pushSubscribed) {
+      const success = await subscribe();
+      if (!success) return;
     }
+    
+    // Update the specific push preference
+    const setters: Record<string, (v: boolean) => void> = {
+      newReleases: setPushNewReleases,
+      friendRequests: setPushFriendRequests,
+      friendActivity: setPushFriendActivity,
+      weeklyDigest: setPushWeeklyDigest,
+    };
+    setters[notifId]?.(!currentValue);
   };
 
   const emailStates: Record<string, { checked: boolean; onChange: (v: boolean) => void }> = {
@@ -155,9 +182,16 @@ function NotificationsTable({
     weeklyDigest: { checked: emailWeeklyDigest, onChange: setEmailWeeklyDigest },
   };
 
+  const pushStates: Record<string, { checked: boolean; onChange: (v: boolean) => void }> = {
+    newReleases: { checked: pushNewReleases, onChange: setPushNewReleases },
+    friendRequests: { checked: pushFriendRequests, onChange: setPushFriendRequests },
+    friendActivity: { checked: pushFriendActivity, onChange: setPushFriendActivity },
+    weeklyDigest: { checked: pushWeeklyDigest, onChange: setPushWeeklyDigest },
+  };
+
   // Calculate "Select All" states
   const allEmailEnabled = emailNewReleases && emailFriendRequests && emailFriendActivity && emailWeeklyDigest;
-  const someEmailEnabled = emailNewReleases || emailFriendRequests || emailFriendActivity || emailWeeklyDigest;
+  const allPushEnabled = pushNewReleases && pushFriendRequests && pushFriendActivity && pushWeeklyDigest;
   
   const handleSelectAllEmail = (checked: boolean) => {
     setEmailNewReleases(checked);
@@ -166,13 +200,16 @@ function NotificationsTable({
     setEmailWeeklyDigest(checked);
   };
 
-  // For push, only New Releases is supported currently
-  const handleSelectAllPush = async () => {
-    if (pushSubscribed) {
-      await unsubscribe();
-    } else {
-      await subscribe();
+  const handleSelectAllPush = async (checked: boolean) => {
+    // If enabling and not subscribed, subscribe first
+    if (checked && !pushSubscribed) {
+      const success = await subscribe();
+      if (!success) return;
     }
+    setPushNewReleases(checked);
+    setPushFriendRequests(checked);
+    setPushFriendActivity(checked);
+    setPushWeeklyDigest(checked);
   };
 
   return (
@@ -208,7 +245,7 @@ function NotificationsTable({
             {pushSupported ? (
               <div className="flex items-center gap-1">
                 <Switch
-                  checked={pushSubscribed}
+                  checked={allPushEnabled && pushSubscribed}
                   onCheckedChange={handleSelectAllPush}
                   disabled={pushLoading || pushPermission === 'denied'}
                   className="scale-75"
@@ -244,18 +281,14 @@ function NotificationsTable({
             
             {/* Push Toggle */}
             <div className="flex justify-center w-20">
-              {notif.supportsPush ? (
-                pushSupported ? (
-                  <Switch
-                    checked={pushSubscribed}
-                    onCheckedChange={handlePushToggle}
-                    disabled={pushLoading || pushPermission === 'denied'}
-                  />
-                ) : (
-                  <span className="text-xs text-muted-foreground">N/A</span>
-                )
+              {pushSupported ? (
+                <Switch
+                  checked={pushStates[notif.id].checked && pushSubscribed}
+                  onCheckedChange={() => handlePushToggle(notif.id, pushStates[notif.id].checked)}
+                  disabled={pushLoading || pushPermission === 'denied'}
+                />
               ) : (
-                <span className="text-xs text-muted-foreground">—</span>
+                <span className="text-xs text-muted-foreground">N/A</span>
               )}
             </div>
           </div>
@@ -315,6 +348,12 @@ const ProfileSettings = () => {
   const [emailFriendRequests, setEmailFriendRequests] = useState(true);
   const [emailFriendActivity, setEmailFriendActivity] = useState(false);
   const [emailWeeklyDigest, setEmailWeeklyDigest] = useState(false);
+  
+  // Push notification settings state
+  const [pushNewReleases, setPushNewReleases] = useState(true);
+  const [pushFriendRequests, setPushFriendRequests] = useState(true);
+  const [pushFriendActivity, setPushFriendActivity] = useState(false);
+  const [pushWeeklyDigest, setPushWeeklyDigest] = useState(false);
   // Blocked users
   const { blockedUsers, unblockUser } = useBlockedUsers();
 
@@ -381,6 +420,11 @@ const ProfileSettings = () => {
       setEmailFriendRequests(profile.email_friend_requests ?? true);
       setEmailFriendActivity(profile.email_friend_activity ?? false);
       setEmailWeeklyDigest((profile as Profile & { email_weekly_digest?: boolean }).email_weekly_digest ?? false);
+      // Push notification settings
+      setPushNewReleases((profile as any).push_new_releases ?? true);
+      setPushFriendRequests((profile as any).push_friend_requests ?? true);
+      setPushFriendActivity((profile as any).push_friend_activity ?? false);
+      setPushWeeklyDigest((profile as any).push_weekly_digest ?? false);
     }
   }, [profile]);
 
@@ -414,7 +458,12 @@ const ProfileSettings = () => {
           email_friend_requests: emailFriendRequests,
           email_friend_activity: emailFriendActivity,
           email_weekly_digest: emailWeeklyDigest,
-        })
+          // Push notification settings
+          push_new_releases: pushNewReleases,
+          push_friend_requests: pushFriendRequests,
+          push_friend_activity: pushFriendActivity,
+          push_weekly_digest: pushWeeklyDigest,
+        } as any)
         .eq('id', user!.id);
       
       if (error) throw error;
@@ -926,6 +975,14 @@ const ProfileSettings = () => {
                     setEmailFriendActivity={setEmailFriendActivity}
                     emailWeeklyDigest={emailWeeklyDigest}
                     setEmailWeeklyDigest={setEmailWeeklyDigest}
+                    pushNewReleases={pushNewReleases}
+                    setPushNewReleases={setPushNewReleases}
+                    pushFriendRequests={pushFriendRequests}
+                    setPushFriendRequests={setPushFriendRequests}
+                    pushFriendActivity={pushFriendActivity}
+                    setPushFriendActivity={setPushFriendActivity}
+                    pushWeeklyDigest={pushWeeklyDigest}
+                    setPushWeeklyDigest={setPushWeeklyDigest}
                   />
                 )}
               </div>
