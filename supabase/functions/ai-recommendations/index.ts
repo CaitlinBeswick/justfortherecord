@@ -20,11 +20,13 @@ serve(async (req) => {
       });
     }
 
-    // Parse optional mood from request body
+    // Parse optional mood and includeKnown from request body
     let mood: string | undefined;
+    let includeKnown = false;
     try {
       const body = await req.json();
       mood = body?.mood;
+      includeKnown = body?.includeKnown === true;
     } catch {
       // No body or invalid JSON, that's fine
     }
@@ -105,7 +107,15 @@ serve(async (req) => {
       ? `\n\nIMPORTANT: The user is in a "${mood}" mood. Prioritize recommendations that feel ${moodDescriptions[mood]}.`
       : "";
 
-    const systemPrompt = `You are a music recommendation expert. Based on a user's listening history and preferences, suggest albums and artists they might enjoy.${moodInstruction}
+    // Build exclusion instruction if not including known content
+    const exclusionInstruction = !includeKnown
+      ? `\n\nCRITICAL: Do NOT recommend any of these albums or artists that the user has already heard:
+Albums to avoid: ${topAlbumsList || "none"}${lovedList ? `, ${lovedList}` : ""}
+Artists to avoid: ${followedList || "none"}
+Recommend ONLY new discoveries they haven't interacted with yet.`
+      : "";
+
+    const systemPrompt = `You are a music recommendation expert. Based on a user's listening history and preferences, suggest albums and artists they might enjoy.${moodInstruction}${exclusionInstruction}
     
 Your recommendations should:
 - Be specific album or artist names that actually exist

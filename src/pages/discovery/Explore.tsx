@@ -2,7 +2,7 @@ import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical } from "lucide-react";
+import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, RotateCcw } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,12 +72,13 @@ const DiscoveryExplore = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedMood, setSelectedMood] = useState<Mood>(null);
+  const [includeKnown, setIncludeKnown] = useState(false);
 
   const { data: aiData, isLoading: aiLoading, error: aiError, refetch, isFetching } = useQuery({
-    queryKey: ["ai-recommendations", user?.id, selectedMood],
+    queryKey: ["ai-recommendations", user?.id, selectedMood, includeKnown],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("ai-recommendations", {
-        body: selectedMood ? { mood: selectedMood } : {},
+        body: { mood: selectedMood, includeKnown },
       });
       if (error) throw error;
       
@@ -197,6 +198,19 @@ const DiscoveryExplore = () => {
                     {mood.label}
                   </button>
                 ))}
+                {/* Include familiar toggle */}
+                <button
+                  onClick={() => setIncludeKnown(prev => !prev)}
+                  disabled={isFetching}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    includeKnown
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-surface-hover"
+                  } disabled:opacity-50`}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Include Familiar
+                </button>
                 {recommendations && (
                   <button
                     onClick={handleRefresh}
