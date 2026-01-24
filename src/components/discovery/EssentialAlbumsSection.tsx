@@ -64,16 +64,12 @@ export function EssentialAlbumsSection({ decade, albums, color }: EssentialAlbum
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-10"
-    >
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`p-2 rounded-lg bg-gradient-to-br ${color}`}>
-          <Award className="h-4 w-4 text-white" />
-        </div>
-        <h3 className="font-serif text-lg text-foreground">{decade} Essentials</h3>
+    <div className="pl-2">
+      <div className="flex items-center gap-2 mb-3">
+        <Award className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Essentials
+        </span>
       </div>
 
       {isLoading ? (
@@ -124,6 +120,6 @@ export function EssentialAlbumsSection({ decade, albums, color }: EssentialAlbum
           })}
         </motion.div>
       )}
-    </motion.div>
+    </div>
   );
 }
