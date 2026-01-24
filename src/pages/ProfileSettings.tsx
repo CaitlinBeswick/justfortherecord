@@ -41,6 +41,7 @@ interface Profile {
   favorite_genres: string[] | null;
   default_release_types: string[];
   yearly_listen_goal: number | null;
+  ai_include_familiar: boolean;
   // Privacy settings
   is_public: boolean;
   friends_only: boolean;
@@ -335,6 +336,7 @@ const ProfileSettings = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
   const [yearlyListenGoal, setYearlyListenGoal] = useState<string>("");
+  const [aiIncludeFamiliar, setAiIncludeFamiliar] = useState(false);
   
   // Privacy settings state
   const [isPublic, setIsPublic] = useState(true);
@@ -416,6 +418,7 @@ const ProfileSettings = () => {
       setFavoriteGenres(profile.favorite_genres || []);
       setDefaultReleaseTypes(profile.default_release_types || ['Album']);
       setYearlyListenGoal(profile.yearly_listen_goal?.toString() || "");
+      setAiIncludeFamiliar(profile.ai_include_familiar ?? false);
       // Privacy settings
       setIsPublic(profile.is_public ?? true);
       setFriendsOnly(profile.friends_only ?? false);
@@ -454,6 +457,7 @@ const ProfileSettings = () => {
           favorite_genres: favoriteGenres.length > 0 ? favoriteGenres : null,
           default_release_types: defaultReleaseTypes.length > 0 ? defaultReleaseTypes : ['Album'],
           yearly_listen_goal: yearlyListenGoal ? parseInt(yearlyListenGoal, 10) : null,
+          ai_include_familiar: aiIncludeFamiliar,
           // Privacy settings
           is_public: isPublic,
           friends_only: friendsOnly,
@@ -951,6 +955,22 @@ const ProfileSettings = () => {
                             <X className="h-4 w-4" />
                           </Button>
                         )}
+                      </div>
+                    </div>
+
+                    {/* AI Recommendations - Include Familiar */}
+                    <div className="space-y-3 p-4 rounded-lg border border-border bg-card">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label>Include Familiar in Recommendations</Label>
+                          <p className="text-sm text-muted-foreground">
+                            When enabled, AI recommendations on the Explore page may include albums and artists you've already listened to or rated.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={aiIncludeFamiliar}
+                          onCheckedChange={setAiIncludeFamiliar}
+                        />
                       </div>
                     </div>
                   </motion.div>
