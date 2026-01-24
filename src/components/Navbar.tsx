@@ -1,5 +1,5 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2, Shield, Crown } from "lucide-react";
+import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -111,16 +111,6 @@ export function Navbar() {
                     My Profile
                   </Link>
                 </DropdownMenuItem>
-                {/* Membership option temporarily disabled
-                {!isPro && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/pricing" className="flex items-center gap-2 cursor-pointer">
-                      <Crown className="h-4 w-4 text-amber-500" />
-                      Upgrade to Pro
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-                */}
                 {isAdmin && (
                   <>
                     <DropdownMenuSeparator />
