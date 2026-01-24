@@ -98,6 +98,7 @@ export function UserActivityFeed() {
       artistName: entry.artist_name,
       timestamp: entry.created_at,
       isRelisten: entry.is_relisten,
+      rating: entry.rating ?? undefined,
     })),
     ...ratings.map(rating => ({
       id: `rating-${rating.id}`,
@@ -226,8 +227,8 @@ export function UserActivityFeed() {
                   )}
                 </p>
 
-                {/* Rating for reviews/ratings */}
-                {(activity.type === 'review' || activity.type === 'rating') && activity.rating && (
+                {/* Rating display */}
+                {activity.rating && (
                   <div className="mt-1 flex items-center gap-0.5">
                     <Star className="h-3 w-3 fill-primary text-primary" />
                     <span className="text-xs font-medium">{activity.rating.toFixed(1)}</span>
