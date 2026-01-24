@@ -62,7 +62,7 @@ const DiscoveryExplore = () => {
   });
 
   const handleGenreClick = (genre: string) => {
-    navigate(`/search?q=${encodeURIComponent(genre)}`);
+    navigate(`/discovery/genre/${encodeURIComponent(genre)}`);
   };
 
   const handleRefresh = () => {
