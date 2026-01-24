@@ -4,7 +4,7 @@ import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,7 +55,6 @@ const DiscoveryExplore = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [selectedMood, setSelectedMood] = useState<Mood>(null);
 
   const { data: aiData, isLoading: aiLoading, error: aiError, refetch, isFetching } = useQuery({
@@ -77,10 +76,9 @@ const DiscoveryExplore = () => {
   };
 
   const handleMoodSelect = (mood: Mood) => {
-    const newMood = selectedMood === mood ? null : mood;
-    setSelectedMood(newMood);
-    // Invalidate to trigger refetch with new mood
-    queryClient.invalidateQueries({ queryKey: ["ai-recommendations", user?.id, newMood] });
+    // Toggle off if same mood clicked, otherwise set new mood
+    // React Query automatically refetches when selectedMood in the queryKey changes
+    setSelectedMood(prev => prev === mood ? null : mood);
   };
 
   const handleRefresh = () => {
