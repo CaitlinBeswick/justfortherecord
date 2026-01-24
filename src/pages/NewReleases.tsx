@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AlbumCard } from "@/components/AlbumCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Disc3, Filter, ChevronDown, Loader2 } from "lucide-react";
+import { Calendar, Disc3, Filter, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -18,7 +18,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { format, parseISO, isAfter, isBefore, subMonths, addMonths } from "date-fns";
 
 interface ReleaseGroup {
@@ -38,74 +37,10 @@ interface ArtistFollow {
 
 type TimeFilter = "recent" | "upcoming" | "all";
 
-// Batch fetch helper - fetches multiple artists in parallel batches
-async function fetchReleasesInBatches(
-  artists: ArtistFollow[],
-  onProgress: (completed: number, total: number) => void
-): Promise<ReleaseGroup[]> {
-  const BATCH_SIZE = 3; // Fetch 3 artists concurrently
-  const DELAY_BETWEEN_BATCHES = 350; // ms between batches for rate limiting
-  const releases: ReleaseGroup[] = [];
-  let completed = 0;
-
-  for (let i = 0; i < artists.length; i += BATCH_SIZE) {
-    const batch = artists.slice(i, i + BATCH_SIZE);
-    
-    const batchResults = await Promise.allSettled(
-      batch.map(async (artist) => {
-        try {
-          const { data, error } = await supabase.functions.invoke("musicbrainz", {
-            body: {
-              action: "get-artist-releases",
-              id: artist.artist_id,
-            },
-          });
-
-          if (error) {
-            console.error(`Error fetching releases for ${artist.artist_name}:`, error);
-            return [];
-          }
-
-          const releaseGroups = data?.["release-groups"] || [];
-          return releaseGroups.map((rg: any) => ({
-            id: rg.id,
-            title: rg.title,
-            "primary-type": rg["primary-type"],
-            "secondary-types": rg["secondary-types"] || [],
-            "first-release-date": rg["first-release-date"],
-            artistId: artist.artist_id,
-            artistName: artist.artist_name,
-          }));
-        } catch (err) {
-          console.error(`Failed to fetch releases for ${artist.artist_name}:`, err);
-          return [];
-        }
-      })
-    );
-
-    // Collect results
-    for (const result of batchResults) {
-      if (result.status === "fulfilled") {
-        releases.push(...result.value);
-      }
-      completed++;
-      onProgress(completed, artists.length);
-    }
-
-    // Rate limit delay between batches (skip after last batch)
-    if (i + BATCH_SIZE < artists.length) {
-      await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
-    }
-  }
-
-  return releases;
-}
-
 const NewReleases = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("recent");
-  const [loadingProgress, setLoadingProgress] = useState({ completed: 0, total: 0 });
 
   // Fetch followed artists
   const { data: followedArtists = [], isLoading: artistsLoading } = useQuery({
@@ -123,22 +58,17 @@ const NewReleases = () => {
     enabled: !!user,
   });
 
-  // Progress callback
-  const handleProgress = useCallback((completed: number, total: number) => {
-    setLoadingProgress({ completed, total });
-  }, []);
-
-  // Fetch releases for all followed artists with batching
+  // Fetch releases via backend cache (fast on repeat loads)
   const { data: allReleases = [], isLoading: releasesLoading, isFetching } = useQuery({
-    queryKey: ["new-releases", followedArtists.map((a) => a.artist_id).join(",")],
+    queryKey: ["new-releases", user?.id],
     queryFn: async () => {
-      if (followedArtists.length === 0) return [];
-      setLoadingProgress({ completed: 0, total: followedArtists.length });
-      return fetchReleasesInBatches(followedArtists, handleProgress);
+      const { data, error } = await supabase.functions.invoke("get-new-releases");
+      if (error) throw error;
+      return (data?.releases || []) as ReleaseGroup[];
     },
-    enabled: followedArtists.length > 0,
-    staleTime: 1000 * 60 * 15, // Cache for 15 minutes
-    gcTime: 1000 * 60 * 30, // Keep in garbage collection for 30 minutes
+    enabled: !!user,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
   });
 
   // Filter and sort releases
@@ -217,9 +147,6 @@ const NewReleases = () => {
   }, [filteredReleases]);
 
   const isLoading = artistsLoading || releasesLoading;
-  const progressPercent = loadingProgress.total > 0 
-    ? Math.round((loadingProgress.completed / loadingProgress.total) * 100) 
-    : 0;
 
   if (!user) {
     return (
@@ -320,7 +247,7 @@ const NewReleases = () => {
             animate={{ opacity: 1 }}
             className="space-y-6"
           >
-            {/* Loading indicator with progress */}
+            {/* Loading indicator */}
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="relative mb-6">
                 <Disc3 className="h-16 w-16 text-primary animate-spin" style={{ animationDuration: '3s' }} />
@@ -328,14 +255,7 @@ const NewReleases = () => {
               <h2 className="text-lg font-medium text-foreground mb-2">
                 Loading releases...
               </h2>
-              {loadingProgress.total > 0 && (
-                <div className="w-full max-w-xs space-y-2">
-                  <Progress value={progressPercent} className="h-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Checking {loadingProgress.completed} of {loadingProgress.total} artists
-                  </p>
-                </div>
-              )}
+              <p className="text-sm text-muted-foreground">Using cached artist data when available</p>
             </div>
 
             {/* Skeleton grid */}
