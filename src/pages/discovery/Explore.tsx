@@ -2,7 +2,7 @@ import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
 import { Footer } from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock } from "lucide-react";
+import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock, Calendar } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,17 @@ const GENRES = [
   { name: "Folk", color: "from-emerald-500 to-green-500" },
   { name: "Blues", color: "from-indigo-500 to-blue-600" },
   { name: "Reggae", color: "from-green-500 to-lime-500" },
+];
+
+const DECADES = [
+  { name: "2020s", range: "2020-2029", color: "from-violet-500 to-fuchsia-500" },
+  { name: "2010s", range: "2010-2019", color: "from-cyan-500 to-teal-500" },
+  { name: "2000s", range: "2000-2009", color: "from-rose-500 to-pink-500" },
+  { name: "1990s", range: "1990-1999", color: "from-emerald-500 to-green-500" },
+  { name: "1980s", range: "1980-1989", color: "from-orange-500 to-amber-500" },
+  { name: "1970s", range: "1970-1979", color: "from-yellow-500 to-lime-500" },
+  { name: "1960s", range: "1960-1969", color: "from-indigo-500 to-purple-500" },
+  { name: "Pre-1960", range: "1900-1959", color: "from-stone-500 to-neutral-600" },
 ];
 
 const containerVariants = {
@@ -645,6 +656,7 @@ const DiscoveryExplore = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
+          className="mb-12"
         >
           <div className="flex items-center gap-2 mb-6">
             <Music2 className="h-5 w-5 text-primary" />
@@ -665,6 +677,38 @@ const DiscoveryExplore = () => {
               >
                 <span className="relative z-10 text-white font-semibold text-lg">
                   {genre.name}
+                </span>
+                <div className="absolute inset-0 bg-black/20" />
+              </motion.button>
+            ))}
+          </motion.div>
+        </motion.div>
+
+        {/* Browse by Decade */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <Calendar className="h-5 w-5 text-primary" />
+            <h2 className="font-serif text-xl text-foreground">Browse by Decade</h2>
+          </div>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+          >
+            {DECADES.map((decade) => (
+              <motion.button
+                key={decade.name}
+                variants={itemVariants}
+                onClick={() => navigate(`/discovery/decade/${encodeURIComponent(decade.range)}`)}
+                className={`relative overflow-hidden rounded-xl p-6 text-left transition-transform hover:scale-105 bg-gradient-to-br ${decade.color}`}
+              >
+                <span className="relative z-10 text-white font-bold text-2xl">
+                  {decade.name}
                 </span>
                 <div className="absolute inset-0 bg-black/20" />
               </motion.button>
