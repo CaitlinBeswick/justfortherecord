@@ -2,15 +2,14 @@ import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn } from "lucide-react";
+import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { useToast } from "@/hooks/use-toast";
-
+import { useState } from "react";
 const GENRES = [
   { name: "Rock", color: "from-red-500 to-orange-500" },
   { name: "Pop", color: "from-pink-500 to-rose-500" },
@@ -44,15 +43,27 @@ interface Recommendation {
   artists: Array<{ name: string; reason: string }>;
 }
 
+type Mood = "chill" | "energetic" | "experimental" | null;
+
+const MOODS: { id: Mood; label: string; icon: React.ReactNode; color: string }[] = [
+  { id: "chill", label: "Chill", icon: <Leaf className="h-4 w-4" />, color: "from-teal-500 to-cyan-500" },
+  { id: "energetic", label: "Energetic", icon: <Zap className="h-4 w-4" />, color: "from-orange-500 to-rose-500" },
+  { id: "experimental", label: "Experimental", icon: <FlaskConical className="h-4 w-4" />, color: "from-violet-500 to-purple-500" },
+];
+
 const DiscoveryExplore = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedMood, setSelectedMood] = useState<Mood>(null);
 
   const { data: aiData, isLoading: aiLoading, error: aiError, refetch, isFetching } = useQuery({
-    queryKey: ["ai-recommendations", user?.id],
+    queryKey: ["ai-recommendations", user?.id, selectedMood],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("ai-recommendations");
+      const { data, error } = await supabase.functions.invoke("ai-recommendations", {
+        body: selectedMood ? { mood: selectedMood } : {},
+      });
       if (error) throw error;
       return data as { recommendations: Recommendation; message?: string };
     },
@@ -63,6 +74,13 @@ const DiscoveryExplore = () => {
 
   const handleGenreClick = (genre: string) => {
     navigate(`/discovery/genre/${encodeURIComponent(genre)}`);
+  };
+
+  const handleMoodSelect = (mood: Mood) => {
+    const newMood = selectedMood === mood ? null : mood;
+    setSelectedMood(newMood);
+    // Invalidate to trigger refetch with new mood
+    queryClient.invalidateQueries({ queryKey: ["ai-recommendations", user?.id, newMood] });
   };
 
   const handleRefresh = () => {
@@ -97,20 +115,45 @@ const DiscoveryExplore = () => {
           transition={{ delay: 0.1 }}
           className="mb-12"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
               <h2 className="font-serif text-xl text-foreground">For You</h2>
+              {selectedMood && (
+                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full capitalize">
+                  {selectedMood}
+                </span>
+              )}
             </div>
-            {user && recommendations && (
-              <button
-                onClick={handleRefresh}
-                disabled={isFetching}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
+            {user && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Mood buttons */}
+                {MOODS.map((mood) => (
+                  <button
+                    key={mood.id}
+                    onClick={() => handleMoodSelect(mood.id)}
+                    disabled={isFetching}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      selectedMood === mood.id
+                        ? `bg-gradient-to-r ${mood.color} text-white shadow-md`
+                        : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-surface-hover"
+                    } disabled:opacity-50`}
+                  >
+                    {mood.icon}
+                    {mood.label}
+                  </button>
+                ))}
+                {recommendations && (
+                  <button
+                    onClick={handleRefresh}
+                    disabled={isFetching}
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 ml-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+                    Refresh
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
