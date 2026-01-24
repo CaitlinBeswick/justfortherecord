@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.email-health-check]
 verify_jwt = false
+
+[functions.ai-recommendations]
+verify_jwt = false

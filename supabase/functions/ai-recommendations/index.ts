@@ -1,0 +1,172 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "No authorization header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Get authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fetch user's top rated albums
+    const { data: topRatedAlbums } = await supabase
+      .from("album_ratings")
+      .select("album_title, artist_name, rating")
+      .eq("user_id", user.id)
+      .gte("rating", 4)
+      .order("rating", { ascending: false })
+      .limit(20);
+
+    // Fetch user's followed artists
+    const { data: followedArtists } = await supabase
+      .from("artist_follows")
+      .select("artist_name")
+      .eq("user_id", user.id)
+      .limit(15);
+
+    // Fetch user's loved albums
+    const { data: lovedAlbums } = await supabase
+      .from("listening_status")
+      .select("album_title, artist_name")
+      .eq("user_id", user.id)
+      .eq("is_loved", true)
+      .limit(10);
+
+    // Build taste profile for AI
+    const topAlbumsList = (topRatedAlbums || [])
+      .map((a) => `${a.album_title} by ${a.artist_name} (${a.rating}/5)`)
+      .join(", ");
+    
+    const followedList = (followedArtists || [])
+      .map((a) => a.artist_name)
+      .join(", ");
+    
+    const lovedList = (lovedAlbums || [])
+      .map((a) => `${a.album_title} by ${a.artist_name}`)
+      .join(", ");
+
+    if (!topAlbumsList && !followedList && !lovedList) {
+      return new Response(JSON.stringify({ 
+        recommendations: [],
+        message: "Rate some albums or follow artists to get personalized recommendations!" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    const systemPrompt = `You are a music recommendation expert. Based on a user's listening history and preferences, suggest albums and artists they might enjoy. 
+    
+Your recommendations should:
+- Be specific album or artist names that actually exist
+- Include a mix of similar artists and albums the user likely hasn't heard
+- Consider the genres and styles the user seems to enjoy
+- Include some deeper cuts, not just the most popular options
+
+Format your response as a JSON object with this exact structure:
+{
+  "albums": [
+    {"title": "Album Name", "artist": "Artist Name", "reason": "Brief reason why they'd like it"}
+  ],
+  "artists": [
+    {"name": "Artist Name", "reason": "Brief reason why they'd like them"}
+  ]
+}
+
+Provide exactly 5 album recommendations and 5 artist recommendations.`;
+
+    const userPrompt = `Based on this user's music taste, recommend albums and artists they might enjoy:
+
+${topAlbumsList ? `Highly rated albums: ${topAlbumsList}` : ""}
+${followedList ? `Followed artists: ${followedList}` : ""}
+${lovedList ? `Loved albums: ${lovedList}` : ""}
+
+Recommend music that matches their taste but explores new territory they likely haven't discovered.`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please try again later." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const errorText = await response.text();
+      console.error("AI gateway error:", response.status, errorText);
+      throw new Error("AI gateway error");
+    }
+
+    const aiResponse = await response.json();
+    const content = aiResponse.choices?.[0]?.message?.content;
+    
+    let recommendations;
+    try {
+      recommendations = JSON.parse(content);
+    } catch {
+      console.error("Failed to parse AI response:", content);
+      recommendations = { albums: [], artists: [] };
+    }
+
+    return new Response(JSON.stringify({ recommendations }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("AI recommendations error:", error);
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
