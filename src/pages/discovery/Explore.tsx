@@ -758,53 +758,41 @@ const DiscoveryExplore = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mb-12"
         >
           <div className="flex items-center gap-2 mb-6">
             <Calendar className="h-5 w-5 text-primary" />
             <h2 className="font-serif text-xl text-foreground">Browse by Decade</h2>
           </div>
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-2 sm:grid-cols-4 gap-4"
-          >
-            {DECADES.map((decade) => (
-              <motion.button
-                key={decade.name}
-                variants={itemVariants}
-                onClick={() => navigate(`/discovery/decade/${encodeURIComponent(decade.range)}`)}
-                className={`relative overflow-hidden rounded-xl p-6 text-left transition-transform hover:scale-105 bg-gradient-to-br ${decade.color}`}
-              >
-                <span className="relative z-10 text-white font-bold text-2xl">
-                  {decade.name}
-                </span>
-                <div className="absolute inset-0 bg-black/20" />
-              </motion.button>
-            ))}
-          </motion.div>
-        </motion.div>
-
-        {/* Essential Albums by Era */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <Award className="h-5 w-5 text-primary" />
-            <h2 className="font-serif text-xl text-foreground">Essential Albums by Era</h2>
-          </div>
           
-          {DECADES.map((decade) => (
-            <EssentialAlbumsSection
-              key={decade.name}
-              decade={decade.name}
-              albums={ESSENTIAL_ALBUMS[decade.name] || []}
-              color={decade.color}
-            />
-          ))}
+          <div className="space-y-8">
+            {DECADES.map((decade) => (
+              <div key={decade.name} className="space-y-4">
+                {/* Decade Header */}
+                <motion.button
+                  variants={itemVariants}
+                  onClick={() => navigate(`/discovery/decade/${encodeURIComponent(decade.range)}`)}
+                  className={`relative overflow-hidden rounded-xl p-4 sm:p-6 w-full text-left transition-transform hover:scale-[1.02] bg-gradient-to-br ${decade.color}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="relative z-10 text-white font-bold text-2xl sm:text-3xl">
+                      {decade.name}
+                    </span>
+                    <span className="relative z-10 text-white/80 text-sm font-medium">
+                      View all →
+                    </span>
+                  </div>
+                  <div className="absolute inset-0 bg-black/20" />
+                </motion.button>
+
+                {/* Essential Albums for this decade */}
+                <EssentialAlbumsSection
+                  decade={decade.name}
+                  albums={ESSENTIAL_ALBUMS[decade.name] || []}
+                  color={decade.color}
+                />
+              </div>
+            ))}
+          </div>
         </motion.div>
       </main>
       
