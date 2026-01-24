@@ -1,18 +1,21 @@
 import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
 import { Footer } from "@/components/Footer";
-import { motion } from "framer-motion";
-import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { ArtistImageWithFallback } from "@/components/ArtistImageWithFallback";
 import { searchReleases, searchArtists } from "@/services/musicbrainz";
+import { useListeningStatus } from "@/hooks/useListeningStatus";
+import { format } from "date-fns";
+
 const GENRES = [
   { name: "Rock", color: "from-red-500 to-orange-500" },
   { name: "Pop", color: "from-pink-500 to-rose-500" },
@@ -59,21 +62,77 @@ interface Recommendation {
   artists: ArtistRecommendation[];
 }
 
-type Mood = "chill" | "energetic" | "experimental" | null;
+type Mood = "chill" | "energetic" | "experimental" | "melancholic" | "uplifting" | null;
 
 const MOODS: { id: Mood; label: string; icon: React.ReactNode; color: string }[] = [
   { id: "chill", label: "Chill", icon: <Leaf className="h-4 w-4" />, color: "from-teal-500 to-cyan-500" },
   { id: "energetic", label: "Energetic", icon: <Zap className="h-4 w-4" />, color: "from-orange-500 to-rose-500" },
   { id: "experimental", label: "Experimental", icon: <FlaskConical className="h-4 w-4" />, color: "from-violet-500 to-purple-500" },
+  { id: "melancholic", label: "Melancholic", icon: <Moon className="h-4 w-4" />, color: "from-slate-500 to-indigo-500" },
+  { id: "uplifting", label: "Uplifting", icon: <Heart className="h-4 w-4" />, color: "from-yellow-500 to-amber-500" },
 ];
+
+interface HistoryEntry {
+  id: string;
+  mood: string | null;
+  albums: AlbumRecommendation[];
+  artists: ArtistRecommendation[];
+  created_at: string;
+}
 
 const DiscoveryExplore = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedMood, setSelectedMood] = useState<Mood>(null);
   const [resolvingAlbumKey, setResolvingAlbumKey] = useState<string | null>(null);
   const [resolvingArtistKey, setResolvingArtistKey] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [pendingToListen, setPendingToListen] = useState<{ id: string; title: string; artist: string } | null>(null);
+  
+  const { toggleStatus, isPending: isTogglingStatus, getStatusForAlbum, allStatuses } = useListeningStatus();
+
+  // Fetch recommendation history
+  const { data: historyData } = useQuery({
+    queryKey: ["recommendation-history", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("recommendation_history")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      // Map the JSONB fields to our types
+      return (data || []).map(row => ({
+        id: row.id,
+        mood: row.mood,
+        albums: row.albums as unknown as AlbumRecommendation[],
+        artists: row.artists as unknown as ArtistRecommendation[],
+        created_at: row.created_at,
+      })) as HistoryEntry[];
+    },
+    enabled: !!user,
+  });
+
+  // Save history mutation
+  const saveHistoryMutation = useMutation({
+    mutationFn: async (entry: { mood: string | null; albums: AlbumRecommendation[]; artists: ArtistRecommendation[] }) => {
+      const { error } = await supabase
+        .from("recommendation_history")
+        .insert([{
+          user_id: user!.id,
+          mood: entry.mood,
+          albums: JSON.parse(JSON.stringify(entry.albums)),
+          artists: JSON.parse(JSON.stringify(entry.artists)),
+        }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["recommendation-history", user?.id] });
+    },
+  });
 
   // Fetch user profile for AI preference
   const { data: profile } = useQuery({
@@ -157,8 +216,67 @@ const DiscoveryExplore = () => {
   };
 
   const handleRefresh = () => {
+    // Save current recommendations to history before refreshing
+    if (recommendations) {
+      saveHistoryMutation.mutate({
+        mood: selectedMood,
+        albums: recommendations.albums || [],
+        artists: recommendations.artists || [],
+      });
+    }
     refetch();
     toast({ title: "Refreshing recommendations..." });
+  };
+
+  const handleSaveToListen = (album: AlbumRecommendation) => {
+    if (!album.releaseGroupId) {
+      toast({ title: "Unable to save", description: "Album ID not available", variant: "destructive" });
+      return;
+    }
+    
+    toggleStatus({
+      releaseGroupId: album.releaseGroupId,
+      albumTitle: album.title,
+      artistName: album.artist,
+      field: "is_to_listen",
+      value: true,
+    });
+    
+    setPendingToListen({ id: album.releaseGroupId, title: album.title, artist: album.artist });
+  };
+
+  const handleUndoToListen = () => {
+    if (pendingToListen) {
+      toggleStatus({
+        releaseGroupId: pendingToListen.id,
+        albumTitle: pendingToListen.title,
+        artistName: pendingToListen.artist,
+        field: "is_to_listen",
+        value: false,
+      });
+      setPendingToListen(null);
+    }
+  };
+
+  // Clear pending undo after 5 seconds
+  useEffect(() => {
+    if (pendingToListen) {
+      const timer = setTimeout(() => setPendingToListen(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingToListen]);
+
+  const loadHistoryEntry = (entry: HistoryEntry) => {
+    // Load historical recommendations into the view
+    queryClient.setQueryData(["ai-recommendations", user?.id, entry.mood as Mood, includeKnown], {
+      recommendations: {
+        albums: entry.albums,
+        artists: entry.artists,
+      },
+    });
+    setSelectedMood(entry.mood as Mood);
+    setShowHistory(false);
+    toast({ title: "Loaded recommendations", description: `From ${format(new Date(entry.created_at), "MMM d, h:mm a")}` });
   };
 
   const handleAlbumClick = async (album: AlbumRecommendation) => {
@@ -266,18 +384,75 @@ const DiscoveryExplore = () => {
                   </button>
                 ))}
                 {recommendations && (
-                  <button
-                    onClick={handleRefresh}
-                    disabled={isFetching}
-                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 ml-2"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-                    Refresh
-                  </button>
+                  <>
+                    <button
+                      onClick={handleRefresh}
+                      disabled={isFetching}
+                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 ml-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+                      Refresh
+                    </button>
+                    {historyData && historyData.length > 0 && (
+                      <button
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <History className="h-4 w-4" />
+                        History
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}
           </div>
+
+          {/* History Panel */}
+          <AnimatePresence>
+            {showHistory && historyData && historyData.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4 overflow-hidden"
+              >
+                <div className="bg-secondary/50 rounded-lg p-4 border border-border/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                      <History className="h-4 w-4" />
+                      Previous Recommendations
+                    </h3>
+                    <button
+                      onClick={() => setShowHistory(false)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {historyData.map((entry) => (
+                      <button
+                        key={entry.id}
+                        onClick={() => loadHistoryEntry(entry)}
+                        className="flex-shrink-0 bg-background hover:bg-surface-hover border border-border/50 rounded-lg px-3 py-2 text-left transition-colors"
+                      >
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(entry.created_at), "MMM d, h:mm a")}
+                        </div>
+                        <div className="text-sm font-medium text-foreground capitalize">
+                          {entry.mood || "No mood"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {entry.albums?.length || 0} albums, {entry.artists?.length || 0} artists
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {!user ? (
             <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20 p-8 text-center">
@@ -343,42 +518,72 @@ const DiscoveryExplore = () => {
                     </h3>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {recommendations.albums.map((album, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        onClick={() => void handleAlbumClick(album)}
-                        className="cursor-pointer group"
-                      >
-                        <div className="aspect-square rounded-lg overflow-hidden mb-2 group-hover:ring-2 ring-primary/50 transition-all">
-                          {album.releaseGroupId ? (
-                            <AlbumCoverWithFallback
-                              releaseGroupId={album.releaseGroupId}
-                              title={album.title}
-                              size="500"
-                              className="w-full h-full"
-                              imageClassName="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center">
-                              <Disc3 className="h-12 w-12 text-primary/40" />
-                            </div>
+                    {recommendations.albums.map((album, i) => {
+                      const isInToListen = album.releaseGroupId 
+                        ? getStatusForAlbum(album.releaseGroupId).isToListen 
+                        : false;
+                      
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="cursor-pointer group relative"
+                        >
+                          <div 
+                            onClick={() => void handleAlbumClick(album)}
+                            className="aspect-square rounded-lg overflow-hidden mb-2 group-hover:ring-2 ring-primary/50 transition-all relative"
+                          >
+                            {album.releaseGroupId ? (
+                              <AlbumCoverWithFallback
+                                releaseGroupId={album.releaseGroupId}
+                                title={album.title}
+                                size="500"
+                                className="w-full h-full"
+                                imageClassName="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center">
+                                <Disc3 className="h-12 w-12 text-primary/40" />
+                              </div>
+                            )}
+                            {/* Save to To-Listen button */}
+                            {album.releaseGroupId && !isInToListen && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSaveToListen(album);
+                                }}
+                                disabled={isTogglingStatus}
+                                className="absolute bottom-2 right-2 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                                title="Save to To-Listen"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            )}
+                            {isInToListen && (
+                              <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                                <Clock className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          <h4 
+                            onClick={() => void handleAlbumClick(album)}
+                            className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors"
+                          >
+                            {album.title}
+                          </h4>
+                          <p className="text-xs text-muted-foreground truncate">{album.artist}</p>
+                          {resolvingAlbumKey === `${album.title}|||${album.artist}` && (
+                            <p className="text-xs text-muted-foreground mt-1">Opening...</p>
                           )}
-                        </div>
-                        <h4 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                          {album.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground truncate">{album.artist}</p>
-                        {resolvingAlbumKey === `${album.title}|||${album.artist}` && (
-                          <p className="text-xs text-muted-foreground mt-1">Opening...</p>
-                        )}
-                        <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2">
-                          {album.reason}
-                        </p>
-                      </motion.div>
-                    ))}
+                          <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2">
+                            {album.reason}
+                          </p>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -467,6 +672,32 @@ const DiscoveryExplore = () => {
           </motion.div>
         </motion.div>
       </main>
+      
+      {/* Undo Toast for To-Listen */}
+      <AnimatePresence>
+        {pendingToListen && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="bg-foreground text-background px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+              <Clock className="h-4 w-4" />
+              <span className="text-sm">
+                Added <strong>{pendingToListen.title}</strong> to To-Listen
+              </span>
+              <button
+                onClick={handleUndoToListen}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Undo
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       <Footer />
     </div>
   );
