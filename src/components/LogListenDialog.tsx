@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CalendarIcon, RotateCcw, Plus } from "lucide-react";
+import { StarRating } from "@/components/ui/StarRating";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -233,6 +234,31 @@ export function LogListenDialog({
               </p>
             </div>
           </div>
+
+          {/* Rating */}
+          <div className="space-y-2">
+            <Label>Rating (optional)</Label>
+            <div className="flex items-center gap-3">
+              <StarRating
+                rating={rating}
+                size="lg"
+                interactive
+                onRatingChange={setRating}
+              />
+              {rating > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground h-auto py-1 px-2"
+                  onClick={() => setRating(0)}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
+
           {/* Review */}
           <div className="space-y-2">
             <Label htmlFor="review">Review (optional)</Label>
