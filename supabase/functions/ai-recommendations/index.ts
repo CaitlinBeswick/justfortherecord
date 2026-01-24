@@ -46,7 +46,7 @@ serve(async (req) => {
       });
     }
 
-    // Fetch user's top rated albums
+    // Fetch user's top rated albums (for taste profile)
     const { data: topRatedAlbums } = await supabase
       .from("album_ratings")
       .select("album_title, artist_name, rating")
@@ -55,12 +55,30 @@ serve(async (req) => {
       .order("rating", { ascending: false })
       .limit(20);
 
+    // Fetch ALL rated albums (for exclusion)
+    const { data: allRatedAlbums } = await supabase
+      .from("album_ratings")
+      .select("album_title, artist_name")
+      .eq("user_id", user.id);
+
+    // Fetch ALL listened albums (for exclusion)
+    const { data: allListenedAlbums } = await supabase
+      .from("listening_status")
+      .select("album_title, artist_name")
+      .eq("user_id", user.id)
+      .eq("is_listened", true);
+
     // Fetch user's followed artists
     const { data: followedArtists } = await supabase
       .from("artist_follows")
       .select("artist_name")
-      .eq("user_id", user.id)
-      .limit(15);
+      .eq("user_id", user.id);
+
+    // Fetch ALL rated artists (for exclusion)
+    const { data: allRatedArtists } = await supabase
+      .from("artist_ratings")
+      .select("artist_name")
+      .eq("user_id", user.id);
 
     // Fetch user's loved albums
     const { data: lovedAlbums } = await supabase
@@ -82,6 +100,20 @@ serve(async (req) => {
     const lovedList = (lovedAlbums || [])
       .map((a) => `${a.album_title} by ${a.artist_name}`)
       .join(", ");
+
+    // Build comprehensive exclusion lists
+    const allListenedSet = new Set([
+      ...(allListenedAlbums || []).map((a) => `${a.album_title} by ${a.artist_name}`),
+      ...(allRatedAlbums || []).map((a) => `${a.album_title} by ${a.artist_name}`),
+      ...(lovedAlbums || []).map((a) => `${a.album_title} by ${a.artist_name}`),
+    ]);
+    const allListenedList = Array.from(allListenedSet).join(", ");
+
+    const allKnownArtistsSet = new Set([
+      ...(followedArtists || []).map((a) => a.artist_name),
+      ...(allRatedArtists || []).map((a) => a.artist_name),
+    ]);
+    const allKnownArtistsList = Array.from(allKnownArtistsSet).join(", ");
 
     if (!topAlbumsList && !followedList && !lovedList) {
       return new Response(JSON.stringify({ 
@@ -109,10 +141,10 @@ serve(async (req) => {
 
     // Build exclusion instruction if not including known content
     const exclusionInstruction = !includeKnown
-      ? `\n\nCRITICAL: Do NOT recommend any of these albums or artists that the user has already heard:
-Albums to avoid: ${topAlbumsList || "none"}${lovedList ? `, ${lovedList}` : ""}
-Artists to avoid: ${followedList || "none"}
-Recommend ONLY new discoveries they haven't interacted with yet.`
+      ? `\n\nCRITICAL: Do NOT recommend any of these albums or artists that the user has already heard or knows:
+Albums to EXCLUDE (user has listened to or rated these): ${allListenedList || "none"}
+Artists to EXCLUDE (user follows or has rated these): ${allKnownArtistsList || "none"}
+You MUST recommend ONLY albums and artists that are NOT in the above lists. These are absolute exclusions.`
       : "";
 
     const systemPrompt = `You are a music recommendation expert. Based on a user's listening history and preferences, suggest albums and artists they might enjoy.${moodInstruction}${exclusionInstruction}
