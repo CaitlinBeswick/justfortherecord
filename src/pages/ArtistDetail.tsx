@@ -200,10 +200,11 @@ const ArtistDetail = () => {
     enabled: !!user,
   });
 
-  // Use artist-specific preference if set, otherwise use global default from profile, fallback to ['Album']
+  // Use artist-specific preference if set, otherwise use global default from profile, fallback to ['Album', 'EP']
+  // Including EP by default ensures mixtapes and EPs are visible (important for artists who mainly release mixtapes)
   const visibleTypes = typePreferences?.visible_types 
     || userProfile?.default_release_types 
-    || ['Album'];
+    || ['Album', 'EP'];
 
   // Helper to check if an album is loved
   const isAlbumLoved = (releaseGroupId: string): boolean => {
