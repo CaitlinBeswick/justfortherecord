@@ -665,6 +665,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_include_familiar: boolean
           allow_friend_requests: boolean
           avatar_url: string | null
           bio: string | null
@@ -697,6 +698,7 @@ export type Database = {
           yearly_listen_goal: number | null
         }
         Insert: {
+          ai_include_familiar?: boolean
           allow_friend_requests?: boolean
           avatar_url?: string | null
           bio?: string | null
@@ -729,6 +731,7 @@ export type Database = {
           yearly_listen_goal?: number | null
         }
         Update: {
+          ai_include_familiar?: boolean
           allow_friend_requests?: boolean
           avatar_url?: string | null
           bio?: string | null
