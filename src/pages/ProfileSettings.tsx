@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Shield, Eye, EyeOff, Users, Lock, Ban, Target, ChevronDown, ChevronUp, Download, TrendingUp, Music, Mail, Bell, Calendar } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Plus, Camera, User, Trash2, Shield, Eye, EyeOff, Users, Lock, Ban, Target, ChevronDown, ChevronUp, Download, TrendingUp, Music, Mail, Bell, Calendar, Globe, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,16 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { AnnualStats } from "@/components/profile/AnnualStats";
@@ -326,9 +336,13 @@ const ProfileSettings = () => {
   const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
   const [yearlyListenGoal, setYearlyListenGoal] = useState<string>("");
   
-  // Privacy settings state
+  // Privacy settings state - simplified to single toggle
   const [isPublic, setIsPublic] = useState(true);
   const [friendsOnly, setFriendsOnly] = useState(false);
+  const [showPrivacyConfirm, setShowPrivacyConfirm] = useState(false);
+  const [pendingPrivacyChange, setPendingPrivacyChange] = useState<'public' | 'friends' | null>(null);
+  
+  // Legacy states kept for backwards compatibility but no longer shown in UI
   const [showAlbums, setShowAlbums] = useState(true);
   const [showArtists, setShowArtists] = useState(true);
   const [showDiary, setShowDiary] = useState(true);
@@ -1014,165 +1028,58 @@ const ProfileSettings = () => {
                     exit={{ opacity: 0, height: 0 }}
                     className="space-y-4 pl-4 border-l-2 border-primary/20"
                   >
-                    {/* Profile Visibility */}
+                    {/* Profile Visibility - Simplified */}
                     <div className="space-y-4 rounded-lg border border-border bg-card p-4">
                       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                         <Eye className="h-4 w-4" />
                         Profile Visibility
                       </div>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="isPublic" className="text-sm font-normal cursor-pointer">
-                              Public Profile
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              Anyone can view your profile
-                            </p>
-                          </div>
-                          <Switch
-                            id="isPublic"
-                            checked={isPublic}
-                            onCheckedChange={(checked) => {
-                              setIsPublic(checked);
-                              if (!checked) setFriendsOnly(false);
-                            }}
-                          />
-                        </div>
-
-                        {isPublic && (
-                          <div className="flex items-center justify-between pl-4 border-l-2 border-border">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="friendsOnly" className="text-sm font-normal cursor-pointer">
-                                Friends Only
-                              </Label>
-                              <p className="text-xs text-muted-foreground">
-                                Only friends can see your full profile
-                              </p>
-                            </div>
-                            <Switch
-                              id="friendsOnly"
-                              checked={friendsOnly}
-                              onCheckedChange={setFriendsOnly}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Section Visibility */}
-                    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                        <EyeOff className="h-4 w-4" />
-                        Hide Sections
-                      </div>
                       <p className="text-xs text-muted-foreground">
-                        Choose which sections others can see on your profile
+                        Control who can see your profile and activity
                       </p>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="showAlbums" className="text-sm font-normal cursor-pointer">
-                            Albums
-                          </Label>
-                          <Switch
-                            id="showAlbums"
-                            checked={showAlbums}
-                            onCheckedChange={setShowAlbums}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="showArtists" className="text-sm font-normal cursor-pointer">
-                            Artists
-                          </Label>
-                          <Switch
-                            id="showArtists"
-                            checked={showArtists}
-                            onCheckedChange={setShowArtists}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="showDiary" className="text-sm font-normal cursor-pointer">
-                            Diary
-                          </Label>
-                          <Switch
-                            id="showDiary"
-                            checked={showDiary}
-                            onCheckedChange={setShowDiary}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="showLists" className="text-sm font-normal cursor-pointer">
-                            Lists
-                          </Label>
-                          <Switch
-                            id="showLists"
-                            checked={showLists}
-                            onCheckedChange={setShowLists}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Following Privacy */}
-                    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                        <Users className="h-4 w-4" />
-                        Following Privacy
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="showFriendsCount" className="text-sm font-normal cursor-pointer">
-                              Show Following Count
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              Display how many people you follow
-                            </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (friendsOnly) {
+                              setPendingPrivacyChange('public');
+                              setShowPrivacyConfirm(true);
+                            }
+                          }}
+                          className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                            !friendsOnly
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border hover:border-muted-foreground/50 text-muted-foreground'
+                          }`}
+                        >
+                          <Globe className="h-4 w-4" />
+                          <div className="text-left">
+                            <div className="text-sm font-medium">Public</div>
+                            <div className="text-xs opacity-70">Anyone can view</div>
                           </div>
-                          <Switch
-                            id="showFriendsCount"
-                            checked={showFriendsCount}
-                            onCheckedChange={setShowFriendsCount}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="showFriendsList" className="text-sm font-normal cursor-pointer">
-                              Show Following List
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              Let others see who you follow
-                            </p>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!friendsOnly) {
+                              setPendingPrivacyChange('friends');
+                              setShowPrivacyConfirm(true);
+                            }
+                          }}
+                          className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                            friendsOnly
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border hover:border-muted-foreground/50 text-muted-foreground'
+                          }`}
+                        >
+                          <UserCheck className="h-4 w-4" />
+                          <div className="text-left">
+                            <div className="text-sm font-medium">Friends Only</div>
+                            <div className="text-xs opacity-70">Only friends can view</div>
                           </div>
-                          <Switch
-                            id="showFriendsList"
-                            checked={showFriendsList}
-                            onCheckedChange={setShowFriendsList}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="allowFriendRequests" className="text-sm font-normal cursor-pointer">
-                              Allow Follow Requests
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              Let others send you follow requests
-                            </p>
-                          </div>
-                          <Switch
-                            id="allowFriendRequests"
-                            checked={allowFriendRequests}
-                            onCheckedChange={setAllowFriendRequests}
-                          />
-                        </div>
+                        </button>
                       </div>
                     </div>
 
@@ -1389,6 +1296,43 @@ const ProfileSettings = () => {
           </motion.div>
         </div>
       </main>
+
+      {/* Privacy Change Confirmation Dialog */}
+      <AlertDialog open={showPrivacyConfirm} onOpenChange={setShowPrivacyConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingPrivacyChange === 'friends' 
+                ? 'Make profile friends-only?' 
+                : 'Make profile public?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingPrivacyChange === 'friends' 
+                ? 'Only your friends will be able to see your profile, activity, and music collection. Others will see a limited view.'
+                : 'Anyone will be able to view your full profile, activity, and music collection.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingPrivacyChange(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingPrivacyChange === 'friends') {
+                  setFriendsOnly(true);
+                  setIsPublic(true);
+                } else {
+                  setFriendsOnly(false);
+                  setIsPublic(true);
+                }
+                setPendingPrivacyChange(null);
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
