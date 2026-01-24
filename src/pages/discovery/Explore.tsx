@@ -10,6 +10,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
+import { ArtistImageWithFallback } from "@/components/ArtistImageWithFallback";
+import { searchReleases, searchArtists } from "@/services/musicbrainz";
 const GENRES = [
   { name: "Rock", color: "from-red-500 to-orange-500" },
   { name: "Pop", color: "from-pink-500 to-rose-500" },
@@ -38,9 +41,22 @@ const itemVariants = {
   visible: { opacity: 1, scale: 1 },
 };
 
+interface AlbumRecommendation {
+  title: string;
+  artist: string;
+  reason: string;
+  releaseGroupId?: string;
+}
+
+interface ArtistRecommendation {
+  name: string;
+  reason: string;
+  artistId?: string;
+}
+
 interface Recommendation {
-  albums: Array<{ title: string; artist: string; reason: string }>;
-  artists: Array<{ name: string; reason: string }>;
+  albums: AlbumRecommendation[];
+  artists: ArtistRecommendation[];
 }
 
 type Mood = "chill" | "energetic" | "experimental" | null;
@@ -64,7 +80,47 @@ const DiscoveryExplore = () => {
         body: selectedMood ? { mood: selectedMood } : {},
       });
       if (error) throw error;
-      return data as { recommendations: Recommendation; message?: string };
+      
+      const result = data as { recommendations: Recommendation; message?: string };
+      
+      // Enrich recommendations with MusicBrainz IDs for images
+      if (result.recommendations) {
+        // Fetch album IDs in parallel
+        const albumPromises = (result.recommendations.albums || []).map(async (album) => {
+          try {
+            const releases = await searchReleases(`${album.title} ${album.artist}`, 1);
+            if (releases.length > 0) {
+              return { ...album, releaseGroupId: releases[0].id };
+            }
+          } catch (e) {
+            console.warn("Failed to find album:", album.title, e);
+          }
+          return album;
+        });
+
+        // Fetch artist IDs in parallel
+        const artistPromises = (result.recommendations.artists || []).map(async (artist) => {
+          try {
+            const artists = await searchArtists(artist.name, 1);
+            if (artists.length > 0) {
+              return { ...artist, artistId: artists[0].id };
+            }
+          } catch (e) {
+            console.warn("Failed to find artist:", artist.name, e);
+          }
+          return artist;
+        });
+
+        const [enrichedAlbums, enrichedArtists] = await Promise.all([
+          Promise.all(albumPromises),
+          Promise.all(artistPromises),
+        ]);
+
+        result.recommendations.albums = enrichedAlbums;
+        result.recommendations.artists = enrichedArtists;
+      }
+
+      return result;
     },
     enabled: !!user,
     staleTime: 1000 * 60 * 30, // 30 minutes
@@ -225,11 +281,25 @@ const DiscoveryExplore = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        onClick={() => navigate(`/search?q=${encodeURIComponent(`${album.title} ${album.artist}`)}`)}
+                        onClick={() => album.releaseGroupId 
+                          ? navigate(`/album/${album.releaseGroupId}`)
+                          : navigate(`/search?q=${encodeURIComponent(`${album.title} ${album.artist}`)}`)}
                         className="cursor-pointer group"
                       >
-                        <div className="aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center mb-2 group-hover:border-primary/50 transition-colors">
-                          <Disc3 className="h-12 w-12 text-primary/40" />
+                        <div className="aspect-square rounded-lg overflow-hidden mb-2 group-hover:ring-2 ring-primary/50 transition-all">
+                          {album.releaseGroupId ? (
+                            <AlbumCoverWithFallback
+                              releaseGroupId={album.releaseGroupId}
+                              title={album.title}
+                              size="500"
+                              className="w-full h-full"
+                              imageClassName="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center">
+                              <Disc3 className="h-12 w-12 text-primary/40" />
+                            </div>
+                          )}
                         </div>
                         <h4 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                           {album.title}
@@ -260,11 +330,25 @@ const DiscoveryExplore = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 + 0.25 }}
-                        onClick={() => navigate(`/search?q=${encodeURIComponent(artist.name)}`)}
+                        onClick={() => artist.artistId 
+                          ? navigate(`/artist/${artist.artistId}`)
+                          : navigate(`/search?q=${encodeURIComponent(artist.name)}`)}
                         className="cursor-pointer group text-center"
                       >
-                        <div className="aspect-square rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center mb-2 mx-auto group-hover:border-primary/50 transition-colors">
-                          <Users className="h-12 w-12 text-primary/40" />
+                        <div className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all">
+                          {artist.artistId ? (
+                            <ArtistImageWithFallback
+                              artistId={artist.artistId}
+                              artistName={artist.name}
+                              className="w-full h-full"
+                              imageClassName="w-full h-full object-cover"
+                              fallbackClassName="w-full h-full"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center">
+                              <Users className="h-12 w-12 text-primary/40" />
+                            </div>
+                          )}
                         </div>
                         <h4 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                           {artist.name}
