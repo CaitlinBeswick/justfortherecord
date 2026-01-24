@@ -238,23 +238,35 @@ const NewReleases = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2">
                 <Filter className="h-4 w-4" />
-                {timeFilter === "recent" && "Recent (3 months)"}
+                {timeFilter === "recent" && "Recent"}
                 {timeFilter === "upcoming" && "Upcoming"}
                 {timeFilter === "all" && "All Time"}
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
+            <DropdownMenuContent align="start" className="bg-popover">
               <DropdownMenuRadioGroup
                 value={timeFilter}
                 onValueChange={(v) => setTimeFilter(v as TimeFilter)}
               >
-                <DropdownMenuRadioItem value="recent">Recent (3 months)</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="recent">Recent</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="upcoming">Upcoming</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="all">All Time</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Time period hint */}
+          {timeFilter === "recent" && (
+            <span className="self-center text-sm text-muted-foreground">
+              Last 3 months
+            </span>
+          )}
+          {timeFilter === "upcoming" && (
+            <span className="self-center text-sm text-muted-foreground">
+              Next 3 months
+            </span>
+          )}
 
           {/* Stats Badge */}
           <Badge variant="secondary" className="self-center">
