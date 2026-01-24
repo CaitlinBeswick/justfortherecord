@@ -42,6 +42,7 @@ interface DiaryEntry {
   listened_on: string;
   is_relisten: boolean;
   notes: string | null;
+  rating: number | null;
   created_at: string;
 }
 
@@ -564,7 +565,11 @@ export function DiaryContent() {
       {sortedDiaryEntries.length > 0 ? (
         <div className="space-y-2">
           {sortedDiaryEntries.map((entry, index) => {
-            const rating = ratingsMap.get(entry.release_group_id);
+            const albumRating = ratingsMap.get(entry.release_group_id);
+            // Use diary entry's rating if available, otherwise fall back to album_ratings
+            const displayRating = entry.rating ?? albumRating?.rating ?? null;
+            const reviewText = albumRating?.review_text;
+            const isLoved = albumRating?.loved;
             return (
               <motion.div
                 key={entry.id}
@@ -602,7 +607,7 @@ export function DiaryContent() {
                     >
                       {entry.album_title}
                     </h3>
-                    {rating?.review_text && (
+                    {reviewText && (
                       <HoverCard openDelay={200} closeDelay={100}>
                         <HoverCardTrigger asChild>
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium shrink-0 cursor-pointer hover:bg-primary/20 transition-colors">
@@ -613,11 +618,11 @@ export function DiaryContent() {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
-                              <span className="text-xs font-medium text-foreground">{rating.rating}/5</span>
-                              {rating.loved && <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" />}
+                              <span className="text-xs font-medium text-foreground">{displayRating}/5</span>
+                              {isLoved && <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" />}
                             </div>
                             <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap">
-                              {rating.review_text}
+                              {reviewText}
                             </p>
                             <p className="text-[10px] text-muted-foreground/60">
                               Click album to read full review
@@ -640,11 +645,11 @@ export function DiaryContent() {
                 </div>
 
                 {/* Rating display with half-star support */}
-                {rating && (
+                {displayRating !== null && (
                   <div className="flex items-center gap-1 shrink-0">
                     <div className="flex items-center gap-0.5">
                       {[1, 2, 3, 4, 5].map((star) => {
-                        const ratingValue = rating.rating;
+                        const ratingValue = displayRating;
                         const isFull = star <= Math.floor(ratingValue);
                         const isHalf = !isFull && star === Math.ceil(ratingValue) && ratingValue % 1 >= 0.5;
                         
@@ -664,7 +669,7 @@ export function DiaryContent() {
                         }
                       })}
                     </div>
-                    {rating.loved && (
+                    {isLoved && (
                       <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 ml-1" />
                     )}
                   </div>
