@@ -72,6 +72,8 @@ const DiscoveryExplore = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedMood, setSelectedMood] = useState<Mood>(null);
+  const [resolvingAlbumKey, setResolvingAlbumKey] = useState<string | null>(null);
+  const [resolvingArtistKey, setResolvingArtistKey] = useState<string | null>(null);
 
   // Fetch user profile for AI preference
   const { data: profile } = useQuery({
@@ -157,6 +159,55 @@ const DiscoveryExplore = () => {
   const handleRefresh = () => {
     refetch();
     toast({ title: "Refreshing recommendations..." });
+  };
+
+  const handleAlbumClick = async (album: AlbumRecommendation) => {
+    if (album.releaseGroupId) {
+      navigate(`/album/${album.releaseGroupId}`);
+      return;
+    }
+
+    const key = `${album.title}|||${album.artist}`;
+    setResolvingAlbumKey(key);
+    try {
+      const releases = await searchReleases(`${album.title} ${album.artist}`, 1);
+      const first = releases?.[0];
+      if (first?.id) {
+        navigate(`/album/${first.id}`);
+        return;
+      }
+    } catch (e) {
+      console.warn("Failed to resolve album id on click:", album.title, e);
+    } finally {
+      setResolvingAlbumKey(null);
+    }
+
+    // Last resort: keyword search
+    navigate(`/search?q=${encodeURIComponent(`${album.title} ${album.artist}`)}`);
+  };
+
+  const handleArtistClick = async (artist: ArtistRecommendation) => {
+    if (artist.artistId) {
+      navigate(`/artist/${artist.artistId}`);
+      return;
+    }
+
+    const key = artist.name;
+    setResolvingArtistKey(key);
+    try {
+      const artists = await searchArtists(artist.name, 1);
+      const first = artists?.[0];
+      if (first?.id) {
+        navigate(`/artist/${first.id}`);
+        return;
+      }
+    } catch (e) {
+      console.warn("Failed to resolve artist id on click:", artist.name, e);
+    } finally {
+      setResolvingArtistKey(null);
+    }
+
+    navigate(`/search?q=${encodeURIComponent(artist.name)}`);
   };
 
   const recommendations = aiData?.recommendations;
@@ -298,9 +349,7 @@ const DiscoveryExplore = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        onClick={() => album.releaseGroupId 
-                          ? navigate(`/album/${album.releaseGroupId}`)
-                          : navigate(`/search?q=${encodeURIComponent(`${album.title} ${album.artist}`)}`)}
+                        onClick={() => void handleAlbumClick(album)}
                         className="cursor-pointer group"
                       >
                         <div className="aspect-square rounded-lg overflow-hidden mb-2 group-hover:ring-2 ring-primary/50 transition-all">
@@ -322,6 +371,9 @@ const DiscoveryExplore = () => {
                           {album.title}
                         </h4>
                         <p className="text-xs text-muted-foreground truncate">{album.artist}</p>
+                        {resolvingAlbumKey === `${album.title}|||${album.artist}` && (
+                          <p className="text-xs text-muted-foreground mt-1">Opening...</p>
+                        )}
                         <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2">
                           {album.reason}
                         </p>
@@ -347,9 +399,7 @@ const DiscoveryExplore = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 + 0.25 }}
-                        onClick={() => artist.artistId 
-                          ? navigate(`/artist/${artist.artistId}`)
-                          : navigate(`/search?q=${encodeURIComponent(artist.name)}`)}
+                        onClick={() => void handleArtistClick(artist)}
                         className="cursor-pointer group text-center"
                       >
                         <div className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all">
@@ -370,6 +420,9 @@ const DiscoveryExplore = () => {
                         <h4 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                           {artist.name}
                         </h4>
+                        {resolvingArtistKey === artist.name && (
+                          <p className="text-xs text-muted-foreground mt-1">Opening...</p>
+                        )}
                         <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2">
                           {artist.reason}
                         </p>
