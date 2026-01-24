@@ -69,19 +69,13 @@ const Index = () => {
               <p className="mt-6 text-lg text-muted-foreground max-w-md">
                 Log albums, review music and discover new artists.<br />Your personal music diary, beautifully organised.
               </p>
-              <div className="mt-8 flex gap-4">
+              <div className="mt-8">
                 <button 
-                  onClick={() => navigate("/albums")}
+                  onClick={() => navigate("/search")}
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
                 >
                   Start Logging
                   <ArrowRight className="h-4 w-4" />
-                </button>
-                <button 
-                  onClick={() => navigate("/search")}
-                  className="inline-flex items-center gap-2 rounded-lg bg-secondary px-6 py-3 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-surface-hover"
-                >
-                  Explore Music
                 </button>
               </div>
             </motion.div>

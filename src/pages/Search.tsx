@@ -170,7 +170,7 @@ const Search = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <h1 className="font-serif text-4xl text-foreground mb-8">Explore Music</h1>
+          <h1 className="font-serif text-4xl text-foreground mb-8">Explore</h1>
 
           {/* Search Input */}
           <div className="relative max-w-2xl mb-8">
