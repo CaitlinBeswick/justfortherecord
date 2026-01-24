@@ -958,7 +958,7 @@ const ProfileSettings = () => {
                       </div>
                     </div>
 
-                    {/* AI Recommendations - Include Familiar */}
+                    {/* Recommendations - Include Familiar */}
                     <div className="space-y-3 p-4 rounded-lg border border-border bg-card">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
