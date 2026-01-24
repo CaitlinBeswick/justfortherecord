@@ -772,7 +772,7 @@ const ProfileSettings = () => {
 
               <Separator className="my-6" />
 
-              {/* Email Notifications - Collapsible */}
+              {/* Notifications - Collapsible */}
               <div className="space-y-4">
                 <button
                   type="button"
@@ -780,8 +780,8 @@ const ProfileSettings = () => {
                   className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-semibold text-foreground">Email Notifications</h2>
+                    <Bell className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
                   </div>
                   {isNotificationsExpanded ? (
                     <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -901,14 +901,12 @@ const ProfileSettings = () => {
                         </div>
                       </motion.div>
                     )}
+
+                    {/* Push Notifications */}
+                    <PushNotificationsSection />
                   </motion.div>
                 )}
               </div>
-
-              <Separator className="my-6" />
-
-              {/* Push Notifications Section */}
-              <PushNotificationsSection />
 
               <Separator className="my-6" />
 
