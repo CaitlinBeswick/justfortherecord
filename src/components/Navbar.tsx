@@ -16,8 +16,8 @@ import {
 
 const navItems = [
   { path: "/", label: "Home", icon: Music2 },
-  { path: "/discovery", label: "Discovery", icon: Compass },
   { path: "/search", label: "Explore", icon: Search },
+  { path: "/discovery", label: "Discovery", icon: Compass },
   { path: "/profile", label: "My Profile", icon: User, requiresAuth: true },
 ];
 

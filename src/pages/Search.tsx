@@ -2,9 +2,8 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistCard } from "@/components/ArtistCard";
-import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search as SearchIcon, Disc3, Users, Loader2, Trophy, Star, ArrowRight, Clock, X } from "lucide-react";
+import { Search as SearchIcon, Disc3, Users, Loader2, Clock, X } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -16,12 +15,12 @@ import {
   MBArtist,
   MBReleaseGroup 
 } from "@/services/musicbrainz";
-import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { Footer } from "@/components/Footer";
+import { VinylBackground } from "@/components/VinylBackground";
 
 type SearchTab = "all" | "albums" | "artists";
 
@@ -38,20 +37,6 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-interface TopAlbumRating {
-  release_group_id: string;
-  album_title: string;
-  artist_name: string;
-  avg_rating: number;
-  rating_count: number;
-}
-
-interface TopArtistRating {
-  artist_id: string;
-  artist_name: string;
-  avg_rating: number;
-  rating_count: number;
-}
 
 const Search = () => {
   const navigate = useNavigate();
@@ -117,39 +102,6 @@ const Search = () => {
     }
   }, [artists.length, releases.length, debouncedQuery, addSearch]);
 
-  // Fetch top rated albums
-  const { data: topAlbums = [], isLoading: topAlbumsLoading } = useQuery({
-    queryKey: ['top-rated-albums-preview'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('album_ratings_agg')
-        .select('release_group_id, album_title, artist_name, avg_rating, rating_count')
-        .order('avg_rating', { ascending: false })
-        .order('rating_count', { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-      return (data || []) as TopAlbumRating[];
-    },
-    staleTime: 1000 * 60 * 5,
-  });
-
-  // Fetch top rated artists
-  const { data: topArtists = [], isLoading: topArtistsLoading } = useQuery({
-    queryKey: ['top-rated-artists-preview'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('artist_ratings_agg')
-        .select('artist_id, artist_name, avg_rating, rating_count')
-        .order('avg_rating', { ascending: false })
-        .order('rating_count', { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-      return (data || []) as TopArtistRating[];
-    },
-    staleTime: 1000 * 60 * 5,
-  });
 
   const isLoading = loadingArtists || loadingReleases;
 
@@ -162,6 +114,7 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <VinylBackground density="sparse" />
       <Navbar />
       
       <main className="relative container mx-auto px-4 pt-24 pb-20">
@@ -249,148 +202,6 @@ const Search = () => {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-              {/* Top Rated Albums - show on "all" and "albums" tabs */}
-              {showAlbums && (
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <Trophy className="h-5 w-5 text-yellow-500" />
-                      <h2 className="font-serif text-2xl text-foreground">Top Rated Albums</h2>
-                    </div>
-                    <button 
-                      onClick={() => navigate("/top-albums")}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                    >
-                      View Top 250 <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                  
-                  {topAlbumsLoading ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      {Array.from({ length: 20 }).map((_, i) => (
-                        <div key={i}>
-                          <Skeleton className="aspect-square rounded-lg mb-2" />
-                          <Skeleton className="h-4 w-full mb-1" />
-                          <Skeleton className="h-3 w-24" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : topAlbums.length === 0 ? (
-                    <div className="text-center py-12 bg-card/30 rounded-xl border border-border/50">
-                      <Disc3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                      <p className="text-muted-foreground">No album ratings yet</p>
-                      <p className="text-sm text-muted-foreground/60 mt-1">Be the first to rate an album!</p>
-                    </div>
-                  ) : (
-                    <motion.div 
-                      variants={containerVariants}
-                      initial="hidden"
-                      animate="visible"
-                      className="grid grid-cols-2 sm:grid-cols-4 gap-4"
-                    >
-                      {topAlbums.slice(0, 20).map((album, index) => (
-                        <motion.div
-                          key={album.release_group_id}
-                          variants={itemVariants}
-                          onClick={() => navigate(`/album/${album.release_group_id}`)}
-                          className="cursor-pointer group"
-                        >
-                          <div className="relative mb-2">
-                            <AlbumCoverWithFallback 
-                              releaseGroupId={album.release_group_id} 
-                              title={album.album_title}
-                              className="aspect-square rounded-lg"
-                              fallbackClassName="font-serif text-2xl text-primary/60"
-                            />
-                            <div className={`absolute top-2 left-2 text-xs font-bold px-1.5 py-0.5 rounded ${
-                              index === 0 ? 'bg-yellow-500 text-yellow-950' :
-                              index === 1 ? 'bg-gray-300 text-gray-700' :
-                              index === 2 ? 'bg-amber-600 text-amber-50' :
-                              'bg-background/90 text-foreground'
-                            }`}>
-                              #{index + 1}
-                            </div>
-                          </div>
-                          <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                            {album.album_title}
-                          </h3>
-                          <p className="text-xs text-muted-foreground truncate">{album.artist_name}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            <span className="text-xs text-muted-foreground">{album.avg_rating.toFixed(1)}</span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  )}
-                </div>
-              )}
-
-              {/* Top Rated Artists - show on "all" and "artists" tabs */}
-              {showArtists && (
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <Trophy className="h-5 w-5 text-yellow-500" />
-                      <h2 className="font-serif text-2xl text-foreground">Top Rated Artists</h2>
-                    </div>
-                    <button 
-                      onClick={() => navigate("/top-artists")}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                    >
-                      View Top 250 <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                  
-                  {topArtistsLoading ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      {Array.from({ length: 20 }).map((_, i) => (
-                        <div key={i}>
-                          <Skeleton className="aspect-square rounded-full mb-2" />
-                          <Skeleton className="h-4 w-full mb-1" />
-                          <Skeleton className="h-3 w-16" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : topArtists.length === 0 ? (
-                    <div className="text-center py-12 bg-card/30 rounded-xl border border-border/50">
-                      <Users className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                      <p className="text-muted-foreground">No artist ratings yet</p>
-                      <p className="text-sm text-muted-foreground/60 mt-1">Be the first to rate an artist!</p>
-                    </div>
-                  ) : (
-                    <motion.div 
-                      variants={containerVariants}
-                      initial="hidden"
-                      animate="visible"
-                      className="grid grid-cols-2 sm:grid-cols-4 gap-6"
-                    >
-                      {topArtists.slice(0, 20).map((artist, index) => (
-                        <motion.div
-                          key={artist.artist_id}
-                          variants={itemVariants}
-                          className="relative"
-                        >
-                          <div className={`absolute top-2 left-2 z-10 text-xs font-bold px-1.5 py-0.5 rounded ${
-                            index === 0 ? 'bg-yellow-500 text-yellow-950' :
-                            index === 1 ? 'bg-gray-300 text-gray-700' :
-                            index === 2 ? 'bg-amber-600 text-amber-50' :
-                            'bg-background/90 text-foreground'
-                          }`}>
-                            #{index + 1}
-                          </div>
-                          <ArtistCard
-                            id={artist.artist_id}
-                            name={artist.artist_name}
-                            genres={[`★ ${artist.avg_rating.toFixed(1)}`]}
-                            onClick={() => navigate(`/artist/${artist.artist_id}`)}
-                          />
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  )}
                 </div>
               )}
 
