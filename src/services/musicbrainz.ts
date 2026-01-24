@@ -153,9 +153,9 @@ export async function searchArtists(query: string, limit?: number): Promise<MBAr
     });
 }
 
-export async function searchReleases(query: string, limit?: number): Promise<MBReleaseGroup[]> {
+export async function searchReleases(query: string, limit?: number, offset?: number): Promise<MBReleaseGroup[]> {
   // Search release-groups directly for better album discovery
-  const data = await callMusicBrainz({ action: 'search-release-group', query, limit });
+  const data = await callMusicBrainz({ action: 'search-release-group', query, limit, offset });
 
   const normalizeForMatch = (s: string) =>
     s

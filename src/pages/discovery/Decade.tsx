@@ -1,11 +1,11 @@
 import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
-import { EssentialAlbumsSection } from "@/components/discovery/EssentialAlbumsSection";
+// import { EssentialAlbumsSection } from "@/components/discovery/EssentialAlbumsSection";
 import { Footer } from "@/components/Footer";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   searchReleases,
   getYear,
@@ -14,6 +14,7 @@ import {
 } from "@/services/musicbrainz";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
+import { RefreshCw } from "lucide-react";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -120,7 +121,9 @@ const ESSENTIAL_ALBUMS: Record<string, { title: string; artist: string }[]> = {
 
 const DiscoveryDecade = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { range: rawRange } = useParams<{ range: string }>();
+  const [offset, setOffset] = useState(0);
 
   const { range, decadeName, startYear, endYear } = useMemo(() => {
     const decoded = rawRange ? decodeURIComponent(rawRange) : "";
@@ -136,17 +139,22 @@ const DiscoveryDecade = () => {
   const decadeColor = DECADE_COLORS[decadeName] || "from-primary to-primary/80";
   const essentialAlbums = ESSENTIAL_ALBUMS[decadeName] || [];
 
-  const { data: releases = [], isLoading, error } = useQuery({
-    queryKey: ["decade-releases", range],
+  const { data: releases = [], isLoading, error, isFetching } = useQuery({
+    queryKey: ["decade-releases", range, offset],
     queryFn: async () => {
-      // Use MusicBrainz date range search
+      // Use MusicBrainz date range search with offset for pagination
       const query = `firstreleasedate:[${startYear} TO ${endYear}] AND primarytype:album`;
-      return (await searchReleases(query, 48)) as MBReleaseGroup[];
+      return (await searchReleases(query, 48, offset)) as MBReleaseGroup[];
     },
     enabled: !!range,
     staleTime: 1000 * 60 * 10,
     retry: 1,
   });
+
+  const handleRefresh = () => {
+    // Increment offset to get next batch of results
+    setOffset(prev => prev + 48);
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -159,8 +167,8 @@ const DiscoveryDecade = () => {
           <p className="text-muted-foreground">Albums released in the {decadeName.toLowerCase()}</p>
         </motion.header>
 
-        {/* Essential Albums Section */}
-        {essentialAlbums.length > 0 && (
+        {/* Essential Albums Section - commented out for future use */}
+        {/* {essentialAlbums.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -173,7 +181,7 @@ const DiscoveryDecade = () => {
               color={decadeColor}
             />
           </motion.div>
-        )}
+        )} */}
 
         {/* All Albums Grid */}
         <motion.div
@@ -181,9 +189,19 @@ const DiscoveryDecade = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
-            More from the {decadeName.toLowerCase()}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Albums from the {decadeName.toLowerCase()}
+            </h2>
+            <button
+              onClick={handleRefresh}
+              disabled={isFetching}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
 
           {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">

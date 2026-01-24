@@ -1,7 +1,7 @@
 import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
 import { Footer } from "@/components/Footer";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +13,7 @@ import {
 } from "@/services/musicbrainz";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
+import { RefreshCw } from "lucide-react";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -30,24 +31,30 @@ const itemVariants = {
 const DiscoveryGenre = () => {
   const navigate = useNavigate();
   const { genre: rawGenre } = useParams<{ genre: string }>();
+  const [offset, setOffset] = useState(0);
 
   const genre = useMemo(() => {
     const decoded = rawGenre ? decodeURIComponent(rawGenre) : "";
     return decoded.trim();
   }, [rawGenre]);
 
-  const { data: releases = [], isLoading, error } = useQuery({
-    queryKey: ["genre-releases", genre],
+  const { data: releases = [], isLoading, error, isFetching } = useQuery({
+    queryKey: ["genre-releases", genre, offset],
     queryFn: async () => {
       // Use MusicBrainz tag search, which returns releases genuinely tagged with the genre.
       // We keep the query minimal and let the service-side sorting/deduping do the rest.
       const query = `tag:"${genre}"`;
-      return (await searchReleases(query, 48)) as MBReleaseGroup[];
+      return (await searchReleases(query, 48, offset)) as MBReleaseGroup[];
     },
     enabled: !!genre,
     staleTime: 1000 * 60 * 10,
     retry: 1,
   });
+
+  const handleRefresh = () => {
+    // Increment offset to get next batch of results
+    setOffset(prev => prev + 48);
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -56,8 +63,20 @@ const DiscoveryGenre = () => {
         <DiscoveryNav activeTab="explore" />
 
         <motion.header initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="font-serif text-3xl md:text-4xl text-foreground mb-2">{genre || "Genre"}</h1>
-          <p className="text-muted-foreground">Albums tagged with {genre || "this genre"}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="font-serif text-3xl md:text-4xl text-foreground mb-2">{genre || "Genre"}</h1>
+              <p className="text-muted-foreground">Albums tagged with {genre || "this genre"}</p>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={isFetching}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
         </motion.header>
 
         {isLoading ? (

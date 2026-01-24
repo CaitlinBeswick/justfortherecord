@@ -669,9 +669,9 @@ const DiscoveryExplore = () => {
             animate="visible"
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
           >
-            {GENRES.map((genre) => (
+            {GENRES.map((genre, index) => (
               <motion.button
-                key={genre.name}
+                key={`genre-${genre.name}-${index}`}
                 variants={itemVariants}
                 onClick={() => handleGenreClick(genre.name)}
                 className={`relative overflow-hidden rounded-xl p-6 text-left transition-transform hover:scale-105 bg-gradient-to-br ${genre.color}`}
@@ -701,9 +701,9 @@ const DiscoveryExplore = () => {
             animate="visible"
             className="grid grid-cols-2 sm:grid-cols-4 gap-4"
           >
-            {DECADES.map((decade) => (
+            {DECADES.map((decade, index) => (
               <motion.button
-                key={decade.name}
+                key={`decade-${decade.name}-${index}`}
                 variants={itemVariants}
                 onClick={() => navigate(`/discovery/decade/${encodeURIComponent(decade.range)}`)}
                 className={`relative overflow-hidden rounded-xl p-6 text-left transition-transform hover:scale-105 bg-gradient-to-br ${decade.color}`}
