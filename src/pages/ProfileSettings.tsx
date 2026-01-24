@@ -155,6 +155,26 @@ function NotificationsTable({
     weeklyDigest: { checked: emailWeeklyDigest, onChange: setEmailWeeklyDigest },
   };
 
+  // Calculate "Select All" states
+  const allEmailEnabled = emailNewReleases && emailFriendRequests && emailFriendActivity && emailWeeklyDigest;
+  const someEmailEnabled = emailNewReleases || emailFriendRequests || emailFriendActivity || emailWeeklyDigest;
+  
+  const handleSelectAllEmail = (checked: boolean) => {
+    setEmailNewReleases(checked);
+    setEmailFriendRequests(checked);
+    setEmailFriendActivity(checked);
+    setEmailWeeklyDigest(checked);
+  };
+
+  // For push, only New Releases is supported currently
+  const handleSelectAllPush = async () => {
+    if (pushSubscribed) {
+      await unsubscribe();
+    } else {
+      await subscribe();
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -163,16 +183,41 @@ function NotificationsTable({
       className="space-y-4 pl-4 border-l-2 border-primary/20"
     >
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        {/* Table Header */}
+        {/* Table Header with Select All */}
         <div className="grid grid-cols-[1fr,auto,auto] gap-4 p-4 bg-muted/30 border-b border-border">
           <div className="text-sm font-medium text-foreground">Notification Type</div>
-          <div className="text-sm font-medium text-foreground text-center w-20 flex items-center justify-center gap-1">
-            <Mail className="h-4 w-4" />
-            <span className="hidden sm:inline">Email</span>
+          <div className="flex flex-col items-center gap-1.5 w-20">
+            <div className="text-sm font-medium text-foreground flex items-center gap-1">
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Email</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Switch
+                checked={allEmailEnabled}
+                onCheckedChange={handleSelectAllEmail}
+                className="scale-75"
+              />
+              <span className="text-[10px] text-muted-foreground">All</span>
+            </div>
           </div>
-          <div className="text-sm font-medium text-foreground text-center w-20 flex items-center justify-center gap-1">
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Push</span>
+          <div className="flex flex-col items-center gap-1.5 w-20">
+            <div className="text-sm font-medium text-foreground flex items-center gap-1">
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Push</span>
+            </div>
+            {pushSupported ? (
+              <div className="flex items-center gap-1">
+                <Switch
+                  checked={pushSubscribed}
+                  onCheckedChange={handleSelectAllPush}
+                  disabled={pushLoading || pushPermission === 'denied'}
+                  className="scale-75"
+                />
+                <span className="text-[10px] text-muted-foreground">All</span>
+              </div>
+            ) : (
+              <span className="text-[10px] text-muted-foreground">N/A</span>
+            )}
           </div>
         </div>
 
