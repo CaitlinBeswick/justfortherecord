@@ -795,6 +795,33 @@ export type Database = {
         }
         Relationships: []
       }
+      recommendation_history: {
+        Row: {
+          albums: Json
+          artists: Json
+          created_at: string
+          id: string
+          mood: string | null
+          user_id: string
+        }
+        Insert: {
+          albums?: Json
+          artists?: Json
+          created_at?: string
+          id?: string
+          mood?: string | null
+          user_id: string
+        }
+        Update: {
+          albums?: Json
+          artists?: Json
+          created_at?: string
+          id?: string
+          mood?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       release_group_official_cache: {
         Row: {
           checked_at: string
