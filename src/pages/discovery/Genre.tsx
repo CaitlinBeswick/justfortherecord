@@ -13,7 +13,8 @@ import {
 } from "@/services/musicbrainz";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -42,9 +43,9 @@ const DiscoveryGenre = () => {
     queryKey: ["genre-releases", genre, offset],
     queryFn: async () => {
       // Use MusicBrainz tag search, which returns releases genuinely tagged with the genre.
-      // We keep the query minimal and let the service-side sorting/deduping do the rest.
+      // Use 30 albums to ensure complete rows across all grid layouts (divisible by 2,3,5,6)
       const query = `tag:"${genre}"`;
-      return (await searchReleases(query, 48, offset)) as MBReleaseGroup[];
+      return (await searchReleases(query, 30, offset)) as MBReleaseGroup[];
     },
     enabled: !!genre,
     staleTime: 1000 * 60 * 10,
@@ -53,7 +54,7 @@ const DiscoveryGenre = () => {
 
   const handleRefresh = () => {
     // Increment offset to get next batch of results
-    setOffset(prev => prev + 48);
+    setOffset(prev => prev + 30);
   };
 
   return (
@@ -63,6 +64,13 @@ const DiscoveryGenre = () => {
         <DiscoveryNav activeTab="explore" />
 
         <motion.header initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <Link 
+            to="/discovery/explore" 
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Explore
+          </Link>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-serif text-3xl md:text-4xl text-foreground mb-2">{genre || "Genre"}</h1>
