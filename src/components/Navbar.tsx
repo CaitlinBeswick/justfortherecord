@@ -1,5 +1,5 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2, Shield, Calendar } from "lucide-react";
+import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2, Shield, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,9 +16,9 @@ import {
 
 const navItems = [
   { path: "/", label: "Home", icon: Music2 },
+  { path: "/discovery", label: "Discovery", icon: Compass },
   { path: "/albums", label: "Albums", icon: Disc3 },
   { path: "/artists", label: "Artists", icon: Users },
-  { path: "/new-releases", label: "New Releases", icon: Calendar, requiresAuth: true },
   { path: "/profile", label: "My Profile", icon: User, requiresAuth: true },
 ];
 
@@ -63,7 +63,8 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || 
-              (item.path === '/profile' && location.pathname.startsWith('/profile'));
+              (item.path === '/profile' && location.pathname.startsWith('/profile')) ||
+              (item.path === '/discovery' && location.pathname.startsWith('/discovery'));
             // Hide auth-required items when not logged in
             if ((item as any).requiresAuth && !user) return null;
             return (

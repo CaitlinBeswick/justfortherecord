@@ -37,6 +37,9 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Admin = lazy(() => import("./pages/Admin"));
 const WhatsNew = lazy(() => import("./pages/WhatsNew"));
 const NewReleases = lazy(() => import("./pages/NewReleases"));
+const DiscoveryNewReleases = lazy(() => import("./pages/discovery/NewReleases"));
+const DiscoveryExplore = lazy(() => import("./pages/discovery/Explore"));
+const DiscoveryLeaderboards = lazy(() => import("./pages/discovery/Leaderboards"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
@@ -81,6 +84,9 @@ const App = () => (
               <Route path="/admin" element={<Admin />} />
               <Route path="/whats-new" element={<WhatsNew />} />
               <Route path="/new-releases" element={<NewReleases />} />
+              <Route path="/discovery" element={<DiscoveryNewReleases />} />
+              <Route path="/discovery/explore" element={<DiscoveryExplore />} />
+              <Route path="/discovery/leaderboards" element={<DiscoveryLeaderboards />} />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
