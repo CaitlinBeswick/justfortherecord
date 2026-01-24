@@ -1,5 +1,5 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2, Shield } from "lucide-react";
+import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2, Shield, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,7 @@ const navItems = [
   { path: "/", label: "Home", icon: Music2 },
   { path: "/albums", label: "Albums", icon: Disc3 },
   { path: "/artists", label: "Artists", icon: Users },
+  { path: "/new-releases", label: "New Releases", icon: Calendar, requiresAuth: true },
   { path: "/profile", label: "My Profile", icon: User, requiresAuth: true },
 ];
 
