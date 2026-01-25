@@ -65,13 +65,23 @@ const tourSteps: TourStep[] = [
     description: "See what your friends are listening to and share your own activity. Stay connected with fellow music lovers.",
   },
   {
-    id: "discover",
+    id: "search",
     icon: <Search className="h-8 w-8 text-primary" />,
-    title: "Discover Music",
-    description: "Search for albums, artists, and explore top charts. Rate and review everything you listen to.",
+    title: "Search for Music",
+    description: "Search for albums and artists to add to your collection. Rate and review everything you listen to.",
     action: {
-      label: "Start Exploring",
+      label: "Start Searching",
       route: "/search",
+    },
+  },
+  {
+    id: "discovery",
+    icon: <Disc3 className="h-8 w-8 text-primary" />,
+    title: "Discover New Music",
+    description: "Explore personalized recommendations, browse by genre or decade, and find your next favorite album with AI-powered suggestions.",
+    action: {
+      label: "Explore Discovery",
+      route: "/discovery",
     },
   },
   {
