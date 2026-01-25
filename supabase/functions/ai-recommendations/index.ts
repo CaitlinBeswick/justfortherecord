@@ -86,6 +86,13 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .eq("is_listened", true);
 
+    // Fetch ALL to-listen albums (for exclusion - don't recommend what's already queued)
+    const { data: allToListenAlbums } = await supabase
+      .from("listening_status")
+      .select("album_title, artist_name")
+      .eq("user_id", user.id)
+      .eq("is_to_listen", true);
+
     // Fetch user's followed artists
     const { data: followedArtists } = await supabase
       .from("artist_follows")
@@ -119,11 +126,12 @@ serve(async (req) => {
       .map((a) => `${a.album_title} by ${a.artist_name}`)
       .join(", ");
 
-    // Build comprehensive exclusion lists
+    // Build comprehensive exclusion lists (including to-listen)
     const allListenedSet = new Set([
       ...(allListenedAlbums || []).map((a) => `${a.album_title} by ${a.artist_name}`),
       ...(allRatedAlbums || []).map((a) => `${a.album_title} by ${a.artist_name}`),
       ...(lovedAlbums || []).map((a) => `${a.album_title} by ${a.artist_name}`),
+      ...(allToListenAlbums || []).map((a) => `${a.album_title} by ${a.artist_name}`),
     ]);
     const allListenedList = Array.from(allListenedSet).join(", ");
 
@@ -133,11 +141,12 @@ serve(async (req) => {
     ]);
     const allKnownArtistsList = Array.from(allKnownArtistsSet).join(", ");
 
-    // Deterministic exclusion sets (used for post-filtering AI output)
+    // Deterministic exclusion sets (used for post-filtering AI output, including to-listen)
     const excludedAlbumKeys = new Set([
       ...(allListenedAlbums || []).map((a) => albumKey(a.album_title, a.artist_name)),
       ...(allRatedAlbums || []).map((a) => albumKey(a.album_title, a.artist_name)),
       ...(lovedAlbums || []).map((a) => albumKey(a.album_title, a.artist_name)),
+      ...(allToListenAlbums || []).map((a) => albumKey(a.album_title, a.artist_name)),
     ]);
     const excludedArtistKeys = new Set([
       ...(followedArtists || []).map((a) => artistKey(a.artist_name)),
