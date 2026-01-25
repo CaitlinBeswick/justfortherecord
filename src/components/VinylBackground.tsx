@@ -326,6 +326,10 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
   // Responsive hero vinyl size (matches RollingVinylLogo)
   const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
   const [debugMode, setDebugMode] = useState(false);
+  const [dragMode, setDragMode] = useState(false);
+  const [dragOffsets, setDragOffsets] = useState<Record<string, { x: number; y: number }>>({});
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   
   useEffect(() => {
     const handleResize = () => setHeroSize(getResponsiveHeroSize());
@@ -333,7 +337,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Dev-only: toggle debug overlay with Ctrl+Shift+V
+  // Dev-only: toggle debug overlay with Ctrl+Shift+V, drag mode with Ctrl+Shift+D
   useEffect(() => {
     if (!isDev) return;
     const handler = (e: KeyboardEvent) => {
@@ -341,10 +345,63 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
         e.preventDefault();
         setDebugMode((d) => !d);
       }
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setDragMode((d) => {
+          const newVal = !d;
+          if (newVal) {
+            console.log('[VinylBackground] Drag mode ON - drag vinyls to reposition, positions logged to console');
+          } else {
+            // Log final positions
+            console.log('[VinylBackground] Drag mode OFF - Final offsets:', JSON.stringify(dragOffsets, null, 2));
+          }
+          return newVal;
+        });
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [dragOffsets]);
+
+  // Mouse handlers for drag mode
+  const handleDragStart = useCallback((id: string, e: React.MouseEvent) => {
+    if (!dragMode) return;
+    e.preventDefault();
+    setDraggingId(id);
+    setDragStart({ x: e.clientX, y: e.clientY });
+  }, [dragMode]);
+
+  const handleDragMove = useCallback((e: MouseEvent) => {
+    if (!draggingId || !dragStart) return;
+    const dx = e.clientX - dragStart.x;
+    const dy = e.clientY - dragStart.y;
+    setDragOffsets((prev) => ({
+      ...prev,
+      [draggingId]: {
+        x: (prev[draggingId]?.x || 0) + dx,
+        y: (prev[draggingId]?.y || 0) + dy,
+      },
+    }));
+    setDragStart({ x: e.clientX, y: e.clientY });
+  }, [draggingId, dragStart]);
+
+  const handleDragEnd = useCallback(() => {
+    if (draggingId) {
+      console.log(`[VinylBackground] Moved ${draggingId}:`, dragOffsets[draggingId] || { x: 0, y: 0 });
+    }
+    setDraggingId(null);
+    setDragStart(null);
+  }, [draggingId, dragOffsets]);
+
+  useEffect(() => {
+    if (!dragMode) return;
+    window.addEventListener('mousemove', handleDragMove);
+    window.addEventListener('mouseup', handleDragEnd);
+    return () => {
+      window.removeEventListener('mousemove', handleDragMove);
+      window.removeEventListener('mouseup', handleDragEnd);
+    };
+  }, [dragMode, handleDragMove, handleDragEnd]);
 
   const { accentVinyls, mediumVinyls, smallVinyls } = useMemo(() => {
     // Deterministic, no-clump layout (stable between renders for a given config)
@@ -383,11 +440,12 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
 
   return (
     <div 
-      className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
+      className={`absolute inset-0 overflow-hidden ${dragMode ? 'pointer-events-auto' : 'pointer-events-none'} ${className}`}
       style={{
-        maskImage: debugMode ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
-        WebkitMaskImage: debugMode ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
+        maskImage: (debugMode || dragMode) ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
+        WebkitMaskImage: (debugMode || dragMode) ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
         height: fadeHeight,
+        cursor: dragMode ? 'default' : undefined,
       }}
     >
       {/* Debug overlay - safe zones */}
@@ -409,27 +467,32 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
               </span>
             </div>
           ))}
-          {/* Debug label */}
-          <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-mono z-50 pointer-events-auto">
-            Debug: Ctrl+Shift+V to toggle
-          </div>
         </>
+      )}
+
+      {/* Dev mode labels */}
+      {isDev && (debugMode || dragMode) && (
+        <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-mono z-50 pointer-events-none space-y-1">
+          {debugMode && <div>Debug: Ctrl+Shift+V</div>}
+          {dragMode && <div className="text-green-400">Drag Mode: Ctrl+Shift+D (drag vinyls!)</div>}
+        </div>
       )}
 
       {/* Hero vinyl - responsive, aligns with RollingVinylLogo rest position */}
       {showHeroVinyl && (
         <div
-          className="absolute animate-spin-slow vinyl-disc"
+          className={`absolute vinyl-disc ${dragMode ? 'cursor-grab active:cursor-grabbing' : 'animate-spin-slow'}`}
           style={{
             top: heroTop,
             left: '21%',
-            transform: 'translate(-50%, -50%)',
+            transform: `translate(-50%, -50%) translate(${dragOffsets['hero']?.x || 0}px, ${dragOffsets['hero']?.y || 0}px)`,
             width: `${heroSize}px`,
             height: `${heroSize}px`,
-            opacity: debugMode ? 0.4 : 0.15,
+            opacity: (debugMode || dragMode) ? 0.4 : 0.15,
             animationDuration: '70s',
             filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
           }}
+          onMouseDown={(e) => handleDragStart('hero', e)}
         >
           <VinylSVG detailed colorIndex={4} />
           {isDev && debugMode && (
@@ -439,82 +502,100 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
       )}
 
       {/* Large accent vinyls spread across page */}
-      {accentVinyls.map((vinyl, i) => (
-        <div
-          key={`accent-${i}`}
-          className="absolute animate-spin-slow vinyl-disc"
-          style={{
-            top: vinyl.top,
-            left: vinyl.left,
-            right: (vinyl as any).right,
-            width: `${vinyl.size}px`,
-            height: `${vinyl.size}px`,
-            opacity: debugMode ? 0.5 : vinyl.opacity,
-            animationDuration: `${vinyl.duration}s`,
-            animationDirection: vinyl.reverse ? 'reverse' : 'normal',
-            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
-          }}
-        >
-          <VinylSVG detailed colorIndex={randomizedAccentColors[i]} />
-          {isDev && debugMode && (
-            <div className="absolute inset-0 border-2 border-red-500 rounded-full">
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] text-red-600 font-mono bg-white/80 px-0.5 rounded">
-                A{i}
-              </span>
-            </div>
-          )}
-        </div>
-      ))}
+      {accentVinyls.map((vinyl, i) => {
+        const id = `accent-${i}`;
+        const offset = dragOffsets[id] || { x: 0, y: 0 };
+        return (
+          <div
+            key={id}
+            className={`absolute vinyl-disc ${dragMode ? 'cursor-grab active:cursor-grabbing' : 'animate-spin-slow'}`}
+            style={{
+              top: vinyl.top,
+              left: vinyl.left,
+              right: (vinyl as any).right,
+              transform: `translate(${offset.x}px, ${offset.y}px)`,
+              width: `${vinyl.size}px`,
+              height: `${vinyl.size}px`,
+              opacity: (debugMode || dragMode) ? 0.5 : vinyl.opacity,
+              animationDuration: `${vinyl.duration}s`,
+              animationDirection: vinyl.reverse ? 'reverse' : 'normal',
+              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
+            }}
+            onMouseDown={(e) => handleDragStart(id, e)}
+          >
+            <VinylSVG detailed colorIndex={randomizedAccentColors[i]} />
+            {isDev && debugMode && (
+              <div className="absolute inset-0 border-2 border-red-500 rounded-full">
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] text-red-600 font-mono bg-white/80 px-0.5 rounded">
+                  A{i}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
       
       {/* Medium vinyls */}
-      {mediumVinyls.map((vinyl, i) => (
-        <div
-          key={`medium-${i}`}
-          className="absolute animate-spin-slow vinyl-disc"
-          style={{
-            top: vinyl.top,
-            left: vinyl.left,
-            width: `${vinyl.size}px`,
-            height: `${vinyl.size}px`,
-            opacity: debugMode ? 0.6 : vinyl.opacity,
-            animationDuration: `${35 + (i % 6) * 8}s`,
-            animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
-            filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.12))',
-          }}
-        >
-          <VinylSVG colorIndex={randomizedMediumColors[i]} />
-          {isDev && debugMode && (
-            <div className="absolute inset-0 border-2 border-orange-500 rounded-full">
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[6px] text-orange-600 font-mono bg-white/80 px-0.5 rounded">
-                M{i}
-              </span>
-            </div>
-          )}
-        </div>
-      ))}
+      {mediumVinyls.map((vinyl, i) => {
+        const id = `medium-${i}`;
+        const offset = dragOffsets[id] || { x: 0, y: 0 };
+        return (
+          <div
+            key={id}
+            className={`absolute vinyl-disc ${dragMode ? 'cursor-grab active:cursor-grabbing' : 'animate-spin-slow'}`}
+            style={{
+              top: vinyl.top,
+              left: vinyl.left,
+              transform: `translate(${offset.x}px, ${offset.y}px)`,
+              width: `${vinyl.size}px`,
+              height: `${vinyl.size}px`,
+              opacity: (debugMode || dragMode) ? 0.6 : vinyl.opacity,
+              animationDuration: `${35 + (i % 6) * 8}s`,
+              animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
+              filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.12))',
+            }}
+            onMouseDown={(e) => handleDragStart(id, e)}
+          >
+            <VinylSVG colorIndex={randomizedMediumColors[i]} />
+            {isDev && debugMode && (
+              <div className="absolute inset-0 border-2 border-orange-500 rounded-full">
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[6px] text-orange-600 font-mono bg-white/80 px-0.5 rounded">
+                  M{i}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
       
       {/* Small scattered vinyls */}
-      {smallVinyls.map((vinyl, i) => (
-        <div
-          key={`small-${i}`}
-          className="absolute animate-spin-slow vinyl-disc"
-          style={{
-            top: vinyl.top,
-            left: vinyl.left,
-            width: `${vinyl.size * 4}px`,
-            height: `${vinyl.size * 4}px`,
-            opacity: debugMode ? 0.7 : vinyl.opacity,
-            animationDuration: `${25 + (i % 5) * 8}s`,
-            animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
-            filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.1))',
-          }}
-        >
-          <VinylSVG colorIndex={randomizedSmallColors[i]} />
-          {isDev && debugMode && (
-            <div className="absolute inset-0 border border-yellow-500 rounded-full" />
-          )}
-        </div>
-      ))}
+      {smallVinyls.map((vinyl, i) => {
+        const id = `small-${i}`;
+        const offset = dragOffsets[id] || { x: 0, y: 0 };
+        return (
+          <div
+            key={id}
+            className={`absolute vinyl-disc ${dragMode ? 'cursor-grab active:cursor-grabbing' : 'animate-spin-slow'}`}
+            style={{
+              top: vinyl.top,
+              left: vinyl.left,
+              transform: `translate(${offset.x}px, ${offset.y}px)`,
+              width: `${vinyl.size * 4}px`,
+              height: `${vinyl.size * 4}px`,
+              opacity: (debugMode || dragMode) ? 0.7 : vinyl.opacity,
+              animationDuration: `${25 + (i % 5) * 8}s`,
+              animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
+              filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.1))',
+            }}
+            onMouseDown={(e) => handleDragStart(id, e)}
+          >
+            <VinylSVG colorIndex={randomizedSmallColors[i]} />
+            {isDev && debugMode && (
+              <div className="absolute inset-0 border border-yellow-500 rounded-full" />
+            )}
+          </div>
+        );
+      })}
 
       {/* CSS for animations */}
       <style>{`
