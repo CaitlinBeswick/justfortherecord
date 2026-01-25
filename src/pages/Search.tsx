@@ -114,6 +114,7 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <div className="gradient-hero absolute inset-0" />
       <VinylBackground density="sparse" />
       <Navbar />
       
