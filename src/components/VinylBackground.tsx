@@ -93,21 +93,21 @@ const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolea
 VinylSVG.displayName = 'VinylSVG';
 
 // SPARSE: ~35 total vinyls for home/profile pages
-// Note: Vinyls near hero text area (top 0-20%, left 10-40%) are spaced to avoid overlap with "love" text
+// Distributed evenly across viewport, avoiding hero text overlap near center-left
 const sparseAccentVinyls = [
-  { top: '-5%', left: '5%', size: 160, opacity: 0.14, duration: 65 },
-  { top: '-8%', left: '75%', size: 180, opacity: 0.15, duration: 75, reverse: true },
-  { top: '8%', left: '-4%', size: 170, opacity: 0.13, duration: 70 },
-  { top: '5%', left: '60%', size: 140, opacity: 0.12, duration: 55, reverse: true },
-  { top: '10%', right: '-3%', size: 150, opacity: 0.14, duration: 60 },
-  { top: '25%', left: '5%', size: 130, opacity: 0.11, duration: 50 },
-  { top: '28%', left: '70%', size: 160, opacity: 0.13, duration: 65, reverse: true },
+  { top: '-5%', left: '80%', size: 160, opacity: 0.14, duration: 65 },
+  { top: '-8%', left: '45%', size: 180, opacity: 0.15, duration: 75, reverse: true },
+  { top: '5%', right: '-4%', size: 170, opacity: 0.13, duration: 70 },
+  { top: '8%', left: '65%', size: 140, opacity: 0.12, duration: 55, reverse: true },
+  { top: '15%', right: '5%', size: 150, opacity: 0.14, duration: 60 },
+  { top: '22%', left: '75%', size: 130, opacity: 0.11, duration: 50 },
+  { top: '28%', left: '55%', size: 160, opacity: 0.13, duration: 65, reverse: true },
   { top: '35%', left: '-5%', size: 180, opacity: 0.14, duration: 72 },
-  { top: '40%', left: '50%', size: 120, opacity: 0.10, duration: 48 },
+  { top: '40%', left: '85%', size: 120, opacity: 0.10, duration: 48 },
   { top: '38%', right: '-4%', size: 170, opacity: 0.13, duration: 68, reverse: true },
-  { top: '52%', left: '15%', size: 150, opacity: 0.12, duration: 58 },
-  { top: '55%', left: '65%', size: 140, opacity: 0.11, duration: 52, reverse: true },
-  { top: '60%', left: '85%', size: 160, opacity: 0.13, duration: 62 },
+  { top: '52%', left: '10%', size: 150, opacity: 0.12, duration: 58 },
+  { top: '55%', left: '70%', size: 140, opacity: 0.11, duration: 52, reverse: true },
+  { top: '60%', left: '40%', size: 160, opacity: 0.13, duration: 62 },
 ];
 
 const sparseMediumVinyls = [
