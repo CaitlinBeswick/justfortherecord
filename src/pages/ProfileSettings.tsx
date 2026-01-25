@@ -973,6 +973,29 @@ const ProfileSettings = () => {
                         />
                       </div>
                     </div>
+
+                    {/* Restart Welcome Tour */}
+                    <div className="space-y-3 p-4 rounded-lg border border-border bg-card">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label>Welcome Tour</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Restart the onboarding tour to learn about app features.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            localStorage.removeItem("welcome-tour-completed");
+                            sonnerToast.success("Tour will appear next time you visit the app");
+                          }}
+                        >
+                          Restart Tour
+                        </Button>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </div>

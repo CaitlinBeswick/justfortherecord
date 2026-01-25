@@ -2,7 +2,7 @@ import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
 import { Footer } from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock, Calendar } from "lucide-react";
+import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock, Calendar, ChevronDown } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,14 +74,15 @@ interface Recommendation {
   artists: ArtistRecommendation[];
 }
 
-type Mood = "chill" | "energetic" | "experimental" | "melancholic" | "uplifting" | null;
+type Mood = "chill" | "energetic" | "experimental" | "melancholic" | "joy" | "nostalgic" | null;
 
 const MOODS: { id: Mood; label: string; icon: React.ReactNode; color: string }[] = [
   { id: "chill", label: "Chill", icon: <Leaf className="h-4 w-4" />, color: "from-teal-500 to-cyan-500" },
   { id: "energetic", label: "Energetic", icon: <Zap className="h-4 w-4" />, color: "from-orange-500 to-rose-500" },
   { id: "experimental", label: "Experimental", icon: <FlaskConical className="h-4 w-4" />, color: "from-violet-500 to-purple-500" },
   { id: "melancholic", label: "Melancholic", icon: <Moon className="h-4 w-4" />, color: "from-slate-500 to-indigo-500" },
-  { id: "uplifting", label: "Uplifting", icon: <Heart className="h-4 w-4" />, color: "from-yellow-500 to-amber-500" },
+  { id: "joy", label: "Joy", icon: <Heart className="h-4 w-4" />, color: "from-yellow-500 to-amber-500" },
+  { id: "nostalgic", label: "Nostalgic", icon: <Clock className="h-4 w-4" />, color: "from-amber-600 to-orange-400" },
 ];
 
 interface HistoryEntry {
@@ -90,6 +91,207 @@ interface HistoryEntry {
   albums: AlbumRecommendation[];
   artists: ArtistRecommendation[];
   created_at: string;
+}
+
+// Expandable description component
+function ExpandableReason({ reason }: { reason: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = reason.length > 80;
+  
+  if (!isLong) {
+    return <p className="text-xs text-muted-foreground/70 mt-1">{reason}</p>;
+  }
+  
+  return (
+    <div className="mt-1">
+      <p className={`text-xs text-muted-foreground/70 ${expanded ? "" : "line-clamp-2"}`}>
+        {reason}
+      </p>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setExpanded(!expanded);
+        }}
+        className="text-xs text-primary hover:underline flex items-center gap-0.5 mt-0.5"
+      >
+        {expanded ? "Show less" : "Show more"}
+        <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+    </div>
+  );
+}
+
+// Recommendations display with 6 on mobile, 5 on desktop and filtering out to-listen items
+interface RecommendationsDisplayProps {
+  recommendations: Recommendation;
+  allStatuses: any[];
+  getStatusForAlbum: (id: string) => { isListened: boolean; isToListen: boolean; isLoved: boolean };
+  handleAlbumClick: (album: AlbumRecommendation) => void;
+  handleArtistClick: (artist: ArtistRecommendation) => void;
+  handleSaveToListen: (album: AlbumRecommendation) => void;
+  isTogglingStatus: boolean;
+  resolvingAlbumKey: string | null;
+  resolvingArtistKey: string | null;
+}
+
+function RecommendationsDisplay({
+  recommendations,
+  allStatuses,
+  getStatusForAlbum,
+  handleAlbumClick,
+  handleArtistClick,
+  handleSaveToListen,
+  isTogglingStatus,
+  resolvingAlbumKey,
+  resolvingArtistKey,
+}: RecommendationsDisplayProps) {
+  // Filter out albums that are already in to-listen list
+  const filteredAlbums = (recommendations.albums || []).filter((album) => {
+    if (!album.releaseGroupId) return true;
+    const status = getStatusForAlbum(album.releaseGroupId);
+    return !status.isToListen;
+  });
+
+  // Show 6 on mobile (2 cols), 5 on desktop (5 cols)
+  const albumsToShow = filteredAlbums.slice(0, 6);
+  const artistsToShow = (recommendations.artists || []).slice(0, 6);
+
+  return (
+    <div className="space-y-8">
+      {/* Album Recommendations */}
+      {albumsToShow.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Disc3 className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Recommended Albums
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-4">
+            {albumsToShow.map((album, i) => {
+              const isInToListen = album.releaseGroupId 
+                ? getStatusForAlbum(album.releaseGroupId).isToListen 
+                : false;
+              
+              // Hide 6th item on desktop (md+), show on mobile
+              const hideOnDesktop = i === 5;
+              
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className={`cursor-pointer group relative ${hideOnDesktop ? "md:hidden" : ""}`}
+                >
+                  <div 
+                    onClick={() => handleAlbumClick(album)}
+                    className="aspect-square rounded-lg overflow-hidden mb-2 group-hover:ring-2 ring-primary/50 transition-all relative"
+                  >
+                    {album.releaseGroupId ? (
+                      <AlbumCoverWithFallback
+                        releaseGroupId={album.releaseGroupId}
+                        title={album.title}
+                        size="500"
+                        className="w-full h-full"
+                        imageClassName="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center">
+                        <Disc3 className="h-12 w-12 text-primary/40" />
+                      </div>
+                    )}
+                    {/* Save to To-Listen button */}
+                    {album.releaseGroupId && !isInToListen && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveToListen(album);
+                        }}
+                        disabled={isTogglingStatus}
+                        className="absolute bottom-2 right-2 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                        title="Save to To-Listen"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    )}
+                    {isInToListen && (
+                      <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                        <Clock className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+                  <h4 
+                    onClick={() => handleAlbumClick(album)}
+                    className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors"
+                  >
+                    {album.title}
+                  </h4>
+                  <p className="text-xs text-muted-foreground truncate">{album.artist}</p>
+                  {resolvingAlbumKey === `${album.title}|||${album.artist}` && (
+                    <p className="text-xs text-muted-foreground mt-1">Opening...</p>
+                  )}
+                  <ExpandableReason reason={album.reason} />
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Artist Recommendations */}
+      {artistsToShow.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Recommended Artists
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-4">
+            {artistsToShow.map((artist, i) => {
+              // Hide 6th item on desktop (md+), show on mobile
+              const hideOnDesktop = i === 5;
+              
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 + 0.25 }}
+                  onClick={() => handleArtistClick(artist)}
+                  className={`cursor-pointer group text-center ${hideOnDesktop ? "md:hidden" : ""}`}
+                >
+                  <div className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all">
+                    {artist.artistId ? (
+                      <ArtistImageWithFallback
+                        artistId={artist.artistId}
+                        artistName={artist.name}
+                        className="w-full h-full"
+                        imageClassName="w-full h-full object-cover"
+                        fallbackClassName="w-full h-full"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center">
+                        <Users className="h-12 w-12 text-primary/40" />
+                      </div>
+                    )}
+                  </div>
+                  <h4 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                    {artist.name}
+                  </h4>
+                  {resolvingArtistKey === artist.name && (
+                    <p className="text-xs text-muted-foreground mt-1">Opening...</p>
+                  )}
+                  <ExpandableReason reason={artist.reason} />
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 const DiscoveryExplore = () => {
@@ -487,9 +689,9 @@ const DiscoveryExplore = () => {
             <div className="space-y-6">
               <div>
                 <Skeleton className="h-5 w-40 mb-4" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className={i === 5 ? "md:hidden" : ""}>
                       <Skeleton className="aspect-square rounded-lg mb-2" />
                       <Skeleton className="h-4 w-3/4 mb-1" />
                       <Skeleton className="h-3 w-1/2" />
@@ -519,136 +721,17 @@ const DiscoveryExplore = () => {
               </p>
             </div>
           ) : recommendations ? (
-            <div className="space-y-8">
-              {/* Album Recommendations */}
-              {recommendations.albums && recommendations.albums.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Disc3 className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                      Recommended Albums
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {recommendations.albums.map((album, i) => {
-                      const isInToListen = album.releaseGroupId 
-                        ? getStatusForAlbum(album.releaseGroupId).isToListen 
-                        : false;
-                      
-                      return (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.05 }}
-                          className="cursor-pointer group relative"
-                        >
-                          <div 
-                            onClick={() => void handleAlbumClick(album)}
-                            className="aspect-square rounded-lg overflow-hidden mb-2 group-hover:ring-2 ring-primary/50 transition-all relative"
-                          >
-                            {album.releaseGroupId ? (
-                              <AlbumCoverWithFallback
-                                releaseGroupId={album.releaseGroupId}
-                                title={album.title}
-                                size="500"
-                                className="w-full h-full"
-                                imageClassName="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center">
-                                <Disc3 className="h-12 w-12 text-primary/40" />
-                              </div>
-                            )}
-                            {/* Save to To-Listen button */}
-                            {album.releaseGroupId && !isInToListen && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSaveToListen(album);
-                                }}
-                                disabled={isTogglingStatus}
-                                className="absolute bottom-2 right-2 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
-                                title="Save to To-Listen"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </button>
-                            )}
-                            {isInToListen && (
-                              <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
-                                <Clock className="h-4 w-4" />
-                              </div>
-                            )}
-                          </div>
-                          <h4 
-                            onClick={() => void handleAlbumClick(album)}
-                            className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors"
-                          >
-                            {album.title}
-                          </h4>
-                          <p className="text-xs text-muted-foreground truncate">{album.artist}</p>
-                          {resolvingAlbumKey === `${album.title}|||${album.artist}` && (
-                            <p className="text-xs text-muted-foreground mt-1">Opening...</p>
-                          )}
-                          <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2">
-                            {album.reason}
-                          </p>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Artist Recommendations */}
-              {recommendations.artists && recommendations.artists.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                      Recommended Artists
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {recommendations.artists.map((artist, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 + 0.25 }}
-                        onClick={() => void handleArtistClick(artist)}
-                        className="cursor-pointer group text-center"
-                      >
-                        <div className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all">
-                          {artist.artistId ? (
-                            <ArtistImageWithFallback
-                              artistId={artist.artistId}
-                              artistName={artist.name}
-                              className="w-full h-full"
-                              imageClassName="w-full h-full object-cover"
-                              fallbackClassName="w-full h-full"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center">
-                              <Users className="h-12 w-12 text-primary/40" />
-                            </div>
-                          )}
-                        </div>
-                        <h4 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                          {artist.name}
-                        </h4>
-                        {resolvingArtistKey === artist.name && (
-                          <p className="text-xs text-muted-foreground mt-1">Opening...</p>
-                        )}
-                        <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2">
-                          {artist.reason}
-                        </p>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <RecommendationsDisplay
+              recommendations={recommendations}
+              allStatuses={allStatuses}
+              getStatusForAlbum={getStatusForAlbum}
+              handleAlbumClick={handleAlbumClick}
+              handleArtistClick={handleArtistClick}
+              handleSaveToListen={handleSaveToListen}
+              isTogglingStatus={isTogglingStatus}
+              resolvingAlbumKey={resolvingAlbumKey}
+              resolvingArtistKey={resolvingArtistKey}
+            />
           ) : null}
         </motion.div>
 

@@ -14,8 +14,11 @@ import {
 } from "@/services/musicbrainz";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
-import { RefreshCw, ArrowLeft } from "lucide-react";
+import { RefreshCw, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -129,6 +132,8 @@ const DiscoveryDecade = () => {
   const navigate = useNavigate();
   const { range: rawRange } = useParams<{ range: string }>();
   const [offset, setOffset] = useState(0);
+  const [showListened, setShowListened] = useState(false);
+  const { user } = useAuth();
 
   const { range, decadeName, startYear, endYear } = useMemo(() => {
     const decoded = rawRange ? decodeURIComponent(rawRange) : "";
@@ -145,6 +150,40 @@ const DiscoveryDecade = () => {
   // data in this file for later.
   // const decadeColor = DECADE_COLORS[decadeName] || "from-primary to-primary/80";
   // const essentialAlbums = ESSENTIAL_ALBUMS[decadeName] || [];
+
+  // Fetch user's listened albums for filtering
+  const { data: listenedIds = new Set<string>() } = useQuery({
+    queryKey: ["user-listened-ids", user?.id],
+    queryFn: async () => {
+      const ids = new Set<string>();
+      
+      // Get albums from listening_status
+      const { data: statusData } = await supabase
+        .from("listening_status")
+        .select("release_group_id")
+        .eq("user_id", user!.id)
+        .eq("is_listened", true);
+      statusData?.forEach(r => ids.add(r.release_group_id));
+      
+      // Get albums from album_ratings
+      const { data: ratingData } = await supabase
+        .from("album_ratings")
+        .select("release_group_id")
+        .eq("user_id", user!.id);
+      ratingData?.forEach(r => ids.add(r.release_group_id));
+      
+      // Get albums from diary_entries
+      const { data: diaryData } = await supabase
+        .from("diary_entries")
+        .select("release_group_id")
+        .eq("user_id", user!.id);
+      diaryData?.forEach(r => ids.add(r.release_group_id));
+      
+      return ids;
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const { data: releases = [], isLoading, error, isFetching } = useQuery({
     queryKey: ["decade-releases", range, offset],
@@ -164,6 +203,12 @@ const DiscoveryDecade = () => {
     // Increment offset to get next batch of results
     setOffset((prev) => prev + FETCH_LIMIT);
   };
+
+  // Filter releases based on listened status
+  const filteredReleases = useMemo(() => {
+    if (showListened || !user) return releases;
+    return releases.filter(rg => !listenedIds.has(rg.id));
+  }, [releases, listenedIds, showListened, user]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -205,18 +250,30 @@ const DiscoveryDecade = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
               Albums from the {decadeName.toLowerCase()}
             </h2>
-            <button
-              onClick={handleRefresh}
-              disabled={isFetching}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-4">
+              {user && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {showListened ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  <span className="text-xs">Listened</span>
+                  <Switch
+                    checked={showListened}
+                    onCheckedChange={setShowListened}
+                  />
+                </div>
+              )}
+              <button
+                onClick={handleRefresh}
+                disabled={isFetching}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -233,14 +290,18 @@ const DiscoveryDecade = () => {
             <div className="bg-destructive/10 rounded-xl border border-destructive/20 p-6 text-center">
               <p className="text-destructive">Failed to load decade results</p>
             </div>
-          ) : releases.length === 0 ? (
+          ) : filteredReleases.length === 0 ? (
             <div className="bg-card/30 rounded-xl border border-border/50 p-6 text-center">
-              <p className="text-muted-foreground">No albums found for this decade.</p>
+              <p className="text-muted-foreground">
+                {releases.length > 0 && !showListened 
+                  ? "You've heard all the albums shown. Toggle 'Listened' to see them."
+                  : "No albums found for this decade."}
+              </p>
             </div>
           ) : (
             <motion.section variants={containerVariants} initial="hidden" animate="visible">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {releases.map((rg) => (
+                {filteredReleases.map((rg) => (
                   <motion.div
                     key={rg.id}
                     variants={itemVariants}
