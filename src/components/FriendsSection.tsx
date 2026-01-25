@@ -66,15 +66,17 @@ export function FriendsSection() {
     queryFn: async () => {
       if (!debouncedSearch.trim() || debouncedSearch.length < 2) return [];
       
+      // Use searchable_profiles view to only show discoverable users
+      // This prevents enumeration of private profiles
       const { data, error } = await supabase
-        .from('profiles')
+        .from('searchable_profiles' as any)
         .select('id, username, display_name, avatar_url')
         .or(`username.ilike.%${debouncedSearch}%,display_name.ilike.%${debouncedSearch}%`)
         .neq('id', user?.id || '')
         .limit(10);
       
       if (error) throw error;
-      return data as SearchResult[];
+      return (data || []) as unknown as SearchResult[];
     },
     enabled: debouncedSearch.length >= 2,
   });
