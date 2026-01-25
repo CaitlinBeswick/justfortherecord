@@ -234,19 +234,19 @@ function buildBackgroundLayout(params: {
   const mediumCount = density === "dense" ? 32 : density === "moderate" ? 12 : density === "light" ? 5 : 6;
   const smallCount = density === "dense" ? 44 : density === "moderate" ? 20 : density === "light" ? 10 : 16;
 
-  // Keep some accents allowed to drift slightly outside frame to feel less grid-like.
+  // Higher minDist values = more uniform spacing
   const accentPts = generatePoissonPoints({
     rng,
     count: accentCount,
-    minDist: density === "dense" ? 0.14 : density === "moderate" ? 0.18 : density === "light" ? 0.28 : 0.22,
-    bounds: { xMin: -0.04, xMax: 1.04, yMin: -0.08, yMax: 0.95 },
+    minDist: density === "dense" ? 0.18 : density === "moderate" ? 0.24 : density === "light" ? 0.35 : 0.28,
+    bounds: { xMin: 0, xMax: 1, yMin: 0, yMax: 0.95 },
     avoid,
   });
 
   const mediumPts = generatePoissonPoints({
     rng,
     count: mediumCount,
-    minDist: density === "dense" ? 0.10 : density === "moderate" ? 0.14 : density === "light" ? 0.22 : 0.18,
+    minDist: density === "dense" ? 0.14 : density === "moderate" ? 0.20 : density === "light" ? 0.28 : 0.22,
     bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.02, yMax: 0.92 },
     avoid,
   });
@@ -254,7 +254,7 @@ function buildBackgroundLayout(params: {
   const smallPts = generatePoissonPoints({
     rng,
     count: smallCount,
-    minDist: density === "dense" ? 0.055 : density === "moderate" ? 0.08 : density === "light" ? 0.12 : 0.09,
+    minDist: density === "dense" ? 0.08 : density === "moderate" ? 0.12 : density === "light" ? 0.16 : 0.12,
     bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.01, yMax: 0.98 },
     avoid,
   });
@@ -268,9 +268,9 @@ function buildBackgroundLayout(params: {
     const opacity = density === "dense" ? 0.35 + rng() * 0.15 : density === "moderate" ? 0.38 + rng() * 0.14 : density === "light" ? 0.40 + rng() * 0.15 : 0.40 + rng() * 0.12;
     const duration = Math.round(48 + rng() * 28);
 
-    // Slightly jitter Y to avoid visible "rows".
-    const y = clamp(p.y + (rng() - 0.5) * 0.03, -0.1, 0.98);
-    const x = clamp(p.x + (rng() - 0.5) * 0.03, -0.06, 1.06);
+    // Minimal jitter for more uniform look
+    const y = clamp(p.y + (rng() - 0.5) * 0.01, 0, 0.98);
+    const x = clamp(p.x + (rng() - 0.5) * 0.01, 0, 1);
 
     return {
       top: toPct(y),
@@ -288,9 +288,9 @@ function buildBackgroundLayout(params: {
     const size = Math.round(sizeMin + rng() * (sizeMax - sizeMin));
     // Higher opacity for better visibility
     const opacity = density === "dense" ? 0.45 + rng() * 0.15 : density === "moderate" ? 0.48 + rng() * 0.12 : density === "light" ? 0.50 + rng() * 0.12 : 0.50 + rng() * 0.10;
-    // Micro jitter to break alignment
-    const y = clamp(p.y + (rng() - 0.5) * 0.02, 0, 0.98);
-    const x = clamp(p.x + (rng() - 0.5) * 0.02, 0, 1);
+    // Minimal jitter
+    const y = clamp(p.y + (rng() - 0.5) * 0.008, 0, 0.98);
+    const x = clamp(p.x + (rng() - 0.5) * 0.008, 0, 1);
     return {
       top: toPct(y),
       left: toPct(x),
@@ -303,8 +303,9 @@ function buildBackgroundLayout(params: {
     const size = Math.round(6 + rng() * 3); // 6..9 (matches previous)
     // Higher opacity for better visibility
     const opacity = density === "dense" ? 0.50 + rng() * 0.20 : density === "moderate" ? 0.52 + rng() * 0.18 : density === "light" ? 0.55 + rng() * 0.18 : 0.55 + rng() * 0.15;
-    const y = clamp(p.y + (rng() - 0.5) * 0.015, 0, 1);
-    const x = clamp(p.x + (rng() - 0.5) * 0.015, 0, 1);
+    // Minimal jitter
+    const y = clamp(p.y + (rng() - 0.5) * 0.005, 0, 1);
+    const x = clamp(p.x + (rng() - 0.5) * 0.005, 0, 1);
     return {
       top: toPct(y),
       left: toPct(x),
