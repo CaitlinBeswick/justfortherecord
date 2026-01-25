@@ -58,50 +58,51 @@ const App = () => (
         <Sonner />
         <FeatureNotificationProvider />
         <BrowserRouter>
-          <Suspense fallback={<div className="min-h-screen bg-background" />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/albums" element={<Albums />} />
-              <Route path="/artists" element={<Artists />} />
-              <Route path="/artists/popular" element={<PopularArtists />} />
-              <Route path="/top-artists" element={<TopArtists />} />
-              <Route path="/top-albums" element={<TopAlbums />} />
-              <Route path="/album/:id" element={<AlbumDetail />} />
-              <Route path="/artist/:id" element={<ArtistDetail />} />
-              <Route path="/artist/:id/similar" element={<SimilarArtists />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/profile/albums" element={<ProfileAlbums />} />
-              <Route path="/profile/to-listen" element={<ProfileToListen />} />
-              <Route path="/profile/diary" element={<ProfileDiary />} />
-              <Route path="/profile/lists" element={<ProfileLists />} />
-              <Route path="/profile/artists" element={<ProfileArtists />} />
-              <Route path="/profile/reviews" element={<ProfileReviews />} />
-              <Route path="/profile/friends" element={<ProfileFriends />} />
-              <Route path="/profile/settings" element={<ProfileSettings />} />
-              <Route path="/user/:userId" element={<UserProfile />} />
-              <Route path="/activity/following" element={<FollowingActivity />} />
-              <Route path="/activity/you" element={<YourActivity />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/whats-new" element={<WhatsNew />} />
-              <Route path="/new-releases" element={<NewReleases />} />
-              <Route path="/discovery" element={<DiscoveryNewReleases />} />
-              <Route path="/discovery/explore" element={<DiscoveryExplore />} />
-              <Route path="/discovery/genre/:genre" element={<DiscoveryGenre />} />
-              <Route path="/discovery/decade/:range" element={<DiscoveryDecade />} />
-              <Route path="/discovery/leaderboards" element={<DiscoveryLeaderboards />} />
-              
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <ScrollToTop />
-            <CookieConsent />
-            <QuickTips />
-            <VinylEditorWrapper />
-          </Suspense>
+          <VinylEditorWrapper>
+            <Suspense fallback={<div className="min-h-screen bg-background" />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/albums" element={<Albums />} />
+                <Route path="/artists" element={<Artists />} />
+                <Route path="/artists/popular" element={<PopularArtists />} />
+                <Route path="/top-artists" element={<TopArtists />} />
+                <Route path="/top-albums" element={<TopAlbums />} />
+                <Route path="/album/:id" element={<AlbumDetail />} />
+                <Route path="/artist/:id" element={<ArtistDetail />} />
+                <Route path="/artist/:id/similar" element={<SimilarArtists />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/albums" element={<ProfileAlbums />} />
+                <Route path="/profile/to-listen" element={<ProfileToListen />} />
+                <Route path="/profile/diary" element={<ProfileDiary />} />
+                <Route path="/profile/lists" element={<ProfileLists />} />
+                <Route path="/profile/artists" element={<ProfileArtists />} />
+                <Route path="/profile/reviews" element={<ProfileReviews />} />
+                <Route path="/profile/friends" element={<ProfileFriends />} />
+                <Route path="/profile/settings" element={<ProfileSettings />} />
+                <Route path="/user/:userId" element={<UserProfile />} />
+                <Route path="/activity/following" element={<FollowingActivity />} />
+                <Route path="/activity/you" element={<YourActivity />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/whats-new" element={<WhatsNew />} />
+                <Route path="/new-releases" element={<NewReleases />} />
+                <Route path="/discovery" element={<DiscoveryNewReleases />} />
+                <Route path="/discovery/explore" element={<DiscoveryExplore />} />
+                <Route path="/discovery/genre/:genre" element={<DiscoveryGenre />} />
+                <Route path="/discovery/decade/:range" element={<DiscoveryDecade />} />
+                <Route path="/discovery/leaderboards" element={<DiscoveryLeaderboards />} />
+                
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <ScrollToTop />
+              <CookieConsent />
+              <QuickTips />
+            </Suspense>
+          </VinylEditorWrapper>
         </BrowserRouter>
         </TooltipProvider>
       </SubscriptionProvider>

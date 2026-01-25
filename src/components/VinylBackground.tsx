@@ -1,4 +1,5 @@
-import { memo, useMemo, useState, useEffect } from "react";
+import { memo, useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { useVinylEditor, CustomVinyl } from "./VinylBackgroundEditor";
 
 // Vintage label colors for variety
 const labelColors = [
@@ -276,6 +277,12 @@ interface VinylBackgroundProps {
 export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false }: VinylBackgroundProps) {
   // Responsive hero vinyl size (matches RollingVinylLogo)
   const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editor = useVinylEditor();
+  
+  // Drag state
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number; vinylLeft: number; vinylTop: number } | null>(null);
   
   useEffect(() => {
     const handleResize = () => setHeroSize(getResponsiveHeroSize());
@@ -314,14 +321,94 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     return `${pct}%`;
   }, [fadeHeight, showHeroVinyl]);
 
+  // Handle click on background to add vinyl (edit mode)
+  const handleBackgroundClick = useCallback((e: React.MouseEvent) => {
+    if (!editor?.isEditMode || !containerRef.current) return;
+    
+    // Don't add if clicking on existing vinyl
+    if ((e.target as HTMLElement).closest('.custom-vinyl')) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    editor.addVinyl(x, y);
+  }, [editor]);
+
+  // Handle vinyl click (select in edit mode)
+  const handleVinylClick = useCallback((e: React.MouseEvent, vinyl: CustomVinyl) => {
+    e.stopPropagation();
+    if (!editor) return;
+    
+    if (editor.isEditMode) {
+      if (editor.selectedVinylId === vinyl.id) {
+        // Double-click to deselect
+        editor.setSelectedVinylId(null);
+      } else {
+        editor.setSelectedVinylId(vinyl.id);
+      }
+    }
+  }, [editor]);
+
+  // Handle drag start
+  const handleDragStart = useCallback((e: React.MouseEvent, vinyl: CustomVinyl) => {
+    if (!editor?.isDragMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setDraggingId(vinyl.id);
+    editor.setSelectedVinylId(vinyl.id);
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      vinylLeft: vinyl.left,
+      vinylTop: vinyl.top,
+    };
+  }, [editor]);
+
+  // Handle drag move
+  useEffect(() => {
+    if (!draggingId || !editor || !containerRef.current) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStartRef.current || !containerRef.current) return;
+      
+      const rect = containerRef.current.getBoundingClientRect();
+      const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
+      const deltaY = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
+      
+      const newLeft = Math.max(0, Math.min(100, dragStartRef.current.vinylLeft + deltaX));
+      const newTop = Math.max(0, Math.min(100, dragStartRef.current.vinylTop + deltaY));
+      
+      editor.updateVinyl(draggingId, { left: newLeft, top: newTop });
+    };
+
+    const handleMouseUp = () => {
+      setDraggingId(null);
+      dragStartRef.current = null;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingId, editor]);
+
+  const isInteractive = editor?.isEditMode || editor?.isDragMode;
+
   return (
     <div 
-      className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
+      ref={containerRef}
+      className={`absolute inset-0 overflow-hidden ${isInteractive ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'} ${className}`}
       style={{
         maskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
         WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
         height: fadeHeight,
       }}
+      onClick={handleBackgroundClick}
     >
       {/* Hero vinyl - responsive, aligns with RollingVinylLogo rest position */}
       {showHeroVinyl && (
@@ -403,6 +490,31 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
         </div>
       ))}
 
+      {/* Custom vinyls from editor */}
+      {editor?.customVinyls.map((vinyl) => (
+        <div
+          key={vinyl.id}
+          className={`custom-vinyl absolute ${draggingId === vinyl.id ? '' : 'animate-spin-slow'} vinyl-disc ${
+            isInteractive ? 'cursor-grab active:cursor-grabbing' : ''
+          } ${editor.selectedVinylId === vinyl.id ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+          style={{
+            top: `${vinyl.top}%`,
+            left: `${vinyl.left}%`,
+            transform: 'translate(-50%, -50%)',
+            width: `${vinyl.size}px`,
+            height: `${vinyl.size}px`,
+            opacity: vinyl.opacity,
+            animationDuration: '60s',
+            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
+            zIndex: editor.selectedVinylId === vinyl.id ? 10 : 1,
+          }}
+          onClick={(e) => handleVinylClick(e, vinyl)}
+          onMouseDown={(e) => handleDragStart(e, vinyl)}
+        >
+          <VinylSVG detailed={vinyl.size > 80} colorIndex={vinyl.colorIndex} />
+        </div>
+      ))}
+
       {/* CSS for animations */}
       <style>{`
         @keyframes spin-slow {
@@ -415,6 +527,9 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
         }
         .animate-spin-slow {
           animation: spin-slow 60s linear infinite;
+        }
+        .custom-vinyl.animate-spin-slow {
+          animation: none;
         }
       `}</style>
     </div>
