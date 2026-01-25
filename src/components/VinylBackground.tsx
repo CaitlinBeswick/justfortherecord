@@ -1,6 +1,113 @@
 import { memo, useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useVinylEditor, CustomVinyl } from "./VinylBackgroundEditor";
 
+type PositionedVinyl = {
+  top: string;
+  left?: string;
+  right?: string;
+  size: number;
+  opacity: number;
+  duration?: number;
+  reverse?: boolean;
+};
+
+function parsePercent(input?: string) {
+  if (!input) return 0;
+  const m = /^(-?[0-9.]+)%$/.exec(input.trim());
+  if (!m) return 0;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function resolveVinylClumps(
+  vinyls: PositionedVinyl[],
+  dims: { w: number; h: number },
+  opts?: { paddingPx?: number; iterations?: number; boundsPct?: number }
+) {
+  const w = Math.max(1, dims.w);
+  const h = Math.max(1, dims.h);
+  const paddingPx = opts?.paddingPx ?? 14;
+  const iterations = opts?.iterations ?? 6;
+  const boundsPct = opts?.boundsPct ?? 20; // allow some off-screen placement like the original arrays
+
+  // Convert from edge-based positioning to center points in px.
+  const pts = vinyls.map((v) => {
+    const topPct = parsePercent(v.top);
+    const leftPct = v.left ? parsePercent(v.left) : undefined;
+    const rightPct = v.right ? parsePercent(v.right) : undefined;
+    const r = v.size / 2;
+
+    const topPx = (topPct / 100) * h;
+    const y = topPx + r;
+
+    let x = 0;
+    if (typeof leftPct === "number") {
+      const leftPx = (leftPct / 100) * w;
+      x = leftPx + r;
+    } else if (typeof rightPct === "number") {
+      const rightPx = (rightPct / 100) * w;
+      x = w - rightPx - r;
+    } else {
+      // Fallback: center.
+      x = w / 2;
+    }
+
+    return {
+      x,
+      y,
+      r,
+      original: v,
+    };
+  });
+
+  const minX = (-boundsPct / 100) * w;
+  const maxX = (1 + boundsPct / 100) * w;
+  const minY = (-boundsPct / 100) * h;
+  const maxY = (1 + boundsPct / 100) * h;
+
+  // Simple pairwise relaxation to remove overlaps.
+  for (let it = 0; it < iterations; it++) {
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const a = pts[i];
+        const b = pts[j];
+
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const d = Math.hypot(dx, dy);
+        const minD = a.r + b.r + paddingPx;
+        if (d >= minD) continue;
+
+        // If circles are exactly on top, nudge deterministically.
+        const ux = d > 0.0001 ? dx / d : 1;
+        const uy = d > 0.0001 ? dy / d : 0;
+        const push = (minD - (d || 0)) / 2;
+
+        a.x -= ux * push;
+        a.y -= uy * push;
+        b.x += ux * push;
+        b.y += uy * push;
+
+        a.x = Math.max(minX, Math.min(maxX, a.x));
+        a.y = Math.max(minY, Math.min(maxY, a.y));
+        b.x = Math.max(minX, Math.min(maxX, b.x));
+        b.y = Math.max(minY, Math.min(maxY, b.y));
+      }
+    }
+  }
+
+  return pts.map((p) => {
+    const left = `${(p.x / w) * 100}%`;
+    const top = `${(p.y / h) * 100}%`;
+    return {
+      ...p.original,
+      left,
+      top,
+      right: undefined,
+    } as PositionedVinyl;
+  });
+}
+
 // Vintage label colors for variety
 const labelColors = [
   { fill: 'hsl(45, 50%, 70%)', stroke: 'hsl(45, 60%, 55%)' },   // Gold/cream (classic)
@@ -279,6 +386,8 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
   const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
   const containerRef = useRef<HTMLDivElement>(null);
   const editor = useVinylEditor();
+
+  const [containerDims, setContainerDims] = useState<{ w: number; h: number }>({ w: 1, h: 1 });
   
   // Drag state
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -291,10 +400,43 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    const measure = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      setContainerDims((prev) => {
+        // avoid re-render spam from fractional pixels
+        const w = Math.round(rect.width);
+        const h = Math.round(rect.height);
+        if (prev.w === w && prev.h === h) return prev;
+        return { w, h };
+      });
+    };
+
+    // measure after first paint
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', measure);
+    };
+  }, [fadeHeight]);
+
   // Select vinyl arrays based on density
   const accentVinyls = density === 'dense' ? denseAccentVinyls : sparseAccentVinyls;
   const mediumVinyls = density === 'dense' ? denseMediumVinyls : sparseMediumVinyls;
   const smallVinyls = density === 'dense' ? denseSmallVinyls : sparseSmallVinyls;
+
+  // Enforce minimum spacing so vinyls never overlap/clump.
+  const resolvedAccentVinyls = useMemo(() => {
+    return resolveVinylClumps(accentVinyls as PositionedVinyl[], containerDims, {
+      paddingPx: 18,
+      iterations: 7,
+      boundsPct: 22,
+    });
+  }, [accentVinyls, containerDims]);
 
   // Randomize color indices on mount
   const randomizedAccentColors = useMemo(() => {
@@ -444,14 +586,14 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
       )}
 
       {/* Large accent vinyls spread across page */}
-      {accentVinyls.map((vinyl, i) => (
+      {resolvedAccentVinyls.map((vinyl, i) => (
         <div
           key={`accent-${i}`}
           className="absolute animate-spin-slow vinyl-disc"
           style={{
             top: vinyl.top,
             left: vinyl.left,
-            right: (vinyl as any).right,
+            transform: 'translate(-50%, -50%)',
             width: `${vinyl.size}px`,
             height: `${vinyl.size}px`,
             opacity: vinyl.opacity,
