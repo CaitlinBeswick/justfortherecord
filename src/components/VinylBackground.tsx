@@ -317,11 +317,12 @@ function buildBackgroundLayout(params: {
 }
 
 type DensityLevel = 'sparse' | 'dense' | 'light' | 'moderate';
+type DensityProp = DensityLevel | 'responsive' | 'responsive-light';
 
 interface VinylBackgroundProps {
   className?: string;
   fadeHeight?: string;
-  density?: DensityLevel | 'responsive'; // 'responsive' auto-adjusts based on screen size
+  density?: DensityProp; // 'responsive' auto-adjusts, 'responsive-light' is one step lighter
   showHeroVinyl?: boolean; // Responsive vinyl that aligns with RollingVinylLogo
   pageId?: string; // Unique identifier for per-page offset storage
 }
@@ -361,8 +362,16 @@ function clearDragOffsets(pageId?: string) {
 }
 
 // Get responsive density based on screen width
-function getResponsiveDensity(): DensityLevel {
+function getResponsiveDensity(light: boolean = false): DensityLevel {
   const vw = window.innerWidth;
+  if (light) {
+    // Responsive-light: one step less dense at each breakpoint
+    if (vw < 768) return 'light';       // Mobile/small tablet: light
+    if (vw < 1280) return 'light';      // Tablet/small desktop: still light
+    if (vw < 1600) return 'sparse';     // Desktop: sparse
+    return 'moderate';                   // Large screens: moderate (not dense)
+  }
+  // Standard responsive
   if (vw < 640) return 'light';      // Mobile: fewer vinyls
   if (vw < 1024) return 'sparse';    // Tablet: moderate amount
   if (vw < 1440) return 'moderate';  // Desktop: more vinyls
@@ -378,20 +387,30 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   
+  // Check if using light responsive mode
+  const isResponsiveLight = density === 'responsive-light';
+  const isResponsive = density === 'responsive' || isResponsiveLight;
+  
   // Responsive density - recalculate on resize
-  const [responsiveDensity, setResponsiveDensity] = useState<DensityLevel>(getResponsiveDensity);
+  const [responsiveDensity, setResponsiveDensity] = useState<DensityLevel>(() => 
+    isResponsive ? getResponsiveDensity(isResponsiveLight) : 'sparse'
+  );
   
   // Determine actual density to use
-  const effectiveDensity: DensityLevel = density === 'responsive' ? responsiveDensity : density;
+  const effectiveDensity: DensityLevel = isResponsive 
+    ? responsiveDensity 
+    : (density as DensityLevel);
   
   useEffect(() => {
     const handleResize = () => {
       setHeroSize(getResponsiveHeroSize());
-      setResponsiveDensity(getResponsiveDensity());
+      if (isResponsive) {
+        setResponsiveDensity(getResponsiveDensity(isResponsiveLight));
+      }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isResponsive, isResponsiveLight]);
 
   // Reload offsets when pageId changes
   useEffect(() => {
