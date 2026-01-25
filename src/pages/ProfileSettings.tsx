@@ -974,8 +974,53 @@ const ProfileSettings = () => {
                       </div>
                     </div>
 
-                    {/* Restart Welcome Tour & Quick Tips */}
-                    <div className="space-y-3 p-4 rounded-lg border border-border bg-card">
+                  </motion.div>
+                )}
+              </div>
+
+              <Separator className="my-6" />
+
+              {/* Notifications - Collapsible */}
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setIsNotificationsExpanded(!isNotificationsExpanded)}
+                  className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
+                  </div>
+                  {isNotificationsExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+
+                {isNotificationsExpanded && (
+                  <>
+                    <NotificationsTable
+                      emailNewReleases={emailNewReleases}
+                      setEmailNewReleases={setEmailNewReleases}
+                      emailFriendRequests={emailFriendRequests}
+                      setEmailFriendRequests={setEmailFriendRequests}
+                      emailFriendActivity={emailFriendActivity}
+                      setEmailFriendActivity={setEmailFriendActivity}
+                      emailWeeklyDigest={emailWeeklyDigest}
+                      setEmailWeeklyDigest={setEmailWeeklyDigest}
+                      pushNewReleases={pushNewReleases}
+                      setPushNewReleases={setPushNewReleases}
+                      pushFriendRequests={pushFriendRequests}
+                      setPushFriendRequests={setPushFriendRequests}
+                      pushFriendActivity={pushFriendActivity}
+                      setPushFriendActivity={setPushFriendActivity}
+                      pushWeeklyDigest={pushWeeklyDigest}
+                      setPushWeeklyDigest={setPushWeeklyDigest}
+                    />
+                    
+                    {/* Welcome Tour & Quick Tips */}
+                    <div className="space-y-3 p-4 rounded-lg border border-border bg-card ml-4 border-l-2 border-l-primary/20">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label>Welcome Tour</Label>
@@ -1015,49 +1060,7 @@ const ProfileSettings = () => {
                         </Button>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-              </div>
-
-              <Separator className="my-6" />
-
-              {/* Notifications - Collapsible */}
-              <div className="space-y-4">
-                <button
-                  type="button"
-                  onClick={() => setIsNotificationsExpanded(!isNotificationsExpanded)}
-                  className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Bell className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
-                  </div>
-                  {isNotificationsExpanded ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </button>
-
-                {isNotificationsExpanded && (
-                  <NotificationsTable
-                    emailNewReleases={emailNewReleases}
-                    setEmailNewReleases={setEmailNewReleases}
-                    emailFriendRequests={emailFriendRequests}
-                    setEmailFriendRequests={setEmailFriendRequests}
-                    emailFriendActivity={emailFriendActivity}
-                    setEmailFriendActivity={setEmailFriendActivity}
-                    emailWeeklyDigest={emailWeeklyDigest}
-                    setEmailWeeklyDigest={setEmailWeeklyDigest}
-                    pushNewReleases={pushNewReleases}
-                    setPushNewReleases={setPushNewReleases}
-                    pushFriendRequests={pushFriendRequests}
-                    setPushFriendRequests={setPushFriendRequests}
-                    pushFriendActivity={pushFriendActivity}
-                    setPushFriendActivity={setPushFriendActivity}
-                    pushWeeklyDigest={pushWeeklyDigest}
-                    setPushWeeklyDigest={setPushWeeklyDigest}
-                  />
+                  </>
                 )}
               </div>
 

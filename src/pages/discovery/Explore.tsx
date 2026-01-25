@@ -93,31 +93,26 @@ interface HistoryEntry {
   created_at: string;
 }
 
-// Expandable description component
+// Expandable description component - clicking the text expands it
 function ExpandableReason({ reason }: { reason: string }) {
   const [expanded, setExpanded] = useState(false);
   const isLong = reason.length > 80;
   
   if (!isLong) {
-    return <p className="text-xs text-muted-foreground/70 mt-1">{reason}</p>;
+    return <p className="text-xs text-muted-foreground/70 mt-1 italic">{reason}</p>;
   }
   
   return (
-    <div className="mt-1">
-      <p className={`text-xs text-muted-foreground/70 ${expanded ? "" : "line-clamp-2"}`}>
-        {reason}
-      </p>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setExpanded(!expanded);
-        }}
-        className="text-xs text-primary hover:underline flex items-center gap-0.5 mt-0.5"
-      >
-        {expanded ? "Show less" : "Show more"}
-        <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
-      </button>
-    </div>
+    <p 
+      className={`text-xs text-muted-foreground/70 mt-1 italic cursor-pointer hover:text-muted-foreground transition-colors ${expanded ? "" : "line-clamp-2"}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        setExpanded(!expanded);
+      }}
+      title={expanded ? "Click to collapse" : "Click to expand"}
+    >
+      {reason}
+    </p>
   );
 }
 
