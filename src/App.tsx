@@ -10,6 +10,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { FeatureNotificationProvider } from "@/components/FeatureNotification";
 import { CookieConsent } from "@/components/CookieConsent";
 import { QuickTips } from "@/components/QuickTips";
+import { VinylEditorWrapper } from "@/components/VinylEditorWrapper";
 const Index = lazy(() => import("./pages/Index"));
 const Albums = lazy(() => import("./pages/Albums"));
 const Artists = lazy(() => import("./pages/Artists"));
@@ -99,6 +100,7 @@ const App = () => (
             <ScrollToTop />
             <CookieConsent />
             <QuickTips />
+            <VinylEditorWrapper />
           </Suspense>
         </BrowserRouter>
         </TooltipProvider>
