@@ -124,8 +124,8 @@ serve(async (req) => {
       );
     }
 
-    // Process up to 10 artists per invocation to avoid timeout
-    const toProcess = uncachedArtists.slice(0, 10);
+    // Process up to 25 artists per invocation (twice daily cron allows more)
+    const toProcess = uncachedArtists.slice(0, 25);
     const results: { artistId: string; artistName: string; imageUrl: string | null }[] = [];
 
     for (const artist of toProcess) {
