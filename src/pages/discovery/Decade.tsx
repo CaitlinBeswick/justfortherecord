@@ -14,11 +14,10 @@ import {
 } from "@/services/musicbrainz";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
-import { RefreshCw, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { RefreshCw, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Switch } from "@/components/ui/switch";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -132,7 +131,6 @@ const DiscoveryDecade = () => {
   const navigate = useNavigate();
   const { range: rawRange } = useParams<{ range: string }>();
   const [offset, setOffset] = useState(0);
-  const [showListened, setShowListened] = useState(false);
   const { user } = useAuth();
 
   const { range, decadeName, startYear, endYear } = useMemo(() => {
@@ -150,6 +148,23 @@ const DiscoveryDecade = () => {
   // data in this file for later.
   // const decadeColor = DECADE_COLORS[decadeName] || "from-primary to-primary/80";
   // const essentialAlbums = ESSENTIAL_ALBUMS[decadeName] || [];
+
+  // Fetch user's profile to check ai_include_familiar preference
+  const { data: profile } = useQuery({
+    queryKey: ["profile-familiar", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("ai_include_familiar")
+        .eq("id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const showListened = profile?.ai_include_familiar ?? false;
 
   // Fetch user's listened albums for filtering
   const { data: listenedIds = new Set<string>() } = useQuery({
@@ -204,7 +219,7 @@ const DiscoveryDecade = () => {
     setOffset((prev) => prev + FETCH_LIMIT);
   };
 
-  // Filter releases based on listened status
+  // Filter releases based on profile's "Include Familiar" setting
   const filteredReleases = useMemo(() => {
     if (showListened || !user) return releases;
     return releases.filter(rg => !listenedIds.has(rg.id));
@@ -255,16 +270,6 @@ const DiscoveryDecade = () => {
               Albums from the {decadeName.toLowerCase()}
             </h2>
             <div className="flex items-center gap-4">
-              {user && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  {showListened ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  <span className="text-xs">Listened</span>
-                  <Switch
-                    checked={showListened}
-                    onCheckedChange={setShowListened}
-                  />
-                </div>
-              )}
               <button
                 onClick={handleRefresh}
                 disabled={isFetching}
@@ -294,7 +299,7 @@ const DiscoveryDecade = () => {
             <div className="bg-card/30 rounded-xl border border-border/50 p-6 text-center">
               <p className="text-muted-foreground">
                 {releases.length > 0 && !showListened 
-                  ? "You've heard all the albums shown. Toggle 'Listened' to see them."
+                  ? "You've heard all the albums shown. Enable 'Include Familiar' in settings to see them, or refresh for more."
                   : "No albums found for this decade."}
               </p>
             </div>
