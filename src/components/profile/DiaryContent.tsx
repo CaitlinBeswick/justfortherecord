@@ -531,17 +531,73 @@ export function DiaryContent() {
           </div>
         </div>
 
-        {/* Mobile Listening Goal - only shown on mobile when goal is set for selected year */}
-        {selectedYearGoal && (
+        {/* Mobile Listening Goal - shown on mobile when goal is set OR prompt to set one for current year */}
+        {selectedYearGoal ? (
           <MobileListeningGoal 
             currentCount={yearFilteredEntries.length} 
             goal={selectedYearGoal} 
             year={selectedYear} 
           />
+        ) : selectedYear === currentYear && (
+          <div className="md:hidden mb-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-foreground text-sm">Set a Listening Goal</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Challenge yourself! How many albums will you listen to in {currentYear}?
+                </p>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="mt-2">
+                      <Target className="h-3.5 w-3.5 mr-1.5" />
+                      Set Goal
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3" align="start">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4 text-primary" />
+                        <span className="font-medium text-sm">Set {currentYear} Goal</span>
+                      </div>
+                      <Input
+                        type="number"
+                        placeholder="e.g. 52 (one per week)"
+                        value={goalInput}
+                        onChange={(e) => setGoalInput(e.target.value)}
+                        min="1"
+                        className="h-8"
+                      />
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => {
+                            const parsed = parseInt(goalInput);
+                            if (!isNaN(parsed) && parsed > 0) {
+                              updateGoalMutation.mutate({ year: currentYear, goal: parsed });
+                            } else {
+                              toast.error("Please enter a valid number");
+                            }
+                          }}
+                          disabled={updateGoalMutation.isPending}
+                          className="flex-1"
+                        >
+                          <Check className="h-3.5 w-3.5 mr-1" />
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
         )}
         
         {/* Compact Goal Progress - desktop only, when goal is set */}
-        {selectedYearGoal && (
+        {selectedYearGoal ? (
           <div className="hidden md:block mb-4 p-3 rounded-lg bg-card/50 border border-border">
             <div className="flex items-center gap-3">
               <Target className="h-4 w-4 text-primary shrink-0" />
@@ -558,6 +614,60 @@ export function DiaryContent() {
                 }
               </span>
             </div>
+          </div>
+        ) : selectedYear === currentYear && (
+          <div className="hidden md:flex mb-4 p-4 rounded-lg bg-primary/5 border border-primary/20 items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Target className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-foreground text-sm">Set a Listening Goal for {currentYear}</h3>
+              <p className="text-xs text-muted-foreground">
+                Challenge yourself! Track how many albums you'll listen to this year.
+              </p>
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="default" size="sm">
+                  <Target className="h-3.5 w-3.5 mr-1.5" />
+                  Set Goal
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-3" align="end">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <span className="font-medium text-sm">Set {currentYear} Goal</span>
+                  </div>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 52 (one per week)"
+                    value={goalInput}
+                    onChange={(e) => setGoalInput(e.target.value)}
+                    min="1"
+                    className="h-8"
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        const parsed = parseInt(goalInput);
+                        if (!isNaN(parsed) && parsed > 0) {
+                          updateGoalMutation.mutate({ year: currentYear, goal: parsed });
+                        } else {
+                          toast.error("Please enter a valid number");
+                        }
+                      }}
+                      disabled={updateGoalMutation.isPending}
+                      className="flex-1"
+                    >
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         )}
 
