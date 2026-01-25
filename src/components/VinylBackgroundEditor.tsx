@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
 /**
@@ -6,14 +6,15 @@ import { useLocation } from "react-router-dom";
  * 
  * Keyboard shortcuts:
  * - Ctrl+Shift+V: Toggle debug overlay (shows vinyl positions)
- * - Ctrl+Shift+E: Toggle edit mode (click to add/remove vinyls)
+ * - Ctrl+Shift+E: Toggle edit mode (click empty space to add, click vinyl to select)
  * - Ctrl+Shift+D: Toggle drag mode (drag vinyls to reposition)
  * - Ctrl+Shift+S: Save current layout to localStorage & copy JSON
  * - Ctrl+Shift+C: Clear custom layout for current page
  * 
  * In Edit Mode:
  * - Click empty space: Add vinyl at position
- * - Click existing vinyl: Remove it
+ * - Click existing vinyl: Select it
+ * - Delete/Backspace: Remove selected vinyl
  * - +/-: Resize selected vinyl
  * - C: Cycle color of selected vinyl
  * - [/]: Adjust opacity
@@ -21,10 +22,10 @@ import { useLocation } from "react-router-dom";
 
 const CUSTOM_LAYOUTS_KEY = "vinyl-background-custom-layouts";
 
-interface CustomVinyl {
+export interface CustomVinyl {
   id: string;
-  top: string;
-  left: string;
+  top: number; // percentage
+  left: number; // percentage
   size: number;
   opacity: number;
   colorIndex: number;
@@ -49,7 +50,26 @@ function getPageId(pathname: string): string {
   return pathname.replace(/\//g, "-").replace(/^-/, "") || "default";
 }
 
-export function useVinylBackgroundEditor() {
+interface VinylEditorContextType {
+  isDebugMode: boolean;
+  isEditMode: boolean;
+  isDragMode: boolean;
+  customVinyls: CustomVinyl[];
+  selectedVinylId: string | null;
+  setSelectedVinylId: (id: string | null) => void;
+  addVinyl: (x: number, y: number) => void;
+  removeVinyl: (id: string) => void;
+  updateVinyl: (id: string, updates: Partial<CustomVinyl>) => void;
+  pageId: string;
+}
+
+const VinylEditorContext = createContext<VinylEditorContextType | null>(null);
+
+export function useVinylEditor() {
+  return useContext(VinylEditorContext);
+}
+
+export function VinylEditorProvider({ children }: { children: ReactNode }) {
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDragMode, setIsDragMode] = useState(false);
@@ -116,8 +136,8 @@ export function useVinylBackgroundEditor() {
   const addVinyl = useCallback((x: number, y: number) => {
     const newVinyl: CustomVinyl = {
       id: `custom-${Date.now()}`,
-      top: `${y}%`,
-      left: `${x}%`,
+      top: y,
+      left: x,
       size: 120,
       opacity: 0.14,
       colorIndex: Math.floor(Math.random() * 6),
@@ -125,12 +145,14 @@ export function useVinylBackgroundEditor() {
     };
     setCustomVinyls(prev => [...prev, newVinyl]);
     setSelectedVinylId(newVinyl.id);
+    console.log(`➕ Added vinyl at (${x.toFixed(1)}%, ${y.toFixed(1)}%)`);
   }, []);
 
   // Remove vinyl
   const removeVinyl = useCallback((id: string) => {
     setCustomVinyls(prev => prev.filter(v => v.id !== id));
     if (selectedVinylId === id) setSelectedVinylId(null);
+    console.log(`➖ Removed vinyl ${id}`);
   }, [selectedVinylId]);
 
   // Update vinyl
@@ -174,37 +196,36 @@ export function useVinylBackgroundEditor() {
         }
       }
 
-      // Edit mode shortcuts
-      if (isEditMode && selectedVinylId) {
+      // Edit mode shortcuts (without Ctrl+Shift)
+      if ((isEditMode || isDragMode) && selectedVinylId && !e.ctrlKey) {
+        const vinyl = customVinyls.find(v => v.id === selectedVinylId);
+        if (!vinyl) return;
+        
         switch (e.key) {
           case '+':
           case '=':
-            updateVinyl(selectedVinylId, { 
-              size: customVinyls.find(v => v.id === selectedVinylId)!.size + 10 
-            });
+            e.preventDefault();
+            updateVinyl(selectedVinylId, { size: vinyl.size + 10 });
             break;
           case '-':
-            updateVinyl(selectedVinylId, { 
-              size: Math.max(20, customVinyls.find(v => v.id === selectedVinylId)!.size - 10) 
-            });
+            e.preventDefault();
+            updateVinyl(selectedVinylId, { size: Math.max(20, vinyl.size - 10) });
             break;
           case 'c':
-            updateVinyl(selectedVinylId, { 
-              colorIndex: (customVinyls.find(v => v.id === selectedVinylId)!.colorIndex + 1) % 6 
-            });
+            e.preventDefault();
+            updateVinyl(selectedVinylId, { colorIndex: (vinyl.colorIndex + 1) % 6 });
             break;
           case '[':
-            updateVinyl(selectedVinylId, { 
-              opacity: Math.max(0.05, customVinyls.find(v => v.id === selectedVinylId)!.opacity - 0.02) 
-            });
+            e.preventDefault();
+            updateVinyl(selectedVinylId, { opacity: Math.max(0.05, vinyl.opacity - 0.02) });
             break;
           case ']':
-            updateVinyl(selectedVinylId, { 
-              opacity: Math.min(0.5, customVinyls.find(v => v.id === selectedVinylId)!.opacity + 0.02) 
-            });
+            e.preventDefault();
+            updateVinyl(selectedVinylId, { opacity: Math.min(0.5, vinyl.opacity + 0.02) });
             break;
           case 'Delete':
           case 'Backspace':
+            e.preventDefault();
             removeVinyl(selectedVinylId);
             break;
         }
@@ -215,7 +236,7 @@ export function useVinylBackgroundEditor() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isDebugMode, isEditMode, isDragMode, selectedVinylId, customVinyls, saveLayout, clearLayout, updateVinyl, removeVinyl]);
 
-  return {
+  const value: VinylEditorContextType = {
     isDebugMode,
     isEditMode,
     isDragMode,
@@ -227,27 +248,47 @@ export function useVinylBackgroundEditor() {
     updateVinyl,
     pageId,
   };
+
+  return (
+    <VinylEditorContext.Provider value={value}>
+      {children}
+      {import.meta.env.DEV && (isDebugMode || isEditMode || isDragMode) && (
+        <VinylEditorOverlay
+          isDebugMode={isDebugMode}
+          isEditMode={isEditMode}
+          isDragMode={isDragMode}
+          pageId={pageId}
+          vinylCount={customVinyls.length}
+          selectedId={selectedVinylId}
+        />
+      )}
+    </VinylEditorContext.Provider>
+  );
 }
 
 // Debug overlay component
-export function VinylEditorOverlay({ 
+function VinylEditorOverlay({ 
   isDebugMode, 
   isEditMode, 
   isDragMode, 
-  pageId 
+  pageId,
+  vinylCount,
+  selectedId,
 }: { 
   isDebugMode: boolean; 
   isEditMode: boolean; 
   isDragMode: boolean; 
   pageId: string;
+  vinylCount: number;
+  selectedId: string | null;
 }) {
-  if (import.meta.env.PROD) return null;
-  if (!isDebugMode && !isEditMode && !isDragMode) return null;
-
   return (
-    <div className="fixed top-16 left-4 z-[9999] bg-black/80 text-white text-xs p-3 rounded-lg font-mono space-y-1">
-      <div className="font-bold text-primary">Vinyl Editor</div>
+    <div className="fixed top-16 left-4 z-[9999] bg-black/90 text-white text-xs p-3 rounded-lg font-mono space-y-1 pointer-events-none">
+      <div className="font-bold text-primary">🎵 Vinyl Editor</div>
       <div>Page: {pageId}</div>
+      <div>Custom vinyls: {vinylCount}</div>
+      {selectedId && <div className="text-yellow-400">Selected: {selectedId.slice(-6)}</div>}
+      <div className="border-t border-white/20 my-2" />
       <div className={isDebugMode ? "text-green-400" : "text-muted-foreground"}>
         Debug (Ctrl+Shift+V): {isDebugMode ? 'ON' : 'OFF'}
       </div>
@@ -258,7 +299,12 @@ export function VinylEditorOverlay({
         Drag (Ctrl+Shift+D): {isDragMode ? 'ON' : 'OFF'}
       </div>
       <div className="text-muted-foreground text-[10px] pt-2 border-t border-white/20">
-        S: Save | C: Clear | +/-: Size | [/]: Opacity
+        {isEditMode && "Click to add vinyl | Click vinyl to select"}
+        {isDragMode && "Drag vinyls to move them"}
+        {!isEditMode && !isDragMode && "Ctrl+Shift+S: Save | C: Clear"}
+      </div>
+      <div className="text-muted-foreground text-[10px]">
+        +/-: Size | c: Color | [/]: Opacity | Del: Remove
       </div>
     </div>
   );
