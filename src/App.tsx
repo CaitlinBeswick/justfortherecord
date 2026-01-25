@@ -9,6 +9,7 @@ import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { FeatureNotificationProvider } from "@/components/FeatureNotification";
 import { CookieConsent } from "@/components/CookieConsent";
+import { QuickTips } from "@/components/QuickTips";
 const Index = lazy(() => import("./pages/Index"));
 const Albums = lazy(() => import("./pages/Albums"));
 const Artists = lazy(() => import("./pages/Artists"));
@@ -97,6 +98,7 @@ const App = () => (
             </Routes>
             <ScrollToTop />
             <CookieConsent />
+            <QuickTips />
           </Suspense>
         </BrowserRouter>
         </TooltipProvider>

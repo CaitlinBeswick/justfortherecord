@@ -974,7 +974,7 @@ const ProfileSettings = () => {
                       </div>
                     </div>
 
-                    {/* Restart Welcome Tour */}
+                    {/* Restart Welcome Tour & Quick Tips */}
                     <div className="space-y-3 p-4 rounded-lg border border-border bg-card">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
@@ -993,6 +993,25 @@ const ProfileSettings = () => {
                           }}
                         >
                           Restart Tour
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <div className="space-y-1">
+                          <Label>Quick Tips</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Reset contextual tips shown on different pages.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            localStorage.removeItem("quick-tips-dismissed");
+                            sonnerToast.success("Tips will appear as you browse the app");
+                          }}
+                        >
+                          Reset Tips
                         </Button>
                       </div>
                     </div>
