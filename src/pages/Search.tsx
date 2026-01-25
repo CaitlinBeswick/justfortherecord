@@ -115,7 +115,7 @@ const Search = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
       <div className="gradient-hero absolute inset-0" />
-      <VinylBackground density="responsive-light" pageId="search" />
+      <VinylBackground density="sparse" />
       <Navbar />
       
       <main className="relative container mx-auto px-4 pt-24 pb-20">

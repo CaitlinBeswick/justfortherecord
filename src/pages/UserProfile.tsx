@@ -638,14 +638,14 @@ const UserProfile = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <VinylBackground fadeHeight="60%" density="responsive-light" pageId="user-profile" />
+      <VinylBackground fadeHeight="60%" />
       <Navbar />
       
       <main className="pt-16 relative">
         
         {/* Profile Header - centered layout matching own profile */}
         <div className="gradient-hero relative overflow-hidden">
-          <VinylBackground fadeHeight="120%" density="responsive-light" pageId="user-profile-header" />
+          <VinylBackground fadeHeight="120%" />
           <div className="container mx-auto px-4 py-8 md:py-12 relative">
             <motion.div
               initial={{ opacity: 0, y: 20 }}

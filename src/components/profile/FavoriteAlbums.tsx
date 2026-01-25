@@ -150,7 +150,7 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
   return (
     <>
       <div className="mt-6">
-        <h3 className="text-sm font-medium text-muted-foreground mb-3">Favourite Albums</h3>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Favorite Albums</h3>
         
         {canReorder && filledSlots.length > 1 ? (
           <Reorder.Group

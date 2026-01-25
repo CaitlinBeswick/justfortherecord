@@ -1,7 +1,4 @@
-import { memo, useMemo, useState, useEffect, useCallback, useRef } from "react";
-
-// Dev-only mode
-const isDev = import.meta.env.DEV;
+import { memo, useMemo, useState, useEffect } from "react";
 
 // Vintage label colors for variety
 const labelColors = [
@@ -12,6 +9,16 @@ const labelColors = [
   { fill: 'hsl(0, 60%, 50%)', stroke: 'hsl(0, 65%, 40%)' },     // Red (Capitol-style)
   { fill: 'hsl(280, 40%, 55%)', stroke: 'hsl(280, 45%, 45%)' }, // Purple (Motown-style)
 ];
+
+// Calculate responsive size for hero vinyl (matches RollingVinylLogo)
+const getResponsiveHeroSize = () => {
+  const vw = window.innerWidth;
+  if (vw < 480) return 80;
+  if (vw < 640) return 100;
+  if (vw < 768) return 120;
+  if (vw < 1024) return 150;
+  return 195;
+};
 
 // Realistic vinyl record SVG with grooves, colored label, and highlight
 const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolean; colorIndex?: number }) => {
@@ -85,482 +92,326 @@ const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolea
 
 VinylSVG.displayName = 'VinylSVG';
 
-// Custom vinyl type for manual layouts
-interface CustomVinyl {
-  id: string;
-  x: number; // percentage 0-100
-  y: number; // percentage 0-100
-  size: number; // pixels
-  opacity: number; // 0-1
-  colorIndex: number;
-  detailed: boolean;
-  duration: number; // spin duration in seconds
-  reverse: boolean;
-}
+// SPARSE: ~35 total vinyls for home/profile pages
+const sparseAccentVinyls = [
+  { top: '-5%', left: '10%', size: 160, opacity: 0.14, duration: 65 },
+  { top: '-8%', left: '75%', size: 180, opacity: 0.15, duration: 75, reverse: true },
+  { top: '8%', left: '-4%', size: 170, opacity: 0.13, duration: 70 },
+  { top: '12%', left: '55%', size: 140, opacity: 0.12, duration: 55, reverse: true },
+  { top: '10%', right: '-3%', size: 150, opacity: 0.14, duration: 60 },
+  { top: '25%', left: '20%', size: 130, opacity: 0.11, duration: 50 },
+  { top: '28%', left: '70%', size: 160, opacity: 0.13, duration: 65, reverse: true },
+  { top: '35%', left: '-5%', size: 180, opacity: 0.14, duration: 72 },
+  { top: '40%', left: '45%', size: 120, opacity: 0.10, duration: 48 },
+  { top: '38%', right: '-4%', size: 170, opacity: 0.13, duration: 68, reverse: true },
+  { top: '52%', left: '15%', size: 150, opacity: 0.12, duration: 58 },
+  { top: '55%', left: '65%', size: 140, opacity: 0.11, duration: 52, reverse: true },
+  { top: '60%', left: '85%', size: 160, opacity: 0.13, duration: 62 },
+];
 
-// Storage keys
-const CUSTOM_LAYOUTS_KEY = 'vinyl-custom-layouts';
+const sparseMediumVinyls = [
+  { top: '5%', left: '35%', size: 55, opacity: 0.22 },
+  { top: '18%', left: '85%', size: 60, opacity: 0.24 },
+  { top: '32%', left: '35%', size: 50, opacity: 0.20 },
+  { top: '45%', left: '80%', size: 65, opacity: 0.25 },
+  { top: '58%', left: '5%', size: 55, opacity: 0.22 },
+  { top: '65%', left: '42%', size: 58, opacity: 0.23 },
+];
 
-function loadCustomLayout(pageId: string): CustomVinyl[] | null {
-  if (!isDev) return null;
-  try {
-    const stored = localStorage.getItem(`${CUSTOM_LAYOUTS_KEY}-${pageId}`);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
+const sparseSmallVinyls = [
+  { top: '3%', left: '50%', size: 7, opacity: 0.28 },
+  { top: '15%', left: '30%', size: 8, opacity: 0.30 },
+  { top: '22%', left: '90%', size: 6, opacity: 0.26 },
+  { top: '35%', left: '60%', size: 8, opacity: 0.28 },
+  { top: '42%', left: '10%', size: 7, opacity: 0.26 },
+  { top: '48%', left: '55%', size: 9, opacity: 0.30 },
+  { top: '55%', left: '25%', size: 6, opacity: 0.24 },
+  { top: '62%', left: '75%', size: 8, opacity: 0.28 },
+  { top: '68%', left: '40%', size: 7, opacity: 0.26 },
+  { top: '72%', left: '92%', size: 6, opacity: 0.22 },
+  { top: '78%', left: '18%', size: 8, opacity: 0.24 },
+  { top: '82%', left: '58%', size: 7, opacity: 0.22 },
+  { top: '88%', left: '35%', size: 6, opacity: 0.20 },
+  { top: '92%', left: '70%', size: 8, opacity: 0.22 },
+  { top: '95%', left: '12%', size: 7, opacity: 0.18 },
+  { top: '98%', left: '85%', size: 6, opacity: 0.16 },
+];
 
-function saveCustomLayout(pageId: string, vinyls: CustomVinyl[]) {
-  if (!isDev) return;
-  try {
-    localStorage.setItem(`${CUSTOM_LAYOUTS_KEY}-${pageId}`, JSON.stringify(vinyls));
-  } catch {
-    // Ignore storage errors
-  }
-}
+// DENSE: Full vinyl set for albums/artists pages (160+ vinyls)
+const denseAccentVinyls = [
+  // Top area - dense
+  { top: '-8%', left: '5%', size: 180, opacity: 0.16, duration: 70 },
+  { top: '-5%', left: '22%', size: 120, opacity: 0.13, duration: 50 },
+  { top: '-10%', left: '38%', size: 160, opacity: 0.15, duration: 65, reverse: true },
+  { top: '-6%', left: '55%', size: 140, opacity: 0.14, duration: 55 },
+  { top: '-8%', left: '72%', size: 200, opacity: 0.17, duration: 80, reverse: true },
+  { top: '-4%', left: '88%', size: 130, opacity: 0.13, duration: 52 },
+  // Upper section
+  { top: '8%', left: '-6%', size: 190, opacity: 0.15, duration: 75 },
+  { top: '5%', left: '15%', size: 100, opacity: 0.12, duration: 45 },
+  { top: '10%', left: '30%', size: 150, opacity: 0.14, duration: 60, reverse: true },
+  { top: '6%', left: '48%', size: 110, opacity: 0.12, duration: 48 },
+  { top: '12%', left: '62%', size: 170, opacity: 0.15, duration: 68, reverse: true },
+  { top: '8%', left: '78%', size: 130, opacity: 0.13, duration: 55 },
+  { top: '5%', right: '-5%', size: 180, opacity: 0.16, duration: 72 },
+  // Upper middle
+  { top: '20%', left: '-4%', size: 160, opacity: 0.14, duration: 62 },
+  { top: '18%', left: '12%', size: 90, opacity: 0.11, duration: 42, reverse: true },
+  { top: '22%', left: '28%', size: 140, opacity: 0.13, duration: 58 },
+  { top: '16%', left: '42%', size: 120, opacity: 0.12, duration: 50 },
+  { top: '24%', left: '55%', size: 170, opacity: 0.15, duration: 70, reverse: true },
+  { top: '18%', left: '70%', size: 100, opacity: 0.11, duration: 45 },
+  { top: '22%', left: '85%', size: 150, opacity: 0.14, duration: 62 },
+  { top: '20%', right: '-6%', size: 190, opacity: 0.16, duration: 78, reverse: true },
+  // Middle
+  { top: '32%', left: '-5%', size: 170, opacity: 0.14, duration: 68 },
+  { top: '35%', left: '10%', size: 110, opacity: 0.12, duration: 48, reverse: true },
+  { top: '30%', left: '25%', size: 150, opacity: 0.14, duration: 60 },
+  { top: '38%', left: '38%', size: 90, opacity: 0.10, duration: 40 },
+  { top: '33%', left: '52%', size: 180, opacity: 0.15, duration: 72, reverse: true },
+  { top: '36%', left: '68%', size: 130, opacity: 0.13, duration: 55 },
+  { top: '32%', left: '82%', size: 160, opacity: 0.14, duration: 65 },
+  { top: '38%', right: '-4%', size: 200, opacity: 0.17, duration: 82, reverse: true },
+  // Lower middle
+  { top: '46%', left: '-6%', size: 180, opacity: 0.15, duration: 70 },
+  { top: '48%', left: '8%', size: 100, opacity: 0.11, duration: 44, reverse: true },
+  { top: '44%', left: '22%', size: 140, opacity: 0.13, duration: 58 },
+  { top: '50%', left: '35%', size: 120, opacity: 0.12, duration: 52 },
+  { top: '46%', left: '50%', size: 160, opacity: 0.14, duration: 65, reverse: true },
+  { top: '52%', left: '65%', size: 110, opacity: 0.12, duration: 48 },
+  { top: '48%', left: '78%', size: 170, opacity: 0.15, duration: 70 },
+  { top: '44%', right: '-5%', size: 190, opacity: 0.16, duration: 76, reverse: true },
+  // Lower section
+  { top: '58%', left: '-4%', size: 160, opacity: 0.14, duration: 64 },
+  { top: '62%', left: '12%', size: 130, opacity: 0.13, duration: 55, reverse: true },
+  { top: '56%', left: '28%', size: 100, opacity: 0.11, duration: 45 },
+  { top: '64%', left: '42%', size: 150, opacity: 0.14, duration: 62 },
+  { top: '60%', left: '58%', size: 180, opacity: 0.15, duration: 72, reverse: true },
+  { top: '66%', left: '72%', size: 120, opacity: 0.12, duration: 50 },
+  { top: '58%', left: '88%', size: 170, opacity: 0.15, duration: 68 },
+  { top: '62%', right: '-6%', size: 200, opacity: 0.16, duration: 80, reverse: true },
+  // Bottom area
+  { top: '72%', left: '-5%', size: 190, opacity: 0.15, duration: 75 },
+  { top: '76%', left: '10%', size: 110, opacity: 0.12, duration: 48, reverse: true },
+  { top: '70%', left: '25%', size: 160, opacity: 0.14, duration: 64 },
+  { top: '78%', left: '38%', size: 130, opacity: 0.13, duration: 55 },
+  { top: '74%', left: '52%', size: 180, opacity: 0.15, duration: 72, reverse: true },
+  { top: '80%', left: '68%', size: 100, opacity: 0.11, duration: 44 },
+  { top: '72%', left: '82%', size: 150, opacity: 0.14, duration: 62 },
+  { top: '78%', right: '-4%', size: 170, opacity: 0.15, duration: 70, reverse: true },
+  // Very bottom
+  { top: '86%', left: '5%', size: 140, opacity: 0.13, duration: 58 },
+  { top: '90%', left: '20%', size: 120, opacity: 0.12, duration: 50, reverse: true },
+  { top: '84%', left: '35%', size: 170, opacity: 0.14, duration: 68 },
+  { top: '92%', left: '50%', size: 100, opacity: 0.11, duration: 45 },
+  { top: '88%', left: '65%', size: 160, opacity: 0.14, duration: 65, reverse: true },
+  { top: '94%', left: '80%', size: 130, opacity: 0.12, duration: 52 },
+];
 
-function clearCustomLayout(pageId: string) {
-  if (!isDev) return;
-  localStorage.removeItem(`${CUSTOM_LAYOUTS_KEY}-${pageId}`);
-}
+const denseMediumVinyls = [
+  { top: '4%', left: '8%', size: 50, opacity: 0.22 }, { top: '2%', left: '35%', size: 65, opacity: 0.25 },
+  { top: '6%', left: '58%', size: 45, opacity: 0.20 }, { top: '3%', left: '82%', size: 60, opacity: 0.24 },
+  { top: '14%', left: '5%', size: 55, opacity: 0.23 }, { top: '16%', left: '48%', size: 70, opacity: 0.26 },
+  { top: '12%', left: '75%', size: 48, opacity: 0.21 }, { top: '18%', left: '92%', size: 58, opacity: 0.23 },
+  { top: '26%', left: '3%', size: 62, opacity: 0.24 }, { top: '28%', left: '32%', size: 52, opacity: 0.22 },
+  { top: '24%', left: '62%', size: 68, opacity: 0.25 }, { top: '30%', left: '88%', size: 45, opacity: 0.20 },
+  { top: '38%', left: '18%', size: 58, opacity: 0.23 }, { top: '42%', left: '45%', size: 72, opacity: 0.26 },
+  { top: '36%', left: '72%', size: 50, opacity: 0.21 }, { top: '44%', left: '95%', size: 65, opacity: 0.24 },
+  { top: '52%', left: '2%', size: 55, opacity: 0.22 }, { top: '48%', left: '28%', size: 60, opacity: 0.24 },
+  { top: '54%', left: '55%', size: 48, opacity: 0.20 }, { top: '50%', left: '82%', size: 70, opacity: 0.26 },
+  { top: '62%', left: '15%', size: 65, opacity: 0.25 }, { top: '66%', left: '42%', size: 52, opacity: 0.22 },
+  { top: '58%', left: '68%', size: 58, opacity: 0.23 }, { top: '64%', left: '90%', size: 45, opacity: 0.20 },
+  { top: '74%', left: '6%', size: 60, opacity: 0.24 }, { top: '78%', left: '32%', size: 68, opacity: 0.25 },
+  { top: '72%', left: '58%', size: 50, opacity: 0.21 }, { top: '80%', left: '85%', size: 62, opacity: 0.24 },
+  { top: '88%', left: '12%', size: 55, opacity: 0.22 }, { top: '92%', left: '45%', size: 72, opacity: 0.26 },
+  { top: '86%', left: '72%', size: 48, opacity: 0.20 }, { top: '94%', left: '92%', size: 58, opacity: 0.23 },
+];
 
-// Generate a unique ID
-function generateId(): string {
-  return `vinyl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-// Generate default vinyls based on density
-function generateDefaultVinyls(density: 'light' | 'sparse' | 'moderate' | 'dense'): CustomVinyl[] {
-  const vinyls: CustomVinyl[] = [];
-  
-  const configs = {
-    light: { accent: 6, medium: 4, small: 6 },
-    sparse: { accent: 10, medium: 6, small: 10 },
-    moderate: { accent: 14, medium: 10, small: 14 },
-    dense: { accent: 20, medium: 16, small: 20 },
-  };
-  
-  const config = configs[density];
-  
-  // Generate accent vinyls (large, detailed)
-  for (let i = 0; i < config.accent; i++) {
-    vinyls.push({
-      id: generateId(),
-      x: 5 + (i % 5) * 20 + Math.random() * 10,
-      y: 5 + Math.floor(i / 5) * 25 + Math.random() * 10,
-      size: 120 + Math.random() * 60,
-      opacity: 0.35 + Math.random() * 0.15,
-      colorIndex: Math.floor(Math.random() * labelColors.length),
-      detailed: true,
-      duration: 45 + Math.random() * 30,
-      reverse: i % 2 === 1,
-    });
-  }
-  
-  // Generate medium vinyls
-  for (let i = 0; i < config.medium; i++) {
-    vinyls.push({
-      id: generateId(),
-      x: 10 + (i % 4) * 25 + Math.random() * 10,
-      y: 15 + Math.floor(i / 4) * 30 + Math.random() * 10,
-      size: 50 + Math.random() * 25,
-      opacity: 0.45 + Math.random() * 0.15,
-      colorIndex: Math.floor(Math.random() * labelColors.length),
-      detailed: false,
-      duration: 35 + Math.random() * 20,
-      reverse: i % 2 === 0,
-    });
-  }
-  
-  // Generate small vinyls
-  for (let i = 0; i < config.small; i++) {
-    vinyls.push({
-      id: generateId(),
-      x: 5 + (i % 6) * 16 + Math.random() * 8,
-      y: 10 + Math.floor(i / 6) * 20 + Math.random() * 10,
-      size: 24 + Math.random() * 16,
-      opacity: 0.5 + Math.random() * 0.2,
-      colorIndex: Math.floor(Math.random() * labelColors.length),
-      detailed: false,
-      duration: 25 + Math.random() * 20,
-      reverse: i % 2 === 1,
-    });
-  }
-  
-  return vinyls;
-}
-
-type DensityLevel = 'sparse' | 'dense' | 'light' | 'moderate';
-type DensityProp = DensityLevel | 'responsive' | 'responsive-light';
+const denseSmallVinyls = [
+  { top: '1%', left: '12%', size: 7, opacity: 0.28 }, { top: '3%', left: '28%', size: 8, opacity: 0.30 },
+  { top: '0%', left: '45%', size: 6, opacity: 0.26 }, { top: '2%', left: '62%', size: 9, opacity: 0.32 },
+  { top: '4%', left: '78%', size: 7, opacity: 0.28 }, { top: '1%', left: '95%', size: 8, opacity: 0.30 },
+  { top: '9%', left: '5%', size: 8, opacity: 0.30 }, { top: '11%', left: '22%', size: 6, opacity: 0.26 },
+  { top: '8%', left: '38%', size: 9, opacity: 0.32 }, { top: '12%', left: '55%', size: 7, opacity: 0.28 },
+  { top: '10%', left: '72%', size: 8, opacity: 0.30 }, { top: '7%', left: '88%', size: 6, opacity: 0.26 },
+  { top: '17%', left: '8%', size: 9, opacity: 0.32 }, { top: '19%', left: '25%', size: 7, opacity: 0.28 },
+  { top: '15%', left: '42%', size: 8, opacity: 0.30 }, { top: '21%', left: '58%', size: 6, opacity: 0.26 },
+  { top: '18%', left: '75%', size: 9, opacity: 0.32 }, { top: '16%', left: '92%', size: 7, opacity: 0.28 },
+  { top: '25%', left: '2%', size: 8, opacity: 0.30 }, { top: '27%', left: '18%', size: 6, opacity: 0.26 },
+  { top: '23%', left: '35%', size: 9, opacity: 0.32 }, { top: '29%', left: '52%', size: 7, opacity: 0.28 },
+  { top: '26%', left: '68%', size: 8, opacity: 0.30 }, { top: '24%', left: '85%', size: 6, opacity: 0.26 },
+  { top: '33%', left: '10%', size: 9, opacity: 0.32 }, { top: '35%', left: '28%', size: 7, opacity: 0.28 },
+  { top: '31%', left: '45%', size: 8, opacity: 0.30 }, { top: '37%', left: '62%', size: 6, opacity: 0.26 },
+  { top: '34%', left: '78%', size: 9, opacity: 0.32 }, { top: '32%', left: '95%', size: 7, opacity: 0.28 },
+  { top: '41%', left: '5%', size: 8, opacity: 0.30 }, { top: '43%', left: '22%', size: 6, opacity: 0.26 },
+  { top: '39%', left: '38%', size: 9, opacity: 0.32 }, { top: '45%', left: '55%', size: 7, opacity: 0.28 },
+  { top: '42%', left: '72%', size: 8, opacity: 0.30 }, { top: '40%', left: '88%', size: 6, opacity: 0.26 },
+  { top: '49%', left: '8%', size: 9, opacity: 0.32 }, { top: '51%', left: '25%', size: 7, opacity: 0.28 },
+  { top: '47%', left: '42%', size: 8, opacity: 0.30 }, { top: '53%', left: '58%', size: 6, opacity: 0.26 },
+  { top: '50%', left: '75%', size: 9, opacity: 0.32 }, { top: '48%', left: '92%', size: 7, opacity: 0.28 },
+  { top: '57%', left: '2%', size: 8, opacity: 0.28 }, { top: '59%', left: '18%', size: 6, opacity: 0.24 },
+  { top: '55%', left: '35%', size: 9, opacity: 0.30 }, { top: '61%', left: '52%', size: 7, opacity: 0.26 },
+  { top: '58%', left: '68%', size: 8, opacity: 0.28 }, { top: '56%', left: '85%', size: 6, opacity: 0.24 },
+  { top: '65%', left: '10%', size: 9, opacity: 0.28 }, { top: '67%', left: '28%', size: 7, opacity: 0.24 },
+  { top: '63%', left: '45%', size: 8, opacity: 0.26 }, { top: '69%', left: '62%', size: 6, opacity: 0.22 },
+  { top: '66%', left: '78%', size: 9, opacity: 0.28 }, { top: '64%', left: '95%', size: 7, opacity: 0.24 },
+  { top: '73%', left: '5%', size: 8, opacity: 0.24 }, { top: '75%', left: '22%', size: 6, opacity: 0.20 },
+  { top: '71%', left: '38%', size: 9, opacity: 0.26 }, { top: '77%', left: '55%', size: 7, opacity: 0.22 },
+  { top: '74%', left: '72%', size: 8, opacity: 0.24 }, { top: '72%', left: '88%', size: 6, opacity: 0.20 },
+  { top: '81%', left: '8%', size: 9, opacity: 0.22 }, { top: '83%', left: '25%', size: 7, opacity: 0.18 },
+  { top: '79%', left: '42%', size: 8, opacity: 0.20 }, { top: '85%', left: '58%', size: 6, opacity: 0.16 },
+  { top: '82%', left: '75%', size: 9, opacity: 0.22 }, { top: '80%', left: '92%', size: 7, opacity: 0.18 },
+  { top: '89%', left: '2%', size: 8, opacity: 0.18 }, { top: '91%', left: '18%', size: 6, opacity: 0.14 },
+  { top: '87%', left: '35%', size: 9, opacity: 0.20 }, { top: '93%', left: '52%', size: 7, opacity: 0.16 },
+  { top: '90%', left: '68%', size: 8, opacity: 0.18 }, { top: '88%', left: '85%', size: 6, opacity: 0.14 },
+];
 
 interface VinylBackgroundProps {
   className?: string;
   fadeHeight?: string;
-  density?: DensityProp;
-  showHeroVinyl?: boolean;
-  pageId?: string;
+  density?: 'sparse' | 'dense';
+  showHeroVinyl?: boolean; // Responsive vinyl that aligns with RollingVinylLogo
 }
 
-// Get responsive density based on screen width
-function getResponsiveDensity(light: boolean = false): DensityLevel {
-  const vw = window.innerWidth;
-  if (light) {
-    if (vw < 768) return 'light';
-    if (vw < 1280) return 'light';
-    if (vw < 1600) return 'sparse';
-    return 'moderate';
-  }
-  if (vw < 640) return 'light';
-  if (vw < 1024) return 'sparse';
-  if (vw < 1440) return 'moderate';
-  return 'dense';
-}
-
-export function VinylBackground({ 
-  className = "", 
-  fadeHeight = "150%", 
-  density = "sparse", 
-  showHeroVinyl = false, 
-  pageId = "default" 
-}: VinylBackgroundProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false }: VinylBackgroundProps) {
+  // Responsive hero vinyl size (matches RollingVinylLogo)
+  const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
   
-  // Edit mode state
-  const [editMode, setEditMode] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number; vinylX: number; vinylY: number } | null>(null);
-  
-  // Responsive density
-  const isResponsiveLight = density === 'responsive-light';
-  const isResponsive = density === 'responsive' || isResponsiveLight;
-  const [responsiveDensity, setResponsiveDensity] = useState<DensityLevel>(() => 
-    isResponsive ? getResponsiveDensity(isResponsiveLight) : (density as DensityLevel)
-  );
-  const effectiveDensity: DensityLevel = isResponsive ? responsiveDensity : (density as DensityLevel);
-  
-  // Custom vinyls state - load from storage or generate defaults
-  const [vinyls, setVinyls] = useState<CustomVinyl[]>(() => {
-    const stored = loadCustomLayout(pageId);
-    if (stored) return stored;
-    return generateDefaultVinyls(effectiveDensity);
-  });
-  
-  // Track if we're using a custom layout
-  const [hasCustomLayout, setHasCustomLayout] = useState(() => !!loadCustomLayout(pageId));
-  
-  // Regenerate defaults when density changes (only if not using custom layout)
   useEffect(() => {
-    if (!hasCustomLayout) {
-      setVinyls(generateDefaultVinyls(effectiveDensity));
-    }
-  }, [effectiveDensity, hasCustomLayout]);
-  
-  // Handle responsive resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (isResponsive) {
-        setResponsiveDensity(getResponsiveDensity(isResponsiveLight));
-      }
-    };
+    const handleResize = () => setHeroSize(getResponsiveHeroSize());
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isResponsive, isResponsiveLight]);
-  
-  // Reload when pageId changes
-  useEffect(() => {
-    const stored = loadCustomLayout(pageId);
-    if (stored) {
-      setVinyls(stored);
-      setHasCustomLayout(true);
-    } else {
-      setVinyls(generateDefaultVinyls(effectiveDensity));
-      setHasCustomLayout(false);
-    }
-  }, [pageId]);
-  
-  // Save to localStorage when vinyls change in edit mode
-  useEffect(() => {
-    if (isDev && editMode && hasCustomLayout) {
-      saveCustomLayout(pageId, vinyls);
-    }
-  }, [vinyls, editMode, pageId, hasCustomLayout]);
-  
-  // Keyboard shortcuts
-  useEffect(() => {
-    if (!isDev) return;
-    
-    const handler = (e: KeyboardEvent) => {
-      // Ctrl+Shift+E: Toggle edit mode
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'e') {
-        e.preventDefault();
-        setEditMode(prev => {
-          const newVal = !prev;
-          if (newVal) {
-            setHasCustomLayout(true);
-            console.log(`[VinylBackground] Edit mode ON (page: ${pageId})`);
-            console.log('  - Click to select a vinyl');
-            console.log('  - Drag to move');
-            console.log('  - +/- to resize selected');
-            console.log('  - [ / ] to adjust opacity');
-            console.log('  - Delete/Backspace to remove');
-            console.log('  - A to add new vinyl at center');
-            console.log('  - C to cycle color');
-            console.log('  - Ctrl+Shift+S to save & export');
-            console.log('  - Ctrl+Shift+R to reset to defaults');
-          } else {
-            console.log(`[VinylBackground] Edit mode OFF`);
-          }
-          return newVal;
-        });
-      }
-      
-      // Only handle other keys in edit mode
-      if (!editMode) return;
-      
-      // Ctrl+Shift+S: Save and export
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        saveCustomLayout(pageId, vinyls);
-        const exportData = JSON.stringify(vinyls, null, 2);
-        navigator.clipboard.writeText(exportData).then(() => {
-          console.log(`[VinylBackground] Layout saved & copied to clipboard!`);
-          console.log('Paste this into your code to use as a hardcoded default:');
-          console.log(exportData);
-        });
-      }
-      
-      // Ctrl+Shift+R: Reset to defaults
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'r') {
-        e.preventDefault();
-        clearCustomLayout(pageId);
-        setVinyls(generateDefaultVinyls(effectiveDensity));
-        setHasCustomLayout(false);
-        console.log(`[VinylBackground] Reset to default layout`);
-      }
-      
-      // A: Add new vinyl
-      if (e.key.toLowerCase() === 'a' && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        const newVinyl: CustomVinyl = {
-          id: generateId(),
-          x: 45 + Math.random() * 10,
-          y: 45 + Math.random() * 10,
-          size: 100,
-          opacity: 0.5,
-          colorIndex: Math.floor(Math.random() * labelColors.length),
-          detailed: true,
-          duration: 50,
-          reverse: Math.random() > 0.5,
-        };
-        setVinyls(prev => [...prev, newVinyl]);
-        setSelectedId(newVinyl.id);
-        console.log(`[VinylBackground] Added vinyl: ${newVinyl.id}`);
-      }
-      
-      // Delete/Backspace: Remove selected
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
-        e.preventDefault();
-        setVinyls(prev => prev.filter(v => v.id !== selectedId));
-        console.log(`[VinylBackground] Removed vinyl: ${selectedId}`);
-        setSelectedId(null);
-      }
-      
-      // +/= : Increase size
-      if ((e.key === '+' || e.key === '=') && selectedId) {
-        e.preventDefault();
-        setVinyls(prev => prev.map(v => 
-          v.id === selectedId ? { ...v, size: Math.min(v.size + 10, 300) } : v
-        ));
-      }
-      
-      // -: Decrease size
-      if (e.key === '-' && selectedId) {
-        e.preventDefault();
-        setVinyls(prev => prev.map(v => 
-          v.id === selectedId ? { ...v, size: Math.max(v.size - 10, 20) } : v
-        ));
-      }
-      
-      // ]: Increase opacity
-      if (e.key === ']' && selectedId) {
-        e.preventDefault();
-        setVinyls(prev => prev.map(v => 
-          v.id === selectedId ? { ...v, opacity: Math.min(v.opacity + 0.05, 1) } : v
-        ));
-      }
-      
-      // [: Decrease opacity
-      if (e.key === '[' && selectedId) {
-        e.preventDefault();
-        setVinyls(prev => prev.map(v => 
-          v.id === selectedId ? { ...v, opacity: Math.max(v.opacity - 0.05, 0.1) } : v
-        ));
-      }
-      
-      // C: Cycle color
-      if (e.key.toLowerCase() === 'c' && !e.ctrlKey && selectedId) {
-        e.preventDefault();
-        setVinyls(prev => prev.map(v => 
-          v.id === selectedId ? { ...v, colorIndex: (v.colorIndex + 1) % labelColors.length } : v
-        ));
-      }
-      
-      // D: Toggle detailed
-      if (e.key.toLowerCase() === 'd' && !e.ctrlKey && !e.shiftKey && selectedId) {
-        e.preventDefault();
-        setVinyls(prev => prev.map(v => 
-          v.id === selectedId ? { ...v, detailed: !v.detailed } : v
-        ));
-      }
-      
-      // Escape: Deselect
-      if (e.key === 'Escape') {
-        setSelectedId(null);
-      }
-    };
-    
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [editMode, selectedId, vinyls, pageId, effectiveDensity]);
-  
-  // Mouse handlers for dragging
-  const handleMouseDown = useCallback((id: string, e: React.MouseEvent) => {
-    if (!editMode) return;
-    e.preventDefault();
-    e.stopPropagation();
-    
-    setSelectedId(id);
-    setDraggingId(id);
-    
-    const vinyl = vinyls.find(v => v.id === id);
-    if (vinyl) {
-      setDragStart({ 
-        x: e.clientX, 
-        y: e.clientY,
-        vinylX: vinyl.x,
-        vinylY: vinyl.y
-      });
-    }
-  }, [editMode, vinyls]);
-  
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!draggingId || !dragStart || !containerRef.current) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const deltaX = ((e.clientX - dragStart.x) / rect.width) * 100;
-    const deltaY = ((e.clientY - dragStart.y) / rect.height) * 100;
-    
-    setVinyls(prev => prev.map(v => {
-      if (v.id !== draggingId) return v;
-      return {
-        ...v,
-        x: Math.max(0, Math.min(100, dragStart.vinylX + deltaX)),
-        y: Math.max(0, Math.min(100, dragStart.vinylY + deltaY)),
-      };
-    }));
-  }, [draggingId, dragStart]);
-  
-  const handleMouseUp = useCallback(() => {
-    setDraggingId(null);
-    setDragStart(null);
   }, []);
+
+  // Select vinyl arrays based on density
+  const accentVinyls = density === 'dense' ? denseAccentVinyls : sparseAccentVinyls;
+  const mediumVinyls = density === 'dense' ? denseMediumVinyls : sparseMediumVinyls;
+  const smallVinyls = density === 'dense' ? denseSmallVinyls : sparseSmallVinyls;
+
+  // Randomize color indices on mount
+  const randomizedAccentColors = useMemo(() => {
+    return accentVinyls.map(() => Math.floor(Math.random() * labelColors.length));
+  }, [accentVinyls.length]);
   
-  // Add global mouse listeners when dragging
-  useEffect(() => {
-    if (!editMode) return;
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [editMode, handleMouseMove, handleMouseUp]);
+  const randomizedMediumColors = useMemo(() => {
+    return mediumVinyls.map(() => Math.floor(Math.random() * labelColors.length));
+  }, [mediumVinyls.length]);
   
-  // Click on background to deselect
-  const handleBackgroundClick = useCallback((e: React.MouseEvent) => {
-    if (editMode && e.target === e.currentTarget) {
-      setSelectedId(null);
-    }
-  }, [editMode]);
+  const randomizedSmallColors = useMemo(() => {
+    return smallVinyls.map(() => Math.floor(Math.random() * labelColors.length));
+  }, [smallVinyls.length]);
+
+  // VinylBackground often extends beyond the section height (e.g. 150%).
+  // To place the hero vinyl at the *visual* mid-point of the section, we compensate for that.
+  const heroTop = useMemo(() => {
+    if (!showHeroVinyl) return '50%';
+    const match = /^([0-9.]+)%$/.exec(fadeHeight.trim());
+    if (!match) return '50%';
+    const multiplier = Number(match[1]) / 100;
+    if (!Number.isFinite(multiplier) || multiplier <= 0) return '50%';
+    // We want 50% of section height, expressed as a % of the extended background height.
+    const pct = 50 / multiplier;
+    return `${pct}%`;
+  }, [fadeHeight, showHeroVinyl]);
 
   return (
     <div 
-      ref={containerRef}
-      className={`absolute inset-0 overflow-hidden ${editMode ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'} ${className}`}
+      className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
       style={{
-        maskImage: editMode ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
-        WebkitMaskImage: editMode ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
+        maskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
         height: fadeHeight,
       }}
-      onClick={handleBackgroundClick}
     >
-      {/* Dev mode UI */}
-      {isDev && editMode && (
-        <div className="absolute top-2 right-2 bg-black/90 text-white text-xs px-3 py-2 rounded-lg font-mono z-50 pointer-events-none space-y-1 max-w-xs">
-          <div className="text-green-400 font-bold">Edit Mode (page: {pageId})</div>
-          <div className="text-gray-300">Vinyls: {vinyls.length}</div>
-          {selectedId && (
-            <div className="text-yellow-400 border-t border-gray-600 pt-1 mt-1">
-              Selected: {selectedId.slice(0, 15)}...
-              <br />+/- size | [ ] opacity | C color | D detail | Del remove
-            </div>
-          )}
-          <div className="border-t border-gray-600 pt-1 mt-1 text-gray-400">
-            A: add | Ctrl+Shift+S: save | Ctrl+Shift+R: reset
-          </div>
+      {/* Hero vinyl - responsive, aligns with RollingVinylLogo rest position */}
+      {showHeroVinyl && (
+        <div
+          className="absolute animate-spin-slow vinyl-disc"
+          style={{
+            top: heroTop,
+            left: '21%',
+            transform: 'translate(-50%, -50%)',
+            width: `${heroSize}px`,
+            height: `${heroSize}px`,
+            opacity: 0.15,
+            animationDuration: '70s',
+            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
+          }}
+        >
+          <VinylSVG detailed colorIndex={4} />
         </div>
       )}
+
+      {/* Large accent vinyls spread across page */}
+      {accentVinyls.map((vinyl, i) => (
+        <div
+          key={`accent-${i}`}
+          className="absolute animate-spin-slow vinyl-disc"
+          style={{
+            top: vinyl.top,
+            left: vinyl.left,
+            right: (vinyl as any).right,
+            width: `${vinyl.size}px`,
+            height: `${vinyl.size}px`,
+            opacity: vinyl.opacity,
+            animationDuration: `${vinyl.duration}s`,
+            animationDirection: vinyl.reverse ? 'reverse' : 'normal',
+            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
+          }}
+        >
+          <VinylSVG detailed colorIndex={randomizedAccentColors[i]} />
+        </div>
+      ))}
       
-      {/* Render all vinyls */}
-      {vinyls.map((vinyl) => {
-        const isSelected = selectedId === vinyl.id;
-        const isDragging = draggingId === vinyl.id;
-        
-        return (
-          <div
-            key={vinyl.id}
-            className={`absolute vinyl-disc ${editMode ? 'cursor-grab' : 'animate-spin-slow'} ${isDragging ? 'cursor-grabbing' : ''}`}
-            style={{
-              left: `${vinyl.x}%`,
-              top: `${vinyl.y}%`,
-              transform: 'translate(-50%, -50%)',
-              width: `${vinyl.size}px`,
-              height: `${vinyl.size}px`,
-              opacity: editMode ? Math.min(vinyl.opacity + 0.2, 0.9) : vinyl.opacity,
-              animationDuration: `${vinyl.duration}s`,
-              animationDirection: vinyl.reverse ? 'reverse' : 'normal',
-              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
-              pointerEvents: editMode ? 'auto' : 'none',
-              zIndex: isSelected ? 100 : isDragging ? 99 : 1,
-            }}
-            onMouseDown={(e) => handleMouseDown(vinyl.id, e)}
-          >
-            <div className="pointer-events-none w-full h-full">
-              <VinylSVG detailed={vinyl.detailed} colorIndex={vinyl.colorIndex} />
-            </div>
-            {/* Selection indicator */}
-            {editMode && isSelected && (
-              <div className="absolute inset-0 border-4 border-blue-500 rounded-full pointer-events-none animate-pulse">
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] px-1 rounded whitespace-nowrap">
-                  {Math.round(vinyl.size)}px | {Math.round(vinyl.opacity * 100)}%
-                </div>
-              </div>
-            )}
-            {/* Hover indicator */}
-            {editMode && !isSelected && (
-              <div className="absolute inset-0 border-2 border-white/30 rounded-full pointer-events-none opacity-0 hover:opacity-100 transition-opacity" />
-            )}
-          </div>
-        );
-      })}
+      {/* Medium vinyls */}
+      {mediumVinyls.map((vinyl, i) => (
+        <div
+          key={`medium-${i}`}
+          className="absolute animate-spin-slow vinyl-disc"
+          style={{
+            top: vinyl.top,
+            left: vinyl.left,
+            width: `${vinyl.size}px`,
+            height: `${vinyl.size}px`,
+            opacity: vinyl.opacity,
+            animationDuration: `${35 + (i % 6) * 8}s`,
+            animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
+            filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.12))',
+          }}
+        >
+          <VinylSVG colorIndex={randomizedMediumColors[i]} />
+        </div>
+      ))}
+      
+      {/* Small scattered vinyls */}
+      {smallVinyls.map((vinyl, i) => (
+        <div
+          key={`small-${i}`}
+          className="absolute animate-spin-slow vinyl-disc"
+          style={{
+            top: vinyl.top,
+            left: vinyl.left,
+            width: `${vinyl.size * 4}px`,
+            height: `${vinyl.size * 4}px`,
+            opacity: vinyl.opacity,
+            animationDuration: `${25 + (i % 5) * 8}s`,
+            animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
+            filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.1))',
+          }}
+        >
+          <VinylSVG colorIndex={randomizedSmallColors[i]} />
+        </div>
+      ))}
 
       {/* CSS for animations */}
       <style>{`
         @keyframes spin-slow {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to { transform: translate(-50%, -50%) rotate(360deg); }
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
         .animate-spin-slow {
           animation: spin-slow 60s linear infinite;
