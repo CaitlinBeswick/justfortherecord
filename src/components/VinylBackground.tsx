@@ -316,10 +316,12 @@ function buildBackgroundLayout(params: {
   return { accentVinyls, mediumVinyls, smallVinyls };
 }
 
+type DensityLevel = 'sparse' | 'dense' | 'light' | 'moderate';
+
 interface VinylBackgroundProps {
   className?: string;
   fadeHeight?: string;
-  density?: 'sparse' | 'dense' | 'light' | 'moderate';
+  density?: DensityLevel | 'responsive'; // 'responsive' auto-adjusts based on screen size
   showHeroVinyl?: boolean; // Responsive vinyl that aligns with RollingVinylLogo
   pageId?: string; // Unique identifier for per-page offset storage
 }
@@ -358,6 +360,15 @@ function clearDragOffsets(pageId?: string) {
   localStorage.removeItem(getStorageKey(pageId));
 }
 
+// Get responsive density based on screen width
+function getResponsiveDensity(): DensityLevel {
+  const vw = window.innerWidth;
+  if (vw < 640) return 'light';      // Mobile: fewer vinyls
+  if (vw < 1024) return 'sparse';    // Tablet: moderate amount
+  if (vw < 1440) return 'moderate';  // Desktop: more vinyls
+  return 'dense';                     // Large screens: full density
+}
+
 export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false, pageId }: VinylBackgroundProps) {
   // Responsive hero vinyl size (matches RollingVinylLogo)
   const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
@@ -367,8 +378,17 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   
+  // Responsive density - recalculate on resize
+  const [responsiveDensity, setResponsiveDensity] = useState<DensityLevel>(getResponsiveDensity);
+  
+  // Determine actual density to use
+  const effectiveDensity: DensityLevel = density === 'responsive' ? responsiveDensity : density;
+  
   useEffect(() => {
-    const handleResize = () => setHeroSize(getResponsiveHeroSize());
+    const handleResize = () => {
+      setHeroSize(getResponsiveHeroSize());
+      setResponsiveDensity(getResponsiveDensity());
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -458,9 +478,9 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
 
   const { accentVinyls, mediumVinyls, smallVinyls } = useMemo(() => {
     // Deterministic, no-clump layout (stable between renders for a given config)
-    const seedKey = `vinyl:${density}:${showHeroVinyl}:${fadeHeight}`;
-    return buildBackgroundLayout({ seedKey, density, showHeroVinyl });
-  }, [density, fadeHeight, showHeroVinyl]);
+    const seedKey = `vinyl:${effectiveDensity}:${showHeroVinyl}:${fadeHeight}`;
+    return buildBackgroundLayout({ seedKey, density: effectiveDensity, showHeroVinyl });
+  }, [effectiveDensity, fadeHeight, showHeroVinyl]);
 
   // Randomize color indices on mount
   const randomizedAccentColors = useMemo(() => {
