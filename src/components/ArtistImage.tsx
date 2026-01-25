@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "lucide-react";
 import { getArtistImage } from "@/services/musicbrainz";
@@ -21,8 +21,8 @@ const sizeClasses = {
 // Cache duration: 7 days
 const CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-async function getCachedOrFetchArtistImage(artistId: string): Promise<string | null> {
-  // First, check the cache
+// Check cache only (no API call) - returns cached image or null
+async function getCachedArtistImage(artistId: string): Promise<string | null> {
   const { data: cached } = await supabase
     .from('artist_image_cache')
     .select('image_url, checked_at')
@@ -31,16 +31,17 @@ async function getCachedOrFetchArtistImage(artistId: string): Promise<string | n
 
   if (cached) {
     const cacheAge = Date.now() - new Date(cached.checked_at).getTime();
-    // If cache is fresh (less than 7 days old), return cached value
     if (cacheAge < CACHE_DURATION_MS) {
       return cached.image_url;
     }
   }
+  return null;
+}
 
-  // Fetch from API
+// Fetch from API and cache
+async function fetchAndCacheArtistImage(artistId: string): Promise<string | null> {
   const imageUrl = await getArtistImage(artistId);
 
-  // Store in cache (upsert)
   try {
     await supabase
       .from('artist_image_cache')
@@ -52,7 +53,6 @@ async function getCachedOrFetchArtistImage(artistId: string): Promise<string | n
         onConflict: 'artist_id'
       });
   } catch (e) {
-    // Cache write failures are non-critical
     console.log('Failed to cache artist image:', e);
   }
 
@@ -67,13 +67,35 @@ export function ArtistImage({
   onClick 
 }: ArtistImageProps) {
   const [imageError, setImageError] = useState(false);
+  const [shouldFetchApi, setShouldFetchApi] = useState(false);
 
-  const { data: imageUrl } = useQuery({
-    queryKey: ['artist-image', artistId],
-    queryFn: () => getCachedOrFetchArtistImage(artistId),
-    staleTime: 1000 * 60 * 60, // React Query cache for 1 hour
+  // First query: cache-only (fast)
+  const { data: cachedImage, isFetched: cacheChecked } = useQuery({
+    queryKey: ['artist-image-cache', artistId],
+    queryFn: () => getCachedArtistImage(artistId),
+    staleTime: 1000 * 60 * 60 * 24,
     enabled: !!artistId,
+    retry: false,
   });
+
+  // After cache check, if no image found, schedule API fetch with delay
+  useEffect(() => {
+    if (cacheChecked && cachedImage === null) {
+      const timer = setTimeout(() => setShouldFetchApi(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [cacheChecked, cachedImage]);
+
+  // Second query: API fetch (only if cache miss)
+  const { data: fetchedImage } = useQuery({
+    queryKey: ['artist-image-api', artistId],
+    queryFn: () => fetchAndCacheArtistImage(artistId),
+    staleTime: 1000 * 60 * 60 * 24,
+    enabled: shouldFetchApi && cachedImage === null && !!artistId,
+    retry: 1,
+  });
+
+  const imageUrl = cachedImage || fetchedImage;
 
   const sizeClass = sizeClasses[size];
   const cursorClass = onClick ? "cursor-pointer" : "";

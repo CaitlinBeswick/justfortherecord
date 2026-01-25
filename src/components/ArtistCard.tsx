@@ -40,8 +40,8 @@ function getInitials(name: string): string {
 // Cache duration: 7 days
 const CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-async function getCachedOrFetchArtistImage(artistId: string): Promise<string | null> {
-  // First, check the cache
+// Check cache only (no API call) - returns cached image or null
+async function getCachedArtistImage(artistId: string): Promise<string | null> {
   const { data: cached } = await supabase
     .from('artist_image_cache')
     .select('image_url, checked_at')
@@ -54,8 +54,11 @@ async function getCachedOrFetchArtistImage(artistId: string): Promise<string | n
       return cached.image_url;
     }
   }
+  return null;
+}
 
-  // Fetch from API
+// Fetch from API and cache (called only when explicitly needed)
+async function fetchAndCacheArtistImage(artistId: string): Promise<string | null> {
   const imageUrl = await getArtistImage(artistId);
 
   // Store in cache (upsert)
@@ -76,6 +79,22 @@ async function getCachedOrFetchArtistImage(artistId: string): Promise<string | n
   return imageUrl;
 }
 
+// Combined: check cache first, only fetch from API if not cached and shouldFetchFromApi is true
+async function getCachedOrFetchArtistImage(artistId: string, shouldFetchFromApi: boolean = true): Promise<string | null> {
+  // First, check the cache
+  const cached = await getCachedArtistImage(artistId);
+  if (cached !== null) {
+    return cached;
+  }
+
+  // If cache miss and we're allowed to fetch from API
+  if (shouldFetchFromApi) {
+    return fetchAndCacheArtistImage(artistId);
+  }
+
+  return null;
+}
+
 export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: ArtistCardProps) {
   const initials = getInitials(name);
   const bgColor = getArtistColor(name);
@@ -92,7 +111,7 @@ export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: Artist
           observer.disconnect();
         }
       },
-      { threshold: 0.1, rootMargin: '50px' }
+      { threshold: 0.1, rootMargin: '100px' }
     );
 
     if (cardRef.current) {
@@ -102,27 +121,47 @@ export function ArtistCard({ id, name, genres, onClick, fetchDelay = 0 }: Artist
     return () => observer.disconnect();
   }, []);
   
-  // Stagger image fetching to prevent API rate limiting
-  const [shouldFetch, setShouldFetch] = useState(false);
+  // Phase 1: Check cache immediately when visible (no delay)
+  const [shouldCheckCache, setShouldCheckCache] = useState(false);
+  // Phase 2: Fetch from API if cache miss (with longer delay to prevent rate limiting)
+  const [shouldFetchApi, setShouldFetchApi] = useState(false);
   
   useEffect(() => {
     if (isVisible) {
-      if (fetchDelay > 0) {
-        const timer = setTimeout(() => setShouldFetch(true), fetchDelay);
-        return () => clearTimeout(timer);
-      } else {
-        setShouldFetch(true);
-      }
+      // Check cache immediately
+      setShouldCheckCache(true);
     }
-  }, [isVisible, fetchDelay]);
+  }, [isVisible]);
 
-  const { data: artistImage } = useQuery({
-    queryKey: ['artist-image', id],
-    queryFn: () => getCachedOrFetchArtistImage(id),
-    staleTime: 1000 * 60 * 60 * 24, // React Query cache for 24 hours
-    enabled: shouldFetch,
+  // First query: cache-only (fast)
+  const { data: cachedImage, isFetched: cacheChecked } = useQuery({
+    queryKey: ['artist-image-cache', id],
+    queryFn: () => getCachedArtistImage(id),
+    staleTime: 1000 * 60 * 60 * 24,
+    enabled: shouldCheckCache,
+    retry: false,
+  });
+
+  // After cache check, if no image found, schedule API fetch with delay
+  useEffect(() => {
+    if (cacheChecked && cachedImage === null && isVisible) {
+      // Use longer delay for API fetches to prevent rate limiting
+      const apiDelay = fetchDelay > 0 ? fetchDelay : 100;
+      const timer = setTimeout(() => setShouldFetchApi(true), apiDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [cacheChecked, cachedImage, isVisible, fetchDelay]);
+
+  // Second query: API fetch (only if cache miss)
+  const { data: fetchedImage } = useQuery({
+    queryKey: ['artist-image-api', id],
+    queryFn: () => fetchAndCacheArtistImage(id),
+    staleTime: 1000 * 60 * 60 * 24,
+    enabled: shouldFetchApi && cachedImage === null,
     retry: 1,
   });
+
+  const artistImage = cachedImage || fetchedImage;
 
   return (
     <div ref={cardRef}>

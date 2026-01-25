@@ -56,8 +56,8 @@ export function getArtistInitials(name: string): string {
 // Cache duration: 7 days
 const CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-async function getCachedOrFetchArtistImage(artistId: string): Promise<string | null> {
-  // First, check the cache
+// Check cache only (no API call) - returns cached image or null
+async function getCachedArtistImage(artistId: string): Promise<string | null> {
   const { data: cached } = await supabase
     .from('artist_image_cache')
     .select('image_url, checked_at')
@@ -70,11 +70,13 @@ async function getCachedOrFetchArtistImage(artistId: string): Promise<string | n
       return cached.image_url;
     }
   }
+  return null;
+}
 
-  // Fetch from API
+// Fetch from API and cache
+async function fetchAndCacheArtistImage(artistId: string): Promise<string | null> {
   const imageUrl = await getArtistImage(artistId);
 
-  // Store in cache (upsert)
   try {
     await supabase
       .from('artist_image_cache')
@@ -120,7 +122,7 @@ export function ArtistImageWithFallback({
           observer.disconnect();
         }
       },
-      { threshold: 0.1, rootMargin: '50px' }
+      { threshold: 0.1, rootMargin: '100px' }
     );
 
     if (containerRef.current) {
@@ -130,27 +132,45 @@ export function ArtistImageWithFallback({
     return () => observer.disconnect();
   }, [lazy]);
   
-  // Stagger image fetching to prevent API rate limiting
-  const [shouldFetch, setShouldFetch] = useState(false);
+  // Phase 1: Check cache immediately when visible
+  const [shouldCheckCache, setShouldCheckCache] = useState(false);
+  // Phase 2: Fetch from API if cache miss (with delay)
+  const [shouldFetchApi, setShouldFetchApi] = useState(false);
   
   useEffect(() => {
     if (isVisible) {
-      if (fetchDelay > 0) {
-        const timer = setTimeout(() => setShouldFetch(true), fetchDelay);
-        return () => clearTimeout(timer);
-      } else {
-        setShouldFetch(true);
-      }
+      setShouldCheckCache(true);
     }
-  }, [isVisible, fetchDelay]);
+  }, [isVisible]);
 
-  const { data: artistImage } = useQuery({
-    queryKey: ['artist-image', artistId],
-    queryFn: () => getCachedOrFetchArtistImage(artistId),
-    staleTime: 1000 * 60 * 60 * 24, // React Query cache for 24 hours
-    enabled: shouldFetch && !!artistId,
+  // First query: cache-only (fast)
+  const { data: cachedImage, isFetched: cacheChecked } = useQuery({
+    queryKey: ['artist-image-cache', artistId],
+    queryFn: () => getCachedArtistImage(artistId),
+    staleTime: 1000 * 60 * 60 * 24,
+    enabled: shouldCheckCache && !!artistId,
+    retry: false,
+  });
+
+  // After cache check, if no image found, schedule API fetch with delay
+  useEffect(() => {
+    if (cacheChecked && cachedImage === null && isVisible) {
+      const apiDelay = fetchDelay > 0 ? fetchDelay : 100;
+      const timer = setTimeout(() => setShouldFetchApi(true), apiDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [cacheChecked, cachedImage, isVisible, fetchDelay]);
+
+  // Second query: API fetch (only if cache miss)
+  const { data: fetchedImage } = useQuery({
+    queryKey: ['artist-image-api', artistId],
+    queryFn: () => fetchAndCacheArtistImage(artistId),
+    staleTime: 1000 * 60 * 60 * 24,
+    enabled: shouldFetchApi && cachedImage === null && !!artistId,
     retry: 1,
   });
+
+  const artistImage = cachedImage || fetchedImage;
 
   const cursorClass = onClick ? "cursor-pointer" : "";
   const initials = getArtistInitials(artistName);
