@@ -1,104 +1,7 @@
-import { memo, useMemo, useState, useEffect, useCallback } from "react";
+import { memo, useMemo, useState, useEffect, useCallback, useRef } from "react";
 
-type Rng = () => number;
-
-function hashStringToSeed(input: string) {
-  // Simple, stable 32-bit hash
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-function mulberry32(seed: number): Rng {
-  let t = seed >>> 0;
-  return () => {
-    t += 0x6d2b79f5;
-    let x = t;
-    x = Math.imul(x ^ (x >>> 15), x | 1);
-    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
-    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
-
-function toPct(n01: number) {
-  return `${Math.round(n01 * 1000) / 10}%`; // 1dp
-}
-
-type AvoidZone = {
-  // Normalized [0..1]
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-};
-
-function isInsideZone(x: number, y: number, z: AvoidZone) {
-  return x >= z.x1 && x <= z.x2 && y >= z.y1 && y <= z.y2;
-}
-
-function generatePoissonPoints(opts: {
-  rng: Rng;
-  count: number;
-  minDist: number; // normalized distance
-  bounds?: { xMin: number; xMax: number; yMin: number; yMax: number };
-  avoid?: AvoidZone[];
-  maxTries?: number;
-}): Array<{ x: number; y: number }> {
-  const {
-    rng,
-    count,
-    minDist,
-    bounds = { xMin: 0, xMax: 1, yMin: 0, yMax: 1 },
-    avoid = [],
-    maxTries = 8000,
-  } = opts;
-
-  const pts: Array<{ x: number; y: number }> = [];
-  const minDist2 = minDist * minDist;
-
-  let tries = 0;
-  while (pts.length < count && tries < maxTries) {
-    tries++;
-    const x = bounds.xMin + rng() * (bounds.xMax - bounds.xMin);
-    const y = bounds.yMin + rng() * (bounds.yMax - bounds.yMin);
-
-    if (avoid.some((z) => isInsideZone(x, y, z))) continue;
-
-    let ok = true;
-    for (let i = 0; i < pts.length; i++) {
-      const dx = x - pts[i].x;
-      const dy = y - pts[i].y;
-      if (dx * dx + dy * dy < minDist2) {
-        ok = false;
-        break;
-      }
-    }
-    if (!ok) continue;
-    pts.push({ x, y });
-  }
-
-  // If we fail to reach count (small screens / tight constraints), relax spacing slightly.
-  if (pts.length < count) {
-    const relaxed = generatePoissonPoints({
-      rng,
-      count,
-      minDist: minDist * 0.85,
-      bounds,
-      avoid,
-      maxTries,
-    });
-    return relaxed;
-  }
-
-  return pts;
-}
+// Dev-only mode
+const isDev = import.meta.env.DEV;
 
 // Vintage label colors for variety
 const labelColors = [
@@ -109,16 +12,6 @@ const labelColors = [
   { fill: 'hsl(0, 60%, 50%)', stroke: 'hsl(0, 65%, 40%)' },     // Red (Capitol-style)
   { fill: 'hsl(280, 40%, 55%)', stroke: 'hsl(280, 45%, 45%)' }, // Purple (Motown-style)
 ];
-
-// Calculate responsive size for hero vinyl (matches RollingVinylLogo)
-const getResponsiveHeroSize = () => {
-  const vw = window.innerWidth;
-  if (vw < 480) return 80;
-  if (vw < 640) return 100;
-  if (vw < 768) return 120;
-  if (vw < 1024) return 150;
-  return 195;
-};
 
 // Realistic vinyl record SVG with grooves, colored label, and highlight
 const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolean; colorIndex?: number }) => {
@@ -192,129 +85,110 @@ const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolea
 
 VinylSVG.displayName = 'VinylSVG';
 
-type AccentVinyl = {
-  top: string;
-  left: string;
-  size: number;
-  opacity: number;
-  duration: number;
-  reverse?: boolean;
-};
-
-type SimpleVinyl = {
-  top: string;
-  left: string;
-  size: number;
-  opacity: number;
-};
-
-function makeAvoidZones(showHeroVinyl: boolean): AvoidZone[] {
-  if (!showHeroVinyl) return [];
-
-  // Avoid the hero headline region (center-left) and the rolling vinyl rest position (~21% x).
-  return [
-    // Headline + CTA block
-    { x1: 0.03, y1: 0.08, x2: 0.46, y2: 0.52 },
-    // The rolling hero vinyl rest area
-    { x1: 0.12, y1: 0.30, x2: 0.34, y2: 0.70 },
-  ];
+// Custom vinyl type for manual layouts
+interface CustomVinyl {
+  id: string;
+  x: number; // percentage 0-100
+  y: number; // percentage 0-100
+  size: number; // pixels
+  opacity: number; // 0-1
+  colorIndex: number;
+  detailed: boolean;
+  duration: number; // spin duration in seconds
+  reverse: boolean;
 }
 
-function buildBackgroundLayout(params: {
-  seedKey: string;
-  density: "sparse" | "dense" | "light" | "moderate";
-  showHeroVinyl: boolean;
-}) {
-  const { seedKey, density, showHeroVinyl } = params;
-  const rng = mulberry32(hashStringToSeed(seedKey));
-  const avoid = makeAvoidZones(showHeroVinyl);
+// Storage keys
+const CUSTOM_LAYOUTS_KEY = 'vinyl-custom-layouts';
 
-  // Density settings: dense > moderate > sparse > light
-  const accentCount = density === "dense" ? 43 : density === "moderate" ? 18 : density === "light" ? 8 : 13;
-  const mediumCount = density === "dense" ? 32 : density === "moderate" ? 12 : density === "light" ? 5 : 6;
-  const smallCount = density === "dense" ? 44 : density === "moderate" ? 20 : density === "light" ? 10 : 16;
+function loadCustomLayout(pageId: string): CustomVinyl[] | null {
+  if (!isDev) return null;
+  try {
+    const stored = localStorage.getItem(`${CUSTOM_LAYOUTS_KEY}-${pageId}`);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
 
-  // Higher minDist values = more uniform spacing
-  const accentPts = generatePoissonPoints({
-    rng,
-    count: accentCount,
-    minDist: density === "dense" ? 0.18 : density === "moderate" ? 0.24 : density === "light" ? 0.35 : 0.28,
-    bounds: { xMin: 0, xMax: 1, yMin: 0, yMax: 0.95 },
-    avoid,
-  });
+function saveCustomLayout(pageId: string, vinyls: CustomVinyl[]) {
+  if (!isDev) return;
+  try {
+    localStorage.setItem(`${CUSTOM_LAYOUTS_KEY}-${pageId}`, JSON.stringify(vinyls));
+  } catch {
+    // Ignore storage errors
+  }
+}
 
-  const mediumPts = generatePoissonPoints({
-    rng,
-    count: mediumCount,
-    minDist: density === "dense" ? 0.14 : density === "moderate" ? 0.20 : density === "light" ? 0.28 : 0.22,
-    bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.02, yMax: 0.92 },
-    avoid,
-  });
+function clearCustomLayout(pageId: string) {
+  if (!isDev) return;
+  localStorage.removeItem(`${CUSTOM_LAYOUTS_KEY}-${pageId}`);
+}
 
-  const smallPts = generatePoissonPoints({
-    rng,
-    count: smallCount,
-    minDist: density === "dense" ? 0.08 : density === "moderate" ? 0.12 : density === "light" ? 0.16 : 0.12,
-    bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.01, yMax: 0.98 },
-    avoid,
-  });
+// Generate a unique ID
+function generateId(): string {
+  return `vinyl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
-  const accentVinyls: AccentVinyl[] = accentPts.map((p, i) => {
-    const sizeMin = density === "dense" ? 110 : density === "moderate" ? 115 : density === "light" ? 130 : 120;
-    const sizeMax = density === "dense" ? 185 : 185;
-    const size = Math.round(sizeMin + rng() * (sizeMax - sizeMin));
-
-    // Higher opacity for better visibility (matching debug mode colors)
-    const opacity = density === "dense" ? 0.35 + rng() * 0.15 : density === "moderate" ? 0.38 + rng() * 0.14 : density === "light" ? 0.40 + rng() * 0.15 : 0.40 + rng() * 0.12;
-    const duration = Math.round(48 + rng() * 28);
-
-    // Minimal jitter for more uniform look
-    const y = clamp(p.y + (rng() - 0.5) * 0.01, 0, 0.98);
-    const x = clamp(p.x + (rng() - 0.5) * 0.01, 0, 1);
-
-    return {
-      top: toPct(y),
-      left: toPct(x),
-      size,
-      opacity: Math.round(opacity * 100) / 100,
-      duration,
+// Generate default vinyls based on density
+function generateDefaultVinyls(density: 'light' | 'sparse' | 'moderate' | 'dense'): CustomVinyl[] {
+  const vinyls: CustomVinyl[] = [];
+  
+  const configs = {
+    light: { accent: 6, medium: 4, small: 6 },
+    sparse: { accent: 10, medium: 6, small: 10 },
+    moderate: { accent: 14, medium: 10, small: 14 },
+    dense: { accent: 20, medium: 16, small: 20 },
+  };
+  
+  const config = configs[density];
+  
+  // Generate accent vinyls (large, detailed)
+  for (let i = 0; i < config.accent; i++) {
+    vinyls.push({
+      id: generateId(),
+      x: 5 + (i % 5) * 20 + Math.random() * 10,
+      y: 5 + Math.floor(i / 5) * 25 + Math.random() * 10,
+      size: 120 + Math.random() * 60,
+      opacity: 0.35 + Math.random() * 0.15,
+      colorIndex: Math.floor(Math.random() * labelColors.length),
+      detailed: true,
+      duration: 45 + Math.random() * 30,
       reverse: i % 2 === 1,
-    };
-  });
-
-  const mediumVinyls: SimpleVinyl[] = mediumPts.map((p, i) => {
-    const sizeMin = density === "dense" ? 48 : density === "moderate" ? 52 : density === "light" ? 55 : 50;
-    const sizeMax = density === "dense" ? 72 : 68;
-    const size = Math.round(sizeMin + rng() * (sizeMax - sizeMin));
-    // Higher opacity for better visibility
-    const opacity = density === "dense" ? 0.45 + rng() * 0.15 : density === "moderate" ? 0.48 + rng() * 0.12 : density === "light" ? 0.50 + rng() * 0.12 : 0.50 + rng() * 0.10;
-    // Minimal jitter
-    const y = clamp(p.y + (rng() - 0.5) * 0.008, 0, 0.98);
-    const x = clamp(p.x + (rng() - 0.5) * 0.008, 0, 1);
-    return {
-      top: toPct(y),
-      left: toPct(x),
-      size,
-      opacity: Math.round(opacity * 100) / 100,
-    };
-  });
-
-  const smallVinyls: SimpleVinyl[] = smallPts.map((p) => {
-    const size = Math.round(6 + rng() * 3); // 6..9 (matches previous)
-    // Higher opacity for better visibility
-    const opacity = density === "dense" ? 0.50 + rng() * 0.20 : density === "moderate" ? 0.52 + rng() * 0.18 : density === "light" ? 0.55 + rng() * 0.18 : 0.55 + rng() * 0.15;
-    // Minimal jitter
-    const y = clamp(p.y + (rng() - 0.5) * 0.005, 0, 1);
-    const x = clamp(p.x + (rng() - 0.5) * 0.005, 0, 1);
-    return {
-      top: toPct(y),
-      left: toPct(x),
-      size,
-      opacity: Math.round(opacity * 100) / 100,
-    };
-  });
-
-  return { accentVinyls, mediumVinyls, smallVinyls };
+    });
+  }
+  
+  // Generate medium vinyls
+  for (let i = 0; i < config.medium; i++) {
+    vinyls.push({
+      id: generateId(),
+      x: 10 + (i % 4) * 25 + Math.random() * 10,
+      y: 15 + Math.floor(i / 4) * 30 + Math.random() * 10,
+      size: 50 + Math.random() * 25,
+      opacity: 0.45 + Math.random() * 0.15,
+      colorIndex: Math.floor(Math.random() * labelColors.length),
+      detailed: false,
+      duration: 35 + Math.random() * 20,
+      reverse: i % 2 === 0,
+    });
+  }
+  
+  // Generate small vinyls
+  for (let i = 0; i < config.small; i++) {
+    vinyls.push({
+      id: generateId(),
+      x: 5 + (i % 6) * 16 + Math.random() * 8,
+      y: 10 + Math.floor(i / 6) * 20 + Math.random() * 10,
+      size: 24 + Math.random() * 16,
+      opacity: 0.5 + Math.random() * 0.2,
+      colorIndex: Math.floor(Math.random() * labelColors.length),
+      detailed: false,
+      duration: 25 + Math.random() * 20,
+      reverse: i % 2 === 1,
+    });
+  }
+  
+  return vinyls;
 }
 
 type DensityLevel = 'sparse' | 'dense' | 'light' | 'moderate';
@@ -323,88 +197,69 @@ type DensityProp = DensityLevel | 'responsive' | 'responsive-light';
 interface VinylBackgroundProps {
   className?: string;
   fadeHeight?: string;
-  density?: DensityProp; // 'responsive' auto-adjusts, 'responsive-light' is one step lighter
-  showHeroVinyl?: boolean; // Responsive vinyl that aligns with RollingVinylLogo
-  pageId?: string; // Unique identifier for per-page offset storage
-}
-
-// Dev-only debug mode (toggle via keyboard shortcut Ctrl+Shift+V)
-const isDev = import.meta.env.DEV;
-
-// LocalStorage key prefix for persisting drag offsets during dev
-const DRAG_OFFSETS_PREFIX = 'vinyl-drag-offsets';
-
-function getStorageKey(pageId?: string): string {
-  return pageId ? `${DRAG_OFFSETS_PREFIX}-${pageId}` : DRAG_OFFSETS_PREFIX;
-}
-
-function loadDragOffsets(pageId?: string): Record<string, { x: number; y: number }> {
-  if (!isDev) return {};
-  try {
-    const stored = localStorage.getItem(getStorageKey(pageId));
-    return stored ? JSON.parse(stored) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveDragOffsets(offsets: Record<string, { x: number; y: number }>, pageId?: string) {
-  if (!isDev) return;
-  try {
-    localStorage.setItem(getStorageKey(pageId), JSON.stringify(offsets));
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-function clearDragOffsets(pageId?: string) {
-  if (!isDev) return;
-  localStorage.removeItem(getStorageKey(pageId));
+  density?: DensityProp;
+  showHeroVinyl?: boolean;
+  pageId?: string;
 }
 
 // Get responsive density based on screen width
 function getResponsiveDensity(light: boolean = false): DensityLevel {
   const vw = window.innerWidth;
   if (light) {
-    // Responsive-light: one step less dense at each breakpoint
-    if (vw < 768) return 'light';       // Mobile/small tablet: light
-    if (vw < 1280) return 'light';      // Tablet/small desktop: still light
-    if (vw < 1600) return 'sparse';     // Desktop: sparse
-    return 'moderate';                   // Large screens: moderate (not dense)
+    if (vw < 768) return 'light';
+    if (vw < 1280) return 'light';
+    if (vw < 1600) return 'sparse';
+    return 'moderate';
   }
-  // Standard responsive
-  if (vw < 640) return 'light';      // Mobile: fewer vinyls
-  if (vw < 1024) return 'sparse';    // Tablet: moderate amount
-  if (vw < 1440) return 'moderate';  // Desktop: more vinyls
-  return 'dense';                     // Large screens: full density
+  if (vw < 640) return 'light';
+  if (vw < 1024) return 'sparse';
+  if (vw < 1440) return 'moderate';
+  return 'dense';
 }
 
-export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false, pageId }: VinylBackgroundProps) {
-  // Responsive hero vinyl size (matches RollingVinylLogo)
-  const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
-  const [debugMode, setDebugMode] = useState(false);
-  const [dragMode, setDragMode] = useState(false);
-  const [dragOffsets, setDragOffsets] = useState<Record<string, { x: number; y: number }>>(() => loadDragOffsets(pageId));
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+export function VinylBackground({ 
+  className = "", 
+  fadeHeight = "150%", 
+  density = "sparse", 
+  showHeroVinyl = false, 
+  pageId = "default" 
+}: VinylBackgroundProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   
-  // Check if using light responsive mode
+  // Edit mode state
+  const [editMode, setEditMode] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number; vinylX: number; vinylY: number } | null>(null);
+  
+  // Responsive density
   const isResponsiveLight = density === 'responsive-light';
   const isResponsive = density === 'responsive' || isResponsiveLight;
-  
-  // Responsive density - recalculate on resize
   const [responsiveDensity, setResponsiveDensity] = useState<DensityLevel>(() => 
-    isResponsive ? getResponsiveDensity(isResponsiveLight) : 'sparse'
+    isResponsive ? getResponsiveDensity(isResponsiveLight) : (density as DensityLevel)
   );
+  const effectiveDensity: DensityLevel = isResponsive ? responsiveDensity : (density as DensityLevel);
   
-  // Determine actual density to use
-  const effectiveDensity: DensityLevel = isResponsive 
-    ? responsiveDensity 
-    : (density as DensityLevel);
+  // Custom vinyls state - load from storage or generate defaults
+  const [vinyls, setVinyls] = useState<CustomVinyl[]>(() => {
+    const stored = loadCustomLayout(pageId);
+    if (stored) return stored;
+    return generateDefaultVinyls(effectiveDensity);
+  });
   
+  // Track if we're using a custom layout
+  const [hasCustomLayout, setHasCustomLayout] = useState(() => !!loadCustomLayout(pageId));
+  
+  // Regenerate defaults when density changes (only if not using custom layout)
+  useEffect(() => {
+    if (!hasCustomLayout) {
+      setVinyls(generateDefaultVinyls(effectiveDensity));
+    }
+  }, [effectiveDensity, hasCustomLayout]);
+  
+  // Handle responsive resize
   useEffect(() => {
     const handleResize = () => {
-      setHeroSize(getResponsiveHeroSize());
       if (isResponsive) {
         setResponsiveDensity(getResponsiveDensity(isResponsiveLight));
       }
@@ -412,291 +267,290 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [isResponsive, isResponsiveLight]);
-
-  // Reload offsets when pageId changes
+  
+  // Reload when pageId changes
   useEffect(() => {
-    setDragOffsets(loadDragOffsets(pageId));
-  }, [pageId]);
-
-  // Persist drag offsets to localStorage (per-page)
-  useEffect(() => {
-    if (isDev && Object.keys(dragOffsets).length > 0) {
-      saveDragOffsets(dragOffsets, pageId);
+    const stored = loadCustomLayout(pageId);
+    if (stored) {
+      setVinyls(stored);
+      setHasCustomLayout(true);
+    } else {
+      setVinyls(generateDefaultVinyls(effectiveDensity));
+      setHasCustomLayout(false);
     }
-  }, [dragOffsets, pageId]);
-
-  // Dev-only: toggle debug overlay with Ctrl+Shift+V, drag mode with Ctrl+Shift+D, clear offsets with Ctrl+Shift+C
+  }, [pageId]);
+  
+  // Save to localStorage when vinyls change in edit mode
+  useEffect(() => {
+    if (isDev && editMode && hasCustomLayout) {
+      saveCustomLayout(pageId, vinyls);
+    }
+  }, [vinyls, editMode, pageId, hasCustomLayout]);
+  
+  // Keyboard shortcuts
   useEffect(() => {
     if (!isDev) return;
+    
     const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'v') {
+      // Ctrl+Shift+E: Toggle edit mode
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'e') {
         e.preventDefault();
-        setDebugMode((d) => !d);
-      }
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        setDragMode((d) => {
-          const newVal = !d;
+        setEditMode(prev => {
+          const newVal = !prev;
           if (newVal) {
-            console.log(`[VinylBackground] Drag mode ON (page: ${pageId || 'global'}) - drag vinyls to reposition, Ctrl+Shift+C to clear offsets`);
+            setHasCustomLayout(true);
+            console.log(`[VinylBackground] Edit mode ON (page: ${pageId})`);
+            console.log('  - Click to select a vinyl');
+            console.log('  - Drag to move');
+            console.log('  - +/- to resize selected');
+            console.log('  - [ / ] to adjust opacity');
+            console.log('  - Delete/Backspace to remove');
+            console.log('  - A to add new vinyl at center');
+            console.log('  - C to cycle color');
+            console.log('  - Ctrl+Shift+S to save & export');
+            console.log('  - Ctrl+Shift+R to reset to defaults');
           } else {
-            console.log(`[VinylBackground] Drag mode OFF (page: ${pageId || 'global'}) - Final offsets:`, JSON.stringify(dragOffsets, null, 2));
+            console.log(`[VinylBackground] Edit mode OFF`);
           }
           return newVal;
         });
       }
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+      
+      // Only handle other keys in edit mode
+      if (!editMode) return;
+      
+      // Ctrl+Shift+S: Save and export
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        setDragOffsets({});
-        clearDragOffsets(pageId);
-        console.log(`[VinylBackground] Cleared drag offsets for page: ${pageId || 'global'}`);
+        saveCustomLayout(pageId, vinyls);
+        const exportData = JSON.stringify(vinyls, null, 2);
+        navigator.clipboard.writeText(exportData).then(() => {
+          console.log(`[VinylBackground] Layout saved & copied to clipboard!`);
+          console.log('Paste this into your code to use as a hardcoded default:');
+          console.log(exportData);
+        });
+      }
+      
+      // Ctrl+Shift+R: Reset to defaults
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        clearCustomLayout(pageId);
+        setVinyls(generateDefaultVinyls(effectiveDensity));
+        setHasCustomLayout(false);
+        console.log(`[VinylBackground] Reset to default layout`);
+      }
+      
+      // A: Add new vinyl
+      if (e.key.toLowerCase() === 'a' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        const newVinyl: CustomVinyl = {
+          id: generateId(),
+          x: 45 + Math.random() * 10,
+          y: 45 + Math.random() * 10,
+          size: 100,
+          opacity: 0.5,
+          colorIndex: Math.floor(Math.random() * labelColors.length),
+          detailed: true,
+          duration: 50,
+          reverse: Math.random() > 0.5,
+        };
+        setVinyls(prev => [...prev, newVinyl]);
+        setSelectedId(newVinyl.id);
+        console.log(`[VinylBackground] Added vinyl: ${newVinyl.id}`);
+      }
+      
+      // Delete/Backspace: Remove selected
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+        e.preventDefault();
+        setVinyls(prev => prev.filter(v => v.id !== selectedId));
+        console.log(`[VinylBackground] Removed vinyl: ${selectedId}`);
+        setSelectedId(null);
+      }
+      
+      // +/= : Increase size
+      if ((e.key === '+' || e.key === '=') && selectedId) {
+        e.preventDefault();
+        setVinyls(prev => prev.map(v => 
+          v.id === selectedId ? { ...v, size: Math.min(v.size + 10, 300) } : v
+        ));
+      }
+      
+      // -: Decrease size
+      if (e.key === '-' && selectedId) {
+        e.preventDefault();
+        setVinyls(prev => prev.map(v => 
+          v.id === selectedId ? { ...v, size: Math.max(v.size - 10, 20) } : v
+        ));
+      }
+      
+      // ]: Increase opacity
+      if (e.key === ']' && selectedId) {
+        e.preventDefault();
+        setVinyls(prev => prev.map(v => 
+          v.id === selectedId ? { ...v, opacity: Math.min(v.opacity + 0.05, 1) } : v
+        ));
+      }
+      
+      // [: Decrease opacity
+      if (e.key === '[' && selectedId) {
+        e.preventDefault();
+        setVinyls(prev => prev.map(v => 
+          v.id === selectedId ? { ...v, opacity: Math.max(v.opacity - 0.05, 0.1) } : v
+        ));
+      }
+      
+      // C: Cycle color
+      if (e.key.toLowerCase() === 'c' && !e.ctrlKey && selectedId) {
+        e.preventDefault();
+        setVinyls(prev => prev.map(v => 
+          v.id === selectedId ? { ...v, colorIndex: (v.colorIndex + 1) % labelColors.length } : v
+        ));
+      }
+      
+      // D: Toggle detailed
+      if (e.key.toLowerCase() === 'd' && !e.ctrlKey && !e.shiftKey && selectedId) {
+        e.preventDefault();
+        setVinyls(prev => prev.map(v => 
+          v.id === selectedId ? { ...v, detailed: !v.detailed } : v
+        ));
+      }
+      
+      // Escape: Deselect
+      if (e.key === 'Escape') {
+        setSelectedId(null);
       }
     };
+    
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [dragOffsets, pageId]);
-
-  // Mouse handlers for drag mode
-  const handleDragStart = useCallback((id: string, e: React.MouseEvent) => {
-    if (!dragMode) return;
+  }, [editMode, selectedId, vinyls, pageId, effectiveDensity]);
+  
+  // Mouse handlers for dragging
+  const handleMouseDown = useCallback((id: string, e: React.MouseEvent) => {
+    if (!editMode) return;
     e.preventDefault();
+    e.stopPropagation();
+    
+    setSelectedId(id);
     setDraggingId(id);
-    setDragStart({ x: e.clientX, y: e.clientY });
-  }, [dragMode]);
-
-  const handleDragMove = useCallback((e: MouseEvent) => {
-    if (!draggingId || !dragStart) return;
-    const dx = e.clientX - dragStart.x;
-    const dy = e.clientY - dragStart.y;
-    setDragOffsets((prev) => ({
-      ...prev,
-      [draggingId]: {
-        x: (prev[draggingId]?.x || 0) + dx,
-        y: (prev[draggingId]?.y || 0) + dy,
-      },
-    }));
-    setDragStart({ x: e.clientX, y: e.clientY });
-  }, [draggingId, dragStart]);
-
-  const handleDragEnd = useCallback(() => {
-    if (draggingId) {
-      console.log(`[VinylBackground] Moved ${draggingId}:`, dragOffsets[draggingId] || { x: 0, y: 0 });
+    
+    const vinyl = vinyls.find(v => v.id === id);
+    if (vinyl) {
+      setDragStart({ 
+        x: e.clientX, 
+        y: e.clientY,
+        vinylX: vinyl.x,
+        vinylY: vinyl.y
+      });
     }
+  }, [editMode, vinyls]);
+  
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!draggingId || !dragStart || !containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const deltaX = ((e.clientX - dragStart.x) / rect.width) * 100;
+    const deltaY = ((e.clientY - dragStart.y) / rect.height) * 100;
+    
+    setVinyls(prev => prev.map(v => {
+      if (v.id !== draggingId) return v;
+      return {
+        ...v,
+        x: Math.max(0, Math.min(100, dragStart.vinylX + deltaX)),
+        y: Math.max(0, Math.min(100, dragStart.vinylY + deltaY)),
+      };
+    }));
+  }, [draggingId, dragStart]);
+  
+  const handleMouseUp = useCallback(() => {
     setDraggingId(null);
     setDragStart(null);
-  }, [draggingId, dragOffsets]);
-
+  }, []);
+  
+  // Add global mouse listeners when dragging
   useEffect(() => {
-    if (!dragMode) return;
-    window.addEventListener('mousemove', handleDragMove);
-    window.addEventListener('mouseup', handleDragEnd);
+    if (!editMode) return;
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
     return () => {
-      window.removeEventListener('mousemove', handleDragMove);
-      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragMode, handleDragMove, handleDragEnd]);
-
-  const { accentVinyls, mediumVinyls, smallVinyls } = useMemo(() => {
-    // Deterministic, no-clump layout (stable between renders for a given config)
-    const seedKey = `vinyl:${effectiveDensity}:${showHeroVinyl}:${fadeHeight}`;
-    return buildBackgroundLayout({ seedKey, density: effectiveDensity, showHeroVinyl });
-  }, [effectiveDensity, fadeHeight, showHeroVinyl]);
-
-  // Randomize color indices on mount
-  const randomizedAccentColors = useMemo(() => {
-    return accentVinyls.map(() => Math.floor(Math.random() * labelColors.length));
-  }, [accentVinyls.length]);
+  }, [editMode, handleMouseMove, handleMouseUp]);
   
-  const randomizedMediumColors = useMemo(() => {
-    return mediumVinyls.map(() => Math.floor(Math.random() * labelColors.length));
-  }, [mediumVinyls.length]);
-  
-  const randomizedSmallColors = useMemo(() => {
-    return smallVinyls.map(() => Math.floor(Math.random() * labelColors.length));
-  }, [smallVinyls.length]);
-
-  // VinylBackground often extends beyond the section height (e.g. 150%).
-  // To place the hero vinyl at the *visual* mid-point of the section, we compensate for that.
-  const heroTop = useMemo(() => {
-    if (!showHeroVinyl) return '50%';
-    const match = /^([0-9.]+)%$/.exec(fadeHeight.trim());
-    if (!match) return '50%';
-    const multiplier = Number(match[1]) / 100;
-    if (!Number.isFinite(multiplier) || multiplier <= 0) return '50%';
-    // We want 50% of section height, expressed as a % of the extended background height.
-    const pct = 50 / multiplier;
-    return `${pct}%`;
-  }, [fadeHeight, showHeroVinyl]);
-
-  // Avoid zones for debug overlay
-  const avoidZones = useMemo(() => makeAvoidZones(showHeroVinyl), [showHeroVinyl]);
+  // Click on background to deselect
+  const handleBackgroundClick = useCallback((e: React.MouseEvent) => {
+    if (editMode && e.target === e.currentTarget) {
+      setSelectedId(null);
+    }
+  }, [editMode]);
 
   return (
     <div 
-      className={`absolute inset-0 overflow-hidden ${dragMode ? 'pointer-events-auto' : 'pointer-events-none'} ${className}`}
+      ref={containerRef}
+      className={`absolute inset-0 overflow-hidden ${editMode ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'} ${className}`}
       style={{
-        maskImage: (debugMode || dragMode) ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
-        WebkitMaskImage: (debugMode || dragMode) ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
+        maskImage: editMode ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
+        WebkitMaskImage: editMode ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
         height: fadeHeight,
-        cursor: dragMode ? 'default' : undefined,
       }}
+      onClick={handleBackgroundClick}
     >
-      {/* Debug overlay - safe zones */}
-      {isDev && debugMode && (
-        <>
-          {avoidZones.map((zone, i) => (
-            <div
-              key={`zone-${i}`}
-              className="absolute border-2 border-dashed border-blue-500 bg-blue-500/10 pointer-events-none"
-              style={{
-                left: `${zone.x1 * 100}%`,
-                top: `${zone.y1 * 100}%`,
-                width: `${(zone.x2 - zone.x1) * 100}%`,
-                height: `${(zone.y2 - zone.y1) * 100}%`,
-              }}
-            >
-              <span className="absolute top-1 left-1 text-xs text-blue-600 font-mono bg-white/80 px-1 rounded">
-                Safe Zone {i + 1}
-              </span>
+      {/* Dev mode UI */}
+      {isDev && editMode && (
+        <div className="absolute top-2 right-2 bg-black/90 text-white text-xs px-3 py-2 rounded-lg font-mono z-50 pointer-events-none space-y-1 max-w-xs">
+          <div className="text-green-400 font-bold">Edit Mode (page: {pageId})</div>
+          <div className="text-gray-300">Vinyls: {vinyls.length}</div>
+          {selectedId && (
+            <div className="text-yellow-400 border-t border-gray-600 pt-1 mt-1">
+              Selected: {selectedId.slice(0, 15)}...
+              <br />+/- size | [ ] opacity | C color | D detail | Del remove
             </div>
-          ))}
-        </>
-      )}
-
-      {/* Dev mode labels */}
-      {isDev && (debugMode || dragMode) && (
-        <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-mono z-50 pointer-events-none space-y-1">
-          {debugMode && <div>Debug: Ctrl+Shift+V</div>}
-          {dragMode && <div className="text-green-400">Drag Mode: Ctrl+Shift+D (drag vinyls!)</div>}
-        </div>
-      )}
-
-      {/* Hero vinyl - responsive, aligns with RollingVinylLogo rest position */}
-      {showHeroVinyl && (
-        <div
-          className={`absolute vinyl-disc ${dragMode ? 'cursor-grab active:cursor-grabbing' : 'animate-spin-slow'}`}
-          style={{
-            top: heroTop,
-            left: '21%',
-            transform: `translate(-50%, -50%) translate(${dragOffsets['hero']?.x || 0}px, ${dragOffsets['hero']?.y || 0}px)`,
-            width: `${heroSize}px`,
-            height: `${heroSize}px`,
-            opacity: dragMode ? 0.5 : 0.35,
-            animationDuration: '70s',
-            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
-            pointerEvents: dragMode ? 'auto' : 'none',
-          }}
-          onMouseDown={(e) => handleDragStart('hero', e)}
-        >
-          <div className="pointer-events-none w-full h-full">
-            <VinylSVG detailed colorIndex={4} />
-          </div>
-          {isDev && debugMode && (
-            <div className="absolute inset-0 border-2 border-green-500 rounded-full pointer-events-none" />
           )}
+          <div className="border-t border-gray-600 pt-1 mt-1 text-gray-400">
+            A: add | Ctrl+Shift+S: save | Ctrl+Shift+R: reset
+          </div>
         </div>
       )}
-
-      {/* Large accent vinyls spread across page */}
-      {accentVinyls.map((vinyl, i) => {
-        const id = `accent-${i}`;
-        const offset = dragOffsets[id] || { x: 0, y: 0 };
+      
+      {/* Render all vinyls */}
+      {vinyls.map((vinyl) => {
+        const isSelected = selectedId === vinyl.id;
+        const isDragging = draggingId === vinyl.id;
+        
         return (
           <div
-            key={id}
-            className={`absolute vinyl-disc ${dragMode ? 'cursor-grab active:cursor-grabbing' : 'animate-spin-slow'}`}
+            key={vinyl.id}
+            className={`absolute vinyl-disc ${editMode ? 'cursor-grab' : 'animate-spin-slow'} ${isDragging ? 'cursor-grabbing' : ''}`}
             style={{
-              top: vinyl.top,
-              left: vinyl.left,
-              right: (vinyl as any).right,
-              transform: `translate(${offset.x}px, ${offset.y}px)`,
+              left: `${vinyl.x}%`,
+              top: `${vinyl.y}%`,
+              transform: 'translate(-50%, -50%)',
               width: `${vinyl.size}px`,
               height: `${vinyl.size}px`,
-              opacity: dragMode ? Math.min(vinyl.opacity + 0.2, 0.8) : vinyl.opacity,
+              opacity: editMode ? Math.min(vinyl.opacity + 0.2, 0.9) : vinyl.opacity,
               animationDuration: `${vinyl.duration}s`,
               animationDirection: vinyl.reverse ? 'reverse' : 'normal',
               filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
-              pointerEvents: dragMode ? 'auto' : 'none',
+              pointerEvents: editMode ? 'auto' : 'none',
+              zIndex: isSelected ? 100 : isDragging ? 99 : 1,
             }}
-            onMouseDown={(e) => handleDragStart(id, e)}
+            onMouseDown={(e) => handleMouseDown(vinyl.id, e)}
           >
             <div className="pointer-events-none w-full h-full">
-              <VinylSVG detailed colorIndex={randomizedAccentColors[i]} />
+              <VinylSVG detailed={vinyl.detailed} colorIndex={vinyl.colorIndex} />
             </div>
-            {isDev && debugMode && (
-              <div className="absolute inset-0 border-2 border-red-500 rounded-full pointer-events-none">
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] text-red-600 font-mono bg-white/80 px-0.5 rounded">
-                  A{i}
-                </span>
+            {/* Selection indicator */}
+            {editMode && isSelected && (
+              <div className="absolute inset-0 border-4 border-blue-500 rounded-full pointer-events-none animate-pulse">
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] px-1 rounded whitespace-nowrap">
+                  {Math.round(vinyl.size)}px | {Math.round(vinyl.opacity * 100)}%
+                </div>
               </div>
             )}
-          </div>
-        );
-      })}
-      
-      {/* Medium vinyls */}
-      {mediumVinyls.map((vinyl, i) => {
-        const id = `medium-${i}`;
-        const offset = dragOffsets[id] || { x: 0, y: 0 };
-        return (
-          <div
-            key={id}
-            className={`absolute vinyl-disc ${dragMode ? 'cursor-grab active:cursor-grabbing' : 'animate-spin-slow'}`}
-            style={{
-              top: vinyl.top,
-              left: vinyl.left,
-              transform: `translate(${offset.x}px, ${offset.y}px)`,
-              width: `${vinyl.size}px`,
-              height: `${vinyl.size}px`,
-              opacity: dragMode ? Math.min(vinyl.opacity + 0.2, 0.85) : vinyl.opacity,
-              animationDuration: `${35 + (i % 6) * 8}s`,
-              animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
-              filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.12))',
-              pointerEvents: dragMode ? 'auto' : 'none',
-            }}
-            onMouseDown={(e) => handleDragStart(id, e)}
-          >
-            <div className="pointer-events-none w-full h-full">
-              <VinylSVG colorIndex={randomizedMediumColors[i]} />
-            </div>
-            {isDev && debugMode && (
-              <div className="absolute inset-0 border-2 border-orange-500 rounded-full pointer-events-none">
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[6px] text-orange-600 font-mono bg-white/80 px-0.5 rounded">
-                  M{i}
-                </span>
-              </div>
-            )}
-          </div>
-        );
-      })}
-      
-      {/* Small scattered vinyls */}
-      {smallVinyls.map((vinyl, i) => {
-        const id = `small-${i}`;
-        const offset = dragOffsets[id] || { x: 0, y: 0 };
-        return (
-          <div
-            key={id}
-            className={`absolute vinyl-disc ${dragMode ? 'cursor-grab active:cursor-grabbing' : 'animate-spin-slow'}`}
-            style={{
-              top: vinyl.top,
-              left: vinyl.left,
-              transform: `translate(${offset.x}px, ${offset.y}px)`,
-              width: `${vinyl.size * 4}px`,
-              height: `${vinyl.size * 4}px`,
-              opacity: dragMode ? Math.min(vinyl.opacity + 0.15, 0.9) : vinyl.opacity,
-              animationDuration: `${25 + (i % 5) * 8}s`,
-              animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
-              filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.1))',
-              pointerEvents: dragMode ? 'auto' : 'none',
-            }}
-            onMouseDown={(e) => handleDragStart(id, e)}
-          >
-            <div className="pointer-events-none w-full h-full">
-              <VinylSVG colorIndex={randomizedSmallColors[i]} />
-            </div>
-            {isDev && debugMode && (
-              <div className="absolute inset-0 border border-yellow-500 rounded-full pointer-events-none" />
+            {/* Hover indicator */}
+            {editMode && !isSelected && (
+              <div className="absolute inset-0 border-2 border-white/30 rounded-full pointer-events-none opacity-0 hover:opacity-100 transition-opacity" />
             )}
           </div>
         );
@@ -705,12 +559,8 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
       {/* CSS for animations */}
       <style>{`
         @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
         }
         .animate-spin-slow {
           animation: spin-slow 60s linear infinite;
