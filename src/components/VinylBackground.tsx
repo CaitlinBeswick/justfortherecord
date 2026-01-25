@@ -1,5 +1,105 @@
 import { memo, useMemo, useState, useEffect } from "react";
 
+type Rng = () => number;
+
+function hashStringToSeed(input: string) {
+  // Simple, stable 32-bit hash
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed: number): Rng {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6d2b79f5;
+    let x = t;
+    x = Math.imul(x ^ (x >>> 15), x | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function toPct(n01: number) {
+  return `${Math.round(n01 * 1000) / 10}%`; // 1dp
+}
+
+type AvoidZone = {
+  // Normalized [0..1]
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+};
+
+function isInsideZone(x: number, y: number, z: AvoidZone) {
+  return x >= z.x1 && x <= z.x2 && y >= z.y1 && y <= z.y2;
+}
+
+function generatePoissonPoints(opts: {
+  rng: Rng;
+  count: number;
+  minDist: number; // normalized distance
+  bounds?: { xMin: number; xMax: number; yMin: number; yMax: number };
+  avoid?: AvoidZone[];
+  maxTries?: number;
+}): Array<{ x: number; y: number }> {
+  const {
+    rng,
+    count,
+    minDist,
+    bounds = { xMin: 0, xMax: 1, yMin: 0, yMax: 1 },
+    avoid = [],
+    maxTries = 8000,
+  } = opts;
+
+  const pts: Array<{ x: number; y: number }> = [];
+  const minDist2 = minDist * minDist;
+
+  let tries = 0;
+  while (pts.length < count && tries < maxTries) {
+    tries++;
+    const x = bounds.xMin + rng() * (bounds.xMax - bounds.xMin);
+    const y = bounds.yMin + rng() * (bounds.yMax - bounds.yMin);
+
+    if (avoid.some((z) => isInsideZone(x, y, z))) continue;
+
+    let ok = true;
+    for (let i = 0; i < pts.length; i++) {
+      const dx = x - pts[i].x;
+      const dy = y - pts[i].y;
+      if (dx * dx + dy * dy < minDist2) {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) continue;
+    pts.push({ x, y });
+  }
+
+  // If we fail to reach count (small screens / tight constraints), relax spacing slightly.
+  if (pts.length < count) {
+    const relaxed = generatePoissonPoints({
+      rng,
+      count,
+      minDist: minDist * 0.85,
+      bounds,
+      avoid,
+      maxTries,
+    });
+    return relaxed;
+  }
+
+  return pts;
+}
+
 // Vintage label colors for variety
 const labelColors = [
   { fill: 'hsl(45, 50%, 70%)', stroke: 'hsl(45, 60%, 55%)' },   // Gold/cream (classic)
@@ -92,154 +192,125 @@ const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolea
 
 VinylSVG.displayName = 'VinylSVG';
 
-// SPARSE: ~35 total vinyls for home/profile pages
-// Distributed evenly across viewport, avoiding hero text overlap near center-left
-const sparseAccentVinyls = [
-  { top: '-5%', left: '80%', size: 160, opacity: 0.14, duration: 65 },
-  { top: '-8%', left: '45%', size: 180, opacity: 0.15, duration: 75, reverse: true },
-  { top: '5%', right: '-4%', size: 170, opacity: 0.13, duration: 70 },
-  { top: '8%', left: '65%', size: 140, opacity: 0.12, duration: 55, reverse: true },
-  { top: '15%', right: '5%', size: 150, opacity: 0.14, duration: 60 },
-  { top: '22%', left: '75%', size: 130, opacity: 0.11, duration: 50 },
-  { top: '28%', left: '55%', size: 160, opacity: 0.13, duration: 65, reverse: true },
-  { top: '35%', left: '-5%', size: 180, opacity: 0.14, duration: 72 },
-  { top: '40%', left: '85%', size: 120, opacity: 0.10, duration: 48 },
-  { top: '38%', right: '-4%', size: 170, opacity: 0.13, duration: 68, reverse: true },
-  { top: '52%', left: '10%', size: 150, opacity: 0.12, duration: 58 },
-  { top: '55%', left: '70%', size: 140, opacity: 0.11, duration: 52, reverse: true },
-  { top: '60%', left: '40%', size: 160, opacity: 0.13, duration: 62 },
-];
+type AccentVinyl = {
+  top: string;
+  left: string;
+  size: number;
+  opacity: number;
+  duration: number;
+  reverse?: boolean;
+};
 
-const sparseMediumVinyls = [
-  { top: '8%', left: '52%', size: 55, opacity: 0.22 },
-  { top: '20%', left: '88%', size: 60, opacity: 0.24 },
-  { top: '35%', left: '28%', size: 50, opacity: 0.20 },
-  { top: '48%', left: '72%', size: 65, opacity: 0.25 },
-  { top: '62%', left: '15%', size: 55, opacity: 0.22 },
-  { top: '75%', left: '58%', size: 58, opacity: 0.23 },
-];
+type SimpleVinyl = {
+  top: string;
+  left: string;
+  size: number;
+  opacity: number;
+};
 
-const sparseSmallVinyls = [
-  { top: '2%', left: '62%', size: 7, opacity: 0.28 },
-  { top: '12%', left: '42%', size: 8, opacity: 0.30 },
-  { top: '18%', left: '78%', size: 6, opacity: 0.26 },
-  { top: '28%', left: '92%', size: 8, opacity: 0.28 },
-  { top: '38%', left: '18%', size: 7, opacity: 0.26 },
-  { top: '45%', left: '62%', size: 9, opacity: 0.30 },
-  { top: '52%', left: '35%', size: 6, opacity: 0.24 },
-  { top: '58%', left: '82%', size: 8, opacity: 0.28 },
-  { top: '65%', left: '48%', size: 7, opacity: 0.26 },
-  { top: '72%', left: '8%', size: 6, opacity: 0.22 },
-  { top: '78%', left: '68%', size: 8, opacity: 0.24 },
-  { top: '84%', left: '25%', size: 7, opacity: 0.22 },
-  { top: '88%', left: '88%', size: 6, opacity: 0.20 },
-  { top: '92%', left: '42%', size: 8, opacity: 0.22 },
-  { top: '96%', left: '72%', size: 7, opacity: 0.18 },
-  { top: '98%', left: '15%', size: 6, opacity: 0.16 },
-];
+function makeAvoidZones(showHeroVinyl: boolean): AvoidZone[] {
+  if (!showHeroVinyl) return [];
 
-// DENSE: Full vinyl set for albums/artists pages - evenly distributed grid
-const denseAccentVinyls = [
-  // Row 1 (top)
-  { top: '-6%', left: '8%', size: 160, opacity: 0.15, duration: 65 },
-  { top: '-4%', left: '28%', size: 140, opacity: 0.13, duration: 55, reverse: true },
-  { top: '-8%', left: '48%', size: 180, opacity: 0.16, duration: 75 },
-  { top: '-5%', left: '68%', size: 150, opacity: 0.14, duration: 60, reverse: true },
-  { top: '-7%', left: '88%', size: 170, opacity: 0.15, duration: 70 },
-  // Row 2
-  { top: '8%', left: '-4%', size: 180, opacity: 0.15, duration: 72 },
-  { top: '6%', left: '18%', size: 120, opacity: 0.12, duration: 48, reverse: true },
-  { top: '10%', left: '38%', size: 160, opacity: 0.14, duration: 62 },
-  { top: '7%', left: '58%', size: 140, opacity: 0.13, duration: 55 },
-  { top: '9%', left: '78%', size: 170, opacity: 0.15, duration: 68, reverse: true },
-  { top: '5%', right: '-4%', size: 150, opacity: 0.14, duration: 58 },
-  // Row 3
-  { top: '20%', left: '5%', size: 150, opacity: 0.14, duration: 60 },
-  { top: '18%', left: '25%', size: 130, opacity: 0.12, duration: 52, reverse: true },
-  { top: '22%', left: '45%', size: 170, opacity: 0.15, duration: 68 },
-  { top: '19%', left: '65%', size: 110, opacity: 0.11, duration: 45 },
-  { top: '21%', left: '85%', size: 160, opacity: 0.14, duration: 64, reverse: true },
-  // Row 4
-  { top: '32%', left: '-3%', size: 170, opacity: 0.15, duration: 68 },
-  { top: '34%', left: '15%', size: 120, opacity: 0.12, duration: 50, reverse: true },
-  { top: '30%', left: '35%', size: 150, opacity: 0.14, duration: 60 },
-  { top: '36%', left: '55%', size: 180, opacity: 0.16, duration: 72 },
-  { top: '33%', left: '75%', size: 140, opacity: 0.13, duration: 56, reverse: true },
-  { top: '35%', right: '-5%', size: 160, opacity: 0.14, duration: 62 },
-  // Row 5
-  { top: '46%', left: '8%', size: 160, opacity: 0.14, duration: 64 },
-  { top: '44%', left: '28%', size: 130, opacity: 0.12, duration: 52, reverse: true },
-  { top: '48%', left: '48%', size: 170, opacity: 0.15, duration: 68 },
-  { top: '45%', left: '68%', size: 120, opacity: 0.11, duration: 48 },
-  { top: '47%', left: '88%', size: 150, opacity: 0.14, duration: 58, reverse: true },
-  // Row 6
-  { top: '58%', left: '-4%', size: 180, opacity: 0.15, duration: 70 },
-  { top: '60%', left: '18%', size: 140, opacity: 0.13, duration: 56, reverse: true },
-  { top: '56%', left: '38%', size: 160, opacity: 0.14, duration: 62 },
-  { top: '62%', left: '58%', size: 130, opacity: 0.12, duration: 52 },
-  { top: '59%', left: '78%', size: 170, opacity: 0.15, duration: 66, reverse: true },
-  { top: '57%', right: '-3%', size: 150, opacity: 0.14, duration: 58 },
-  // Row 7
-  { top: '72%', left: '5%', size: 150, opacity: 0.13, duration: 58 },
-  { top: '70%', left: '25%', size: 170, opacity: 0.14, duration: 66, reverse: true },
-  { top: '74%', left: '45%', size: 130, opacity: 0.12, duration: 52 },
-  { top: '71%', left: '65%', size: 160, opacity: 0.14, duration: 62 },
-  { top: '73%', left: '85%', size: 140, opacity: 0.13, duration: 54, reverse: true },
-  // Row 8 (bottom)
-  { top: '86%', left: '10%', size: 160, opacity: 0.12, duration: 60 },
-  { top: '88%', left: '32%', size: 140, opacity: 0.11, duration: 52, reverse: true },
-  { top: '84%', left: '52%', size: 170, opacity: 0.13, duration: 64 },
-  { top: '90%', left: '72%', size: 130, opacity: 0.11, duration: 50 },
-  { top: '87%', left: '92%', size: 150, opacity: 0.12, duration: 56, reverse: true },
-];
+  // Avoid the hero headline region (center-left) and the rolling vinyl rest position (~21% x).
+  return [
+    // Headline + CTA block
+    { x1: 0.03, y1: 0.08, x2: 0.46, y2: 0.52 },
+    // The rolling hero vinyl rest area
+    { x1: 0.12, y1: 0.30, x2: 0.34, y2: 0.70 },
+  ];
+}
 
-const denseMediumVinyls = [
-  // Evenly distributed across 8 vertical zones and 5 horizontal zones
-  { top: '3%', left: '12%', size: 55, opacity: 0.22 }, { top: '5%', left: '42%', size: 62, opacity: 0.24 },
-  { top: '2%', left: '72%', size: 48, opacity: 0.20 }, { top: '6%', left: '92%', size: 58, opacity: 0.23 },
-  { top: '15%', left: '22%', size: 65, opacity: 0.25 }, { top: '12%', left: '55%', size: 52, opacity: 0.22 },
-  { top: '18%', left: '82%', size: 60, opacity: 0.24 }, { top: '14%', left: '5%', size: 55, opacity: 0.22 },
-  { top: '28%', left: '35%', size: 58, opacity: 0.23 }, { top: '25%', left: '65%', size: 68, opacity: 0.25 },
-  { top: '30%', left: '95%', size: 50, opacity: 0.21 }, { top: '26%', left: '15%', size: 62, opacity: 0.24 },
-  { top: '42%', left: '8%', size: 55, opacity: 0.22 }, { top: '38%', left: '45%', size: 70, opacity: 0.26 },
-  { top: '44%', left: '75%', size: 52, opacity: 0.22 }, { top: '40%', left: '28%', size: 60, opacity: 0.24 },
-  { top: '55%', left: '18%', size: 65, opacity: 0.25 }, { top: '52%', left: '52%', size: 55, opacity: 0.22 },
-  { top: '58%', left: '85%', size: 62, opacity: 0.24 }, { top: '54%', left: '38%', size: 48, opacity: 0.20 },
-  { top: '68%', left: '5%', size: 58, opacity: 0.23 }, { top: '65%', left: '62%', size: 68, opacity: 0.25 },
-  { top: '70%', left: '32%', size: 52, opacity: 0.21 }, { top: '66%', left: '92%', size: 60, opacity: 0.24 },
-  { top: '82%', left: '22%', size: 55, opacity: 0.21 }, { top: '78%', left: '48%', size: 65, opacity: 0.23 },
-  { top: '85%', left: '78%', size: 50, opacity: 0.19 }, { top: '80%', left: '12%', size: 58, opacity: 0.22 },
-  { top: '92%', left: '38%', size: 62, opacity: 0.20 }, { top: '88%', left: '68%', size: 55, opacity: 0.19 },
-  { top: '95%', left: '88%', size: 48, opacity: 0.17 }, { top: '90%', left: '5%', size: 52, opacity: 0.18 },
-];
+function buildBackgroundLayout(params: {
+  seedKey: string;
+  density: "sparse" | "dense";
+  showHeroVinyl: boolean;
+}) {
+  const { seedKey, density, showHeroVinyl } = params;
+  const rng = mulberry32(hashStringToSeed(seedKey));
+  const avoid = makeAvoidZones(showHeroVinyl);
 
-const denseSmallVinyls = [
-  // Grid pattern: every ~8% vertical, staggered horizontally
-  { top: '2%', left: '18%', size: 7, opacity: 0.28 }, { top: '4%', left: '42%', size: 8, opacity: 0.30 },
-  { top: '1%', left: '65%', size: 6, opacity: 0.26 }, { top: '3%', left: '88%', size: 7, opacity: 0.28 },
-  { top: '10%', left: '8%', size: 8, opacity: 0.30 }, { top: '12%', left: '32%', size: 6, opacity: 0.26 },
-  { top: '9%', left: '55%', size: 9, opacity: 0.32 }, { top: '11%', left: '78%', size: 7, opacity: 0.28 },
-  { top: '18%', left: '22%', size: 8, opacity: 0.30 }, { top: '20%', left: '48%', size: 6, opacity: 0.26 },
-  { top: '17%', left: '72%', size: 9, opacity: 0.32 }, { top: '19%', left: '95%', size: 7, opacity: 0.28 },
-  { top: '26%', left: '5%', size: 8, opacity: 0.30 }, { top: '28%', left: '38%', size: 6, opacity: 0.26 },
-  { top: '25%', left: '62%', size: 9, opacity: 0.32 }, { top: '27%', left: '85%', size: 7, opacity: 0.28 },
-  { top: '34%', left: '15%', size: 8, opacity: 0.30 }, { top: '36%', left: '52%', size: 6, opacity: 0.26 },
-  { top: '33%', left: '75%', size: 9, opacity: 0.32 }, { top: '35%', left: '28%', size: 7, opacity: 0.28 },
-  { top: '42%', left: '8%', size: 8, opacity: 0.30 }, { top: '44%', left: '42%', size: 6, opacity: 0.26 },
-  { top: '41%', left: '68%', size: 9, opacity: 0.32 }, { top: '43%', left: '92%', size: 7, opacity: 0.28 },
-  { top: '50%', left: '22%', size: 8, opacity: 0.30 }, { top: '52%', left: '55%', size: 6, opacity: 0.26 },
-  { top: '49%', left: '82%', size: 9, opacity: 0.32 }, { top: '51%', left: '12%', size: 7, opacity: 0.28 },
-  { top: '58%', left: '35%', size: 8, opacity: 0.28 }, { top: '60%', left: '65%', size: 6, opacity: 0.24 },
-  { top: '57%', left: '88%', size: 9, opacity: 0.30 }, { top: '59%', left: '5%', size: 7, opacity: 0.26 },
-  { top: '66%', left: '18%', size: 8, opacity: 0.26 }, { top: '68%', left: '48%', size: 6, opacity: 0.22 },
-  { top: '65%', left: '75%', size: 9, opacity: 0.28 }, { top: '67%', left: '32%', size: 7, opacity: 0.24 },
-  { top: '74%', left: '8%', size: 8, opacity: 0.24 }, { top: '76%', left: '58%', size: 6, opacity: 0.20 },
-  { top: '73%', left: '85%', size: 9, opacity: 0.26 }, { top: '75%', left: '42%', size: 7, opacity: 0.22 },
-  { top: '82%', left: '22%', size: 8, opacity: 0.22 }, { top: '84%', left: '68%', size: 6, opacity: 0.18 },
-  { top: '81%', left: '92%', size: 9, opacity: 0.24 }, { top: '83%', left: '12%', size: 7, opacity: 0.20 },
-  { top: '90%', left: '35%', size: 8, opacity: 0.18 }, { top: '92%', left: '75%', size: 6, opacity: 0.14 },
-  { top: '89%', left: '55%', size: 9, opacity: 0.20 }, { top: '91%', left: '5%', size: 7, opacity: 0.16 },
-];
+  const accentCount = density === "dense" ? 43 : 13;
+  const mediumCount = density === "dense" ? 32 : 6;
+  const smallCount = density === "dense" ? 44 : 16;
+
+  // Keep some accents allowed to drift slightly outside frame to feel less grid-like.
+  const accentPts = generatePoissonPoints({
+    rng,
+    count: accentCount,
+    minDist: density === "dense" ? 0.14 : 0.22,
+    bounds: { xMin: -0.04, xMax: 1.04, yMin: -0.08, yMax: 0.95 },
+    avoid,
+  });
+
+  const mediumPts = generatePoissonPoints({
+    rng,
+    count: mediumCount,
+    minDist: density === "dense" ? 0.10 : 0.18,
+    bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.02, yMax: 0.92 },
+    avoid,
+  });
+
+  const smallPts = generatePoissonPoints({
+    rng,
+    count: smallCount,
+    minDist: density === "dense" ? 0.055 : 0.09,
+    bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.01, yMax: 0.98 },
+    avoid,
+  });
+
+  const accentVinyls: AccentVinyl[] = accentPts.map((p, i) => {
+    const sizeMin = density === "dense" ? 110 : 120;
+    const sizeMax = density === "dense" ? 185 : 185;
+    const size = Math.round(sizeMin + rng() * (sizeMax - sizeMin));
+
+    const opacity = density === "dense" ? 0.11 + rng() * 0.05 : 0.10 + rng() * 0.05;
+    const duration = Math.round(48 + rng() * 28);
+
+    // Slightly jitter Y to avoid visible "rows".
+    const y = clamp(p.y + (rng() - 0.5) * 0.03, -0.1, 0.98);
+    const x = clamp(p.x + (rng() - 0.5) * 0.03, -0.06, 1.06);
+
+    return {
+      top: toPct(y),
+      left: toPct(x),
+      size,
+      opacity: Math.round(opacity * 100) / 100,
+      duration,
+      reverse: i % 2 === 1,
+    };
+  });
+
+  const mediumVinyls: SimpleVinyl[] = mediumPts.map((p, i) => {
+    const sizeMin = density === "dense" ? 48 : 50;
+    const sizeMax = density === "dense" ? 72 : 68;
+    const size = Math.round(sizeMin + rng() * (sizeMax - sizeMin));
+    const opacity = density === "dense" ? 0.19 + rng() * 0.07 : 0.20 + rng() * 0.06;
+    // Micro jitter to break alignment
+    const y = clamp(p.y + (rng() - 0.5) * 0.02, 0, 0.98);
+    const x = clamp(p.x + (rng() - 0.5) * 0.02, 0, 1);
+    return {
+      top: toPct(y),
+      left: toPct(x),
+      size,
+      opacity: Math.round(opacity * 100) / 100,
+    };
+  });
+
+  const smallVinyls: SimpleVinyl[] = smallPts.map((p) => {
+    const size = Math.round(6 + rng() * 3); // 6..9 (matches previous)
+    const opacity = density === "dense" ? 0.14 + rng() * 0.18 : 0.16 + rng() * 0.16;
+    const y = clamp(p.y + (rng() - 0.5) * 0.015, 0, 1);
+    const x = clamp(p.x + (rng() - 0.5) * 0.015, 0, 1);
+    return {
+      top: toPct(y),
+      left: toPct(x),
+      size,
+      opacity: Math.round(opacity * 100) / 100,
+    };
+  });
+
+  return { accentVinyls, mediumVinyls, smallVinyls };
+}
 
 interface VinylBackgroundProps {
   className?: string;
@@ -258,10 +329,11 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Select vinyl arrays based on density
-  const accentVinyls = density === 'dense' ? denseAccentVinyls : sparseAccentVinyls;
-  const mediumVinyls = density === 'dense' ? denseMediumVinyls : sparseMediumVinyls;
-  const smallVinyls = density === 'dense' ? denseSmallVinyls : sparseSmallVinyls;
+  const { accentVinyls, mediumVinyls, smallVinyls } = useMemo(() => {
+    // Deterministic, no-clump layout (stable between renders for a given config)
+    const seedKey = `vinyl:${density}:${showHeroVinyl}:${fadeHeight}`;
+    return buildBackgroundLayout({ seedKey, density, showHeroVinyl });
+  }, [density, fadeHeight, showHeroVinyl]);
 
   // Randomize color indices on mount
   const randomizedAccentColors = useMemo(() => {
