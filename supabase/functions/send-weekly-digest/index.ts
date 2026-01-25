@@ -7,6 +7,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// HTML entity escape function to prevent XSS
+function escapeHtml(text: string | null | undefined): string {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 interface DigestData {
   newReleases: Array<{
     artist_name: string;
@@ -194,7 +205,7 @@ serve(async (req) => {
         }
 
         const userEmail = authUser.user.email;
-        const userName = digestUser.display_name || digestUser.username || 'there';
+        const userName = escapeHtml(digestUser.display_name || digestUser.username || 'there');
 
         // Get new releases from followed artists in the past week
         const { data: follows } = await supabase
@@ -365,7 +376,7 @@ serve(async (req) => {
         const mutedColor = '#6b7280';
         const borderColor = '#e5e2de';
 
-        // User's weekly summary section
+        // User's weekly summary section - escape user-generated content
         let userSummaryHtml = '';
         if (userActivity.albumsLogged > 0 || userActivity.artistsRated > 0) {
           userSummaryHtml = `
@@ -386,8 +397,8 @@ serve(async (req) => {
               ${userActivity.topAlbum ? `
                 <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid ${borderColor};">
                   <p style="font-size: 12px; color: ${mutedColor}; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">Top rated this week</p>
-                  <p style="font-size: 16px; color: ${textColor}; margin: 0; font-weight: 500;">${userActivity.topAlbum.title}</p>
-                  <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">by ${userActivity.topAlbum.artist}${userActivity.topAlbum.rating ? ` · ${userActivity.topAlbum.rating} stars` : ''}</p>
+                  <p style="font-size: 16px; color: ${textColor}; margin: 0; font-weight: 500;">${escapeHtml(userActivity.topAlbum.title)}</p>
+                  <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">by ${escapeHtml(userActivity.topAlbum.artist)}${userActivity.topAlbum.rating ? ` · ${userActivity.topAlbum.rating} stars` : ''}</p>
                 </div>
               ` : ''}
             </div>
@@ -399,11 +410,11 @@ serve(async (req) => {
           const releasesItems = newReleases.slice(0, 5).map(r => `
             <tr>
               <td style="padding: 12px 0; border-bottom: 1px solid ${borderColor};">
-                <a href="${baseUrl}/album/${r.release_group_id}" style="color: ${textColor}; text-decoration: none; font-weight: 500;">
-                  ${r.album_title}
+                <a href="${baseUrl}/album/${encodeURIComponent(r.release_group_id)}" style="color: ${textColor}; text-decoration: none; font-weight: 500;">
+                  ${escapeHtml(r.album_title)}
                 </a>
                 <br>
-                <span style="color: ${mutedColor}; font-size: 14px;">by ${r.artist_name}</span>
+                <span style="color: ${mutedColor}; font-size: 14px;">by ${escapeHtml(r.artist_name)}</span>
               </td>
             </tr>
           `).join('');
@@ -426,12 +437,12 @@ serve(async (req) => {
           const activityItems = friendActivity.slice(0, 5).map(a => `
             <tr>
               <td style="padding: 12px 0; border-bottom: 1px solid ${borderColor};">
-                <span style="color: ${primaryColor}; font-weight: 500;">${a.display_name}</span>
+                <span style="color: ${primaryColor}; font-weight: 500;">${escapeHtml(a.display_name)}</span>
                 <span style="color: ${mutedColor};"> listened to </span>
-                <a href="${baseUrl}/album/${a.release_group_id}" style="color: ${textColor}; text-decoration: none; font-weight: 500;">
-                  ${a.album_title}
+                <a href="${baseUrl}/album/${encodeURIComponent(a.release_group_id)}" style="color: ${textColor}; text-decoration: none; font-weight: 500;">
+                  ${escapeHtml(a.album_title)}
                 </a>
-                <span style="color: ${mutedColor};"> by ${a.artist_name}</span>
+                <span style="color: ${mutedColor};"> by ${escapeHtml(a.artist_name)}</span>
                 ${a.rating ? `<span style="color: ${primaryColor}; margin-left: 8px;">★ ${a.rating}</span>` : ''}
               </td>
             </tr>
@@ -450,17 +461,17 @@ serve(async (req) => {
           `;
         }
 
-        // Trending releases section
+        // Trending releases section - escape user-generated content
         let trendingHtml = '';
         if (trendingReleases.length > 0) {
           const trendingItems = trendingReleases.map(t => `
             <tr>
               <td style="padding: 12px 0; border-bottom: 1px solid ${borderColor};">
-                <a href="${baseUrl}/album/${t.release_group_id}" style="color: ${textColor}; text-decoration: none; font-weight: 500;">
-                  ${t.album_title}
+                <a href="${baseUrl}/album/${encodeURIComponent(t.release_group_id)}" style="color: ${textColor}; text-decoration: none; font-weight: 500;">
+                  ${escapeHtml(t.album_title)}
                 </a>
                 <br>
-                <span style="color: ${mutedColor}; font-size: 14px;">by ${t.artist_name}</span>
+                <span style="color: ${mutedColor}; font-size: 14px;">by ${escapeHtml(t.artist_name)}</span>
                 <span style="color: ${mutedColor}; font-size: 13px; margin-left: 8px;">(${t.listen_count} listens)</span>
               </td>
             </tr>
@@ -478,16 +489,16 @@ serve(async (req) => {
           `;
         }
 
-        // App updates section
+        // App updates section - escape admin-generated content (good practice)
         let updatesHtml = '';
         if (appUpdates.length > 0) {
           const updateItems = appUpdates.map(u => `
             <div style="padding: 12px 0; border-bottom: 1px solid ${borderColor};">
               <p style="color: ${textColor}; font-weight: 500; margin: 0 0 4px 0;">
-                ${u.title}
-                ${u.version ? `<span style="color: ${mutedColor}; font-size: 12px; margin-left: 8px;">v${u.version}</span>` : ''}
+                ${escapeHtml(u.title)}
+                ${u.version ? `<span style="color: ${mutedColor}; font-size: 12px; margin-left: 8px;">v${escapeHtml(u.version)}</span>` : ''}
               </p>
-              <p style="color: ${mutedColor}; font-size: 14px; margin: 0;">${u.description}</p>
+              <p style="color: ${mutedColor}; font-size: 14px; margin: 0;">${escapeHtml(u.description)}</p>
             </div>
           `).join('');
 
@@ -501,15 +512,15 @@ serve(async (req) => {
           `;
         }
 
-        // Custom note section from template settings
+        // Custom note section from template settings - escape admin content
         const customNoteHtml = templateSettings.customNote ? `
           <div style="margin-bottom: 32px; background-color: ${primaryColor}10; border: 1px solid ${primaryColor}30; border-radius: 12px; padding: 24px;">
-            <p style="color: ${textColor}; font-size: 15px; margin: 0; line-height: 1.6;">${templateSettings.customNote}</p>
+            <p style="color: ${textColor}; font-size: 15px; margin: 0; line-height: 1.6;">${escapeHtml(templateSettings.customNote)}</p>
           </div>
         ` : '';
         
-        // Personalize greeting from template settings
-        const personalizedGreeting = templateSettings.greeting.replace('{userName}', userName);
+        // Personalize greeting from template settings - userName is already escaped
+        const personalizedGreeting = escapeHtml(templateSettings.greeting).replace('{userName}', userName);
 
         const emailHtml = `
           <!DOCTYPE html>
@@ -537,7 +548,7 @@ serve(async (req) => {
               
               <div style="text-align: center; margin: 32px 0;">
                 <a href="${baseUrl}" style="display: inline-block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px;">
-                  ${templateSettings.ctaText}
+                  ${escapeHtml(templateSettings.ctaText)}
                 </a>
               </div>
               
