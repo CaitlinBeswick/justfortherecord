@@ -42,7 +42,7 @@ const Index = () => {
       <section className="relative pt-16 overflow-hidden">
         <div className="gradient-hero absolute inset-0" />
         
-        <VinylBackground density="responsive" pageId="home" />
+        <VinylBackground density="responsive-light" pageId="home" />
         
         {/* Vinyl outline - the target resting position */}
         <HeroVinylOutline />

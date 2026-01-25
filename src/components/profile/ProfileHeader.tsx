@@ -132,7 +132,7 @@ export const ProfileHeader = () => {
           goal={profile.yearly_listen_goal} 
         />
       )}
-      <VinylBackground fadeHeight="120%" />
+      <VinylBackground fadeHeight="120%" density="responsive-light" pageId="profile" />
       <div className="container mx-auto px-4 py-8 md:py-12 relative">
         <motion.div initial={{
         opacity: 0,
