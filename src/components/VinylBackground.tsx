@@ -222,23 +222,23 @@ function makeAvoidZones(showHeroVinyl: boolean): AvoidZone[] {
 
 function buildBackgroundLayout(params: {
   seedKey: string;
-  density: "sparse" | "dense" | "light";
+  density: "sparse" | "dense" | "light" | "moderate";
   showHeroVinyl: boolean;
 }) {
   const { seedKey, density, showHeroVinyl } = params;
   const rng = mulberry32(hashStringToSeed(seedKey));
   const avoid = makeAvoidZones(showHeroVinyl);
 
-  // Light density for search page - fewer vinyls but not empty
-  const accentCount = density === "dense" ? 43 : density === "light" ? 8 : 13;
-  const mediumCount = density === "dense" ? 32 : density === "light" ? 5 : 6;
-  const smallCount = density === "dense" ? 44 : density === "light" ? 10 : 16;
+  // Density settings: dense > moderate > sparse > light
+  const accentCount = density === "dense" ? 43 : density === "moderate" ? 18 : density === "light" ? 8 : 13;
+  const mediumCount = density === "dense" ? 32 : density === "moderate" ? 12 : density === "light" ? 5 : 6;
+  const smallCount = density === "dense" ? 44 : density === "moderate" ? 20 : density === "light" ? 10 : 16;
 
   // Keep some accents allowed to drift slightly outside frame to feel less grid-like.
   const accentPts = generatePoissonPoints({
     rng,
     count: accentCount,
-    minDist: density === "dense" ? 0.14 : density === "light" ? 0.28 : 0.22,
+    minDist: density === "dense" ? 0.14 : density === "moderate" ? 0.18 : density === "light" ? 0.28 : 0.22,
     bounds: { xMin: -0.04, xMax: 1.04, yMin: -0.08, yMax: 0.95 },
     avoid,
   });
@@ -246,7 +246,7 @@ function buildBackgroundLayout(params: {
   const mediumPts = generatePoissonPoints({
     rng,
     count: mediumCount,
-    minDist: density === "dense" ? 0.10 : density === "light" ? 0.22 : 0.18,
+    minDist: density === "dense" ? 0.10 : density === "moderate" ? 0.14 : density === "light" ? 0.22 : 0.18,
     bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.02, yMax: 0.92 },
     avoid,
   });
@@ -254,18 +254,18 @@ function buildBackgroundLayout(params: {
   const smallPts = generatePoissonPoints({
     rng,
     count: smallCount,
-    minDist: density === "dense" ? 0.055 : density === "light" ? 0.12 : 0.09,
+    minDist: density === "dense" ? 0.055 : density === "moderate" ? 0.08 : density === "light" ? 0.12 : 0.09,
     bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.01, yMax: 0.98 },
     avoid,
   });
 
   const accentVinyls: AccentVinyl[] = accentPts.map((p, i) => {
-    const sizeMin = density === "dense" ? 110 : density === "light" ? 130 : 120;
+    const sizeMin = density === "dense" ? 110 : density === "moderate" ? 115 : density === "light" ? 130 : 120;
     const sizeMax = density === "dense" ? 185 : 185;
     const size = Math.round(sizeMin + rng() * (sizeMax - sizeMin));
 
     // Higher opacity for better visibility (matching debug mode colors)
-    const opacity = density === "dense" ? 0.35 + rng() * 0.15 : density === "light" ? 0.40 + rng() * 0.15 : 0.40 + rng() * 0.12;
+    const opacity = density === "dense" ? 0.35 + rng() * 0.15 : density === "moderate" ? 0.38 + rng() * 0.14 : density === "light" ? 0.40 + rng() * 0.15 : 0.40 + rng() * 0.12;
     const duration = Math.round(48 + rng() * 28);
 
     // Slightly jitter Y to avoid visible "rows".
@@ -283,11 +283,11 @@ function buildBackgroundLayout(params: {
   });
 
   const mediumVinyls: SimpleVinyl[] = mediumPts.map((p, i) => {
-    const sizeMin = density === "dense" ? 48 : density === "light" ? 55 : 50;
+    const sizeMin = density === "dense" ? 48 : density === "moderate" ? 52 : density === "light" ? 55 : 50;
     const sizeMax = density === "dense" ? 72 : 68;
     const size = Math.round(sizeMin + rng() * (sizeMax - sizeMin));
     // Higher opacity for better visibility
-    const opacity = density === "dense" ? 0.45 + rng() * 0.15 : density === "light" ? 0.50 + rng() * 0.12 : 0.50 + rng() * 0.10;
+    const opacity = density === "dense" ? 0.45 + rng() * 0.15 : density === "moderate" ? 0.48 + rng() * 0.12 : density === "light" ? 0.50 + rng() * 0.12 : 0.50 + rng() * 0.10;
     // Micro jitter to break alignment
     const y = clamp(p.y + (rng() - 0.5) * 0.02, 0, 0.98);
     const x = clamp(p.x + (rng() - 0.5) * 0.02, 0, 1);
@@ -302,7 +302,7 @@ function buildBackgroundLayout(params: {
   const smallVinyls: SimpleVinyl[] = smallPts.map((p) => {
     const size = Math.round(6 + rng() * 3); // 6..9 (matches previous)
     // Higher opacity for better visibility
-    const opacity = density === "dense" ? 0.50 + rng() * 0.20 : density === "light" ? 0.55 + rng() * 0.18 : 0.55 + rng() * 0.15;
+    const opacity = density === "dense" ? 0.50 + rng() * 0.20 : density === "moderate" ? 0.52 + rng() * 0.18 : density === "light" ? 0.55 + rng() * 0.18 : 0.55 + rng() * 0.15;
     const y = clamp(p.y + (rng() - 0.5) * 0.015, 0, 1);
     const x = clamp(p.x + (rng() - 0.5) * 0.015, 0, 1);
     return {
@@ -319,41 +319,51 @@ function buildBackgroundLayout(params: {
 interface VinylBackgroundProps {
   className?: string;
   fadeHeight?: string;
-  density?: 'sparse' | 'dense' | 'light';
+  density?: 'sparse' | 'dense' | 'light' | 'moderate';
   showHeroVinyl?: boolean; // Responsive vinyl that aligns with RollingVinylLogo
+  pageId?: string; // Unique identifier for per-page offset storage
 }
 
 // Dev-only debug mode (toggle via keyboard shortcut Ctrl+Shift+V)
 const isDev = import.meta.env.DEV;
 
-// LocalStorage key for persisting drag offsets during dev
-const DRAG_OFFSETS_KEY = 'vinyl-drag-offsets';
+// LocalStorage key prefix for persisting drag offsets during dev
+const DRAG_OFFSETS_PREFIX = 'vinyl-drag-offsets';
 
-function loadDragOffsets(): Record<string, { x: number; y: number }> {
+function getStorageKey(pageId?: string): string {
+  return pageId ? `${DRAG_OFFSETS_PREFIX}-${pageId}` : DRAG_OFFSETS_PREFIX;
+}
+
+function loadDragOffsets(pageId?: string): Record<string, { x: number; y: number }> {
   if (!isDev) return {};
   try {
-    const stored = localStorage.getItem(DRAG_OFFSETS_KEY);
+    const stored = localStorage.getItem(getStorageKey(pageId));
     return stored ? JSON.parse(stored) : {};
   } catch {
     return {};
   }
 }
 
-function saveDragOffsets(offsets: Record<string, { x: number; y: number }>) {
+function saveDragOffsets(offsets: Record<string, { x: number; y: number }>, pageId?: string) {
   if (!isDev) return;
   try {
-    localStorage.setItem(DRAG_OFFSETS_KEY, JSON.stringify(offsets));
+    localStorage.setItem(getStorageKey(pageId), JSON.stringify(offsets));
   } catch {
     // Ignore storage errors
   }
 }
 
-export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false }: VinylBackgroundProps) {
+function clearDragOffsets(pageId?: string) {
+  if (!isDev) return;
+  localStorage.removeItem(getStorageKey(pageId));
+}
+
+export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false, pageId }: VinylBackgroundProps) {
   // Responsive hero vinyl size (matches RollingVinylLogo)
   const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
   const [debugMode, setDebugMode] = useState(false);
   const [dragMode, setDragMode] = useState(false);
-  const [dragOffsets, setDragOffsets] = useState<Record<string, { x: number; y: number }>>(loadDragOffsets);
+  const [dragOffsets, setDragOffsets] = useState<Record<string, { x: number; y: number }>>(() => loadDragOffsets(pageId));
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   
@@ -363,12 +373,17 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Persist drag offsets to localStorage
+  // Reload offsets when pageId changes
+  useEffect(() => {
+    setDragOffsets(loadDragOffsets(pageId));
+  }, [pageId]);
+
+  // Persist drag offsets to localStorage (per-page)
   useEffect(() => {
     if (isDev && Object.keys(dragOffsets).length > 0) {
-      saveDragOffsets(dragOffsets);
+      saveDragOffsets(dragOffsets, pageId);
     }
-  }, [dragOffsets]);
+  }, [dragOffsets, pageId]);
 
   // Dev-only: toggle debug overlay with Ctrl+Shift+V, drag mode with Ctrl+Shift+D, clear offsets with Ctrl+Shift+C
   useEffect(() => {
@@ -383,9 +398,9 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
         setDragMode((d) => {
           const newVal = !d;
           if (newVal) {
-            console.log('[VinylBackground] Drag mode ON - drag vinyls to reposition, Ctrl+Shift+C to clear offsets');
+            console.log(`[VinylBackground] Drag mode ON (page: ${pageId || 'global'}) - drag vinyls to reposition, Ctrl+Shift+C to clear offsets`);
           } else {
-            console.log('[VinylBackground] Drag mode OFF - Final offsets:', JSON.stringify(dragOffsets, null, 2));
+            console.log(`[VinylBackground] Drag mode OFF (page: ${pageId || 'global'}) - Final offsets:`, JSON.stringify(dragOffsets, null, 2));
           }
           return newVal;
         });
@@ -393,13 +408,13 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') {
         e.preventDefault();
         setDragOffsets({});
-        localStorage.removeItem(DRAG_OFFSETS_KEY);
-        console.log('[VinylBackground] Cleared all drag offsets');
+        clearDragOffsets(pageId);
+        console.log(`[VinylBackground] Cleared drag offsets for page: ${pageId || 'global'}`);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [dragOffsets]);
+  }, [dragOffsets, pageId]);
 
   // Mouse handlers for drag mode
   const handleDragStart = useCallback((id: string, e: React.MouseEvent) => {
