@@ -491,12 +491,15 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
             opacity: (debugMode || dragMode) ? 0.4 : 0.15,
             animationDuration: '70s',
             filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
+            pointerEvents: dragMode ? 'auto' : 'none',
           }}
           onMouseDown={(e) => handleDragStart('hero', e)}
         >
-          <VinylSVG detailed colorIndex={4} />
+          <div className="pointer-events-none w-full h-full">
+            <VinylSVG detailed colorIndex={4} />
+          </div>
           {isDev && debugMode && (
-            <div className="absolute inset-0 border-2 border-green-500 rounded-full" />
+            <div className="absolute inset-0 border-2 border-green-500 rounded-full pointer-events-none" />
           )}
         </div>
       )}
@@ -520,12 +523,15 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
               animationDuration: `${vinyl.duration}s`,
               animationDirection: vinyl.reverse ? 'reverse' : 'normal',
               filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
+              pointerEvents: dragMode ? 'auto' : 'none',
             }}
             onMouseDown={(e) => handleDragStart(id, e)}
           >
-            <VinylSVG detailed colorIndex={randomizedAccentColors[i]} />
+            <div className="pointer-events-none w-full h-full">
+              <VinylSVG detailed colorIndex={randomizedAccentColors[i]} />
+            </div>
             {isDev && debugMode && (
-              <div className="absolute inset-0 border-2 border-red-500 rounded-full">
+              <div className="absolute inset-0 border-2 border-red-500 rounded-full pointer-events-none">
                 <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] text-red-600 font-mono bg-white/80 px-0.5 rounded">
                   A{i}
                 </span>
@@ -553,12 +559,15 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
               animationDuration: `${35 + (i % 6) * 8}s`,
               animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
               filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.12))',
+              pointerEvents: dragMode ? 'auto' : 'none',
             }}
             onMouseDown={(e) => handleDragStart(id, e)}
           >
-            <VinylSVG colorIndex={randomizedMediumColors[i]} />
+            <div className="pointer-events-none w-full h-full">
+              <VinylSVG colorIndex={randomizedMediumColors[i]} />
+            </div>
             {isDev && debugMode && (
-              <div className="absolute inset-0 border-2 border-orange-500 rounded-full">
+              <div className="absolute inset-0 border-2 border-orange-500 rounded-full pointer-events-none">
                 <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[6px] text-orange-600 font-mono bg-white/80 px-0.5 rounded">
                   M{i}
                 </span>
@@ -586,12 +595,15 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
               animationDuration: `${25 + (i % 5) * 8}s`,
               animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
               filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.1))',
+              pointerEvents: dragMode ? 'auto' : 'none',
             }}
             onMouseDown={(e) => handleDragStart(id, e)}
           >
-            <VinylSVG colorIndex={randomizedSmallColors[i]} />
+            <div className="pointer-events-none w-full h-full">
+              <VinylSVG colorIndex={randomizedSmallColors[i]} />
+            </div>
             {isDev && debugMode && (
-              <div className="absolute inset-0 border border-yellow-500 rounded-full" />
+              <div className="absolute inset-0 border border-yellow-500 rounded-full pointer-events-none" />
             )}
           </div>
         );
