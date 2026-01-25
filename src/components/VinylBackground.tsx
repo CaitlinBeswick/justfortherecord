@@ -11,6 +11,9 @@ type PositionedVinyl = {
   reverse?: boolean;
 };
 
+type VinylKind = "accent" | "medium" | "small";
+type ResolvableVinyl = PositionedVinyl & { kind: VinylKind; idx: number };
+
 function parsePercent(input?: string) {
   if (!input) return 0;
   const m = /^(-?[0-9.]+)%$/.exec(input.trim());
@@ -106,6 +109,82 @@ function resolveVinylClumps(
       right: undefined,
     } as PositionedVinyl;
   });
+}
+
+function resolveAndCullVinyls(
+  vinyls: ResolvableVinyl[],
+  dims: { w: number; h: number },
+  opts: { paddingPx: number; iterations: number; boundsPct: number; maxRemovals?: number }
+) {
+  const maxRemovals = opts.maxRemovals ?? 40;
+
+  const kindWeight: Record<VinylKind, number> = {
+    accent: 3,
+    medium: 2,
+    small: 1,
+  };
+
+  const toPxCenters = (list: PositionedVinyl[]) => {
+    const w = Math.max(1, dims.w);
+    const h = Math.max(1, dims.h);
+    return list.map((v) => {
+      const topPct = parsePercent(v.top);
+      const leftPct = v.left ? parsePercent(v.left) : undefined;
+      const rightPct = v.right ? parsePercent(v.right) : undefined;
+      const r = v.size / 2;
+      const y = (topPct / 100) * h + r;
+
+      let x = w / 2;
+      if (typeof leftPct === "number") x = (leftPct / 100) * w + r;
+      else if (typeof rightPct === "number") x = w - (rightPct / 100) * w - r;
+
+      return { x, y, r, v };
+    });
+  };
+
+  const pickRemoval = (a: ResolvableVinyl, b: ResolvableVinyl) => {
+    // Prefer keeping higher-importance kinds; otherwise keep larger vinyl; otherwise keep higher opacity.
+    const wa = kindWeight[a.kind];
+    const wb = kindWeight[b.kind];
+    if (wa !== wb) return wa < wb ? a : b;
+    if (a.size !== b.size) return a.size < b.size ? a : b;
+    if (a.opacity !== b.opacity) return a.opacity < b.opacity ? a : b;
+    // deterministic tie-breaker
+    return a.idx > b.idx ? a : b;
+  };
+
+  let working = vinyls.slice();
+  let removals = 0;
+
+  while (removals <= maxRemovals) {
+    const resolved = resolveVinylClumps(working, dims, opts) as ResolvableVinyl[];
+    const pts = toPxCenters(resolved);
+
+    let overlapPair: { a: ResolvableVinyl; b: ResolvableVinyl } | null = null;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const A = pts[i];
+        const B = pts[j];
+        const d = Math.hypot(B.x - A.x, B.y - A.y);
+        const minD = A.r + B.r + opts.paddingPx;
+        if (d < minD) {
+          overlapPair = { a: A.v as ResolvableVinyl, b: B.v as ResolvableVinyl };
+          break;
+        }
+      }
+      if (overlapPair) break;
+    }
+
+    if (!overlapPair) return resolved;
+
+    // still overlapping after relaxation -> remove one vinyl and try again
+    const remove = pickRemoval(overlapPair.a, overlapPair.b);
+    working = working.filter((v) => !(v.kind === remove.kind && v.idx === remove.idx));
+    removals++;
+  }
+
+  // Fallback: return the best effort resolution.
+  return resolveVinylClumps(working, dims, opts) as ResolvableVinyl[];
 }
 
 // Vintage label colors for variety
@@ -430,26 +509,55 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
   const smallVinyls = density === 'dense' ? denseSmallVinyls : sparseSmallVinyls;
 
   // Enforce minimum spacing so vinyls never overlap/clump.
-  const resolvedAccentVinyls = useMemo(() => {
-    return resolveVinylClumps(accentVinyls as PositionedVinyl[], containerDims, {
-      paddingPx: 18,
-      iterations: 7,
-      boundsPct: 22,
+  // We resolve ALL vinyls together (accent+medium+small), then (if needed) cull extras
+  // deterministically (small -> medium -> accent) until no overlaps remain.
+  const { resolvedAccentVinyls, resolvedMediumVinyls, resolvedSmallVinyls } = useMemo(() => {
+    const spacing =
+      density === "dense"
+        ? { paddingPx: 16, iterations: 8, boundsPct: 22 }
+        : { paddingPx: 22, iterations: 10, boundsPct: 22 };
+
+    const all: ResolvableVinyl[] = [
+      ...accentVinyls.map((v, idx) => ({ ...v, kind: "accent" as const, idx })),
+      ...mediumVinyls.map((v, idx) => ({ ...v, kind: "medium" as const, idx })),
+      // small vinyls render at (size * 4) px
+      ...smallVinyls.map((v, idx) => ({ ...v, size: v.size * 4, kind: "small" as const, idx })),
+    ];
+
+    const resolvedAll = resolveAndCullVinyls(all, containerDims, {
+      ...spacing,
+      maxRemovals: density === "dense" ? 20 : 30,
     });
-  }, [accentVinyls, containerDims]);
+
+    const accents = resolvedAll
+      .filter((v) => v.kind === "accent")
+      .sort((a, b) => a.idx - b.idx);
+    const mediums = resolvedAll
+      .filter((v) => v.kind === "medium")
+      .sort((a, b) => a.idx - b.idx);
+    const smalls = resolvedAll
+      .filter((v) => v.kind === "small")
+      .sort((a, b) => a.idx - b.idx);
+
+    return {
+      resolvedAccentVinyls: accents,
+      resolvedMediumVinyls: mediums,
+      resolvedSmallVinyls: smalls,
+    };
+  }, [accentVinyls, mediumVinyls, smallVinyls, containerDims, density]);
 
   // Randomize color indices on mount
   const randomizedAccentColors = useMemo(() => {
-    return accentVinyls.map(() => Math.floor(Math.random() * labelColors.length));
-  }, [accentVinyls.length]);
+    return resolvedAccentVinyls.map(() => Math.floor(Math.random() * labelColors.length));
+  }, [resolvedAccentVinyls.length]);
   
   const randomizedMediumColors = useMemo(() => {
-    return mediumVinyls.map(() => Math.floor(Math.random() * labelColors.length));
-  }, [mediumVinyls.length]);
+    return resolvedMediumVinyls.map(() => Math.floor(Math.random() * labelColors.length));
+  }, [resolvedMediumVinyls.length]);
   
   const randomizedSmallColors = useMemo(() => {
-    return smallVinyls.map(() => Math.floor(Math.random() * labelColors.length));
-  }, [smallVinyls.length]);
+    return resolvedSmallVinyls.map(() => Math.floor(Math.random() * labelColors.length));
+  }, [resolvedSmallVinyls.length]);
 
   // VinylBackground often extends beyond the section height (e.g. 150%).
   // To place the hero vinyl at the *visual* mid-point of the section, we compensate for that.
@@ -607,13 +715,14 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
       ))}
       
       {/* Medium vinyls */}
-      {mediumVinyls.map((vinyl, i) => (
+      {resolvedMediumVinyls.map((vinyl, i) => (
         <div
           key={`medium-${i}`}
           className="absolute animate-spin-slow vinyl-disc"
           style={{
             top: vinyl.top,
             left: vinyl.left,
+            transform: 'translate(-50%, -50%)',
             width: `${vinyl.size}px`,
             height: `${vinyl.size}px`,
             opacity: vinyl.opacity,
@@ -627,15 +736,16 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
       ))}
       
       {/* Small scattered vinyls */}
-      {smallVinyls.map((vinyl, i) => (
+      {resolvedSmallVinyls.map((vinyl, i) => (
         <div
           key={`small-${i}`}
           className="absolute animate-spin-slow vinyl-disc"
           style={{
             top: vinyl.top,
             left: vinyl.left,
-            width: `${vinyl.size * 4}px`,
-            height: `${vinyl.size * 4}px`,
+            transform: 'translate(-50%, -50%)',
+            width: `${vinyl.size}px`,
+            height: `${vinyl.size}px`,
             opacity: vinyl.opacity,
             animationDuration: `${25 + (i % 5) * 8}s`,
             animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
