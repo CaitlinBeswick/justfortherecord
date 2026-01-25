@@ -15,6 +15,17 @@ interface ContactNotificationRequest {
   message: string;
 }
 
+// HTML entity escape function to prevent XSS
+function escapeHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -36,6 +47,12 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { submission_id, name, email, subject, message }: ContactNotificationRequest = await req.json();
+
+    // Escape all user-provided data to prevent XSS in emails
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeSubject = escapeHtml(subject);
+    const safeMessage = escapeHtml(message);
 
     // Get all admin users
     const { data: adminRoles, error: rolesError } = await supabase
@@ -81,23 +98,23 @@ serve(async (req) => {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; color: #fafafa; padding: 40px 20px; margin: 0;">
             <div style="max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626;">
               <div style="margin-bottom: 24px;">
-                <h1 style="color: #f97316; font-size: 24px; margin: 0 0 8px 0;">📬 New Contact Submission</h1>
+                <h1 style="color: #f97316; font-size: 24px; margin: 0 0 8px 0;">New Contact Submission</h1>
                 <p style="color: #a1a1aa; font-size: 14px; margin: 0;">A new message has been received on Just For The Record</p>
               </div>
               
               <div style="background-color: #262626; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
                 <p style="margin: 0 0 12px 0;">
                   <span style="color: #71717a; font-size: 12px; text-transform: uppercase;">From</span><br>
-                  <span style="color: #fafafa; font-weight: 500;">${name}</span>
-                  <span style="color: #a1a1aa;"> (${email})</span>
+                  <span style="color: #fafafa; font-weight: 500;">${safeName}</span>
+                  <span style="color: #a1a1aa;"> (${safeEmail})</span>
                 </p>
                 <p style="margin: 0 0 12px 0;">
                   <span style="color: #71717a; font-size: 12px; text-transform: uppercase;">Subject</span><br>
-                  <span style="color: #fafafa; font-weight: 500;">${subject}</span>
+                  <span style="color: #fafafa; font-weight: 500;">${safeSubject}</span>
                 </p>
                 <p style="margin: 0;">
                   <span style="color: #71717a; font-size: 12px; text-transform: uppercase;">Message</span><br>
-                  <span style="color: #fafafa; white-space: pre-wrap;">${message}</span>
+                  <span style="color: #fafafa; white-space: pre-wrap;">${safeMessage}</span>
                 </p>
               </div>
               
@@ -119,7 +136,7 @@ serve(async (req) => {
         const emailResponse = await resend.emails.send({
           from: 'Just For The Record <notifications@resend.dev>',
           to: [adminEmail],
-          subject: `📬 New Contact: ${subject}`,
+          subject: `New Contact: ${safeSubject}`,
           html: emailHtml,
         }) as { data?: { id: string } | null; error?: { message: string } | null };
 
