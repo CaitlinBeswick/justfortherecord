@@ -222,22 +222,23 @@ function makeAvoidZones(showHeroVinyl: boolean): AvoidZone[] {
 
 function buildBackgroundLayout(params: {
   seedKey: string;
-  density: "sparse" | "dense";
+  density: "sparse" | "dense" | "light";
   showHeroVinyl: boolean;
 }) {
   const { seedKey, density, showHeroVinyl } = params;
   const rng = mulberry32(hashStringToSeed(seedKey));
   const avoid = makeAvoidZones(showHeroVinyl);
 
-  const accentCount = density === "dense" ? 43 : 13;
-  const mediumCount = density === "dense" ? 32 : 6;
-  const smallCount = density === "dense" ? 44 : 16;
+  // Light density for search page - fewer vinyls but not empty
+  const accentCount = density === "dense" ? 43 : density === "light" ? 8 : 13;
+  const mediumCount = density === "dense" ? 32 : density === "light" ? 5 : 6;
+  const smallCount = density === "dense" ? 44 : density === "light" ? 10 : 16;
 
   // Keep some accents allowed to drift slightly outside frame to feel less grid-like.
   const accentPts = generatePoissonPoints({
     rng,
     count: accentCount,
-    minDist: density === "dense" ? 0.14 : 0.22,
+    minDist: density === "dense" ? 0.14 : density === "light" ? 0.28 : 0.22,
     bounds: { xMin: -0.04, xMax: 1.04, yMin: -0.08, yMax: 0.95 },
     avoid,
   });
@@ -245,7 +246,7 @@ function buildBackgroundLayout(params: {
   const mediumPts = generatePoissonPoints({
     rng,
     count: mediumCount,
-    minDist: density === "dense" ? 0.10 : 0.18,
+    minDist: density === "dense" ? 0.10 : density === "light" ? 0.22 : 0.18,
     bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.02, yMax: 0.92 },
     avoid,
   });
@@ -253,17 +254,18 @@ function buildBackgroundLayout(params: {
   const smallPts = generatePoissonPoints({
     rng,
     count: smallCount,
-    minDist: density === "dense" ? 0.055 : 0.09,
+    minDist: density === "dense" ? 0.055 : density === "light" ? 0.12 : 0.09,
     bounds: { xMin: 0.02, xMax: 0.98, yMin: 0.01, yMax: 0.98 },
     avoid,
   });
 
   const accentVinyls: AccentVinyl[] = accentPts.map((p, i) => {
-    const sizeMin = density === "dense" ? 110 : 120;
+    const sizeMin = density === "dense" ? 110 : density === "light" ? 130 : 120;
     const sizeMax = density === "dense" ? 185 : 185;
     const size = Math.round(sizeMin + rng() * (sizeMax - sizeMin));
 
-    const opacity = density === "dense" ? 0.11 + rng() * 0.05 : 0.10 + rng() * 0.05;
+    // Higher opacity for better visibility (matching debug mode colors)
+    const opacity = density === "dense" ? 0.35 + rng() * 0.15 : density === "light" ? 0.40 + rng() * 0.15 : 0.40 + rng() * 0.12;
     const duration = Math.round(48 + rng() * 28);
 
     // Slightly jitter Y to avoid visible "rows".
@@ -281,10 +283,11 @@ function buildBackgroundLayout(params: {
   });
 
   const mediumVinyls: SimpleVinyl[] = mediumPts.map((p, i) => {
-    const sizeMin = density === "dense" ? 48 : 50;
+    const sizeMin = density === "dense" ? 48 : density === "light" ? 55 : 50;
     const sizeMax = density === "dense" ? 72 : 68;
     const size = Math.round(sizeMin + rng() * (sizeMax - sizeMin));
-    const opacity = density === "dense" ? 0.19 + rng() * 0.07 : 0.20 + rng() * 0.06;
+    // Higher opacity for better visibility
+    const opacity = density === "dense" ? 0.45 + rng() * 0.15 : density === "light" ? 0.50 + rng() * 0.12 : 0.50 + rng() * 0.10;
     // Micro jitter to break alignment
     const y = clamp(p.y + (rng() - 0.5) * 0.02, 0, 0.98);
     const x = clamp(p.x + (rng() - 0.5) * 0.02, 0, 1);
@@ -298,7 +301,8 @@ function buildBackgroundLayout(params: {
 
   const smallVinyls: SimpleVinyl[] = smallPts.map((p) => {
     const size = Math.round(6 + rng() * 3); // 6..9 (matches previous)
-    const opacity = density === "dense" ? 0.14 + rng() * 0.18 : 0.16 + rng() * 0.16;
+    // Higher opacity for better visibility
+    const opacity = density === "dense" ? 0.50 + rng() * 0.20 : density === "light" ? 0.55 + rng() * 0.18 : 0.55 + rng() * 0.15;
     const y = clamp(p.y + (rng() - 0.5) * 0.015, 0, 1);
     const x = clamp(p.x + (rng() - 0.5) * 0.015, 0, 1);
     return {
@@ -315,19 +319,41 @@ function buildBackgroundLayout(params: {
 interface VinylBackgroundProps {
   className?: string;
   fadeHeight?: string;
-  density?: 'sparse' | 'dense';
+  density?: 'sparse' | 'dense' | 'light';
   showHeroVinyl?: boolean; // Responsive vinyl that aligns with RollingVinylLogo
 }
 
 // Dev-only debug mode (toggle via keyboard shortcut Ctrl+Shift+V)
 const isDev = import.meta.env.DEV;
 
+// LocalStorage key for persisting drag offsets during dev
+const DRAG_OFFSETS_KEY = 'vinyl-drag-offsets';
+
+function loadDragOffsets(): Record<string, { x: number; y: number }> {
+  if (!isDev) return {};
+  try {
+    const stored = localStorage.getItem(DRAG_OFFSETS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveDragOffsets(offsets: Record<string, { x: number; y: number }>) {
+  if (!isDev) return;
+  try {
+    localStorage.setItem(DRAG_OFFSETS_KEY, JSON.stringify(offsets));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false }: VinylBackgroundProps) {
   // Responsive hero vinyl size (matches RollingVinylLogo)
   const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
   const [debugMode, setDebugMode] = useState(false);
   const [dragMode, setDragMode] = useState(false);
-  const [dragOffsets, setDragOffsets] = useState<Record<string, { x: number; y: number }>>({});
+  const [dragOffsets, setDragOffsets] = useState<Record<string, { x: number; y: number }>>(loadDragOffsets);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   
@@ -337,7 +363,14 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Dev-only: toggle debug overlay with Ctrl+Shift+V, drag mode with Ctrl+Shift+D
+  // Persist drag offsets to localStorage
+  useEffect(() => {
+    if (isDev && Object.keys(dragOffsets).length > 0) {
+      saveDragOffsets(dragOffsets);
+    }
+  }, [dragOffsets]);
+
+  // Dev-only: toggle debug overlay with Ctrl+Shift+V, drag mode with Ctrl+Shift+D, clear offsets with Ctrl+Shift+C
   useEffect(() => {
     if (!isDev) return;
     const handler = (e: KeyboardEvent) => {
@@ -350,13 +383,18 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
         setDragMode((d) => {
           const newVal = !d;
           if (newVal) {
-            console.log('[VinylBackground] Drag mode ON - drag vinyls to reposition, positions logged to console');
+            console.log('[VinylBackground] Drag mode ON - drag vinyls to reposition, Ctrl+Shift+C to clear offsets');
           } else {
-            // Log final positions
             console.log('[VinylBackground] Drag mode OFF - Final offsets:', JSON.stringify(dragOffsets, null, 2));
           }
           return newVal;
         });
+      }
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        setDragOffsets({});
+        localStorage.removeItem(DRAG_OFFSETS_KEY);
+        console.log('[VinylBackground] Cleared all drag offsets');
       }
     };
     window.addEventListener('keydown', handler);
@@ -488,7 +526,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
             transform: `translate(-50%, -50%) translate(${dragOffsets['hero']?.x || 0}px, ${dragOffsets['hero']?.y || 0}px)`,
             width: `${heroSize}px`,
             height: `${heroSize}px`,
-            opacity: (debugMode || dragMode) ? 0.4 : 0.15,
+            opacity: dragMode ? 0.5 : 0.35,
             animationDuration: '70s',
             filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
             pointerEvents: dragMode ? 'auto' : 'none',
@@ -519,7 +557,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
               transform: `translate(${offset.x}px, ${offset.y}px)`,
               width: `${vinyl.size}px`,
               height: `${vinyl.size}px`,
-              opacity: (debugMode || dragMode) ? 0.5 : vinyl.opacity,
+              opacity: dragMode ? Math.min(vinyl.opacity + 0.2, 0.8) : vinyl.opacity,
               animationDuration: `${vinyl.duration}s`,
               animationDirection: vinyl.reverse ? 'reverse' : 'normal',
               filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
@@ -555,7 +593,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
               transform: `translate(${offset.x}px, ${offset.y}px)`,
               width: `${vinyl.size}px`,
               height: `${vinyl.size}px`,
-              opacity: (debugMode || dragMode) ? 0.6 : vinyl.opacity,
+              opacity: dragMode ? Math.min(vinyl.opacity + 0.2, 0.85) : vinyl.opacity,
               animationDuration: `${35 + (i % 6) * 8}s`,
               animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
               filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.12))',
@@ -591,7 +629,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
               transform: `translate(${offset.x}px, ${offset.y}px)`,
               width: `${vinyl.size * 4}px`,
               height: `${vinyl.size * 4}px`,
-              opacity: (debugMode || dragMode) ? 0.7 : vinyl.opacity,
+              opacity: dragMode ? Math.min(vinyl.opacity + 0.15, 0.9) : vinyl.opacity,
               animationDuration: `${25 + (i % 5) * 8}s`,
               animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
               filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.1))',
