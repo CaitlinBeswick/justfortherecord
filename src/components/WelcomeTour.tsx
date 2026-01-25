@@ -78,7 +78,7 @@ const tourSteps: TourStep[] = [
     id: "discovery",
     icon: <Disc3 className="h-8 w-8 text-primary" />,
     title: "Discover New Music",
-    description: "Explore personalized recommendations, browse by genre or decade, and find your next favorite album with AI-powered suggestions.",
+    description: "Explore personalized recommendations, browse by genre or decade, and find your next favorite album.",
     action: {
       label: "Explore Discovery",
       route: "/discovery",
