@@ -34,13 +34,14 @@ const tips: Tip[] = [
     message: "Use mood filters to get recommendations that match how you're feeling. Your suggestions improve over time!",
   },
   {
+    id: "discovery-leaderboards-tip",
+    route: "/discovery/leaderboards",
+    message: "See the top 250 albums and artists based on community ratings. Use 'Fade Listened' to dim items you've already heard.",
+  },
+  {
     id: "diary-tip",
     route: "/profile/diary",
     message: "Your diary tracks every album you listen to. Set a yearly goal to challenge yourself!",
-    action: {
-      label: "Set Goal",
-      route: "/profile/diary",
-    },
   },
   {
     id: "album-detail-tip",
@@ -70,12 +71,37 @@ const tips: Tip[] = [
   {
     id: "genre-tip",
     route: /^\/discovery\/genre\/.+/,
-    message: "Toggle 'Show Listened' to see albums you've already heard, or keep it off to discover new music.",
+    message: "Explore music from different eras. Your 'Include Familiar' setting controls whether listened albums appear.",
   },
   {
     id: "decade-tip",
     route: /^\/discovery\/decade\/.+/,
-    message: "Explore music from different eras. Refresh to load a new batch of albums from this decade.",
+    message: "Discover classic albums from this era. Refresh to load a new batch of recommendations.",
+  },
+  {
+    id: "following-activity-tip",
+    route: "/activity/following",
+    message: "See what your friends are listening to, rating, and reviewing. Like and comment to engage with their activity!",
+  },
+  {
+    id: "your-activity-tip",
+    route: "/activity/you",
+    message: "Your activity feed shows all your recent ratings, reviews, and diary entries in one place.",
+  },
+  {
+    id: "profile-albums-tip",
+    route: "/profile/albums",
+    message: "All the albums you've marked as listened. Filter by loved albums or sort by rating to find your favorites.",
+  },
+  {
+    id: "profile-reviews-tip",
+    route: "/profile/reviews",
+    message: "All your written reviews in one place. Click any review to edit or visit the album page.",
+  },
+  {
+    id: "profile-artists-tip",
+    route: "/profile/artists",
+    message: "Artists you follow appear here. You'll get notified when they release new music!",
   },
 ];
 
