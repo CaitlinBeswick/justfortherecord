@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useEffect } from "react";
+import { memo, useMemo, useState, useEffect, useCallback } from "react";
 
 type Rng = () => number;
 
@@ -319,14 +319,31 @@ interface VinylBackgroundProps {
   showHeroVinyl?: boolean; // Responsive vinyl that aligns with RollingVinylLogo
 }
 
+// Dev-only debug mode (toggle via keyboard shortcut Ctrl+Shift+V)
+const isDev = import.meta.env.DEV;
+
 export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false }: VinylBackgroundProps) {
   // Responsive hero vinyl size (matches RollingVinylLogo)
   const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
+  const [debugMode, setDebugMode] = useState(false);
   
   useEffect(() => {
     const handleResize = () => setHeroSize(getResponsiveHeroSize());
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Dev-only: toggle debug overlay with Ctrl+Shift+V
+  useEffect(() => {
+    if (!isDev) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        setDebugMode((d) => !d);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
   const { accentVinyls, mediumVinyls, smallVinyls } = useMemo(() => {
@@ -361,15 +378,44 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     return `${pct}%`;
   }, [fadeHeight, showHeroVinyl]);
 
+  // Avoid zones for debug overlay
+  const avoidZones = useMemo(() => makeAvoidZones(showHeroVinyl), [showHeroVinyl]);
+
   return (
     <div 
       className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
       style={{
-        maskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
+        maskImage: debugMode ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
+        WebkitMaskImage: debugMode ? 'none' : 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
         height: fadeHeight,
       }}
     >
+      {/* Debug overlay - safe zones */}
+      {isDev && debugMode && (
+        <>
+          {avoidZones.map((zone, i) => (
+            <div
+              key={`zone-${i}`}
+              className="absolute border-2 border-dashed border-blue-500 bg-blue-500/10 pointer-events-none"
+              style={{
+                left: `${zone.x1 * 100}%`,
+                top: `${zone.y1 * 100}%`,
+                width: `${(zone.x2 - zone.x1) * 100}%`,
+                height: `${(zone.y2 - zone.y1) * 100}%`,
+              }}
+            >
+              <span className="absolute top-1 left-1 text-xs text-blue-600 font-mono bg-white/80 px-1 rounded">
+                Safe Zone {i + 1}
+              </span>
+            </div>
+          ))}
+          {/* Debug label */}
+          <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-mono z-50 pointer-events-auto">
+            Debug: Ctrl+Shift+V to toggle
+          </div>
+        </>
+      )}
+
       {/* Hero vinyl - responsive, aligns with RollingVinylLogo rest position */}
       {showHeroVinyl && (
         <div
@@ -380,12 +426,15 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
             transform: 'translate(-50%, -50%)',
             width: `${heroSize}px`,
             height: `${heroSize}px`,
-            opacity: 0.15,
+            opacity: debugMode ? 0.4 : 0.15,
             animationDuration: '70s',
             filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
           }}
         >
           <VinylSVG detailed colorIndex={4} />
+          {isDev && debugMode && (
+            <div className="absolute inset-0 border-2 border-green-500 rounded-full" />
+          )}
         </div>
       )}
 
@@ -400,13 +449,20 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
             right: (vinyl as any).right,
             width: `${vinyl.size}px`,
             height: `${vinyl.size}px`,
-            opacity: vinyl.opacity,
+            opacity: debugMode ? 0.5 : vinyl.opacity,
             animationDuration: `${vinyl.duration}s`,
             animationDirection: vinyl.reverse ? 'reverse' : 'normal',
             filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
           }}
         >
           <VinylSVG detailed colorIndex={randomizedAccentColors[i]} />
+          {isDev && debugMode && (
+            <div className="absolute inset-0 border-2 border-red-500 rounded-full">
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] text-red-600 font-mono bg-white/80 px-0.5 rounded">
+                A{i}
+              </span>
+            </div>
+          )}
         </div>
       ))}
       
@@ -420,13 +476,20 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
             left: vinyl.left,
             width: `${vinyl.size}px`,
             height: `${vinyl.size}px`,
-            opacity: vinyl.opacity,
+            opacity: debugMode ? 0.6 : vinyl.opacity,
             animationDuration: `${35 + (i % 6) * 8}s`,
             animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
             filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.12))',
           }}
         >
           <VinylSVG colorIndex={randomizedMediumColors[i]} />
+          {isDev && debugMode && (
+            <div className="absolute inset-0 border-2 border-orange-500 rounded-full">
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[6px] text-orange-600 font-mono bg-white/80 px-0.5 rounded">
+                M{i}
+              </span>
+            </div>
+          )}
         </div>
       ))}
       
@@ -440,13 +503,16 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
             left: vinyl.left,
             width: `${vinyl.size * 4}px`,
             height: `${vinyl.size * 4}px`,
-            opacity: vinyl.opacity,
+            opacity: debugMode ? 0.7 : vinyl.opacity,
             animationDuration: `${25 + (i % 5) * 8}s`,
             animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
             filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.1))',
           }}
         >
           <VinylSVG colorIndex={randomizedSmallColors[i]} />
+          {isDev && debugMode && (
+            <div className="absolute inset-0 border border-yellow-500 rounded-full" />
+          )}
         </div>
       ))}
 
