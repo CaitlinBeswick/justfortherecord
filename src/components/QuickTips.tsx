@@ -18,20 +18,28 @@ interface Tip {
 }
 
 const tips: Tip[] = [
+  // Home
+  {
+    id: "home-tip",
+    route: "/",
+    message: "Welcome! This is your home feed showing your recent activity and what your friends are listening to.",
+  },
+  
+  // Search & Discovery
   {
     id: "search-tip",
     route: "/search",
-    message: "Search for any album or artist to add it to your collection. Try searching for your favorite album!",
+    message: "Search for any album or artist to add it to your collection. Toggle between Albums, Artists, or All results.",
   },
   {
     id: "discovery-tip",
     route: "/discovery",
-    message: "Explore personalized recommendations based on your listening history, or browse by genre and decade.",
+    message: "New releases from artists you follow appear here. Follow more artists to see their latest music!",
   },
   {
     id: "discovery-explore-tip",
     route: "/discovery/explore",
-    message: "Use mood filters to get recommendations that match how you're feeling. Your suggestions improve over time!",
+    message: "Use mood filters to get personalized recommendations. Click the italic text to expand album descriptions.",
   },
   {
     id: "discovery-leaderboards-tip",
@@ -39,69 +47,128 @@ const tips: Tip[] = [
     message: "See the top 250 albums and artists based on community ratings. Use 'Fade Listened' to dim items you've already heard.",
   },
   {
-    id: "diary-tip",
-    route: "/profile/diary",
-    message: "Your diary tracks every album you listen to. Set a yearly goal to challenge yourself!",
-  },
-  {
-    id: "album-detail-tip",
-    route: /^\/album\/.+/,
-    message: "Rate albums with half-star precision, write reviews, and add them to your listening lists.",
-  },
-  {
-    id: "artist-detail-tip",
-    route: /^\/artist\/.+/,
-    message: "Follow artists to get notified about new releases and see their complete discography.",
-  },
-  {
-    id: "friends-tip",
-    route: "/profile/friends",
-    message: "Add friends to see what they're listening to and share your music journey together.",
-  },
-  {
-    id: "to-listen-tip",
-    route: "/profile/to-listen",
-    message: "Your 'To Listen' queue helps you remember albums you want to check out later.",
-  },
-  {
-    id: "lists-tip",
-    route: "/profile/lists",
-    message: "Create custom lists to organize albums by theme, mood, or any category you like.",
-  },
-  {
     id: "genre-tip",
     route: /^\/discovery\/genre\/.+/,
-    message: "Explore music from different eras. Your 'Include Familiar' setting controls whether listened albums appear.",
+    message: "Explore albums from this genre. Your 'Include Familiar' setting in preferences controls whether listened albums appear.",
   },
   {
     id: "decade-tip",
     route: /^\/discovery\/decade\/.+/,
-    message: "Discover classic albums from this era. Refresh to load a new batch of recommendations.",
+    message: "Discover classic albums from this era. Hit 'Refresh' to load a new batch of recommendations.",
   },
   {
-    id: "following-activity-tip",
-    route: "/activity/following",
-    message: "See what your friends are listening to, rating, and reviewing. Like and comment to engage with their activity!",
+    id: "new-releases-tip",
+    route: "/new-releases",
+    message: "Browse the latest releases across all artists. Filter by time range to find recent or upcoming albums.",
+  },
+  
+  // Top Charts
+  {
+    id: "top-albums-tip",
+    route: "/top-albums",
+    message: "The community's top 250 rated albums. Gold, silver, and bronze highlights show the top 3!",
   },
   {
-    id: "your-activity-tip",
-    route: "/activity/you",
-    message: "Your activity feed shows all your recent ratings, reviews, and diary entries in one place.",
+    id: "top-artists-tip",
+    route: "/top-artists",
+    message: "The community's top 250 rated artists based on average ratings across all users.",
+  },
+  
+  // Album & Artist Details
+  {
+    id: "album-detail-tip",
+    route: /^\/album\/[a-f0-9-]+$/,
+    message: "Rate with half-star precision, write reviews, mark as listened, or add to your 'To Listen' queue.",
+  },
+  {
+    id: "artist-detail-tip",
+    route: /^\/artist\/[a-f0-9-]+$/,
+    message: "Follow this artist to get new release notifications. Use 'Manage Releases' to customize their discography view.",
+  },
+  {
+    id: "similar-artists-tip",
+    route: /^\/artist\/[a-f0-9-]+\/similar$/,
+    message: "Discover artists similar to this one based on genre and style. Great for expanding your musical horizons!",
+  },
+  
+  // Profile Pages
+  {
+    id: "profile-tip",
+    route: "/profile",
+    message: "Your profile hub! Set your favorite albums, track your listening goal progress, and see your stats.",
   },
   {
     id: "profile-albums-tip",
     route: "/profile/albums",
-    message: "All the albums you've marked as listened. Filter by loved albums or sort by rating to find your favorites.",
+    message: "All albums you've marked as listened. Filter by loved albums or sort by rating to find your favorites.",
   },
   {
-    id: "profile-reviews-tip",
-    route: "/profile/reviews",
-    message: "All your written reviews in one place. Click any review to edit or visit the album page.",
+    id: "profile-to-listen-tip",
+    route: "/profile/to-listen",
+    message: "Your 'To Listen' queue — albums you've saved for later. Click any album to rate it when you're ready.",
+  },
+  {
+    id: "profile-diary-tip",
+    route: "/profile/diary",
+    message: "Your listening diary tracks every album by date. Set a yearly goal to challenge yourself!",
+  },
+  {
+    id: "profile-lists-tip",
+    route: "/profile/lists",
+    message: "Create custom lists to organize albums by theme, mood, or any category. Lists can be public or private.",
   },
   {
     id: "profile-artists-tip",
     route: "/profile/artists",
     message: "Artists you follow appear here. You'll get notified when they release new music!",
+  },
+  {
+    id: "profile-reviews-tip",
+    route: "/profile/reviews",
+    message: "All your written reviews in one place. Click any review to edit it or visit the album page.",
+  },
+  {
+    id: "profile-friends-tip",
+    route: "/profile/friends",
+    message: "Manage your connections here. Follow other users to see their activity in your home feed.",
+  },
+  {
+    id: "profile-settings-tip",
+    route: "/profile/settings",
+    message: "Customize your experience: set favorite genres, privacy settings, notifications, and export your data.",
+  },
+  
+  // Activity Feeds
+  {
+    id: "following-activity-tip",
+    route: "/activity/following",
+    message: "See what your friends are listening to, rating, and reviewing. Like and comment to engage!",
+  },
+  {
+    id: "your-activity-tip",
+    route: "/activity/you",
+    message: "Your complete activity history — ratings, reviews, and diary entries all in one place.",
+  },
+  
+  // Other User Profiles
+  {
+    id: "user-profile-tip",
+    route: /^\/user\/[a-f0-9-]+$/,
+    message: "Viewing another user's profile. Send a follow request to see their activity in your feed!",
+  },
+  
+  // What's New
+  {
+    id: "whats-new-tip",
+    route: "/whats-new",
+    message: "See the latest app updates and new features. Check back regularly for improvements!",
+  },
+  
+  // Auth
+  {
+    id: "auth-tip",
+    route: "/auth",
+    message: "Create an account to start tracking your music journey, or sign in to access your collection.",
   },
 ];
 
