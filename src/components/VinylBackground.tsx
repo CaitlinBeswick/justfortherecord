@@ -96,9 +96,9 @@ VinylSVG.displayName = 'VinylSVG';
 // SPARSE: ~35 total vinyls for home/profile pages
 const sparseAccentVinyls = [
   { top: '-5%', left: '10%', size: 160, opacity: 0.14, duration: 65 },
-  { top: '-8%', left: '75%', size: 180, opacity: 0.15, duration: 75, reverse: true },
+  { top: '-8%', left: '82%', size: 180, opacity: 0.15, duration: 75, reverse: true },
   { top: '8%', left: '-4%', size: 170, opacity: 0.13, duration: 70 },
-  { top: '5%', left: '62%', size: 140, opacity: 0.12, duration: 55, reverse: true },
+  { top: '2%', left: '52%', size: 140, opacity: 0.12, duration: 55, reverse: true },
   { top: '10%', right: '-3%', size: 150, opacity: 0.14, duration: 60 },
   { top: '25%', left: '20%', size: 130, opacity: 0.11, duration: 50 },
   { top: '32%', left: '78%', size: 160, opacity: 0.13, duration: 65, reverse: true },
