@@ -1019,47 +1019,54 @@ const ProfileSettings = () => {
                       setPushWeeklyDigest={setPushWeeklyDigest}
                     />
                     
-                    {/* Welcome Tour & Quick Tips */}
-                    <div className="space-y-3 p-4 rounded-lg border border-border bg-card ml-4 border-l-2 border-l-primary/20">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <Label>Welcome Tour</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Restart the onboarding tour to learn about app features.
-                          </p>
+                    {/* Welcome Tour & Quick Tips - styled consistently with other expanded items */}
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-4 pl-4 border-l-2 border-primary/20"
+                    >
+                      <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <Label>Welcome Tour</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Restart the onboarding tour to learn about app features.
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              localStorage.removeItem("welcome-tour-completed");
+                              sonnerToast.success("Tour will appear next time you visit the app");
+                            }}
+                          >
+                            Restart Tour
+                          </Button>
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            localStorage.removeItem("welcome-tour-completed");
-                            sonnerToast.success("Tour will appear next time you visit the app");
-                          }}
-                        >
-                          Restart Tour
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-border">
-                        <div className="space-y-1">
-                          <Label>Quick Tips</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Reset contextual tips shown on different pages.
-                          </p>
+                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                          <div className="space-y-1">
+                            <Label>Quick Tips</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Reset contextual tips shown on different pages.
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              localStorage.removeItem("quick-tips-dismissed");
+                              sonnerToast.success("Tips will appear as you browse the app");
+                            }}
+                          >
+                            Reset Tips
+                          </Button>
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            localStorage.removeItem("quick-tips-dismissed");
-                            sonnerToast.success("Tips will appear as you browse the app");
-                          }}
-                        >
-                          Reset Tips
-                        </Button>
                       </div>
-                    </div>
+                    </motion.div>
                   </>
                 )}
               </div>
