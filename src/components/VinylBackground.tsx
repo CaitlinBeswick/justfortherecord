@@ -283,6 +283,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
   // Drag state
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const dragStartRef = useRef<{ x: number; y: number; vinylLeft: number; vinylTop: number } | null>(null);
+  const activePointerIdRef = useRef<number | null>(null);
   
   useEffect(() => {
     const handleResize = () => setHeroSize(getResponsiveHeroSize());
@@ -350,12 +351,18 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     }
   }, [editor]);
 
-  // Handle drag start
-  const handleDragStart = useCallback((e: React.MouseEvent, vinyl: CustomVinyl) => {
+  // Handle drag start (pointer events so it works reliably across browsers)
+  const handleDragStart = useCallback((e: React.PointerEvent, vinyl: CustomVinyl) => {
     if (!editor?.isDragMode) return;
+
     e.preventDefault();
     e.stopPropagation();
-    
+
+    // Capture the pointer so we continue receiving move events even if the pointer
+    // passes over other elements while dragging.
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    activePointerIdRef.current = e.pointerId;
+
     setDraggingId(vinyl.id);
     editor.setSelectedVinylId(vinyl.id);
     dragStartRef.current = {
@@ -370,8 +377,11 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
   useEffect(() => {
     if (!draggingId || !editor || !containerRef.current) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       if (!dragStartRef.current || !containerRef.current) return;
+
+      // If we started dragging with a pointerId, only react to that pointer.
+      if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
       
       const rect = containerRef.current.getBoundingClientRect();
       const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
@@ -383,26 +393,30 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
       editor.updateVinyl(draggingId, { left: newLeft, top: newTop });
     };
 
-    const handleMouseUp = () => {
+    const endDrag = () => {
       setDraggingId(null);
       dragStartRef.current = null;
+      activePointerIdRef.current = null;
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
     
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
     };
   }, [draggingId, editor]);
 
   const isInteractive = editor?.isEditMode || editor?.isDragMode;
+  const interactiveZ = isInteractive ? 'z-40' : '';
 
   return (
     <div 
       ref={containerRef}
-      className={`absolute inset-0 overflow-hidden ${isInteractive ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'} ${className}`}
+      className={`absolute inset-0 overflow-hidden ${interactiveZ} ${isInteractive ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'} ${className}`}
       style={{
         maskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
         WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)',
@@ -509,7 +523,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
             zIndex: editor.selectedVinylId === vinyl.id ? 10 : 1,
           }}
           onClick={(e) => handleVinylClick(e, vinyl)}
-          onMouseDown={(e) => handleDragStart(e, vinyl)}
+          onPointerDown={(e) => handleDragStart(e, vinyl)}
         >
           <VinylSVG detailed={vinyl.size > 80} colorIndex={vinyl.colorIndex} />
         </div>
