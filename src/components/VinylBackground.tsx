@@ -279,50 +279,132 @@ const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolea
 
 VinylSVG.displayName = 'VinylSVG';
 
-// SPARSE: ~35 total vinyls for home/profile pages
-const sparseAccentVinyls = [
-  { top: '-5%', left: '10%', size: 160, opacity: 0.14, duration: 65 },
-  { top: '-8%', left: '82%', size: 180, opacity: 0.15, duration: 75, reverse: true },
-  { top: '8%', left: '-4%', size: 170, opacity: 0.13, duration: 70 },
-  { top: '2%', left: '52%', size: 140, opacity: 0.12, duration: 55, reverse: true },
-  { top: '10%', right: '-3%', size: 150, opacity: 0.14, duration: 60 },
-  { top: '25%', left: '20%', size: 130, opacity: 0.11, duration: 50 },
-  { top: '32%', left: '78%', size: 160, opacity: 0.13, duration: 65, reverse: true },
-  { top: '35%', left: '-5%', size: 180, opacity: 0.14, duration: 72 },
-  { top: '40%', left: '45%', size: 120, opacity: 0.10, duration: 48 },
-  { top: '38%', right: '-4%', size: 170, opacity: 0.13, duration: 68, reverse: true },
-  { top: '52%', left: '15%', size: 150, opacity: 0.12, duration: 58 },
-  { top: '55%', left: '65%', size: 140, opacity: 0.11, duration: 52, reverse: true },
-  { top: '60%', left: '85%', size: 160, opacity: 0.13, duration: 62 },
-];
+// SPARSE: Random non-overlapping vinyl positions for home/profile pages
+// Uses a grid-based placement with jitter to ensure no overlaps
+function generateSparseVinyls() {
+  const vinyls: {
+    accent: PositionedVinyl[];
+    medium: PositionedVinyl[];
+    small: PositionedVinyl[];
+  } = { accent: [], medium: [], small: [] };
+  
+  // Track all placed positions with their sizes for collision detection
+  const placed: { x: number; y: number; r: number }[] = [];
+  
+  const minSpacing = 12; // minimum gap in % between vinyl edges
+  
+  const canPlace = (x: number, y: number, size: number) => {
+    const r = size / 2;
+    for (const p of placed) {
+      const dx = x - p.x;
+      const dy = y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const minDist = r + p.r + minSpacing;
+      if (dist < minDist) return false;
+    }
+    return true;
+  };
+  
+  const place = (x: number, y: number, size: number) => {
+    placed.push({ x, y, r: size / 2 });
+  };
 
-const sparseMediumVinyls = [
-  { top: '5%', left: '35%', size: 55, opacity: 0.22 },
-  { top: '18%', left: '85%', size: 60, opacity: 0.24 },
-  { top: '32%', left: '35%', size: 50, opacity: 0.20 },
-  { top: '45%', left: '80%', size: 65, opacity: 0.25 },
-  { top: '58%', left: '5%', size: 55, opacity: 0.22 },
-  { top: '65%', left: '42%', size: 58, opacity: 0.23 },
-];
+  // Deterministic seed for consistent layout
+  let seed = 42;
+  const random = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  
+  // Place ~8 large accent vinyls in a loose grid with jitter
+  const accentPositions = [
+    { x: 8, y: -5 }, { x: 85, y: -3 },
+    { x: -3, y: 18 }, { x: 95, y: 22 },
+    { x: 12, y: 40 }, { x: 88, y: 45 },
+    { x: 5, y: 62 }, { x: 92, y: 58 },
+  ];
+  
+  for (const pos of accentPositions) {
+    const size = 130 + random() * 50; // 130-180
+    const jitterX = (random() - 0.5) * 8;
+    const jitterY = (random() - 0.5) * 8;
+    const x = pos.x + jitterX;
+    const y = pos.y + jitterY;
+    
+    if (canPlace(x, y, size / 5)) { // Convert px size to rough % for collision
+      place(x, y, size / 5);
+      vinyls.accent.push({
+        top: `${y}%`,
+        left: `${x}%`,
+        size,
+        opacity: 0.11 + random() * 0.05,
+        duration: 50 + random() * 30,
+        reverse: random() > 0.5,
+      });
+    }
+  }
+  
+  // Place ~6 medium vinyls spread across the canvas
+  const mediumPositions = [
+    { x: 35, y: 8 }, { x: 70, y: 15 },
+    { x: 25, y: 35 }, { x: 75, y: 42 },
+    { x: 40, y: 60 }, { x: 65, y: 68 },
+  ];
+  
+  for (const pos of mediumPositions) {
+    const size = 45 + random() * 25; // 45-70
+    const jitterX = (random() - 0.5) * 12;
+    const jitterY = (random() - 0.5) * 12;
+    const x = pos.x + jitterX;
+    const y = pos.y + jitterY;
+    
+    if (canPlace(x, y, size / 8)) {
+      place(x, y, size / 8);
+      vinyls.medium.push({
+        top: `${y}%`,
+        left: `${x}%`,
+        size,
+        opacity: 0.20 + random() * 0.08,
+      });
+    }
+  }
+  
+  // Place ~12 small vinyls in gaps
+  const smallPositions = [
+    { x: 50, y: 5 }, { x: 20, y: 12 },
+    { x: 80, y: 8 }, { x: 55, y: 25 },
+    { x: 15, y: 30 }, { x: 85, y: 32 },
+    { x: 45, y: 48 }, { x: 60, y: 55 },
+    { x: 30, y: 72 }, { x: 70, y: 78 },
+    { x: 50, y: 85 }, { x: 25, y: 92 },
+  ];
+  
+  for (const pos of smallPositions) {
+    const size = 6 + random() * 3; // 6-9 (will be *4 = 24-36px)
+    const jitterX = (random() - 0.5) * 15;
+    const jitterY = (random() - 0.5) * 15;
+    const x = pos.x + jitterX;
+    const y = pos.y + jitterY;
+    
+    // Small vinyls render at size*4, so collision radius is size*4/2 / 5 ≈ size*0.4
+    if (canPlace(x, y, size * 0.4)) {
+      place(x, y, size * 0.4);
+      vinyls.small.push({
+        top: `${y}%`,
+        left: `${x}%`,
+        size,
+        opacity: 0.22 + random() * 0.10,
+      });
+    }
+  }
+  
+  return vinyls;
+}
 
-const sparseSmallVinyls = [
-  { top: '3%', left: '50%', size: 7, opacity: 0.28 },
-  { top: '15%', left: '30%', size: 8, opacity: 0.30 },
-  { top: '22%', left: '90%', size: 6, opacity: 0.26 },
-  { top: '35%', left: '60%', size: 8, opacity: 0.28 },
-  { top: '42%', left: '10%', size: 7, opacity: 0.26 },
-  { top: '48%', left: '55%', size: 9, opacity: 0.30 },
-  { top: '55%', left: '25%', size: 6, opacity: 0.24 },
-  { top: '62%', left: '75%', size: 8, opacity: 0.28 },
-  { top: '68%', left: '40%', size: 7, opacity: 0.26 },
-  { top: '72%', left: '92%', size: 6, opacity: 0.22 },
-  { top: '78%', left: '18%', size: 8, opacity: 0.24 },
-  { top: '82%', left: '58%', size: 7, opacity: 0.22 },
-  { top: '88%', left: '35%', size: 6, opacity: 0.20 },
-  { top: '92%', left: '70%', size: 8, opacity: 0.22 },
-  { top: '95%', left: '12%', size: 7, opacity: 0.18 },
-  { top: '98%', left: '85%', size: 6, opacity: 0.16 },
-];
+const generatedSparseVinyls = generateSparseVinyls();
+const sparseAccentVinyls = generatedSparseVinyls.accent;
+const sparseMediumVinyls = generatedSparseVinyls.medium;
+const sparseSmallVinyls = generatedSparseVinyls.small;
 
 // DENSE: Full vinyl set for albums/artists pages (160+ vinyls)
 const denseAccentVinyls = [
