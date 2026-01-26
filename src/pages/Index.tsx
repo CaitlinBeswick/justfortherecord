@@ -44,11 +44,6 @@ const Index = () => {
         
         
         
-        {/* Vinyl outline - the target resting position */}
-        <HeroVinylOutline />
-        
-        {/* Rolling vinyl animation */}
-        <RollingVinylLogo onImpact={handleVinylImpact} />
         
         <div className="relative container mx-auto px-4 py-20">
            <div>
