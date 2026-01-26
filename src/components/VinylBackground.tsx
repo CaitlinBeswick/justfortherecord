@@ -280,7 +280,7 @@ const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolea
 VinylSVG.displayName = 'VinylSVG';
 
 // SPARSE: Random non-overlapping vinyl positions for home/profile pages
-// Uses a grid-based placement with jitter to ensure no overlaps
+// Uses grid-based placement with jitter to ensure no overlaps
 function generateSparseVinyls() {
   const vinyls: {
     accent: PositionedVinyl[];
