@@ -280,7 +280,7 @@ const VinylSVG = memo(({ detailed = false, colorIndex = 0 }: { detailed?: boolea
 VinylSVG.displayName = 'VinylSVG';
 
 // SPARSE: Random non-overlapping vinyl positions for home/profile pages
-// Uses grid-based placement with jitter to ensure no overlaps
+// Uses strict collision detection with generous spacing
 function generateSparseVinyls() {
   const vinyls: {
     accent: PositionedVinyl[];
@@ -288,112 +288,127 @@ function generateSparseVinyls() {
     small: PositionedVinyl[];
   } = { accent: [], medium: [], small: [] };
   
-  // Track all placed positions with their sizes for collision detection
-  const placed: { x: number; y: number; r: number }[] = [];
+  // Track all placed positions as % with their radii in % units
+  const placed: { x: number; y: number; radiusPct: number }[] = [];
   
-  const minSpacing = 12; // minimum gap in % between vinyl edges
+  // Minimum gap between vinyl edges in viewport % (generous to prevent clumping)
+  const minGapPct = 6;
   
-  const canPlace = (x: number, y: number, size: number) => {
-    const r = size / 2;
+  const canPlace = (x: number, y: number, radiusPct: number) => {
+    // Check bounds - keep mostly on screen
+    if (x < -5 || x > 105 || y < -5 || y > 95) return false;
+    
     for (const p of placed) {
       const dx = x - p.x;
       const dy = y - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const minDist = r + p.r + minSpacing;
+      const minDist = radiusPct + p.radiusPct + minGapPct;
       if (dist < minDist) return false;
     }
     return true;
   };
   
-  const place = (x: number, y: number, size: number) => {
-    placed.push({ x, y, r: size / 2 });
+  const place = (x: number, y: number, radiusPct: number) => {
+    placed.push({ x, y, radiusPct });
   };
 
   // Deterministic seed for consistent layout
-  let seed = 42;
+  let seed = 12345;
   const random = () => {
     seed = (seed * 1103515245 + 12345) & 0x7fffffff;
     return seed / 0x7fffffff;
   };
   
-  // Place ~8 large accent vinyls in a loose grid with jitter
-  const accentPositions = [
-    { x: 8, y: -5 }, { x: 85, y: -3 },
-    { x: -3, y: 18 }, { x: 95, y: 22 },
-    { x: 12, y: 40 }, { x: 88, y: 45 },
-    { x: 5, y: 62 }, { x: 92, y: 58 },
+  // Size to approximate % radius (based on viewport width ~1200px)
+  // size 150px ≈ 12.5% of viewport, radius ≈ 6.25%
+  const pxToRadiusPct = (sizePx: number) => (sizePx / 1200) * 50;
+  
+  // Place 4-5 large accent vinyls in corners/edges
+  const accentTargets = [
+    { x: 5, y: 5 },
+    { x: 92, y: 8 },
+    { x: 8, y: 55 },
+    { x: 90, y: 50 },
+    { x: 50, y: 85 },
   ];
   
-  for (const pos of accentPositions) {
-    const size = 130 + random() * 50; // 130-180
-    const jitterX = (random() - 0.5) * 8;
-    const jitterY = (random() - 0.5) * 8;
-    const x = pos.x + jitterX;
-    const y = pos.y + jitterY;
+  for (const target of accentTargets) {
+    const size = 120 + random() * 60; // 120-180px
+    const radiusPct = pxToRadiusPct(size);
+    const jitterX = (random() - 0.5) * 10;
+    const jitterY = (random() - 0.5) * 10;
+    const x = target.x + jitterX;
+    const y = target.y + jitterY;
     
-    if (canPlace(x, y, size / 5)) { // Convert px size to rough % for collision
-      place(x, y, size / 5);
+    if (canPlace(x, y, radiusPct)) {
+      place(x, y, radiusPct);
       vinyls.accent.push({
         top: `${y}%`,
         left: `${x}%`,
         size,
-        opacity: 0.11 + random() * 0.05,
+        opacity: 0.08 + random() * 0.04,
         duration: 50 + random() * 30,
         reverse: random() > 0.5,
       });
     }
   }
   
-  // Place ~6 medium vinyls spread across the canvas
-  const mediumPositions = [
-    { x: 35, y: 8 }, { x: 70, y: 15 },
-    { x: 25, y: 35 }, { x: 75, y: 42 },
-    { x: 40, y: 60 }, { x: 65, y: 68 },
+  // Place 4-5 medium vinyls spread across middle areas
+  const mediumTargets = [
+    { x: 30, y: 20 },
+    { x: 70, y: 25 },
+    { x: 25, y: 70 },
+    { x: 75, y: 75 },
+    { x: 50, y: 45 },
   ];
   
-  for (const pos of mediumPositions) {
-    const size = 45 + random() * 25; // 45-70
-    const jitterX = (random() - 0.5) * 12;
-    const jitterY = (random() - 0.5) * 12;
-    const x = pos.x + jitterX;
-    const y = pos.y + jitterY;
+  for (const target of mediumTargets) {
+    const size = 50 + random() * 30; // 50-80px
+    const radiusPct = pxToRadiusPct(size);
+    const jitterX = (random() - 0.5) * 15;
+    const jitterY = (random() - 0.5) * 15;
+    const x = target.x + jitterX;
+    const y = target.y + jitterY;
     
-    if (canPlace(x, y, size / 8)) {
-      place(x, y, size / 8);
+    if (canPlace(x, y, radiusPct)) {
+      place(x, y, radiusPct);
       vinyls.medium.push({
         top: `${y}%`,
         left: `${x}%`,
         size,
-        opacity: 0.20 + random() * 0.08,
+        opacity: 0.15 + random() * 0.08,
       });
     }
   }
   
-  // Place ~12 small vinyls in gaps
-  const smallPositions = [
-    { x: 50, y: 5 }, { x: 20, y: 12 },
-    { x: 80, y: 8 }, { x: 55, y: 25 },
-    { x: 15, y: 30 }, { x: 85, y: 32 },
-    { x: 45, y: 48 }, { x: 60, y: 55 },
-    { x: 30, y: 72 }, { x: 70, y: 78 },
-    { x: 50, y: 85 }, { x: 25, y: 92 },
+  // Place 6-8 small vinyls in remaining gaps
+  const smallTargets = [
+    { x: 15, y: 35 },
+    { x: 85, y: 35 },
+    { x: 45, y: 15 },
+    { x: 55, y: 65 },
+    { x: 35, y: 85 },
+    { x: 65, y: 90 },
+    { x: 10, y: 80 },
+    { x: 90, y: 85 },
   ];
   
-  for (const pos of smallPositions) {
-    const size = 6 + random() * 3; // 6-9 (will be *4 = 24-36px)
-    const jitterX = (random() - 0.5) * 15;
-    const jitterY = (random() - 0.5) * 15;
-    const x = pos.x + jitterX;
-    const y = pos.y + jitterY;
+  for (const target of smallTargets) {
+    const sizeFactor = 8 + random() * 4; // Will render at sizeFactor * 4 = 32-48px
+    const actualSize = sizeFactor * 4;
+    const radiusPct = pxToRadiusPct(actualSize);
+    const jitterX = (random() - 0.5) * 20;
+    const jitterY = (random() - 0.5) * 20;
+    const x = target.x + jitterX;
+    const y = target.y + jitterY;
     
-    // Small vinyls render at size*4, so collision radius is size*4/2 / 5 ≈ size*0.4
-    if (canPlace(x, y, size * 0.4)) {
-      place(x, y, size * 0.4);
+    if (canPlace(x, y, radiusPct)) {
+      place(x, y, radiusPct);
       vinyls.small.push({
         top: `${y}%`,
         left: `${x}%`,
-        size,
-        opacity: 0.22 + random() * 0.10,
+        size: sizeFactor,
+        opacity: 0.18 + random() * 0.10,
       });
     }
   }
