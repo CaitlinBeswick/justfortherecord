@@ -292,11 +292,11 @@ function generateSparseVinyls() {
   const placed: { x: number; y: number; radiusPct: number }[] = [];
   
   // Minimum gap between vinyl edges in viewport % (generous to prevent clumping)
-  const minGapPct = 5;
+  const minGapPct = 4;
   
   const canPlace = (x: number, y: number, radiusPct: number) => {
     // Check bounds - keep mostly on screen
-    if (x < -8 || x > 108 || y < -8 || y > 98) return false;
+    if (x < -10 || x > 110 || y < -10 || y > 105) return false;
     
     for (const p of placed) {
       const dx = x - p.x;
@@ -322,7 +322,7 @@ function generateSparseVinyls() {
   // Size to approximate % radius (based on viewport width ~1200px)
   const pxToRadiusPct = (sizePx: number) => (sizePx / 1200) * 50;
   
-  // Place 6-8 large accent vinyls around edges
+  // Place 10-12 large accent vinyls around edges and corners
   const accentTargets = [
     { x: 3, y: 2 },
     { x: 95, y: 5 },
@@ -332,10 +332,14 @@ function generateSparseVinyls() {
     { x: 90, y: 60 },
     { x: 50, y: 88 },
     { x: 3, y: 90 },
+    { x: 97, y: 85 },
+    { x: 50, y: 2 },
+    { x: 2, y: 55 },
+    { x: 98, y: 48 },
   ];
   
   for (const target of accentTargets) {
-    const size = 110 + random() * 70; // 110-180px
+    const size = 100 + random() * 80; // 100-180px
     const radiusPct = pxToRadiusPct(size);
     const jitterX = (random() - 0.5) * 8;
     const jitterY = (random() - 0.5) * 8;
@@ -348,14 +352,14 @@ function generateSparseVinyls() {
         top: `${y}%`,
         left: `${x}%`,
         size,
-        opacity: 0.08 + random() * 0.04,
+        opacity: 0.07 + random() * 0.04,
         duration: 50 + random() * 30,
         reverse: random() > 0.5,
       });
     }
   }
   
-  // Place 8-10 medium vinyls spread across
+  // Place 14-16 medium vinyls spread across
   const mediumTargets = [
     { x: 25, y: 10 },
     { x: 75, y: 12 },
@@ -367,10 +371,16 @@ function generateSparseVinyls() {
     { x: 78, y: 72 },
     { x: 45, y: 75 },
     { x: 55, y: 20 },
+    { x: 12, y: 45 },
+    { x: 88, y: 42 },
+    { x: 42, y: 58 },
+    { x: 68, y: 65 },
+    { x: 32, y: 85 },
+    { x: 72, y: 88 },
   ];
   
   for (const target of mediumTargets) {
-    const size = 45 + random() * 35; // 45-80px
+    const size = 40 + random() * 40; // 40-80px
     const radiusPct = pxToRadiusPct(size);
     const jitterX = (random() - 0.5) * 12;
     const jitterY = (random() - 0.5) * 12;
@@ -383,12 +393,12 @@ function generateSparseVinyls() {
         top: `${y}%`,
         left: `${x}%`,
         size,
-        opacity: 0.12 + random() * 0.08,
+        opacity: 0.10 + random() * 0.08,
       });
     }
   }
   
-  // Place 12-15 small vinyls in remaining gaps
+  // Place 18-22 small vinyls in remaining gaps
   const smallTargets = [
     { x: 12, y: 18 },
     { x: 88, y: 15 },
@@ -405,10 +415,17 @@ function generateSparseVinyls() {
     { x: 75, y: 90 },
     { x: 48, y: 38 },
     { x: 8, y: 78 },
+    { x: 92, y: 78 },
+    { x: 55, y: 5 },
+    { x: 28, y: 35 },
+    { x: 72, y: 32 },
+    { x: 18, y: 85 },
+    { x: 82, y: 82 },
+    { x: 58, y: 72 },
   ];
   
   for (const target of smallTargets) {
-    const sizeFactor = 7 + random() * 5; // Will render at sizeFactor * 4 = 28-48px
+    const sizeFactor = 6 + random() * 6; // Will render at sizeFactor * 4 = 24-48px
     const actualSize = sizeFactor * 4;
     const radiusPct = pxToRadiusPct(actualSize);
     const jitterX = (random() - 0.5) * 18;
@@ -422,7 +439,7 @@ function generateSparseVinyls() {
         top: `${y}%`,
         left: `${x}%`,
         size: sizeFactor,
-        opacity: 0.15 + random() * 0.12,
+        opacity: 0.12 + random() * 0.12,
       });
     }
   }
@@ -439,10 +456,10 @@ function generateMinimalVinyls() {
   } = { accent: [], medium: [], small: [] };
   
   const placed: { x: number; y: number; radiusPct: number }[] = [];
-  const minGapPct = 8;
+  const minGapPct = 6;
   
   const canPlace = (x: number, y: number, radiusPct: number) => {
-    if (x < -5 || x > 105 || y < -5 || y > 95) return false;
+    if (x < -5 || x > 105 || y < -5 || y > 100) return false;
     for (const p of placed) {
       const dx = x - p.x;
       const dy = y - p.y;
@@ -465,15 +482,18 @@ function generateMinimalVinyls() {
   
   const pxToRadiusPct = (sizePx: number) => (sizePx / 1200) * 50;
   
-  // Only 3 accent vinyls in corners
+  // 5-6 accent vinyls in corners and edges
   const accentTargets = [
     { x: 5, y: 8 },
     { x: 92, y: 15 },
     { x: 8, y: 75 },
+    { x: 95, y: 70 },
+    { x: 50, y: 92 },
+    { x: 3, y: 45 },
   ];
   
   for (const target of accentTargets) {
-    const size = 100 + random() * 50;
+    const size = 90 + random() * 60;
     const radiusPct = pxToRadiusPct(size);
     const x = target.x + (random() - 0.5) * 6;
     const y = target.y + (random() - 0.5) * 6;
@@ -484,19 +504,23 @@ function generateMinimalVinyls() {
         top: `${y}%`,
         left: `${x}%`,
         size,
-        opacity: 0.06 + random() * 0.03,
+        opacity: 0.05 + random() * 0.03,
         duration: 55 + random() * 25,
         reverse: random() > 0.5,
       });
     }
   }
   
-  // Only 3-4 small vinyls
+  // 6-8 small vinyls scattered
   const smallTargets = [
-    { x: 85, y: 65 },
-    { x: 25, y: 45 },
-    { x: 70, y: 40 },
-    { x: 40, y: 80 },
+    { x: 85, y: 45 },
+    { x: 25, y: 35 },
+    { x: 70, y: 30 },
+    { x: 40, y: 65 },
+    { x: 15, y: 60 },
+    { x: 75, y: 80 },
+    { x: 55, y: 20 },
+    { x: 30, y: 85 },
   ];
   
   for (const target of smallTargets) {
