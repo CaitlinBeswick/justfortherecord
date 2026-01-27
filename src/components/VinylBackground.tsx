@@ -683,14 +683,127 @@ const denseSmallVinyls = [
   { top: '90%', left: '68%', size: 8, opacity: 0.18 }, { top: '88%', left: '85%', size: 6, opacity: 0.14 },
 ];
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PRESET SYSTEM: Per-page vinyl configurations
+// ═══════════════════════════════════════════════════════════════════════════
+
+type VinylPreset = 'home' | 'search' | 'profile' | 'auth' | 'discovery' | 'detail' | 'dense' | 'sparse' | 'minimal';
+
+interface PresetConfig {
+  accent: PositionedVinyl[];
+  medium: PositionedVinyl[];
+  small: PositionedVinyl[];
+  spacing: { paddingPx: number; iterations: number; boundsPct: number; maxRemovals: number };
+}
+
+// Map presets to their vinyl configurations
+function getPresetConfig(preset: VinylPreset): PresetConfig {
+  switch (preset) {
+    case 'home':
+      // Rich background for hero - lots of vinyls, well distributed
+      return {
+        accent: sparseAccentVinyls,
+        medium: sparseMediumVinyls,
+        small: sparseSmallVinyls,
+        spacing: { paddingPx: 20, iterations: 10, boundsPct: 22, maxRemovals: 30 },
+      };
+    
+    case 'search':
+      // Very sparse - just a few corner vinyls to not distract from search results
+      return {
+        accent: minimalAccentVinyls,
+        medium: [],
+        small: minimalSmallVinyls,
+        spacing: { paddingPx: 30, iterations: 8, boundsPct: 20, maxRemovals: 10 },
+      };
+    
+    case 'profile':
+      // Moderate density for profile pages
+      return {
+        accent: sparseAccentVinyls.slice(0, 6),
+        medium: sparseMediumVinyls.slice(0, 8),
+        small: sparseSmallVinyls.slice(0, 10),
+        spacing: { paddingPx: 24, iterations: 10, boundsPct: 22, maxRemovals: 20 },
+      };
+    
+    case 'auth':
+      // Subtle background for auth/login pages
+      return {
+        accent: sparseAccentVinyls.slice(0, 4),
+        medium: sparseMediumVinyls.slice(0, 4),
+        small: sparseSmallVinyls.slice(0, 6),
+        spacing: { paddingPx: 26, iterations: 10, boundsPct: 22, maxRemovals: 15 },
+      };
+    
+    case 'discovery':
+      // Light background for discovery/explore pages
+      return {
+        accent: sparseAccentVinyls.slice(0, 5),
+        medium: sparseMediumVinyls.slice(0, 6),
+        small: sparseSmallVinyls.slice(0, 8),
+        spacing: { paddingPx: 24, iterations: 10, boundsPct: 22, maxRemovals: 20 },
+      };
+    
+    case 'detail':
+      // Album/artist detail pages - moderate
+      return {
+        accent: sparseAccentVinyls.slice(0, 8),
+        medium: sparseMediumVinyls.slice(0, 10),
+        small: sparseSmallVinyls.slice(0, 12),
+        spacing: { paddingPx: 22, iterations: 10, boundsPct: 22, maxRemovals: 25 },
+      };
+    
+    case 'dense':
+      // Full density for special pages
+      return {
+        accent: denseAccentVinyls,
+        medium: denseMediumVinyls,
+        small: denseSmallVinyls,
+        spacing: { paddingPx: 16, iterations: 8, boundsPct: 22, maxRemovals: 20 },
+      };
+    
+    case 'minimal':
+      // Backwards compat: same as search
+      return getPresetConfig('search');
+    
+    case 'sparse':
+    default:
+      // Backwards compat: same as home
+      return getPresetConfig('home');
+  }
+}
+
 interface VinylBackgroundProps {
   className?: string;
   fadeHeight?: string;
+  /** 
+   * Named preset for per-page tuning:
+   * - 'home': Rich vinyl distribution for hero section
+   * - 'search': Very sparse, just corner accents
+   * - 'profile': Moderate density
+   * - 'auth': Subtle background
+   * - 'discovery': Light background
+   * - 'detail': Album/artist pages
+   * - 'dense': Full density
+   * - 'sparse'/'minimal': Legacy aliases
+   */
+  preset?: VinylPreset;
+  /** @deprecated Use `preset` instead. Kept for backwards compatibility. */
   density?: 'sparse' | 'dense' | 'minimal';
-  showHeroVinyl?: boolean; // Responsive vinyl that aligns with RollingVinylLogo
+  showHeroVinyl?: boolean;
 }
 
-export function VinylBackground({ className = "", fadeHeight = "150%", density = "sparse", showHeroVinyl = false }: VinylBackgroundProps) {
+export function VinylBackground({ 
+  className = "", 
+  fadeHeight = "150%", 
+  preset,
+  density,
+  showHeroVinyl = false 
+}: VinylBackgroundProps) {
+  // Resolve preset: explicit preset takes priority, then density for backwards compat
+  const resolvedPreset: VinylPreset = preset || (density as VinylPreset) || 'home';
+  const config = getPresetConfig(resolvedPreset);
+  
   // Responsive hero vinyl size (matches RollingVinylLogo)
   const [heroSize, setHeroSize] = useState(getResponsiveHeroSize);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -733,32 +846,15 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
     };
   }, [fadeHeight]);
 
-  // Select vinyl arrays based on density
-  const accentVinyls = density === 'dense' 
-    ? denseAccentVinyls 
-    : density === 'minimal' 
-      ? minimalAccentVinyls 
-      : sparseAccentVinyls;
-  const mediumVinyls = density === 'dense' 
-    ? denseMediumVinyls 
-    : density === 'minimal' 
-      ? minimalMediumVinyls 
-      : sparseMediumVinyls;
-  const smallVinyls = density === 'dense' 
-    ? denseSmallVinyls 
-    : density === 'minimal' 
-      ? minimalSmallVinyls 
-      : sparseSmallVinyls;
+  // Get vinyls from preset config
+  const accentVinyls = config.accent;
+  const mediumVinyls = config.medium;
+  const smallVinyls = config.small;
 
   // Enforce minimum spacing so vinyls never overlap/clump.
   // We resolve ALL vinyls together (accent+medium+small), then (if needed) cull extras
   // deterministically (small -> medium -> accent) until no overlaps remain.
   const { resolvedAccentVinyls, resolvedMediumVinyls, resolvedSmallVinyls } = useMemo(() => {
-    const spacing =
-      density === "dense"
-        ? { paddingPx: 16, iterations: 8, boundsPct: 22 }
-        : { paddingPx: 22, iterations: 10, boundsPct: 22 };
-
     const all: ResolvableVinyl[] = [
       ...accentVinyls.map((v, idx) => ({ ...v, kind: "accent" as const, idx })),
       ...mediumVinyls.map((v, idx) => ({ ...v, kind: "medium" as const, idx })),
@@ -766,10 +862,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
       ...smallVinyls.map((v, idx) => ({ ...v, size: v.size * 4, kind: "small" as const, idx })),
     ];
 
-    const resolvedAll = resolveAndCullVinyls(all, containerDims, {
-      ...spacing,
-      maxRemovals: density === "dense" ? 20 : 30,
-    });
+    const resolvedAll = resolveAndCullVinyls(all, containerDims, config.spacing);
 
     const accents = resolvedAll
       .filter((v) => v.kind === "accent")
@@ -786,7 +879,7 @@ export function VinylBackground({ className = "", fadeHeight = "150%", density =
       resolvedMediumVinyls: mediums,
       resolvedSmallVinyls: smalls,
     };
-  }, [accentVinyls, mediumVinyls, smallVinyls, containerDims, density]);
+  }, [accentVinyls, mediumVinyls, smallVinyls, containerDims, config.spacing]);
 
   // Randomize color indices on mount
   const randomizedAccentColors = useMemo(() => {
