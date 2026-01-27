@@ -34,7 +34,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
-      <VinylBackground fadeHeight="60%" density="sparse" />
+      <VinylBackground fadeHeight="60%" preset="profile" />
       <Navbar />
       <main className="relative pt-16">
         <ProfileHeader />

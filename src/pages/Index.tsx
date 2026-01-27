@@ -42,7 +42,7 @@ const Index = () => {
       <section className="relative pt-16 overflow-hidden">
         <div className="gradient-hero absolute inset-0" />
         
-        <VinylBackground density="sparse" />
+        <VinylBackground preset="home" />
         
         
         
