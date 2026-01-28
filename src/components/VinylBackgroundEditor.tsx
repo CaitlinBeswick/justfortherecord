@@ -77,10 +77,14 @@ export function VinylEditorProvider({ children }: { children: ReactNode }) {
   const [selectedVinylId, setSelectedVinylId] = useState<string | null>(null);
   const location = useLocation();
   const pageId = getPageId(location.pathname);
+  
+  // Enable editor in dev mode OR in Lovable preview (not production domain)
+  const isEditorEnabled = import.meta.env.DEV || 
+    (typeof window !== 'undefined' && window.location.hostname.includes('lovable.app'));
 
   // Load custom layout from localStorage
   useEffect(() => {
-    if (import.meta.env.PROD) return;
+    if (!isEditorEnabled) return;
     
     try {
       const stored = localStorage.getItem(CUSTOM_LAYOUTS_KEY);
@@ -95,7 +99,7 @@ export function VinylEditorProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.error("Failed to load vinyl layouts:", e);
     }
-  }, [pageId]);
+  }, [pageId, isEditorEnabled]);
 
   // Save layout
   const saveLayout = useCallback(() => {
@@ -162,7 +166,7 @@ export function VinylEditorProvider({ children }: { children: ReactNode }) {
 
   // Keyboard shortcuts
   useEffect(() => {
-    if (import.meta.env.PROD) return;
+    if (!isEditorEnabled) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl+Shift combinations
@@ -252,7 +256,7 @@ export function VinylEditorProvider({ children }: { children: ReactNode }) {
   return (
     <VinylEditorContext.Provider value={value}>
       {children}
-      {import.meta.env.DEV && (isDebugMode || isEditMode || isDragMode) && (
+      {isEditorEnabled && (isDebugMode || isEditMode || isDragMode) && (
         <VinylEditorOverlay
           isDebugMode={isDebugMode}
           isEditMode={isEditMode}
