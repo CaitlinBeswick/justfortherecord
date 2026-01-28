@@ -14,8 +14,11 @@ import { VinylEditorProvider } from "./VinylBackgroundEditor";
  * - Ctrl+Shift+C: Clear custom layout
  */
 export function VinylEditorWrapper({ children }: { children: React.ReactNode }) {
-  // Only wrap in development
-  if (import.meta.env.PROD) {
+  // Enable in dev mode OR in Lovable preview
+  const isEditorEnabled = import.meta.env.DEV || 
+    (typeof window !== 'undefined' && window.location.hostname.includes('lovable.app'));
+  
+  if (!isEditorEnabled) {
     return <>{children}</>;
   }
 
