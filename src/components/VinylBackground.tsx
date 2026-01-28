@@ -492,13 +492,11 @@ function generateMinimalVinyls() {
   
   const pxToRadiusPct = (sizePx: number) => (sizePx / 1200) * 50;
   
-  // 5 accent vinyls spread across corners and edges
+  // 3 accent vinyls in corners
   const accentTargets = [
     { x: 4, y: 6 },
     { x: 95, y: 8 },
     { x: 6, y: 75 },
-    { x: 92, y: 70 },
-    { x: 50, y: 88 },
   ];
   
   for (const target of accentTargets) {
@@ -520,14 +518,12 @@ function generateMinimalVinyls() {
     }
   }
   
-  // 6 medium vinyls distributed around
+  // 4 medium vinyls distributed around
   const mediumTargets = [
-    { x: 25, y: 20 },
     { x: 75, y: 25 },
-    { x: 15, y: 50 },
-    { x: 85, y: 45 },
+    { x: 85, y: 55 },
     { x: 35, y: 70 },
-    { x: 70, y: 78 },
+    { x: 90, y: 80 },
   ];
   
   for (const target of mediumTargets) {
@@ -547,14 +543,13 @@ function generateMinimalVinyls() {
     }
   }
   
-  // 8 small vinyls filling gaps
+  // 7 small vinyls filling gaps
   const smallTargets = [
     { x: 12, y: 30 },
     { x: 88, y: 32 },
     { x: 45, y: 15 },
     { x: 55, y: 55 },
     { x: 30, y: 45 },
-    { x: 72, y: 58 },
     { x: 20, y: 85 },
     { x: 80, y: 90 },
   ];
