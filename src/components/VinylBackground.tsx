@@ -877,10 +877,13 @@ export function VinylBackground({
     };
   }, [fadeHeight]);
 
-  // Get vinyls from preset config
-  const accentVinyls = config.accent;
-  const mediumVinyls = config.medium;
-  const smallVinyls = config.small;
+  // Check if we have custom vinyls for this page - if so, hide generated ones
+  const hasCustomLayout = editor && editor.customVinyls.length > 0;
+
+  // Get vinyls from preset config (empty if custom layout exists)
+  const accentVinyls = hasCustomLayout ? [] : config.accent;
+  const mediumVinyls = hasCustomLayout ? [] : config.medium;
+  const smallVinyls = hasCustomLayout ? [] : config.small;
 
   // Enforce minimum spacing so vinyls never overlap/clump.
   // We resolve ALL vinyls together (accent+medium+small), then (if needed) cull extras
