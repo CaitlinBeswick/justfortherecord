@@ -10,7 +10,6 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { FeatureNotificationProvider } from "@/components/FeatureNotification";
 import { CookieConsent } from "@/components/CookieConsent";
 import { QuickTips } from "@/components/QuickTips";
-import { VinylEditorWrapper } from "@/components/VinylEditorWrapper";
 const Index = lazy(() => import("./pages/Index"));
 const Albums = lazy(() => import("./pages/Albums"));
 const Artists = lazy(() => import("./pages/Artists"));
@@ -58,7 +57,6 @@ const App = () => (
         <Sonner />
         <FeatureNotificationProvider />
         <BrowserRouter>
-          <VinylEditorWrapper>
             <Suspense fallback={<div className="min-h-screen bg-background" />}>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -102,7 +100,6 @@ const App = () => (
               <CookieConsent />
               <QuickTips />
             </Suspense>
-          </VinylEditorWrapper>
         </BrowserRouter>
         </TooltipProvider>
       </SubscriptionProvider>
