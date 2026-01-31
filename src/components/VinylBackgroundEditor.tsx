@@ -101,8 +101,12 @@ export function VinylEditorProvider({ children }: { children: ReactNode }) {
     }
   }, [pageId, isEditorEnabled]);
 
-  // Save layout
+  // Save status for UI feedback
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  // Save layout with status feedback
   const saveLayout = useCallback(() => {
+    setSaveStatus('saving');
     try {
       const stored = localStorage.getItem(CUSTOM_LAYOUTS_KEY);
       const layouts: Layouts = stored ? JSON.parse(stored) : {};
@@ -114,11 +118,20 @@ export function VinylEditorProvider({ children }: { children: ReactNode }) {
       
       localStorage.setItem(CUSTOM_LAYOUTS_KEY, JSON.stringify(layouts));
       
-      // Copy to clipboard
-      navigator.clipboard.writeText(JSON.stringify(layouts[pageId], null, 2));
-      console.log(`✅ Vinyl layout saved for "${pageId}" and copied to clipboard!`);
+      // Verify it was saved
+      const verify = localStorage.getItem(CUSTOM_LAYOUTS_KEY);
+      if (verify) {
+        setSaveStatus('saved');
+        console.log(`✅ Vinyl layout saved for "${pageId}"!`);
+        // Reset status after 2 seconds
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        throw new Error('Verification failed');
+      }
     } catch (e) {
       console.error("Failed to save layout:", e);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     }
   }, [customVinyls, pageId]);
 
@@ -264,13 +277,16 @@ export function VinylEditorProvider({ children }: { children: ReactNode }) {
           pageId={pageId}
           vinylCount={customVinyls.length}
           selectedId={selectedVinylId}
+          onSave={saveLayout}
+          onClear={clearLayout}
+          saveStatus={saveStatus}
         />
       )}
     </VinylEditorContext.Provider>
   );
 }
 
-// Debug overlay component
+// Debug overlay component with save/clear buttons
 function VinylEditorOverlay({ 
   isDebugMode, 
   isEditMode, 
@@ -278,6 +294,9 @@ function VinylEditorOverlay({
   pageId,
   vinylCount,
   selectedId,
+  onSave,
+  onClear,
+  saveStatus,
 }: { 
   isDebugMode: boolean; 
   isEditMode: boolean; 
@@ -285,9 +304,12 @@ function VinylEditorOverlay({
   pageId: string;
   vinylCount: number;
   selectedId: string | null;
+  onSave: () => void;
+  onClear: () => void;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
 }) {
   return (
-    <div className="fixed top-16 left-4 z-[9999] bg-black/90 text-white text-xs p-3 rounded-lg font-mono space-y-1 pointer-events-none">
+    <div className="fixed top-16 left-4 z-[9999] bg-black/90 text-white text-xs p-3 rounded-lg font-mono space-y-1">
       <div className="font-bold text-primary">🎵 Vinyl Editor</div>
       <div>Page: {pageId}</div>
       <div>Custom vinyls: {vinylCount}</div>
@@ -305,11 +327,28 @@ function VinylEditorOverlay({
       <div className="text-muted-foreground text-[10px] pt-2 border-t border-white/20">
         {isEditMode && "Click to add vinyl | Click vinyl to select"}
         {isDragMode && "Drag vinyls to move them"}
-        {!isEditMode && !isDragMode && "Ctrl+Shift+S: Save | C: Clear"}
+        {!isEditMode && !isDragMode && "+/-: Size | c: Color | [/]: Opacity | Del: Remove"}
       </div>
-      <div className="text-muted-foreground text-[10px]">
-        +/-: Size | c: Color | [/]: Opacity | Del: Remove
+      
+      {/* Save/Clear buttons */}
+      <div className="flex gap-2 pt-2 border-t border-white/20 mt-2 pointer-events-auto">
+        <button
+          onClick={onSave}
+          disabled={saveStatus === 'saving'}
+          className="px-2 py-1 bg-primary text-primary-foreground rounded text-[10px] font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        >
+          {saveStatus === 'saving' ? '💾 Saving...' : saveStatus === 'saved' ? '✅ Saved!' : '💾 Save Layout'}
+        </button>
+        <button
+          onClick={onClear}
+          className="px-2 py-1 bg-destructive/80 text-white rounded text-[10px] font-medium hover:bg-destructive transition-colors"
+        >
+          🗑️ Clear
+        </button>
       </div>
+      {saveStatus === 'error' && (
+        <div className="text-red-400 text-[10px]">Failed to save. Try again.</div>
+      )}
     </div>
   );
 }
