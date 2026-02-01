@@ -84,20 +84,27 @@ const LAYOUTS: Record<string, VinylPosition[]> = {
     { top: 90, left: 60, size: 36, opacity: 0.14, colorIndex: 4, speed: 27, reverse: true },
   ],
   
-  // Search page - minimal, unobtrusive
+  // Search page - more vinyls, well-spaced
   search: [
-    // Keep everything in-bounds on pages that use overflow-hidden,
-    // and bump opacity slightly so it reads over the hero gradient.
-    { top: 2, left: 2, size: 120, opacity: 0.12, colorIndex: 1, speed: 62, reverse: true },
-    { top: 4, left: 86, size: 105, opacity: 0.11, colorIndex: 3, speed: 58 },
-    { top: 68, left: 3, size: 95, opacity: 0.12, colorIndex: 0, speed: 52 },
-    { top: 72, left: 84, size: 85, opacity: 0.11, colorIndex: 2, speed: 47, reverse: true },
-
-    // Smaller accents to add motion without clutter
-    { top: 22, left: 12, size: 52, opacity: 0.14, colorIndex: 4, speed: 36 },
-    { top: 28, left: 72, size: 46, opacity: 0.13, colorIndex: 5, speed: 33, reverse: true },
-    { top: 48, left: 8, size: 40, opacity: 0.15, colorIndex: 2, speed: 30 },
-    { top: 52, left: 90, size: 38, opacity: 0.14, colorIndex: 0, speed: 28, reverse: true },
+    // Large corner/edge vinyls
+    { top: 2, left: 2, size: 130, opacity: 0.12, colorIndex: 1, speed: 65, reverse: true },
+    { top: 3, left: 82, size: 115, opacity: 0.11, colorIndex: 3, speed: 58 },
+    { top: 65, left: 2, size: 110, opacity: 0.12, colorIndex: 0, speed: 52 },
+    { top: 70, left: 80, size: 100, opacity: 0.11, colorIndex: 2, speed: 48, reverse: true },
+    
+    // Medium vinyls spread across
+    { top: 18, left: 40, size: 75, opacity: 0.13, colorIndex: 4, speed: 42 },
+    { top: 35, left: 65, size: 70, opacity: 0.12, colorIndex: 5, speed: 40, reverse: true },
+    { top: 50, left: 25, size: 65, opacity: 0.14, colorIndex: 1, speed: 38 },
+    { top: 80, left: 45, size: 60, opacity: 0.13, colorIndex: 3, speed: 35, reverse: true },
+    
+    // Smaller accents
+    { top: 10, left: 60, size: 48, opacity: 0.15, colorIndex: 0, speed: 32 },
+    { top: 28, left: 15, size: 45, opacity: 0.14, colorIndex: 2, speed: 30, reverse: true },
+    { top: 42, left: 85, size: 42, opacity: 0.15, colorIndex: 4, speed: 28 },
+    { top: 58, left: 10, size: 40, opacity: 0.14, colorIndex: 5, speed: 26, reverse: true },
+    { top: 75, left: 70, size: 38, opacity: 0.15, colorIndex: 1, speed: 25 },
+    { top: 88, left: 20, size: 35, opacity: 0.14, colorIndex: 0, speed: 24, reverse: true },
   ],
   
   // Profile page - balanced
