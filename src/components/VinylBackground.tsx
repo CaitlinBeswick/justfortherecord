@@ -63,25 +63,25 @@ const LAYOUTS: Record<string, VinylPosition[]> = {
   // Home page - more vinyls, larger presence
   home: [
     // Large accent vinyls in corners/edges
-    { top: -5, left: -3, size: 160, opacity: 0.08, colorIndex: 0, speed: 70, reverse: true },
-    { top: -8, left: 85, size: 140, opacity: 0.07, colorIndex: 1, speed: 65 },
-    { top: 25, left: -8, size: 120, opacity: 0.09, colorIndex: 2, speed: 55, reverse: true },
-    { top: 60, left: 92, size: 150, opacity: 0.08, colorIndex: 3, speed: 60 },
-    { top: 80, left: -5, size: 130, opacity: 0.07, colorIndex: 4, speed: 50 },
-    { top: 85, left: 80, size: 110, opacity: 0.09, colorIndex: 5, speed: 45, reverse: true },
+    { top: -5, left: -3, size: 160, opacity: 0.14, colorIndex: 0, speed: 70, reverse: true },
+    { top: -8, left: 85, size: 140, opacity: 0.13, colorIndex: 1, speed: 65 },
+    { top: 25, left: -8, size: 120, opacity: 0.15, colorIndex: 2, speed: 55, reverse: true },
+    { top: 60, left: 92, size: 150, opacity: 0.14, colorIndex: 3, speed: 60 },
+    { top: 80, left: -5, size: 130, opacity: 0.13, colorIndex: 4, speed: 50 },
+    { top: 85, left: 80, size: 110, opacity: 0.15, colorIndex: 5, speed: 45, reverse: true },
     
     // Medium vinyls spread across
-    { top: 15, left: 35, size: 70, opacity: 0.12, colorIndex: 2, speed: 40 },
-    { top: 40, left: 70, size: 65, opacity: 0.11, colorIndex: 0, speed: 38, reverse: true },
-    { top: 55, left: 20, size: 60, opacity: 0.13, colorIndex: 4, speed: 35 },
-    { top: 75, left: 50, size: 55, opacity: 0.10, colorIndex: 1, speed: 42, reverse: true },
+    { top: 15, left: 35, size: 70, opacity: 0.18, colorIndex: 2, speed: 40 },
+    { top: 40, left: 70, size: 65, opacity: 0.17, colorIndex: 0, speed: 38, reverse: true },
+    { top: 55, left: 20, size: 60, opacity: 0.19, colorIndex: 4, speed: 35 },
+    { top: 75, left: 50, size: 55, opacity: 0.16, colorIndex: 1, speed: 42, reverse: true },
     
     // Small accent vinyls
-    { top: 8, left: 55, size: 40, opacity: 0.15, colorIndex: 3, speed: 30 },
-    { top: 35, left: 10, size: 35, opacity: 0.14, colorIndex: 5, speed: 28, reverse: true },
-    { top: 50, left: 85, size: 38, opacity: 0.16, colorIndex: 2, speed: 32 },
-    { top: 70, left: 35, size: 32, opacity: 0.13, colorIndex: 0, speed: 25 },
-    { top: 90, left: 60, size: 36, opacity: 0.14, colorIndex: 4, speed: 27, reverse: true },
+    { top: 8, left: 55, size: 40, opacity: 0.21, colorIndex: 3, speed: 30 },
+    { top: 35, left: 10, size: 35, opacity: 0.20, colorIndex: 5, speed: 28, reverse: true },
+    { top: 50, left: 85, size: 38, opacity: 0.22, colorIndex: 2, speed: 32 },
+    { top: 70, left: 35, size: 32, opacity: 0.19, colorIndex: 0, speed: 25 },
+    { top: 90, left: 60, size: 36, opacity: 0.20, colorIndex: 4, speed: 27, reverse: true },
   ],
   
   // Search page - more visible vinyls
@@ -113,14 +113,14 @@ const LAYOUTS: Record<string, VinylPosition[]> = {
   
   // Profile page - balanced
   profile: [
-    { top: -6, left: -4, size: 140, opacity: 0.07, colorIndex: 0, speed: 65 },
-    { top: -4, left: 82, size: 120, opacity: 0.06, colorIndex: 2, speed: 58, reverse: true },
-    { top: 35, left: -6, size: 100, opacity: 0.08, colorIndex: 4, speed: 52 },
-    { top: 50, left: 88, size: 110, opacity: 0.07, colorIndex: 1, speed: 48, reverse: true },
-    { top: 80, left: -3, size: 90, opacity: 0.08, colorIndex: 3, speed: 42 },
-    { top: 85, left: 85, size: 100, opacity: 0.06, colorIndex: 5, speed: 55 },
-    { top: 20, left: 45, size: 50, opacity: 0.10, colorIndex: 2, speed: 35, reverse: true },
-    { top: 60, left: 30, size: 45, opacity: 0.11, colorIndex: 0, speed: 30 },
+    { top: -6, left: -4, size: 140, opacity: 0.13, colorIndex: 0, speed: 65 },
+    { top: -4, left: 82, size: 120, opacity: 0.12, colorIndex: 2, speed: 58, reverse: true },
+    { top: 35, left: -6, size: 100, opacity: 0.14, colorIndex: 4, speed: 52 },
+    { top: 50, left: 88, size: 110, opacity: 0.13, colorIndex: 1, speed: 48, reverse: true },
+    { top: 80, left: -3, size: 90, opacity: 0.14, colorIndex: 3, speed: 42 },
+    { top: 85, left: 85, size: 100, opacity: 0.12, colorIndex: 5, speed: 55 },
+    { top: 20, left: 45, size: 50, opacity: 0.18, colorIndex: 2, speed: 35, reverse: true },
+    { top: 60, left: 30, size: 45, opacity: 0.19, colorIndex: 0, speed: 30 },
   ],
   
   // Detail pages (album/artist) - subtle
