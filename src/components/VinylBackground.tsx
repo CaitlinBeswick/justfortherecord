@@ -86,12 +86,18 @@ const LAYOUTS: Record<string, VinylPosition[]> = {
   
   // Search page - minimal, unobtrusive
   search: [
-    { top: -8, left: -5, size: 120, opacity: 0.06, colorIndex: 1, speed: 60 },
-    { top: -5, left: 88, size: 100, opacity: 0.05, colorIndex: 3, speed: 55, reverse: true },
-    { top: 70, left: -8, size: 90, opacity: 0.06, colorIndex: 0, speed: 50 },
-    { top: 75, left: 90, size: 80, opacity: 0.05, colorIndex: 2, speed: 45 },
-    { top: 30, left: 5, size: 45, opacity: 0.08, colorIndex: 4, speed: 35, reverse: true },
-    { top: 45, left: 92, size: 40, opacity: 0.07, colorIndex: 5, speed: 32 },
+    // Keep everything in-bounds on pages that use overflow-hidden,
+    // and bump opacity slightly so it reads over the hero gradient.
+    { top: 2, left: 2, size: 120, opacity: 0.12, colorIndex: 1, speed: 62, reverse: true },
+    { top: 4, left: 86, size: 105, opacity: 0.11, colorIndex: 3, speed: 58 },
+    { top: 68, left: 3, size: 95, opacity: 0.12, colorIndex: 0, speed: 52 },
+    { top: 72, left: 84, size: 85, opacity: 0.11, colorIndex: 2, speed: 47, reverse: true },
+
+    // Smaller accents to add motion without clutter
+    { top: 22, left: 12, size: 52, opacity: 0.14, colorIndex: 4, speed: 36 },
+    { top: 28, left: 72, size: 46, opacity: 0.13, colorIndex: 5, speed: 33, reverse: true },
+    { top: 48, left: 8, size: 40, opacity: 0.15, colorIndex: 2, speed: 30 },
+    { top: 52, left: 90, size: 38, opacity: 0.14, colorIndex: 0, speed: 28, reverse: true },
   ],
   
   // Profile page - balanced
