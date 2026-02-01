@@ -60,98 +60,123 @@ type VinylPosition = {
 
 // Layout presets with hand-placed, well-spaced vinyls
 const LAYOUTS: Record<string, VinylPosition[]> = {
-  // Home page - more vinyls, larger presence
+  // Home page - dense, vibrant
   home: [
     // Large accent vinyls in corners/edges
-    { top: -5, left: -3, size: 160, opacity: 0.14, colorIndex: 0, speed: 70, reverse: true },
-    { top: -8, left: 85, size: 140, opacity: 0.13, colorIndex: 1, speed: 65 },
-    { top: 25, left: -8, size: 120, opacity: 0.15, colorIndex: 2, speed: 55, reverse: true },
-    { top: 60, left: 92, size: 150, opacity: 0.14, colorIndex: 3, speed: 60 },
-    { top: 80, left: -5, size: 130, opacity: 0.13, colorIndex: 4, speed: 50 },
-    { top: 85, left: 80, size: 110, opacity: 0.15, colorIndex: 5, speed: 45, reverse: true },
+    { top: -5, left: -3, size: 170, opacity: 0.20, colorIndex: 0, speed: 70, reverse: true },
+    { top: -8, left: 82, size: 150, opacity: 0.18, colorIndex: 1, speed: 65 },
+    { top: 22, left: -8, size: 130, opacity: 0.21, colorIndex: 2, speed: 55, reverse: true },
+    { top: 55, left: 88, size: 160, opacity: 0.19, colorIndex: 3, speed: 60 },
+    { top: 78, left: -5, size: 140, opacity: 0.18, colorIndex: 4, speed: 50 },
+    { top: 82, left: 78, size: 120, opacity: 0.20, colorIndex: 5, speed: 45, reverse: true },
     
     // Medium vinyls spread across
-    { top: 15, left: 35, size: 70, opacity: 0.18, colorIndex: 2, speed: 40 },
-    { top: 40, left: 70, size: 65, opacity: 0.17, colorIndex: 0, speed: 38, reverse: true },
-    { top: 55, left: 20, size: 60, opacity: 0.19, colorIndex: 4, speed: 35 },
-    { top: 75, left: 50, size: 55, opacity: 0.16, colorIndex: 1, speed: 42, reverse: true },
+    { top: 12, left: 32, size: 80, opacity: 0.24, colorIndex: 2, speed: 40 },
+    { top: 35, left: 68, size: 75, opacity: 0.22, colorIndex: 0, speed: 38, reverse: true },
+    { top: 50, left: 18, size: 70, opacity: 0.25, colorIndex: 4, speed: 35 },
+    { top: 70, left: 48, size: 65, opacity: 0.22, colorIndex: 1, speed: 42, reverse: true },
+    { top: 28, left: 52, size: 60, opacity: 0.23, colorIndex: 3, speed: 36 },
+    { top: 62, left: 72, size: 68, opacity: 0.24, colorIndex: 5, speed: 34, reverse: true },
+    { top: 42, left: 5, size: 72, opacity: 0.21, colorIndex: 0, speed: 39 },
+    { top: 88, left: 35, size: 62, opacity: 0.23, colorIndex: 2, speed: 37, reverse: true },
     
     // Small accent vinyls
-    { top: 8, left: 55, size: 40, opacity: 0.21, colorIndex: 3, speed: 30 },
-    { top: 35, left: 10, size: 35, opacity: 0.20, colorIndex: 5, speed: 28, reverse: true },
-    { top: 50, left: 85, size: 38, opacity: 0.22, colorIndex: 2, speed: 32 },
-    { top: 70, left: 35, size: 32, opacity: 0.19, colorIndex: 0, speed: 25 },
-    { top: 90, left: 60, size: 36, opacity: 0.20, colorIndex: 4, speed: 27, reverse: true },
+    { top: 5, left: 52, size: 48, opacity: 0.28, colorIndex: 3, speed: 30 },
+    { top: 32, left: 8, size: 42, opacity: 0.26, colorIndex: 5, speed: 28, reverse: true },
+    { top: 48, left: 82, size: 45, opacity: 0.29, colorIndex: 2, speed: 32 },
+    { top: 68, left: 32, size: 40, opacity: 0.25, colorIndex: 0, speed: 25 },
+    { top: 88, left: 58, size: 44, opacity: 0.27, colorIndex: 4, speed: 27, reverse: true },
+    { top: 18, left: 75, size: 38, opacity: 0.26, colorIndex: 1, speed: 26 },
+    { top: 75, left: 12, size: 36, opacity: 0.28, colorIndex: 3, speed: 24, reverse: true },
+    { top: 58, left: 55, size: 35, opacity: 0.25, colorIndex: 5, speed: 23 },
+    { top: 95, left: 78, size: 42, opacity: 0.24, colorIndex: 0, speed: 29, reverse: true },
   ],
   
   // Search page - more visible vinyls
   search: [
     // Large corner/edge vinyls
-    { top: 2, left: 2, size: 140, opacity: 0.18, colorIndex: 1, speed: 65, reverse: true },
-    { top: 3, left: 78, size: 125, opacity: 0.16, colorIndex: 3, speed: 58 },
-    { top: 60, left: 2, size: 120, opacity: 0.17, colorIndex: 0, speed: 52 },
-    { top: 68, left: 76, size: 115, opacity: 0.16, colorIndex: 2, speed: 48, reverse: true },
+    { top: 2, left: 2, size: 140, opacity: 0.24, colorIndex: 1, speed: 65, reverse: true },
+    { top: 3, left: 78, size: 125, opacity: 0.22, colorIndex: 3, speed: 58 },
+    { top: 60, left: 2, size: 120, opacity: 0.23, colorIndex: 0, speed: 52 },
+    { top: 68, left: 76, size: 115, opacity: 0.22, colorIndex: 2, speed: 48, reverse: true },
     
     // Medium vinyls spread across
-    { top: 15, left: 38, size: 85, opacity: 0.19, colorIndex: 4, speed: 44 },
-    { top: 32, left: 62, size: 80, opacity: 0.18, colorIndex: 5, speed: 40, reverse: true },
-    { top: 48, left: 22, size: 75, opacity: 0.20, colorIndex: 1, speed: 38 },
-    { top: 78, left: 42, size: 70, opacity: 0.18, colorIndex: 3, speed: 36, reverse: true },
-    { top: 25, left: 88, size: 65, opacity: 0.17, colorIndex: 0, speed: 34 },
-    { top: 85, left: 65, size: 68, opacity: 0.19, colorIndex: 4, speed: 33, reverse: true },
+    { top: 15, left: 38, size: 85, opacity: 0.25, colorIndex: 4, speed: 44 },
+    { top: 32, left: 62, size: 80, opacity: 0.24, colorIndex: 5, speed: 40, reverse: true },
+    { top: 48, left: 22, size: 75, opacity: 0.26, colorIndex: 1, speed: 38 },
+    { top: 78, left: 42, size: 70, opacity: 0.24, colorIndex: 3, speed: 36, reverse: true },
+    { top: 25, left: 88, size: 65, opacity: 0.23, colorIndex: 0, speed: 34 },
+    { top: 85, left: 65, size: 68, opacity: 0.25, colorIndex: 4, speed: 33, reverse: true },
     
     // Smaller accents
-    { top: 8, left: 55, size: 55, opacity: 0.22, colorIndex: 0, speed: 32 },
-    { top: 22, left: 12, size: 52, opacity: 0.20, colorIndex: 2, speed: 30, reverse: true },
-    { top: 38, left: 82, size: 50, opacity: 0.21, colorIndex: 4, speed: 28 },
-    { top: 55, left: 8, size: 48, opacity: 0.20, colorIndex: 5, speed: 27, reverse: true },
-    { top: 72, left: 55, size: 45, opacity: 0.22, colorIndex: 1, speed: 26 },
-    { top: 88, left: 18, size: 42, opacity: 0.20, colorIndex: 0, speed: 25, reverse: true },
-    { top: 42, left: 48, size: 40, opacity: 0.21, colorIndex: 3, speed: 24 },
-    { top: 92, left: 85, size: 38, opacity: 0.19, colorIndex: 2, speed: 23, reverse: true },
+    { top: 8, left: 55, size: 55, opacity: 0.28, colorIndex: 0, speed: 32 },
+    { top: 22, left: 12, size: 52, opacity: 0.26, colorIndex: 2, speed: 30, reverse: true },
+    { top: 38, left: 82, size: 50, opacity: 0.27, colorIndex: 4, speed: 28 },
+    { top: 55, left: 8, size: 48, opacity: 0.26, colorIndex: 5, speed: 27, reverse: true },
+    { top: 72, left: 55, size: 45, opacity: 0.28, colorIndex: 1, speed: 26 },
+    { top: 88, left: 18, size: 42, opacity: 0.26, colorIndex: 0, speed: 25, reverse: true },
+    { top: 42, left: 48, size: 40, opacity: 0.27, colorIndex: 3, speed: 24 },
+    { top: 92, left: 85, size: 38, opacity: 0.25, colorIndex: 2, speed: 23, reverse: true },
   ],
   
-  // Profile page - balanced
+  // Profile page - balanced, visible
   profile: [
-    { top: -6, left: -4, size: 140, opacity: 0.13, colorIndex: 0, speed: 65 },
-    { top: -4, left: 82, size: 120, opacity: 0.12, colorIndex: 2, speed: 58, reverse: true },
-    { top: 35, left: -6, size: 100, opacity: 0.14, colorIndex: 4, speed: 52 },
-    { top: 50, left: 88, size: 110, opacity: 0.13, colorIndex: 1, speed: 48, reverse: true },
-    { top: 80, left: -3, size: 90, opacity: 0.14, colorIndex: 3, speed: 42 },
-    { top: 85, left: 85, size: 100, opacity: 0.12, colorIndex: 5, speed: 55 },
-    { top: 20, left: 45, size: 50, opacity: 0.18, colorIndex: 2, speed: 35, reverse: true },
-    { top: 60, left: 30, size: 45, opacity: 0.19, colorIndex: 0, speed: 30 },
+    // Large vinyls
+    { top: -6, left: -4, size: 140, opacity: 0.20, colorIndex: 0, speed: 65 },
+    { top: -4, left: 82, size: 120, opacity: 0.18, colorIndex: 2, speed: 58, reverse: true },
+    { top: 35, left: -6, size: 100, opacity: 0.21, colorIndex: 4, speed: 52 },
+    { top: 50, left: 88, size: 110, opacity: 0.19, colorIndex: 1, speed: 48, reverse: true },
+    { top: 80, left: -3, size: 95, opacity: 0.20, colorIndex: 3, speed: 42 },
+    { top: 85, left: 85, size: 105, opacity: 0.18, colorIndex: 5, speed: 55 },
+    
+    // Medium vinyls
+    { top: 18, left: 42, size: 65, opacity: 0.24, colorIndex: 2, speed: 35, reverse: true },
+    { top: 55, left: 28, size: 60, opacity: 0.25, colorIndex: 0, speed: 30 },
+    { top: 72, left: 55, size: 58, opacity: 0.23, colorIndex: 4, speed: 33 },
+    { top: 28, left: 72, size: 55, opacity: 0.24, colorIndex: 1, speed: 32, reverse: true },
+    
+    // Small accents
+    { top: 8, left: 25, size: 42, opacity: 0.27, colorIndex: 3, speed: 28 },
+    { top: 42, left: 8, size: 38, opacity: 0.26, colorIndex: 5, speed: 26, reverse: true },
+    { top: 65, left: 75, size: 40, opacity: 0.28, colorIndex: 0, speed: 25 },
+    { top: 92, left: 40, size: 36, opacity: 0.25, colorIndex: 2, speed: 24, reverse: true },
   ],
   
-  // Detail pages (album/artist) - subtle
+  // Detail pages (album/artist) - visible but not distracting
   detail: [
-    { top: -5, left: -6, size: 130, opacity: 0.06, colorIndex: 1, speed: 60 },
-    { top: -3, left: 85, size: 110, opacity: 0.05, colorIndex: 3, speed: 55, reverse: true },
-    { top: 60, left: -5, size: 100, opacity: 0.06, colorIndex: 0, speed: 50 },
-    { top: 70, left: 88, size: 90, opacity: 0.05, colorIndex: 2, speed: 45 },
-    { top: 30, left: 8, size: 40, opacity: 0.08, colorIndex: 4, speed: 32, reverse: true },
+    { top: -5, left: -6, size: 130, opacity: 0.16, colorIndex: 1, speed: 60 },
+    { top: -3, left: 85, size: 110, opacity: 0.14, colorIndex: 3, speed: 55, reverse: true },
+    { top: 60, left: -5, size: 100, opacity: 0.16, colorIndex: 0, speed: 50 },
+    { top: 70, left: 88, size: 95, opacity: 0.14, colorIndex: 2, speed: 45 },
+    { top: 30, left: 8, size: 55, opacity: 0.20, colorIndex: 4, speed: 32, reverse: true },
+    { top: 45, left: 78, size: 50, opacity: 0.18, colorIndex: 5, speed: 30 },
+    { top: 85, left: 35, size: 45, opacity: 0.19, colorIndex: 0, speed: 28, reverse: true },
   ],
   
-  // Auth page - welcoming
+  // Auth page - welcoming, visible
   auth: [
-    { top: -5, left: -5, size: 150, opacity: 0.08, colorIndex: 0, speed: 70 },
-    { top: -8, left: 80, size: 130, opacity: 0.07, colorIndex: 2, speed: 62, reverse: true },
-    { top: 50, left: -8, size: 120, opacity: 0.08, colorIndex: 4, speed: 55 },
-    { top: 55, left: 85, size: 140, opacity: 0.07, colorIndex: 1, speed: 58, reverse: true },
-    { top: 25, left: 50, size: 60, opacity: 0.10, colorIndex: 3, speed: 40 },
-    { top: 80, left: 40, size: 50, opacity: 0.09, colorIndex: 5, speed: 35, reverse: true },
+    { top: -5, left: -5, size: 150, opacity: 0.18, colorIndex: 0, speed: 70 },
+    { top: -8, left: 80, size: 130, opacity: 0.16, colorIndex: 2, speed: 62, reverse: true },
+    { top: 50, left: -8, size: 120, opacity: 0.18, colorIndex: 4, speed: 55 },
+    { top: 55, left: 85, size: 140, opacity: 0.16, colorIndex: 1, speed: 58, reverse: true },
+    { top: 22, left: 48, size: 70, opacity: 0.22, colorIndex: 3, speed: 40 },
+    { top: 78, left: 38, size: 60, opacity: 0.20, colorIndex: 5, speed: 35, reverse: true },
+    { top: 35, left: 15, size: 50, opacity: 0.23, colorIndex: 0, speed: 32 },
+    { top: 68, left: 70, size: 48, opacity: 0.21, colorIndex: 2, speed: 30, reverse: true },
   ],
   
-  // Discovery pages
+  // Discovery pages - visible
   discovery: [
-    { top: -6, left: -4, size: 130, opacity: 0.07, colorIndex: 1, speed: 60 },
-    { top: -5, left: 85, size: 120, opacity: 0.06, colorIndex: 0, speed: 55, reverse: true },
-    { top: 40, left: -7, size: 100, opacity: 0.08, colorIndex: 3, speed: 48 },
-    { top: 45, left: 90, size: 110, opacity: 0.07, colorIndex: 2, speed: 52, reverse: true },
-    { top: 80, left: -4, size: 90, opacity: 0.07, colorIndex: 4, speed: 44 },
-    { top: 85, left: 82, size: 100, opacity: 0.06, colorIndex: 5, speed: 50 },
-    { top: 20, left: 30, size: 45, opacity: 0.10, colorIndex: 0, speed: 32, reverse: true },
-    { top: 65, left: 60, size: 40, opacity: 0.11, colorIndex: 2, speed: 28 },
+    { top: -6, left: -4, size: 130, opacity: 0.17, colorIndex: 1, speed: 60 },
+    { top: -5, left: 85, size: 120, opacity: 0.15, colorIndex: 0, speed: 55, reverse: true },
+    { top: 40, left: -7, size: 100, opacity: 0.18, colorIndex: 3, speed: 48 },
+    { top: 45, left: 90, size: 110, opacity: 0.16, colorIndex: 2, speed: 52, reverse: true },
+    { top: 80, left: -4, size: 95, opacity: 0.17, colorIndex: 4, speed: 44 },
+    { top: 85, left: 82, size: 100, opacity: 0.15, colorIndex: 5, speed: 50 },
+    { top: 18, left: 28, size: 60, opacity: 0.22, colorIndex: 0, speed: 32, reverse: true },
+    { top: 62, left: 58, size: 55, opacity: 0.23, colorIndex: 2, speed: 28 },
+    { top: 32, left: 70, size: 50, opacity: 0.21, colorIndex: 4, speed: 30 },
+    { top: 72, left: 22, size: 48, opacity: 0.22, colorIndex: 1, speed: 27, reverse: true },
   ],
 };
 
