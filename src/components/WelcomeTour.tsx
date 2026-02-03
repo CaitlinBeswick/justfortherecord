@@ -10,11 +10,13 @@ import {
   Users, 
   Search,
   Disc3,
-  Sparkles
+  Sparkles,
+  Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const TOUR_STORAGE_KEY = "welcome-tour-completed";
 // Feature was added on this date - only show tour to users who signed up after
@@ -25,18 +27,28 @@ interface TourStep {
   icon: React.ReactNode;
   title: string;
   description: string;
+  mobileDescription?: string; // Alternative description for mobile
   action?: {
     label: string;
     route: string;
   };
 }
 
-const tourSteps: TourStep[] = [
+const getTourSteps = (isMobile: boolean): TourStep[] => [
   {
     id: "welcome",
     icon: <Sparkles className="h-8 w-8 text-primary" />,
     title: "Welcome to Your Music Journey! 🎵",
     description: "Track the albums you listen to, rate your favorites, and discover new music. Let's take a quick tour of the key features.",
+  },
+  {
+    id: "navigation",
+    icon: <Menu className="h-8 w-8 text-primary" />,
+    title: isMobile ? "Tap the Menu" : "Navigate Easily",
+    description: isMobile 
+      ? "Tap the menu icon (☰) in the top left to access all sections: your profile, diary, friends, and more. It slides out for easy navigation!"
+      : "Use the navigation bar at the top to access all sections of the app.",
+    mobileDescription: "Tap the menu icon (☰) in the top left to access all sections: your profile, diary, friends, and more. It slides out for easy navigation!",
   },
   {
     id: "diary",
@@ -101,12 +113,17 @@ export function WelcomeTour() {
   const [currentStep, setCurrentStep] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  
+  // Get tour steps based on device type
+  const tourSteps = getTourSteps(isMobile);
 
   useEffect(() => {
     if (!user) return;
     
+    // Check localStorage for completion status
     const completed = localStorage.getItem(TOUR_STORAGE_KEY);
-    if (completed) return;
+    if (completed === "true") return;
     
     // Only show tour to users who signed up after the feature was added
     const userCreatedAt = new Date(user.created_at);
@@ -116,7 +133,7 @@ export function WelcomeTour() {
       return;
     }
     
-    // New user - show the tour
+    // New user - show the tour after a brief delay
     const timer = setTimeout(() => setIsOpen(true), 2000);
     return () => clearTimeout(timer);
   }, [user]);
@@ -124,6 +141,7 @@ export function WelcomeTour() {
   const handleClose = () => {
     localStorage.setItem(TOUR_STORAGE_KEY, "true");
     setIsOpen(false);
+    setCurrentStep(0); // Reset for next time if tour is reset
   };
 
   const handleNext = () => {

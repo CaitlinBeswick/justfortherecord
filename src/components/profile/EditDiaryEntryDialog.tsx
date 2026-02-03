@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { StarRating } from "@/components/ui/StarRating";
 import { cn } from "@/lib/utils";
 
 interface DiaryEntry {
@@ -27,6 +28,7 @@ interface DiaryEntry {
   listened_on: string;
   is_relisten: boolean;
   notes: string | null;
+  rating?: number | null;
   created_at: string;
 }
 
@@ -34,7 +36,7 @@ interface EditDiaryEntryDialogProps {
   entry: DiaryEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (entryId: string, updates: { listened_on: string; is_relisten: boolean; notes: string | null }) => void;
+  onSave: (entryId: string, updates: { listened_on: string; is_relisten: boolean; notes: string | null; rating?: number | null }) => void;
   isPending?: boolean;
 }
 
@@ -48,6 +50,7 @@ export function EditDiaryEntryDialog({
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [isRelisten, setIsRelisten] = useState(false);
   const [notes, setNotes] = useState("");
+  const [rating, setRating] = useState<number>(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Reset form when entry changes
@@ -56,6 +59,7 @@ export function EditDiaryEntryDialog({
       setDate(new Date(entry.listened_on));
       setIsRelisten(entry.is_relisten);
       setNotes(entry.notes || "");
+      setRating(entry.rating ?? 0);
     }
   }, [entry]);
 
@@ -66,6 +70,7 @@ export function EditDiaryEntryDialog({
       listened_on: format(date, "yyyy-MM-dd"),
       is_relisten: isRelisten,
       notes: notes.trim() || null,
+      rating: rating > 0 ? rating : null,
     });
   };
 
@@ -141,6 +146,30 @@ export function EditDiaryEntryDialog({
               checked={isRelisten}
               onCheckedChange={setIsRelisten}
             />
+          </div>
+
+          {/* Rating */}
+          <div className="space-y-2">
+            <Label>Rating</Label>
+            <div className="flex items-center gap-3">
+              <StarRating
+                rating={rating}
+                size="lg"
+                interactive
+                onRatingChange={setRating}
+              />
+              {rating > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground h-auto py-1 px-2"
+                  onClick={() => setRating(0)}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Notes */}

@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AverageAlbumRating } from "@/components/AverageAlbumRating";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
+import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown, Star } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -45,6 +45,8 @@ import { ListeningStatusButtons } from "@/components/ListeningStatusButtons";
 import { LogListenDialog } from "@/components/LogListenDialog";
 import { ImageAttribution } from "@/components/ImageAttribution";
 import { getAlbumInitials } from "@/components/AlbumCoverWithFallback";
+import { StarRating } from "@/components/ui/StarRating";
+import { Button } from "@/components/ui/button";
 
 const AlbumDetail = () => {
   const { id } = useParams();
@@ -456,6 +458,36 @@ const AlbumDetail = () => {
                     />
                   </div>
                 </div>
+
+                {/* Rating Section */}
+                {user && (
+                  <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <Star className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-foreground">Your Rating</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <StarRating
+                          rating={userRating}
+                          size="lg"
+                          interactive
+                          onRatingChange={handleRatingChange}
+                        />
+                        {userRating > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-muted-foreground h-auto py-1 px-2"
+                            onClick={handleRemoveRating}
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
                   {user && releaseGroup && (
