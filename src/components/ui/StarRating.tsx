@@ -1,6 +1,6 @@
 import { Star, StarHalf } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
 interface StarRatingProps {
   rating: number;
@@ -22,6 +22,13 @@ const sizePx = {
   lg: 20,
 };
 
+// Larger touch targets for mobile
+const touchTargetSize = {
+  sm: 24,
+  md: 32,
+  lg: 40,
+};
+
 export function StarRating({
   rating,
   maxRating = 5,
@@ -32,6 +39,7 @@ export function StarRating({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [isTouching, setIsTouching] = useState(false);
 
   const calculateRating = useCallback((clientX: number) => {
     if (!containerRef.current) return null;
@@ -66,17 +74,18 @@ export function StarRating({
     setIsDragging(true);
     const newRating = calculateRating(e.clientX);
     if (newRating !== null) {
+      setHoverRating(newRating);
       onRatingChange(newRating);
     }
   }, [interactive, onRatingChange, calculateRating]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!interactive || !isDragging) return;
+    if (!interactive) return;
     
     const newRating = calculateRating(e.clientX);
     setHoverRating(newRating);
     
-    if (onRatingChange && newRating !== null) {
+    if (isDragging && onRatingChange && newRating !== null) {
       onRatingChange(newRating);
     }
   }, [interactive, isDragging, onRatingChange, calculateRating]);
@@ -92,28 +101,68 @@ export function StarRating({
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!interactive || !onRatingChange) return;
+    e.preventDefault(); // Prevent scrolling while interacting with stars
+    setIsTouching(true);
     setIsDragging(true);
     const touch = e.touches[0];
     const newRating = calculateRating(touch.clientX);
     if (newRating !== null) {
+      setHoverRating(newRating);
       onRatingChange(newRating);
     }
   }, [interactive, onRatingChange, calculateRating]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!interactive || !isDragging || !onRatingChange) return;
+    if (!interactive || !isTouching || !onRatingChange) return;
+    e.preventDefault(); // Prevent scrolling while scrubbing
     const touch = e.touches[0];
     const newRating = calculateRating(touch.clientX);
     if (newRating !== null) {
+      setHoverRating(newRating);
       onRatingChange(newRating);
     }
-  }, [interactive, isDragging, onRatingChange, calculateRating]);
+  }, [interactive, isTouching, onRatingChange, calculateRating]);
 
   const handleTouchEnd = useCallback(() => {
     setIsDragging(false);
+    setIsTouching(false);
+    // Keep hover rating briefly so user can see what they selected
+    setTimeout(() => setHoverRating(null), 150);
   }, []);
 
-  const displayRating = hoverRating !== null && interactive ? hoverRating : rating;
+  // Add global touch handlers to handle touch moves outside the element
+  useEffect(() => {
+    if (!isTouching) return;
+    
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      if (!interactive || !onRatingChange) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const newRating = calculateRating(touch.clientX);
+      if (newRating !== null) {
+        setHoverRating(newRating);
+        onRatingChange(newRating);
+      }
+    };
+    
+    const handleGlobalTouchEnd = () => {
+      setIsDragging(false);
+      setIsTouching(false);
+      setTimeout(() => setHoverRating(null), 150);
+    };
+    
+    document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+    document.addEventListener('touchend', handleGlobalTouchEnd);
+    document.addEventListener('touchcancel', handleGlobalTouchEnd);
+    
+    return () => {
+      document.removeEventListener('touchmove', handleGlobalTouchMove);
+      document.removeEventListener('touchend', handleGlobalTouchEnd);
+      document.removeEventListener('touchcancel', handleGlobalTouchEnd);
+    };
+  }, [isTouching, interactive, onRatingChange, calculateRating]);
+
+  const displayRating = hoverRating !== null ? hoverRating : rating;
 
   return (
     <div
@@ -125,6 +174,9 @@ export function StarRating({
       )}
       style={{
         filter: isDragging ? 'drop-shadow(0 0 6px hsl(var(--primary) / 0.5))' : undefined,
+        // Add padding for larger touch targets on mobile
+        padding: interactive ? `${(touchTargetSize[size] - sizePx[size]) / 2}px 0` : undefined,
+        margin: interactive ? `${-(touchTargetSize[size] - sizePx[size]) / 2}px 0` : undefined,
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

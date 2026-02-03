@@ -244,13 +244,26 @@ export function DiaryContent() {
 
   // Update diary entry mutation with optimistic updates
   const updateEntryMutation = useMutation({
-    mutationFn: async ({ entryId, updates }: { entryId: string; updates: { listened_on: string; is_relisten: boolean; notes: string | null } }) => {
+    mutationFn: async ({ entryId, updates, releaseGroupId }: { entryId: string; updates: { listened_on: string; is_relisten: boolean; notes: string | null; rating?: number | null }; releaseGroupId?: string }) => {
       const { error } = await supabase
         .from('diary_entries')
         .update(updates)
         .eq('id', entryId)
         .eq('user_id', user!.id);
       if (error) throw error;
+      
+      // Also update album_ratings if rating changed and we have releaseGroupId
+      if (updates.rating !== undefined && releaseGroupId) {
+        const existingRating = ratings.find(r => r.release_group_id === releaseGroupId);
+        if (existingRating) {
+          // Update existing rating
+          await supabase
+            .from('album_ratings')
+            .update({ rating: updates.rating || existingRating.rating })
+            .eq('user_id', user!.id)
+            .eq('release_group_id', releaseGroupId);
+        }
+      }
     },
     onMutate: async ({ entryId, updates }) => {
       // Cancel any outgoing refetches
@@ -284,6 +297,7 @@ export function DiaryContent() {
       // Refetch to ensure we're in sync
       queryClient.invalidateQueries({ queryKey: ['diary-entries-full', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['diary-entry-dates', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-album-ratings-with-reviews', user?.id] });
     },
   });
 
@@ -292,8 +306,9 @@ export function DiaryContent() {
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEntry = (entryId: string, updates: { listened_on: string; is_relisten: boolean; notes: string | null }) => {
-    updateEntryMutation.mutate({ entryId, updates });
+  const handleSaveEntry = (entryId: string, updates: { listened_on: string; is_relisten: boolean; notes: string | null; rating?: number | null }) => {
+    const entry = diaryEntriesData.find(e => e.id === entryId);
+    updateEntryMutation.mutate({ entryId, updates, releaseGroupId: entry?.release_group_id });
   };
 
   return (
