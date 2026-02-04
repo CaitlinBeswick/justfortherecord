@@ -47,6 +47,7 @@ import { ImageAttribution } from "@/components/ImageAttribution";
 import { getAlbumInitials } from "@/components/AlbumCoverWithFallback";
 import { StarRating } from "@/components/ui/StarRating";
 import { Button } from "@/components/ui/button";
+import { StreamingLinks } from "@/components/StreamingLinks";
 
 const AlbumDetail = () => {
   const { id } = useParams();
@@ -501,6 +502,13 @@ const AlbumDetail = () => {
                     className="flex h-10 w-10 items-center justify-center rounded-lg"
                   />
                 </div>
+
+                {/* Streaming Links */}
+                {releaseGroup?.relations && releaseGroup.relations.length > 0 && (
+                  <div className="mt-4">
+                    <StreamingLinks relations={releaseGroup.relations} />
+                  </div>
+                )}
               </motion.div>
             </div>
           </div>

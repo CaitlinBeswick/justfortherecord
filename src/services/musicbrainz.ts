@@ -19,6 +19,10 @@ export interface MBArtist {
   genres?: Array<{ name: string; count: number }>;
   rating?: { value: number; "votes-count": number };
   "release-groups"?: MBReleaseGroup[]; // May be present from browse/lookup
+  relations?: Array<{
+    type?: string;
+    url?: { resource?: string };
+  }>;
 }
 
 export interface MBReleaseGroup {
@@ -37,6 +41,10 @@ export interface MBReleaseGroup {
     title?: string;
     country?: string;
     status?: string;
+  }>;
+  relations?: Array<{
+    type?: string;
+    url?: { resource?: string };
   }>;
 }
 
