@@ -44,11 +44,11 @@ const getTourSteps = (isMobile: boolean): TourStep[] => [
   {
     id: "navigation",
     icon: <Menu className="h-8 w-8 text-primary" />,
-    title: isMobile ? "Tap the Menu" : "Navigate Easily",
+    title: isMobile ? "📱 Find the Menu Button" : "Navigate Easily",
     description: isMobile 
-      ? "Tap the menu icon (☰) in the top left to access all sections: your profile, diary, friends, and more. It slides out for easy navigation!"
+      ? "Look for the highlighted menu button (☰) in the top-left corner of the screen. Tap it to open the sidebar where you'll find your Profile, Diary, Friends, and more!"
       : "Use the navigation bar at the top to access all sections of the app.",
-    mobileDescription: "Tap the menu icon (☰) in the top left to access all sections: your profile, diary, friends, and more. It slides out for easy navigation!",
+    mobileDescription: "Look for the highlighted menu button (☰) in the top-left corner of the screen. Tap it to open the sidebar where you'll find your Profile, Diary, Friends, and more!",
   },
   {
     id: "diary",
