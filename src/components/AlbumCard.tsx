@@ -76,8 +76,17 @@ export function AlbumCard({
 
         <div className="absolute top-2 right-2 flex items-center gap-1">
           {hasEntries && (
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/90 shadow-md">
-              <BookOpen className="h-3.5 w-3.5 text-accent-foreground" />
+            <div className="pointer-events-auto">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/90 shadow-md">
+                    <BookOpen className="h-3.5 w-3.5 text-accent-foreground" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Logged in diary</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           )}
           {loved && (

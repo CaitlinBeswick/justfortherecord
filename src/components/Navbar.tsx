@@ -58,44 +58,11 @@ export function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl"
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <Disc3 className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="font-serif text-lg tracking-tight hidden sm:inline">Just For The Record</span>
-          <span className="font-serif text-lg tracking-tight sm:hidden">JFTR</span>
-        </Link>
-
-        <div className="hidden md:flex items-center gap-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path || 
-              (item.path === '/profile' && location.pathname.startsWith('/profile')) ||
-              (item.path === '/discovery' && location.pathname.startsWith('/discovery'));
-            // Hide auth-required items when not logged in
-            if ((item as any).requiresAuth && !user) return null;
-            return (
-              <Link
-                key={item.path}
-                to={getNavPath(item.path)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-
         <div className="flex items-center gap-2">
-          {/* Mobile Menu */}
+          {/* Mobile Menu Button - prominent position on left */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <button className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+              <button className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:opacity-90">
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
@@ -164,6 +131,42 @@ export function Navbar() {
               )}
             </SheetContent>
           </Sheet>
+
+          <Link to="/" className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+              <Disc3 className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="font-serif text-lg tracking-tight hidden sm:inline">Just For The Record</span>
+            <span className="font-serif text-lg tracking-tight sm:hidden">JFTR</span>
+          </Link>
+        </div>
+
+        <div className="hidden md:flex items-center gap-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path || 
+              (item.path === '/profile' && location.pathname.startsWith('/profile')) ||
+              (item.path === '/discovery' && location.pathname.startsWith('/discovery'));
+            // Hide auth-required items when not logged in
+            if ((item as any).requiresAuth && !user) return null;
+            return (
+              <Link
+                key={item.path}
+                to={getNavPath(item.path)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
 
           <Link
             to="/search"

@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AverageAlbumRating } from "@/components/AverageAlbumRating";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown, Star } from "lucide-react";
+import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -447,47 +447,37 @@ const AlbumDetail = () => {
                   {artistName}
                 </button>
 
-                {/* Listening Status Card */}
+                {/* Listening Status & Rating Card */}
                 <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    {/* Listening Status */}
+                  <div className="flex flex-wrap items-center justify-center gap-2">
                     <ListeningStatusButtons
                       releaseGroupId={id!}
                       albumTitle={releaseGroup.title}
                       artistName={artistName}
                     />
-                  </div>
-                </div>
-
-                {/* Rating Section */}
-                {user && (
-                  <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <Star className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium text-foreground">Your Rating</span>
-                      </div>
-                      <div className="flex items-center gap-3">
+                    
+                    {/* Rating inline with status buttons */}
+                    {user && (
+                      <div className="flex items-center gap-2 rounded-lg bg-secondary/50 px-3 py-2">
+                        <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Rate:</span>
                         <StarRating
                           rating={userRating}
-                          size="lg"
+                          size="md"
                           interactive
                           onRatingChange={handleRatingChange}
                         />
                         {userRating > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs text-muted-foreground h-auto py-1 px-2"
+                          <button
                             onClick={handleRemoveRating}
+                            className="text-muted-foreground hover:text-destructive text-sm px-1"
                           >
-                            Clear
-                          </Button>
+                            ×
+                          </button>
                         )}
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
                   {user && releaseGroup && (
