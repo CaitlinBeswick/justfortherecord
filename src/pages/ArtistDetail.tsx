@@ -25,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ReleaseManager } from "@/components/ReleaseManager";
 import { SimilarArtistCard } from "@/components/SimilarArtistCard";
 import { Button } from "@/components/ui/button";
+import { StreamingLinks } from "@/components/StreamingLinks";
 
 // Generate a consistent color based on the artist name
 function getArtistColor(name: string): string {
@@ -647,6 +648,13 @@ const ArtistDetail = () => {
                         />
                       </div>
                     </div>
+                    
+                    {/* Streaming Links */}
+                    {artist?.relations && artist.relations.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-border/50">
+                        <StreamingLinks relations={artist.relations} />
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               </div>
