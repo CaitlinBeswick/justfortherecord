@@ -402,6 +402,7 @@ export type Database = {
           notes: string | null
           rating: number | null
           release_group_id: string
+          tags: string[] | null
           user_id: string
         }
         Insert: {
@@ -414,6 +415,7 @@ export type Database = {
           notes?: string | null
           rating?: number | null
           release_group_id: string
+          tags?: string[] | null
           user_id: string
         }
         Update: {
@@ -426,6 +428,7 @@ export type Database = {
           notes?: string | null
           rating?: number | null
           release_group_id?: string
+          tags?: string[] | null
           user_id?: string
         }
         Relationships: []

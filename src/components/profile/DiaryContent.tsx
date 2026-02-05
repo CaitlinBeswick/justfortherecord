@@ -30,7 +30,19 @@ import {
 } from "@/components/ui/hover-card";
 import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
 import { MobileListeningGoal } from "./MobileListeningGoal";
+import { Badge } from "@/components/ui/badge";
 // ExportDiaryButton and AnnualStats moved to ProfileSettings
+
+// Format tags display mapping
+const FORMAT_TAG_LABELS: Record<string, { label: string; emoji: string }> = {
+  vinyl: { label: "Vinyl", emoji: "💿" },
+  cd: { label: "CD", emoji: "📀" },
+  cassette: { label: "Cassette", emoji: "📼" },
+  digital: { label: "Digital", emoji: "🎧" },
+  streaming: { label: "Streaming", emoji: "📡" },
+  radio: { label: "Radio", emoji: "📻" },
+  live: { label: "Live", emoji: "🎤" },
+};
 
 type DiarySortOption = "date" | "artist" | "album";
 
@@ -43,6 +55,7 @@ interface DiaryEntry {
   is_relisten: boolean;
   notes: string | null;
   rating: number | null;
+  tags?: string[] | null;
   created_at: string;
 }
 
@@ -244,7 +257,7 @@ export function DiaryContent() {
 
   // Update diary entry mutation with optimistic updates
   const updateEntryMutation = useMutation({
-    mutationFn: async ({ entryId, updates, releaseGroupId }: { entryId: string; updates: { listened_on: string; is_relisten: boolean; notes: string | null; rating?: number | null }; releaseGroupId?: string }) => {
+    mutationFn: async ({ entryId, updates, releaseGroupId }: { entryId: string; updates: { listened_on: string; is_relisten: boolean; notes: string | null; rating?: number | null; tags?: string[] }; releaseGroupId?: string }) => {
       const { error } = await supabase
         .from('diary_entries')
         .update(updates)
@@ -306,7 +319,7 @@ export function DiaryContent() {
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEntry = (entryId: string, updates: { listened_on: string; is_relisten: boolean; notes: string | null; rating?: number | null }) => {
+  const handleSaveEntry = (entryId: string, updates: { listened_on: string; is_relisten: boolean; notes: string | null; rating?: number | null; tags?: string[] }) => {
     const entry = diaryEntriesData.find(e => e.id === entryId);
     updateEntryMutation.mutate({ entryId, updates, releaseGroupId: entry?.release_group_id });
   };
@@ -768,6 +781,23 @@ export function DiaryContent() {
                     <Play className="h-4 w-4 text-green-500" />
                   )}
                 </div>
+
+                {/* Format tags */}
+                {entry.tags && entry.tags.length > 0 && (
+                  <div className="hidden sm:flex items-center gap-1 shrink-0">
+                    {entry.tags.slice(0, 2).map((tag) => {
+                      const tagInfo = FORMAT_TAG_LABELS[tag];
+                      return tagInfo ? (
+                        <span key={tag} className="text-xs" title={tagInfo.label}>
+                          {tagInfo.emoji}
+                        </span>
+                      ) : null;
+                    })}
+                    {entry.tags.length > 2 && (
+                      <span className="text-[10px] text-muted-foreground">+{entry.tags.length - 2}</span>
+                    )}
+                  </div>
+                )}
 
                 {/* Rating display with half-star support */}
                 {displayRating !== null && (
