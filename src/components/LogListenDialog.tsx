@@ -24,6 +24,18 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+
+// Pre-defined format tags
+const FORMAT_TAGS = [
+  { value: "vinyl", label: "Vinyl", emoji: "💿" },
+  { value: "cd", label: "CD", emoji: "📀" },
+  { value: "cassette", label: "Cassette", emoji: "📼" },
+  { value: "digital", label: "Digital", emoji: "🎧" },
+  { value: "streaming", label: "Streaming", emoji: "📡" },
+  { value: "radio", label: "Radio", emoji: "📻" },
+  { value: "live", label: "Live", emoji: "🎤" },
+];
 
 interface LogListenDialogProps {
   releaseGroupId: string;
@@ -50,6 +62,7 @@ export function LogListenDialog({
   const [review, setReview] = useState("");
   const [rating, setRating] = useState<number>(0);
   const [saving, setSaving] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // Fetch existing rating and review for this album
   const { data: existingRatingData } = useQuery({
@@ -75,6 +88,14 @@ export function LogListenDialog({
     }
   }, [existingRatingData]);
 
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
   const handleSubmit = async () => {
     if (!user) {
       toast.error("Please sign in to log listens");
@@ -93,6 +114,7 @@ export function LogListenDialog({
       is_relisten: isRelisten,
       notes: review || null,
       rating: rating > 0 ? rating : null,
+      tags: selectedTags.length > 0 ? selectedTags : [],
     });
 
     // Also sync to album_ratings (keeps latest rating/review for album profile)
@@ -160,6 +182,7 @@ export function LogListenDialog({
       setReview("");
       setRating(0);
       setDate(new Date());
+      setSelectedTags([]);
     }
   };
 
@@ -274,6 +297,29 @@ export function LogListenDialog({
                 You have an existing review — this will update it
               </p>
             )}
+          </div>
+
+          {/* Format Tags */}
+          <div className="space-y-2">
+            <Label>Format (optional)</Label>
+            <div className="flex flex-wrap gap-2">
+              {FORMAT_TAGS.map((tag) => (
+                <Badge
+                  key={tag.value}
+                  variant={selectedTags.includes(tag.value) ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-all select-none",
+                    selectedTags.includes(tag.value) 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-secondary"
+                  )}
+                  onClick={() => toggleTag(tag.value)}
+                >
+                  <span className="mr-1">{tag.emoji}</span>
+                  {tag.label}
+                </Badge>
+              ))}
+            </div>
           </div>
 
           {/* Submit Button */}

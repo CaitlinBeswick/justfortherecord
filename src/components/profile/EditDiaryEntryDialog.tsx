@@ -18,7 +18,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { StarRating } from "@/components/ui/StarRating";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
+// Pre-defined format tags
+const FORMAT_TAGS = [
+  { value: "vinyl", label: "Vinyl", emoji: "💿" },
+  { value: "cd", label: "CD", emoji: "📀" },
+  { value: "cassette", label: "Cassette", emoji: "📼" },
+  { value: "digital", label: "Digital", emoji: "🎧" },
+  { value: "streaming", label: "Streaming", emoji: "📡" },
+  { value: "radio", label: "Radio", emoji: "📻" },
+  { value: "live", label: "Live", emoji: "🎤" },
+];
 
 interface DiaryEntry {
   id: string;
@@ -29,6 +41,7 @@ interface DiaryEntry {
   is_relisten: boolean;
   notes: string | null;
   rating?: number | null;
+  tags?: string[] | null;
   created_at: string;
 }
 
@@ -36,7 +49,7 @@ interface EditDiaryEntryDialogProps {
   entry: DiaryEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (entryId: string, updates: { listened_on: string; is_relisten: boolean; notes: string | null; rating?: number | null }) => void;
+  onSave: (entryId: string, updates: { listened_on: string; is_relisten: boolean; notes: string | null; rating?: number | null; tags?: string[] }) => void;
   isPending?: boolean;
 }
 
@@ -52,6 +65,7 @@ export function EditDiaryEntryDialog({
   const [notes, setNotes] = useState("");
   const [rating, setRating] = useState<number>(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // Reset form when entry changes
   useEffect(() => {
@@ -60,8 +74,17 @@ export function EditDiaryEntryDialog({
       setIsRelisten(entry.is_relisten);
       setNotes(entry.notes || "");
       setRating(entry.rating ?? 0);
+      setSelectedTags(entry.tags || []);
     }
   }, [entry]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
 
   const handleSave = () => {
     if (!entry || !date) return;
@@ -71,6 +94,7 @@ export function EditDiaryEntryDialog({
       is_relisten: isRelisten,
       notes: notes.trim() || null,
       rating: rating > 0 ? rating : null,
+      tags: selectedTags,
     });
   };
 
@@ -169,6 +193,29 @@ export function EditDiaryEntryDialog({
                   Clear
                 </Button>
               )}
+            </div>
+          </div>
+
+          {/* Format Tags */}
+          <div className="space-y-2">
+            <Label>Format</Label>
+            <div className="flex flex-wrap gap-2">
+              {FORMAT_TAGS.map((tag) => (
+                <Badge
+                  key={tag.value}
+                  variant={selectedTags.includes(tag.value) ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-all select-none",
+                    selectedTags.includes(tag.value) 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-secondary"
+                  )}
+                  onClick={() => toggleTag(tag.value)}
+                >
+                  <span className="mr-1">{tag.emoji}</span>
+                  {tag.label}
+                </Badge>
+              ))}
             </div>
           </div>
 
