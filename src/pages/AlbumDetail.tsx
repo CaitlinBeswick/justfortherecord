@@ -504,11 +504,12 @@ const AlbumDetail = () => {
                 </div>
 
                 {/* Streaming Links */}
-                {releaseGroup?.relations && releaseGroup.relations.length > 0 && (
-                  <div className="mt-4">
-                    <StreamingLinks relations={releaseGroup.relations} />
-                  </div>
-                )}
+                <div className="mt-4">
+                  <StreamingLinks 
+                    artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
+                    albumTitle={releaseGroup?.title} 
+                  />
+                </div>
               </motion.div>
             </div>
           </div>

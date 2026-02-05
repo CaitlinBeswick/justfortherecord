@@ -32,7 +32,6 @@ const FORMAT_TAGS = [
   { value: "cd", label: "CD", emoji: "📀" },
   { value: "cassette", label: "Cassette", emoji: "📼" },
   { value: "digital", label: "Digital", emoji: "🎧" },
-  { value: "streaming", label: "Streaming", emoji: "📡" },
   { value: "radio", label: "Radio", emoji: "📻" },
   { value: "live", label: "Live", emoji: "🎤" },
 ];
