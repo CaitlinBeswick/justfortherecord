@@ -650,11 +650,9 @@ const ArtistDetail = () => {
                     </div>
                     
                     {/* Streaming Links */}
-                    {artist?.relations && artist.relations.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-border/50">
-                        <StreamingLinks relations={artist.relations} />
-                      </div>
-                    )}
+                    <div className="mt-4 pt-4 border-t border-border/50">
+                      <StreamingLinks artistName={artist?.name || ""} />
+                    </div>
                   </div>
                 </motion.div>
               </div>
