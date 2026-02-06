@@ -448,29 +448,56 @@ const AlbumDetail = () => {
                   {artistName}
                 </button>
 
-                {/* Listening Status & Rating Card */}
+                {/* Listening Status, Rating & Actions Card - Centered */}
                 <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
+                  {/* Status buttons row */}
                   <div className="flex flex-wrap items-center justify-center gap-2">
                     <ListeningStatusButtons
                       releaseGroupId={id!}
                       albumTitle={releaseGroup.title}
                       artistName={artistName}
                     />
-                    
-                    {/* Rating inline with status buttons */}
+                  </div>
+                  
+                  {/* Actions row - Log, Share, Listen, Rate */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 mt-3 pt-3 border-t border-border/30">
+                    {user && releaseGroup && (
+                      <LogListenDialog
+                        releaseGroupId={id!}
+                        albumTitle={releaseGroup.title}
+                        artistName={artistName}
+                        releaseDate={releaseGroup["first-release-date"]}
+                        hasListenedBefore={hasListenedBefore}
+                        trigger={
+                          <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90">
+                            <Plus className="h-4 w-4" />
+                            Log
+                          </button>
+                        }
+                      />
+                    )}
+                    <ShareButton 
+                      title={releaseGroup.title}
+                      text={`Check out ${releaseGroup.title} by ${artistName}`}
+                      className="flex h-9 items-center justify-center rounded-lg px-3"
+                    />
+                    <StreamingLinks 
+                      artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
+                      albumTitle={releaseGroup?.title} 
+                    />
                     {user && (
-                      <div className="flex items-center gap-2 rounded-lg bg-secondary/50 px-3 py-2">
-                        <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Rate:</span>
+                      <div className="flex items-center gap-1.5 rounded-lg bg-secondary/50 px-3 py-1.5">
+                        <span className="text-xs font-medium text-muted-foreground">Rate:</span>
                         <StarRating
                           rating={userRating}
-                          size="md"
+                          size="sm"
                           interactive
                           onRatingChange={handleRatingChange}
                         />
                         {userRating > 0 && (
                           <button
                             onClick={handleRemoveRating}
-                            className="text-muted-foreground hover:text-destructive text-sm px-1"
+                            className="text-muted-foreground hover:text-destructive text-sm px-0.5"
                           >
                             ×
                           </button>
@@ -478,37 +505,6 @@ const AlbumDetail = () => {
                       </div>
                     )}
                   </div>
-                </div>
-
-                <div className="flex items-center justify-center md:justify-start gap-3 mt-6">
-                  {user && releaseGroup && (
-                    <LogListenDialog
-                      releaseGroupId={id!}
-                      albumTitle={releaseGroup.title}
-                      artistName={artistName}
-                      releaseDate={releaseGroup["first-release-date"]}
-                      hasListenedBefore={hasListenedBefore}
-                      trigger={
-                        <button className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90">
-                          <Plus className="h-4 w-4" />
-                          Log
-                        </button>
-                      }
-                    />
-                  )}
-                  <ShareButton 
-                    title={releaseGroup.title}
-                    text={`Check out ${releaseGroup.title} by ${artistName}`}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg"
-                  />
-                </div>
-
-                {/* Streaming Links */}
-                <div className="mt-4">
-                  <StreamingLinks 
-                    artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
-                    albumTitle={releaseGroup?.title} 
-                  />
                 </div>
               </motion.div>
             </div>

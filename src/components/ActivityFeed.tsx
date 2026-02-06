@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { User, Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus } from "lucide-react";
+import { User, Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus, CheckCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFriendships } from "@/hooks/useFriendships";
@@ -9,6 +9,16 @@ import { formatDistanceToNow } from "date-fns";
 import { ArtistImage } from "./ArtistImage";
 import { ActivityItemActions } from "./ActivityItemActions";
 import { ActivityType } from "@/hooks/useActivityInteractions";
+
+// Format tags display mapping
+const FORMAT_TAG_LABELS: Record<string, { label: string; emoji: string }> = {
+  vinyl: { label: "Vinyl", emoji: "💿" },
+  cd: { label: "CD", emoji: "📀" },
+  cassette: { label: "Cassette", emoji: "📼" },
+  digital: { label: "Digital", emoji: "🎧" },
+  radio: { label: "Radio", emoji: "📻" },
+  live: { label: "Live", emoji: "🎤" },
+};
 
 interface DiaryEntry {
   id: string;
@@ -19,6 +29,7 @@ interface DiaryEntry {
   listened_on: string;
   is_relisten: boolean;
   rating: number | null;
+  tags?: string[] | null;
   created_at: string;
 }
 
@@ -62,6 +73,7 @@ interface ActivityItem {
   isRelisten?: boolean;
   rating?: number;
   reviewText?: string;
+  tags?: string[] | null;
 }
 
 export function ActivityFeed() {
@@ -71,7 +83,7 @@ export function ActivityFeed() {
   // Get all friend user IDs
   const friendIds = friends.map(f => f.friend_profile?.id).filter(Boolean) as string[];
 
-  // Fetch friends' diary entries
+  // Fetch friends' diary entries (including tags)
   const { data: friendDiaryEntries = [], isLoading: diaryLoading } = useQuery({
     queryKey: ['friends-diary', friendIds],
     queryFn: async () => {
@@ -79,7 +91,7 @@ export function ActivityFeed() {
       
       const { data, error } = await supabase
         .from('diary_entries')
-        .select('*')
+        .select('id, user_id, release_group_id, album_title, artist_name, listened_on, is_relisten, rating, tags, created_at')
         .in('user_id', friendIds)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -148,6 +160,7 @@ export function ActivityFeed() {
       timestamp: entry.created_at,
       isRelisten: entry.is_relisten,
       rating: entry.rating ?? undefined,
+      tags: entry.tags,
     })),
     ...friendRatings.map(rating => ({
       id: `rating-${rating.id}`,
@@ -282,6 +295,21 @@ export function ActivityFeed() {
                       >
                         {activity.artistName}
                       </span>
+                      {/* Show format tags */}
+                      {activity.tags && activity.tags.length > 0 && (
+                        <span className="text-muted-foreground">
+                          {' on '}
+                          {activity.tags.map((tag, i) => {
+                            const tagInfo = FORMAT_TAG_LABELS[tag];
+                            return tagInfo ? (
+                              <span key={tag}>
+                                {i > 0 ? ', ' : ''}
+                                {tagInfo.label.toLowerCase()} {tagInfo.emoji}
+                              </span>
+                            ) : null;
+                          })}
+                        </span>
+                      )}
                     </>
                   )}
                 </p>
@@ -339,13 +367,13 @@ export function ActivityFeed() {
             </div>
           </div>
 
-          {/* Activity Type Icon */}
+          {/* Activity Type Icon - Use green check for first listen, consistent with diary */}
           <div className="shrink-0">
             {activity.type === 'listen' ? (
               activity.isRelisten ? (
                 <RotateCcw className="h-4 w-4 text-primary" />
               ) : (
-                <Disc3 className="h-4 w-4 text-muted-foreground" />
+                <CheckCircle className="h-4 w-4 text-green-500" />
               )
             ) : activity.type === 'follow' ? (
               <UserPlus className="h-4 w-4 text-primary" />

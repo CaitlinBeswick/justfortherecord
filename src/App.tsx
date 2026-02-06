@@ -35,6 +35,7 @@ const YourActivity = lazy(() => import("./pages/YourActivity"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const Contact = lazy(() => import("./pages/Contact"));
 const Admin = lazy(() => import("./pages/Admin"));
 const WhatsNew = lazy(() => import("./pages/WhatsNew"));
 const NewReleases = lazy(() => import("./pages/NewReleases"));
@@ -84,6 +85,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/contact" element={<Contact />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/whats-new" element={<WhatsNew />} />
                 <Route path="/new-releases" element={<NewReleases />} />

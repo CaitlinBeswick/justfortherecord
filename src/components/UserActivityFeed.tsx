@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus } from "lucide-react";
+import { Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus, CheckCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,16 @@ import { formatDistanceToNow } from "date-fns";
 import { ArtistImage } from "./ArtistImage";
 import { ActivityItemActions } from "./ActivityItemActions";
 import { ActivityType } from "@/hooks/useActivityInteractions";
+
+// Format tags display mapping
+const FORMAT_TAG_LABELS: Record<string, { label: string; emoji: string }> = {
+  vinyl: { label: "Vinyl", emoji: "💿" },
+  cd: { label: "CD", emoji: "📀" },
+  cassette: { label: "Cassette", emoji: "📼" },
+  digital: { label: "Digital", emoji: "🎧" },
+  radio: { label: "Radio", emoji: "📻" },
+  live: { label: "Live", emoji: "🎤" },
+};
 
 interface ActivityItem {
   id: string;
@@ -23,13 +33,14 @@ interface ActivityItem {
   isRelisten?: boolean;
   rating?: number;
   reviewText?: string;
+  tags?: string[] | null;
 }
 
 export function UserActivityFeed() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Fetch user's diary entries
+  // Fetch user's diary entries (including tags)
   const { data: diaryEntries = [], isLoading: diaryLoading } = useQuery({
     queryKey: ['user-diary', user?.id],
     queryFn: async () => {
@@ -37,7 +48,7 @@ export function UserActivityFeed() {
       
       const { data, error } = await supabase
         .from('diary_entries')
-        .select('*')
+        .select('id, release_group_id, album_title, artist_name, is_relisten, rating, tags, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20);
@@ -99,6 +110,7 @@ export function UserActivityFeed() {
       timestamp: entry.created_at,
       isRelisten: entry.is_relisten,
       rating: entry.rating ?? undefined,
+      tags: entry.tags,
     })),
     ...ratings.map(rating => ({
       id: `rating-${rating.id}`,
@@ -160,7 +172,7 @@ export function UserActivityFeed() {
         return activity.isRelisten ? (
           <RotateCcw className="h-4 w-4 text-primary" />
         ) : (
-          <Disc3 className="h-4 w-4 text-muted-foreground" />
+          <CheckCircle className="h-4 w-4 text-green-500" />
         );
       case 'review':
         return <PenLine className="h-4 w-4 text-primary" />;
@@ -223,6 +235,21 @@ export function UserActivityFeed() {
                       >
                         {activity.artistName}
                       </span>
+                      {/* Show format tags */}
+                      {activity.tags && activity.tags.length > 0 && (
+                        <span className="text-muted-foreground">
+                          {' on '}
+                          {activity.tags.map((tag, i) => {
+                            const tagInfo = FORMAT_TAG_LABELS[tag];
+                            return tagInfo ? (
+                              <span key={tag}>
+                                {i > 0 ? ', ' : ''}
+                                {tagInfo.label.toLowerCase()} {tagInfo.emoji}
+                              </span>
+                            ) : null;
+                          })}
+                        </span>
+                      )}
                     </>
                   )}
                 </p>
