@@ -2,7 +2,9 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Disc3, Users, Star, Heart, PenLine, Calendar, TrendingUp } from "lucide-react";
+import { Disc3, Users, Star, Heart, PenLine, Calendar, TrendingUp, Infinity } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -41,19 +43,30 @@ const DECADE_COLORS = [
   'hsl(0, 65%, 50%)',
 ];
 
+// Format tag labels for stats display
+const FORMAT_TAG_LABELS: Record<string, { label: string; emoji: string }> = {
+  vinyl: { label: "Vinyl", emoji: "💿" },
+  cd: { label: "CD", emoji: "📀" },
+  cassette: { label: "Cassette", emoji: "📼" },
+  digital: { label: "Digital", emoji: "🎧" },
+  radio: { label: "Radio", emoji: "📻" },
+  live: { label: "Live", emoji: "🎤" },
+};
+
 export function AnnualStats({ userId }: AnnualStatsProps) {
   const { user } = useAuth();
   const targetUserId = userId || user?.id;
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [isAllTime, setIsAllTime] = useState(false);
 
-  // Fetch diary entries
+  // Fetch diary entries (including tags)
   const { data: diaryEntries = [] } = useQuery({
     queryKey: ['annual-stats-diary', targetUserId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('diary_entries')
-        .select('listened_on, artist_name, release_group_id, album_title, is_relisten')
+        .select('listened_on, artist_name, release_group_id, album_title, is_relisten, tags')
         .eq('user_id', targetUserId!);
       if (error) throw error;
       return data;
@@ -102,42 +115,48 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
     return Array.from(years).sort((a, b) => b - a);
   }, [diaryEntries, ratings, currentYear]);
 
-  // Calculate stats for selected year
+  // Calculate stats for selected year OR all time
   const stats = useMemo(() => {
-    const yearStart = new Date(selectedYear, 0, 1);
-    const yearEnd = new Date(selectedYear + 1, 0, 1);
+    let filteredDiaryEntries = diaryEntries;
+    let filteredRatings = ratings;
+    let filteredFollows = artistFollows;
 
-    const yearDiaryEntries = diaryEntries.filter(entry => {
-      const date = new Date(entry.listened_on);
-      return date >= yearStart && date < yearEnd;
-    });
+    if (!isAllTime) {
+      const yearStart = new Date(selectedYear, 0, 1);
+      const yearEnd = new Date(selectedYear + 1, 0, 1);
 
-    // Use updated_at for ratings to capture loves/reviews updated this year
-    const yearRatings = ratings.filter(rating => {
-      const date = new Date(rating.updated_at);
-      return date >= yearStart && date < yearEnd;
-    });
+      filteredDiaryEntries = diaryEntries.filter(entry => {
+        const date = new Date(entry.listened_on);
+        return date >= yearStart && date < yearEnd;
+      });
 
-    const yearFollows = artistFollows.filter(follow => {
-      const date = new Date(follow.created_at);
-      return date >= yearStart && date < yearEnd;
-    });
+      // Use updated_at for ratings to capture loves/reviews updated this year
+      filteredRatings = ratings.filter(rating => {
+        const date = new Date(rating.updated_at);
+        return date >= yearStart && date < yearEnd;
+      });
+
+      filteredFollows = artistFollows.filter(follow => {
+        const date = new Date(follow.created_at);
+        return date >= yearStart && date < yearEnd;
+      });
+    }
 
     // Total listens
-    const totalListens = yearDiaryEntries.length;
-    const firstListens = yearDiaryEntries.filter(e => !e.is_relisten).length;
-    const reListens = yearDiaryEntries.filter(e => e.is_relisten).length;
+    const totalListens = filteredDiaryEntries.length;
+    const firstListens = filteredDiaryEntries.filter(e => !e.is_relisten).length;
+    const reListens = filteredDiaryEntries.filter(e => e.is_relisten).length;
 
     // New albums (first-time listens only)
-    const newAlbumsSet = new Set(yearDiaryEntries.filter(e => !e.is_relisten).map(e => e.release_group_id));
+    const newAlbumsSet = new Set(filteredDiaryEntries.filter(e => !e.is_relisten).map(e => e.release_group_id));
     const newAlbums = newAlbumsSet.size;
 
-    // Artists discovered (distinct artists from first-time listens this year)
-    const artistsDiscovered = new Set(yearDiaryEntries.filter(e => !e.is_relisten).map(e => e.artist_name.toLowerCase())).size;
+    // Artists discovered (distinct artists from first-time listens)
+    const artistsDiscovered = new Set(filteredDiaryEntries.filter(e => !e.is_relisten).map(e => e.artist_name.toLowerCase())).size;
 
     // Top artists by listen count
     const artistCounts: Record<string, number> = {};
-    yearDiaryEntries.forEach(entry => {
+    filteredDiaryEntries.forEach(entry => {
       const artist = entry.artist_name;
       artistCounts[artist] = (artistCounts[artist] || 0) + 1;
     });
@@ -147,7 +166,7 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
 
     // Most replayed albums (albums listened to more than once)
     const albumListenCounts: Record<string, { title: string; artist: string; count: number }> = {};
-    yearDiaryEntries.forEach(entry => {
+    filteredDiaryEntries.forEach(entry => {
       const key = entry.release_group_id;
       if (!albumListenCounts[key]) {
         albumListenCounts[key] = { title: entry.album_title, artist: entry.artist_name, count: 0 };
@@ -161,25 +180,25 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       .map(([id, data]) => ({ id, ...data }));
 
     // Ratings stats
-    const totalRatings = yearRatings.length;
+    const totalRatings = filteredRatings.length;
     const avgRating = totalRatings > 0
-      ? yearRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings
+      ? filteredRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings
       : 0;
-    const lovedCount = yearRatings.filter(r => r.loved).length;
-    const reviewCount = yearRatings.filter(r => r.review_text).length;
+    const lovedCount = filteredRatings.filter(r => r.loved).length;
+    const reviewCount = filteredRatings.filter(r => r.review_text).length;
 
     // Rating distribution (0.5 to 5 in 0.5 increments)
     const ratingDistribution: { rating: string; count: number }[] = [];
     for (let r = 0.5; r <= 5; r += 0.5) {
-      const count = yearRatings.filter(rating => rating.rating === r).length;
+      const count = filteredRatings.filter(rating => rating.rating === r).length;
       ratingDistribution.push({ rating: r.toString(), count });
     };
 
-    // Decades breakdown - based on albums rated/listened this year
+    // Decades breakdown - based on albums rated/listened
     const decadeCounts: Record<string, number> = {};
-    const yearReleaseGroupIds = new Set(yearDiaryEntries.map(e => e.release_group_id));
+    const releaseGroupIds = new Set(filteredDiaryEntries.map(e => e.release_group_id));
     ratings.forEach(rating => {
-      if (yearReleaseGroupIds.has(rating.release_group_id) && rating.release_date) {
+      if (releaseGroupIds.has(rating.release_group_id) && rating.release_date) {
         const releaseYear = parseInt(rating.release_date.slice(0, 4));
         if (!isNaN(releaseYear)) {
           const decade = `${Math.floor(releaseYear / 10) * 10}s`;
@@ -192,15 +211,29 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       .sort((a, b) => b.count - a.count);
 
     // Artist follows
-    const newFollows = yearFollows.length;
+    const newFollows = filteredFollows.length;
 
-    // Monthly breakdown
+    // Format tag stats
+    const tagCounts: Record<string, number> = {};
+    filteredDiaryEntries.forEach(entry => {
+      if (entry.tags && Array.isArray(entry.tags)) {
+        entry.tags.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      }
+    });
+    const formatTagStats = Object.entries(tagCounts)
+      .map(([tag, count]) => ({ tag, count, ...FORMAT_TAG_LABELS[tag] }))
+      .filter(t => t.label) // Only include known tags
+      .sort((a, b) => b.count - a.count);
+
+    // Monthly breakdown (only for yearly view)
     const monthlyData = MONTH_NAMES.map((name, index) => {
-      const monthEntries = yearDiaryEntries.filter(entry => {
+      const monthEntries = filteredDiaryEntries.filter(entry => {
         const date = new Date(entry.listened_on);
         return date.getMonth() === index;
       });
-      const monthRatings = yearRatings.filter(rating => {
+      const monthRatings = filteredRatings.filter(rating => {
         const date = new Date(rating.updated_at);
         return date.getMonth() === index;
       });
@@ -228,12 +261,14 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       monthlyData,
       ratingDistribution,
       decadesBreakdown,
+      formatTagStats,
     };
-  }, [diaryEntries, ratings, artistFollows, selectedYear]);
+  }, [diaryEntries, ratings, artistFollows, selectedYear, isAllTime]);
 
   const hasMonthlyData = stats.monthlyData.some(m => m.listens > 0 || m.ratings > 0);
   const hasRatingData = stats.ratingDistribution.some(r => r.count > 0);
   const hasDecadesData = stats.decadesBreakdown.length > 0;
+  const hasTagData = stats.formatTagStats.length > 0;
 
   return (
     <motion.div
@@ -241,24 +276,46 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="font-serif text-xl text-foreground flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          Year in Review
+          {isAllTime ? (
+            <Infinity className="h-5 w-5 text-primary" />
+          ) : (
+            <TrendingUp className="h-5 w-5 text-primary" />
+          )}
+          {isAllTime ? 'All Time Stats' : 'Year in Review'}
         </h2>
-        <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-          <SelectTrigger className="w-[100px]">
-            <Calendar className="h-4 w-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {availableYears.map(year => (
-              <SelectItem key={year} value={year.toString()}>
-                {year}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        
+        <div className="flex items-center gap-4">
+          {/* All Time Toggle */}
+          <div className="flex items-center gap-2">
+            <Switch
+              id="all-time-toggle"
+              checked={isAllTime}
+              onCheckedChange={setIsAllTime}
+            />
+            <Label htmlFor="all-time-toggle" className="text-sm text-muted-foreground cursor-pointer">
+              All Time
+            </Label>
+          </div>
+
+          {/* Year selector (only when not all-time) */}
+          {!isAllTime && (
+            <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+              <SelectTrigger className="w-[100px]">
+                <Calendar className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map(year => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
@@ -299,6 +356,25 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
           subtext="first listens"
         />
       </div>
+
+      {/* Format Tag Stats */}
+      {hasTagData && (
+        <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Listening Formats</h3>
+          <div className="flex flex-wrap gap-2">
+            {stats.formatTagStats.map((tagStat) => (
+              <div
+                key={tagStat.tag}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 text-sm"
+              >
+                <span>{tagStat.emoji}</span>
+                <span className="text-foreground">{tagStat.label}</span>
+                <span className="text-muted-foreground">({tagStat.count})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Rating Distribution & Decades side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -391,8 +467,8 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
         )}
       </div>
 
-      {/* Monthly Breakdown Chart */}
-      {hasMonthlyData && (
+      {/* Monthly Breakdown Chart - only for yearly view */}
+      {!isAllTime && hasMonthlyData && (
         <div className="p-4 rounded-xl bg-card/50 border border-border/50">
           <h3 className="text-sm font-medium text-muted-foreground mb-4">Monthly Listening Activity</h3>
           <div className="h-[200px] w-full">
@@ -474,16 +550,13 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
           <h3 className="text-sm font-medium text-muted-foreground mb-3">Most Replayed Albums</h3>
           <div className="space-y-2">
             {stats.mostReplayedAlbums.map((album, index) => (
-              <div
-                key={album.id}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/30 text-sm"
-              >
-                <span className="text-primary font-semibold w-6">#{index + 1}</span>
+              <div key={album.id} className="flex items-center gap-3 text-sm">
+                <span className="text-primary font-semibold w-6 text-center">#{index + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-foreground font-medium truncate">{album.title}</p>
-                  <p className="text-muted-foreground text-xs truncate">{album.artist}</p>
+                  <span className="text-foreground truncate block">{album.title}</span>
+                  <span className="text-muted-foreground text-xs">{album.artist}</span>
                 </div>
-                <span className="text-muted-foreground shrink-0">×{album.count}</span>
+                <span className="text-muted-foreground shrink-0">{album.count} plays</span>
               </div>
             ))}
           </div>
@@ -493,23 +566,13 @@ export function AnnualStats({ userId }: AnnualStatsProps) {
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  subtext,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  subtext: string;
-}) {
+function StatCard({ icon, label, value, subtext }: { icon: React.ReactNode; label: string; value: string | number; subtext: string }) {
   return (
-    <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-center">
-      <div className="flex justify-center text-primary mb-2">{icon}</div>
+    <div className="p-3 rounded-xl bg-card/50 border border-border/50 text-center">
+      <div className="flex justify-center text-primary mb-1">{icon}</div>
       <div className="text-2xl font-bold text-foreground">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-[10px] text-muted-foreground/60 mt-1">{subtext}</div>
+      <div className="text-[10px] text-muted-foreground/60 mt-0.5">{subtext}</div>
     </div>
   );
 }

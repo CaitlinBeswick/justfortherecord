@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, Play, Search, Target, Pencil, Check, X, Trophy, PartyPopper } from "lucide-react";
+import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, CheckCircle, Search, Target, Pencil, Check, X, Trophy, PartyPopper } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -773,12 +773,12 @@ export function DiaryContent() {
                   <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
                 </div>
 
-                {/* Listen type icon */}
+                {/* Listen type icon - green check for first listen, consistent with activity */}
                 <div className="shrink-0" title={entry.is_relisten ? "Re-listen" : "First listen"}>
                   {entry.is_relisten ? (
                     <RotateCcw className="h-4 w-4 text-primary" />
                   ) : (
-                    <Play className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-green-500" />
                   )}
                 </div>
 
