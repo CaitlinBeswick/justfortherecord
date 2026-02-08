@@ -27,7 +27,9 @@ export function DigestEmailPreview() {
   const [showPreview, setShowPreview] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [isSendingAll, setIsSendingAll] = useState(false);
   const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [sendAllDialogOpen, setSendAllDialogOpen] = useState(false);
   
   // Local state for editing
   const [subject, setSubject] = useState("Your Weekly Digest from Just For The Record");
@@ -121,6 +123,35 @@ export function DigestEmailPreview() {
       });
     } finally {
       setIsSendingTest(false);
+    }
+  };
+
+  // Send to all users mutation
+  const handleSendToAll = async () => {
+    setIsSendingAll(true);
+    setSendAllDialogOpen(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("send-weekly-digest", {
+        body: { testMode: false }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Digest sent!",
+        description: `Weekly digest sent to ${data?.emailsSent || 'all'} opted-in users.`,
+      });
+    } catch (error) {
+      console.error("Failed to send digest:", error);
+      toast({
+        title: "Failed to send",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingAll(false);
     }
   };
   
@@ -367,7 +398,7 @@ export function DigestEmailPreview() {
             <CardTitle className="text-lg">Weekly Digest Email</CardTitle>
             <CardDescription>Preview and customize the weekly digest email template</CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <AlertDialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" disabled={isSendingTest}>
@@ -396,6 +427,39 @@ export function DigestEmailPreview() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={handleSendTestDigest}>
                     Send Test Email
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <AlertDialog open={sendAllDialogOpen} onOpenChange={setSendAllDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="default" size="sm" disabled={isSendingAll}>
+                  {isSendingAll ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send to All Users
+                    </>
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Send Weekly Digest to All Users?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will send the weekly digest email to ALL users who have opted in to receive it. 
+                    This action should typically only be done once per week.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSendToAll}>
+                    Send to All Users
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

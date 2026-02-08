@@ -615,43 +615,44 @@ const ArtistDetail = () => {
                     <span><strong className="text-foreground">{releases.length}</strong> releases</span>
                   </div>
 
-                  {/* Actions Card */}
-                  <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-                    <div className="flex flex-wrap items-center justify-center gap-4">
-                      <ArtistRating artistId={artistId} artistName={artist.name} />
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={handleFollow}
-                          disabled={followMutation.isPending}
-                          className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
-                            following
-                              ? "bg-red-500 text-white hover:bg-red-600"
-                              : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                          } disabled:opacity-50`}
-                        >
-                          {following ? (
-                            <>
-                              <UserCheck className="h-4 w-4" />
-                              Following
-                            </>
-                          ) : (
-                            <>
-                              <UserPlus className="h-4 w-4" />
-                              Follow
-                            </>
-                          )}
-                        </button>
-                        <ShareButton 
-                          title={artist.name}
-                          text={`Check out ${artist.name}`}
-                          className="flex h-10 w-10 items-center justify-center rounded-lg"
-                        />
-                      </div>
+                  {/* Actions Card - Redesigned for better aesthetics */}
+                  <div className="mt-6 p-5 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
+                    {/* Primary actions row */}
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <button
+                        onClick={handleFollow}
+                        disabled={followMutation.isPending}
+                        className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
+                          following
+                            ? "bg-primary text-primary-foreground hover:opacity-90"
+                            : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                        } disabled:opacity-50`}
+                      >
+                        {following ? (
+                          <>
+                            <UserCheck className="h-4 w-4" />
+                            Following
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4" />
+                            Follow
+                          </>
+                        )}
+                      </button>
+                      
+                      <ShareButton 
+                        title={artist.name}
+                        text={`Check out ${artist.name}`}
+                        className="flex h-10 items-center justify-center rounded-lg px-4"
+                      />
+                      
+                      <StreamingLinks artistName={artist?.name || ""} />
                     </div>
                     
-                    {/* Streaming Links */}
-                    <div className="mt-4 pt-4 border-t border-border/50">
-                      <StreamingLinks artistName={artist?.name || ""} />
+                    {/* Rating section - separated for focus */}
+                    <div className="mt-4 pt-4 border-t border-border/30 flex items-center justify-center">
+                      <ArtistRating artistId={artistId} artistName={artist.name} />
                     </div>
                   </div>
                 </motion.div>
