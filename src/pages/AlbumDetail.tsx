@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AverageAlbumRating } from "@/components/AverageAlbumRating";
 import { ShareButton } from "@/components/ShareButton";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
+import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown, MoreHorizontal } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -387,24 +387,25 @@ const AlbumDetail = () => {
             </motion.button>
 
             <div className="flex flex-col md:flex-row gap-8">
+              {/* Album Art Column */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4 }}
-                className="flex-shrink-0"
+                className="flex-shrink-0 flex flex-col items-center md:items-start"
               >
                 <div className="relative">
                   {!coverError ? (
                     <img
                       src={coverUrl}
                       alt={releaseGroup.title}
-                      className="w-64 h-64 md:w-72 md:h-72 rounded-xl object-cover shadow-2xl mx-auto md:mx-0 bg-secondary"
+                      className="w-64 h-64 md:w-72 md:h-72 rounded-xl object-cover shadow-2xl bg-secondary"
                       style={{ boxShadow: "var(--shadow-album)" }}
                       onError={() => setCoverError(true)}
                     />
                   ) : (
                     <div 
-                      className="w-64 h-64 md:w-72 md:h-72 rounded-xl shadow-2xl mx-auto md:mx-0 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center"
+                      className="w-64 h-64 md:w-72 md:h-72 rounded-xl shadow-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center"
                       style={{ boxShadow: "var(--shadow-album)" }}
                     >
                       <span className="font-serif text-5xl text-primary/60">
@@ -418,8 +419,30 @@ const AlbumDetail = () => {
                     </div>
                   )}
                 </div>
+                
+                {/* Rating Stars - Below Album Art */}
+                {user && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <StarRating
+                      rating={userRating}
+                      size="md"
+                      interactive
+                      onRatingChange={handleRatingChange}
+                    />
+                    {userRating > 0 && (
+                      <button
+                        onClick={handleRemoveRating}
+                        className="text-muted-foreground hover:text-destructive text-lg px-1"
+                        title="Remove rating"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                )}
               </motion.div>
 
+              {/* Album Info Column */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -448,61 +471,42 @@ const AlbumDetail = () => {
                   {artistName}
                 </button>
 
-                {/* Listening Status & Actions Card - Unified single row */}
-                <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    <ListeningStatusButtons
+                {/* Primary Actions - Log button prominent */}
+                <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
+                  {user && releaseGroup && (
+                    <LogListenDialog
                       releaseGroupId={id!}
                       albumTitle={releaseGroup.title}
                       artistName={artistName}
+                      releaseDate={releaseGroup["first-release-date"]}
+                      hasListenedBefore={hasListenedBefore}
+                      trigger={
+                        <Button className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          Log Listen
+                        </Button>
+                      }
                     />
-                    
-                    {user && releaseGroup && (
-                      <LogListenDialog
-                        releaseGroupId={id!}
-                        albumTitle={releaseGroup.title}
-                        artistName={artistName}
-                        releaseDate={releaseGroup["first-release-date"]}
-                        hasListenedBefore={hasListenedBefore}
-                        trigger={
-                          <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90">
-                            <Plus className="h-4 w-4" />
-                            Log
-                          </button>
-                        }
-                      />
-                    )}
-                    
-                    <ShareButton 
-                      title={releaseGroup.title}
-                      text={`Check out ${releaseGroup.title} by ${artistName}`}
-                      className="flex h-9 items-center justify-center rounded-lg px-3"
-                    />
-                    
-                    <StreamingLinks 
-                      artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
-                      albumTitle={releaseGroup?.title} 
-                    />
-                    
-                    {user && (
-                      <div className="flex items-center gap-1.5 rounded-lg bg-secondary/50 px-3 py-1.5">
-                        <StarRating
-                          rating={userRating}
-                          size="sm"
-                          interactive
-                          onRatingChange={handleRatingChange}
-                        />
-                        {userRating > 0 && (
-                          <button
-                            onClick={handleRemoveRating}
-                            className="text-muted-foreground hover:text-destructive text-sm px-0.5"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  )}
+                  
+                  <ListeningStatusButtons
+                    releaseGroupId={id!}
+                    albumTitle={releaseGroup.title}
+                    artistName={artistName}
+                  />
+                </div>
+
+                {/* Secondary Actions - Collapsible dropdown */}
+                <div className="mt-4 flex flex-wrap items-center justify-center md:justify-start gap-2">
+                  <StreamingLinks 
+                    artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
+                    albumTitle={releaseGroup?.title} 
+                  />
+                  <ShareButton 
+                    title={releaseGroup.title}
+                    text={`Check out ${releaseGroup.title} by ${artistName}`}
+                    className="flex h-9 items-center justify-center rounded-lg px-3"
+                  />
                 </div>
               </motion.div>
             </div>
