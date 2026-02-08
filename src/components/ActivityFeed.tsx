@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { User, Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus, CheckCircle } from "lucide-react";
+import { User, Disc3, PenLine, Star, RotateCcw, Loader2, UserPlus, Play } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFriendships } from "@/hooks/useFriendships";
@@ -367,13 +367,13 @@ export function ActivityFeed() {
             </div>
           </div>
 
-          {/* Activity Type Icon - Use green check for first listen, consistent with diary */}
+          {/* Activity Type Icon - Use green play for first listen, consistent with diary */}
           <div className="shrink-0">
             {activity.type === 'listen' ? (
               activity.isRelisten ? (
                 <RotateCcw className="h-4 w-4 text-primary" />
               ) : (
-                <CheckCircle className="h-4 w-4 text-green-500" />
+                <Play className="h-4 w-4 text-green-500 fill-green-500" />
               )
             ) : activity.type === 'follow' ? (
               <UserPlus className="h-4 w-4 text-primary" />

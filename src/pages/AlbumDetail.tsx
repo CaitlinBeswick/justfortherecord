@@ -448,19 +448,15 @@ const AlbumDetail = () => {
                   {artistName}
                 </button>
 
-                {/* Listening Status, Rating & Actions Card - Centered */}
+                {/* Listening Status & Actions Card - Unified single row */}
                 <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-                  {/* Status buttons row */}
-                  <div className="flex flex-wrap items-center justify-center gap-2">
+                  <div className="flex flex-wrap items-center justify-center gap-3">
                     <ListeningStatusButtons
                       releaseGroupId={id!}
                       albumTitle={releaseGroup.title}
                       artistName={artistName}
                     />
-                  </div>
-                  
-                  {/* Actions row - Log, Share, Listen, Rate */}
-                  <div className="flex flex-wrap items-center justify-center gap-2 mt-3 pt-3 border-t border-border/30">
+                    
                     {user && releaseGroup && (
                       <LogListenDialog
                         releaseGroupId={id!}
@@ -476,18 +472,20 @@ const AlbumDetail = () => {
                         }
                       />
                     )}
+                    
                     <ShareButton 
                       title={releaseGroup.title}
                       text={`Check out ${releaseGroup.title} by ${artistName}`}
                       className="flex h-9 items-center justify-center rounded-lg px-3"
                     />
+                    
                     <StreamingLinks 
                       artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
                       albumTitle={releaseGroup?.title} 
                     />
+                    
                     {user && (
                       <div className="flex items-center gap-1.5 rounded-lg bg-secondary/50 px-3 py-1.5">
-                        <span className="text-xs font-medium text-muted-foreground">Rate:</span>
                         <StarRating
                           rating={userRating}
                           size="sm"
