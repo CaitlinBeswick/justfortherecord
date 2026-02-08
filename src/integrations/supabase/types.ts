@@ -360,6 +360,7 @@ export type Database = {
       }
       contact_submissions: {
         Row: {
+          archived: boolean
           created_at: string
           email: string
           id: string
@@ -370,6 +371,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          archived?: boolean
           created_at?: string
           email: string
           id?: string
@@ -380,6 +382,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          archived?: boolean
           created_at?: string
           email?: string
           id?: string
