@@ -420,26 +420,6 @@ const AlbumDetail = () => {
                   )}
                 </div>
                 
-                {/* Rating Stars - Below Album Art */}
-                {user && (
-                  <div className="mt-4 flex items-center justify-center gap-2">
-                    <StarRating
-                      rating={userRating}
-                      size="md"
-                      interactive
-                      onRatingChange={handleRatingChange}
-                    />
-                    {userRating > 0 && (
-                      <button
-                        onClick={handleRemoveRating}
-                        className="text-muted-foreground hover:text-destructive text-lg px-1"
-                        title="Remove rating"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                )}
               </motion.div>
 
               {/* Album Info Column */}
@@ -471,9 +451,36 @@ const AlbumDetail = () => {
                   {artistName}
                 </button>
 
-                {/* Primary Actions - Log button prominent */}
-                <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
-                  {user && releaseGroup && (
+                {/* Rating + Love - centered below info */}
+                {user && (
+                  <div className="mt-6 flex items-center justify-center md:justify-start gap-3">
+                    <StarRating
+                      rating={userRating}
+                      size="md"
+                      interactive
+                      onRatingChange={handleRatingChange}
+                    />
+                    {userRating > 0 && (
+                      <button
+                        onClick={handleRemoveRating}
+                        className="text-muted-foreground hover:text-destructive text-lg px-1"
+                        title="Remove rating"
+                      >
+                        ×
+                      </button>
+                    )}
+                    <ListeningStatusButtons
+                      releaseGroupId={id!}
+                      albumTitle={releaseGroup.title}
+                      artistName={artistName}
+                      showOnly={['is_loved']}
+                    />
+                  </div>
+                )}
+
+                {/* Row 1: Log Listen */}
+                {user && releaseGroup && (
+                  <div className="mt-4 flex justify-center md:justify-start">
                     <LogListenDialog
                       releaseGroupId={id!}
                       albumTitle={releaseGroup.title}
@@ -481,23 +488,27 @@ const AlbumDetail = () => {
                       releaseDate={releaseGroup["first-release-date"]}
                       hasListenedBefore={hasListenedBefore}
                       trigger={
-                        <Button className="gap-2">
+                        <Button className="gap-2 w-full max-w-[240px]">
                           <Plus className="h-4 w-4" />
                           Log Listen
                         </Button>
                       }
                     />
-                  )}
-                  
+                  </div>
+                )}
+
+                {/* Row 2: Listened + To Listen */}
+                <div className="mt-3 flex justify-center md:justify-start gap-2">
                   <ListeningStatusButtons
                     releaseGroupId={id!}
                     albumTitle={releaseGroup.title}
                     artistName={artistName}
+                    showOnly={['is_listened', 'is_to_listen']}
                   />
                 </div>
 
-                {/* Secondary Actions - Collapsible dropdown */}
-                <div className="mt-4 flex flex-wrap items-center justify-center md:justify-start gap-2">
+                {/* Row 3: Share + Listen On */}
+                <div className="mt-3 flex justify-center md:justify-start gap-2">
                   <StreamingLinks 
                     artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
                     albumTitle={releaseGroup?.title} 
