@@ -63,16 +63,12 @@ const DiscoveryNewReleases = () => {
   const { data: releases = [], isLoading: loadingReleases } = useQuery({
     queryKey: ["new-releases", user?.id],
     queryFn: async () => {
-      if (!user || followedArtists.length === 0) return [];
-
-      const { data, error } = await supabase.functions.invoke("get-new-releases", {
-        body: { userId: user.id },
-      });
+      const { data, error } = await supabase.functions.invoke("get-new-releases");
 
       if (error) throw error;
       return (data?.releases || []) as ReleaseGroup[];
     },
-    enabled: !!user && followedArtists.length > 0,
+    enabled: !!user && !loadingFollows && followedArtists.length > 0,
     staleTime: 1000 * 60 * 30,
   });
 
