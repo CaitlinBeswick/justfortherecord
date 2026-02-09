@@ -419,6 +419,33 @@ const AlbumDetail = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Rating + Heart directly beneath album art, centered */}
+                {user && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <StarRating
+                      rating={userRating}
+                      size="md"
+                      interactive
+                      onRatingChange={handleRatingChange}
+                    />
+                    {userRating > 0 && (
+                      <button
+                        onClick={handleRemoveRating}
+                        className="text-muted-foreground hover:text-destructive text-lg px-1"
+                        title="Remove rating"
+                      >
+                        ×
+                      </button>
+                    )}
+                    <ListeningStatusButtons
+                      releaseGroupId={id!}
+                      albumTitle={releaseGroup.title}
+                      artistName={artistName}
+                      showOnly={['is_loved']}
+                    />
+                  </div>
+                )}
                 
               </motion.div>
 
@@ -450,33 +477,6 @@ const AlbumDetail = () => {
                 >
                   {artistName}
                 </button>
-
-                {/* Rating + Love - centered below info */}
-                {user && (
-                  <div className="mt-6 flex items-center justify-center md:justify-start gap-3">
-                    <StarRating
-                      rating={userRating}
-                      size="md"
-                      interactive
-                      onRatingChange={handleRatingChange}
-                    />
-                    {userRating > 0 && (
-                      <button
-                        onClick={handleRemoveRating}
-                        className="text-muted-foreground hover:text-destructive text-lg px-1"
-                        title="Remove rating"
-                      >
-                        ×
-                      </button>
-                    )}
-                    <ListeningStatusButtons
-                      releaseGroupId={id!}
-                      albumTitle={releaseGroup.title}
-                      artistName={artistName}
-                      showOnly={['is_loved']}
-                    />
-                  </div>
-                )}
 
                 {/* Row 1: Log Listen */}
                 {user && releaseGroup && (
