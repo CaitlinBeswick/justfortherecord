@@ -89,18 +89,18 @@ export function ListeningStatusButtons({
         <button
           onClick={() => handleToggle('is_loved')}
           disabled={isPending}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+          className={`flex items-center justify-center rounded-lg p-2 text-sm font-medium transition-all ${
             isLoved
-              ? "bg-red-500 text-white"
-              : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+              ? "text-red-500"
+              : "text-muted-foreground hover:text-red-400"
           }`}
+          title={isLoved ? "Remove love" : "Love this album"}
         >
           {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
-            <Heart className={`h-4 w-4 ${isLoved ? "fill-current" : ""}`} />
+            <Heart className={`h-5 w-5 ${isLoved ? "fill-current" : ""}`} />
           )}
-          Love
         </button>
       )}
     </div>

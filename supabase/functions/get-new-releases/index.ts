@@ -35,23 +35,38 @@ function isFresh(iso: string): boolean {
 }
 
 async function fetchArtistReleaseGroups(artistId: string): Promise<any[]> {
-  // NOTE: MusicBrainz asks for a User-Agent identifying the app
-  const url = `https://musicbrainz.org/ws/2/release-group?artist=${encodeURIComponent(
-    artistId,
-  )}&type=album|ep|single&limit=50&fmt=json`
+  const allGroups: any[] = []
+  let offset = 0
+  const limit = 100
 
-  const resp = await fetch(url, {
-    headers: {
-      'User-Agent': 'JustForTheRecord/1.0 (lovable.dev)',
-    },
-  })
+  while (true) {
+    const url = `https://musicbrainz.org/ws/2/release-group?artist=${encodeURIComponent(
+      artistId,
+    )}&type=album|ep|single&limit=${limit}&offset=${offset}&fmt=json`
 
-  if (!resp.ok) {
-    throw new Error(`MusicBrainz API error: ${resp.status}`)
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': 'JustForTheRecord/1.0 (lovable.dev)',
+      },
+    })
+
+    if (!resp.ok) {
+      throw new Error(`MusicBrainz API error: ${resp.status}`)
+    }
+
+    const data = await resp.json()
+    const groups = data?.['release-groups'] || []
+    allGroups.push(...groups)
+
+    // If we got fewer than limit, we've fetched everything
+    if (groups.length < limit) break
+    offset += limit
+
+    // Rate limit pause between pages
+    await new Promise((r) => setTimeout(r, 350))
   }
 
-  const data = await resp.json()
-  return data?.['release-groups'] || []
+  return allGroups
 }
 
 async function runBatches<T>(
