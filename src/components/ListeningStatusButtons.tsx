@@ -9,7 +9,6 @@ interface ListeningStatusButtonsProps {
   albumTitle: string;
   artistName: string;
   showOnly?: ('is_listened' | 'is_to_listen' | 'is_loved')[];
-  variant?: 'default' | 'icon-column';
 }
 
 export function ListeningStatusButtons({ 
@@ -17,7 +16,6 @@ export function ListeningStatusButtons({
   albumTitle, 
   artistName,
   showOnly,
-  variant = 'default',
 }: ListeningStatusButtonsProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -48,71 +46,6 @@ export function ListeningStatusButtons({
       value: !currentValue 
     });
   };
-
-  // Letterboxd-style icon column variant
-  if (variant === 'icon-column') {
-    return (
-      <div className="flex items-center justify-center gap-6">
-        {shouldShow('is_listened') && (
-          <button
-            onClick={() => handleToggle('is_listened')}
-            disabled={isPending}
-            className="flex flex-col items-center gap-1 group"
-            title={isListened ? "Mark as not listened" : "Mark as listened"}
-          >
-            {isPending ? (
-              <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
-            ) : (
-              <Check className={`h-7 w-7 transition-colors ${
-                isListened ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"
-              }`} />
-            )}
-            <span className={`text-xs transition-colors ${
-              isListened ? "text-primary font-medium" : "text-muted-foreground/60 group-hover:text-foreground"
-            }`}>Listen</span>
-          </button>
-        )}
-        {shouldShow('is_loved') && (
-          <button
-            onClick={() => handleToggle('is_loved')}
-            disabled={isPending}
-            className="flex flex-col items-center gap-1 group"
-            title={isLoved ? "Remove love" : "Love this album"}
-          >
-            {isPending ? (
-              <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
-            ) : (
-              <Heart className={`h-7 w-7 transition-colors ${
-                isLoved ? "text-red-500 fill-current" : "text-muted-foreground/60 group-hover:text-red-400"
-              }`} />
-            )}
-            <span className={`text-xs transition-colors ${
-              isLoved ? "text-red-500 font-medium" : "text-muted-foreground/60 group-hover:text-foreground"
-            }`}>Like</span>
-          </button>
-        )}
-        {shouldShow('is_to_listen') && (
-          <button
-            onClick={() => handleToggle('is_to_listen')}
-            disabled={isPending}
-            className="flex flex-col items-center gap-1 group"
-            title={isToListen ? "Remove from To Listen" : "Add to To Listen"}
-          >
-            {isPending ? (
-              <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
-            ) : (
-              <Clock className={`h-7 w-7 transition-colors ${
-                isToListen ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"
-              }`} />
-            )}
-            <span className={`text-xs transition-colors ${
-              isToListen ? "text-primary font-medium" : "text-muted-foreground/60 group-hover:text-foreground"
-            }`}>Watchlist</span>
-          </button>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="flex items-center gap-2">
