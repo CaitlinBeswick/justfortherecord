@@ -203,7 +203,7 @@ Format your response as a JSON object with this exact structure:
   ]
 }
 
-Provide exactly 5 album recommendations and 5 artist recommendations.`;
+Provide exactly 8 album recommendations and 8 artist recommendations.`;
 
     const userPrompt = `Based on this user's music taste, recommend albums and artists they might enjoy:
 

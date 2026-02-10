@@ -422,7 +422,7 @@ const AlbumDetail = () => {
 
                 {/* Rating + Heart directly beneath album art, centered */}
                 {user && (
-                  <div className="mt-4 flex items-center justify-center gap-2">
+                  <div className="mt-4 w-full flex items-center justify-center gap-2">
                     <StarRating
                       rating={userRating}
                       size="md"
@@ -480,7 +480,7 @@ const AlbumDetail = () => {
 
                 {/* Row 1: Log Listen */}
                 {user && releaseGroup && (
-                  <div className="mt-4 flex justify-center md:justify-start">
+                  <div className="mt-4 flex justify-center">
                     <LogListenDialog
                       releaseGroupId={id!}
                       albumTitle={releaseGroup.title}
@@ -498,7 +498,7 @@ const AlbumDetail = () => {
                 )}
 
                 {/* Row 2: Listened + To Listen */}
-                <div className="mt-3 flex justify-center md:justify-start gap-2">
+                <div className="mt-3 flex justify-center gap-2">
                   <ListeningStatusButtons
                     releaseGroupId={id!}
                     albumTitle={releaseGroup.title}
@@ -508,7 +508,7 @@ const AlbumDetail = () => {
                 </div>
 
                 {/* Row 3: Share + Listen On */}
-                <div className="mt-3 flex justify-center md:justify-start gap-2">
+                <div className="mt-3 flex justify-center gap-2">
                   <StreamingLinks 
                     artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
                     albumTitle={releaseGroup?.title} 

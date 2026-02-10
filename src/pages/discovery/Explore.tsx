@@ -147,7 +147,7 @@ function RecommendationsDisplay({
     return !status.isToListen;
   });
 
-  // Show 6 on mobile (2 cols), 5 on desktop (5 cols)
+  // Always show exactly 5 on desktop, 6 on mobile (extra items act as buffer when albums are saved)
   const albumsToShow = filteredAlbums.slice(0, 6);
   const artistsToShow = (recommendations.artists || []).slice(0, 6);
 
@@ -254,10 +254,12 @@ function RecommendationsDisplay({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 + 0.25 }}
-                  onClick={() => handleArtistClick(artist)}
                   className={`cursor-pointer group text-center ${hideOnDesktop ? "md:hidden" : ""}`}
                 >
-                  <div className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all">
+                  <div 
+                    onClick={() => handleArtistClick(artist)}
+                    className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all"
+                  >
                     {artist.artistId ? (
                       <ArtistImageWithFallback
                         artistId={artist.artistId}
@@ -272,7 +274,10 @@ function RecommendationsDisplay({
                       </div>
                     )}
                   </div>
-                  <h4 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                  <h4 
+                    onClick={() => handleArtistClick(artist)}
+                    className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors"
+                  >
                     {artist.name}
                   </h4>
                   {resolvingArtistKey === artist.name && (
