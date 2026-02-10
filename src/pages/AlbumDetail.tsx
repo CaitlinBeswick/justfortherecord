@@ -420,7 +420,22 @@ const AlbumDetail = () => {
                   )}
                 </div>
 
-                {/* Rating + Heart directly beneath album art, centered */}
+                {/* ===== SECTION A: Letterboxd-style action icons (Listen / Like / Watchlist) ===== */}
+                {/* Move this entire section to rearrange. Uses icon-column variant. */}
+                <div className="mt-5 w-full flex justify-center">
+                  <div className="bg-secondary/60 rounded-xl px-6 py-3">
+                    <ListeningStatusButtons
+                      releaseGroupId={id!}
+                      albumTitle={releaseGroup.title}
+                      artistName={artistName}
+                      showOnly={['is_listened', 'is_loved', 'is_to_listen']}
+                      variant="icon-column"
+                    />
+                  </div>
+                </div>
+
+                {/* ===== SECTION B: Rating stars ===== */}
+                {/* Move this section to rearrange the star rating position */}
                 {user && (
                   <div className="mt-4 w-full flex items-center justify-center gap-2">
                     <StarRating
@@ -438,49 +453,13 @@ const AlbumDetail = () => {
                         ×
                       </button>
                     )}
-                    <ListeningStatusButtons
-                      releaseGroupId={id!}
-                      albumTitle={releaseGroup.title}
-                      artistName={artistName}
-                      showOnly={['is_loved']}
-                    />
                   </div>
                 )}
-                
-              </motion.div>
 
-              {/* Album Info Column */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-                className="flex-1 text-center md:text-left"
-              >
-                <p className="text-sm text-primary font-medium uppercase tracking-wider">
-                  {releaseGroup["primary-type"] || "Album"} · {year || "Unknown"}
-                </p>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-2">
-                  <h1 className="font-serif text-4xl md:text-5xl text-foreground">
-                    {releaseGroup.title}
-                  </h1>
-                  <AverageAlbumRating 
-                    rating={averageRating} 
-                    voteCount={ratingCount} 
-                  />
-                </div>
-                <button 
-                  onClick={() => {
-                    const artistId = releaseGroup["artist-credit"]?.[0]?.artist?.id;
-                    if (artistId) navigate(`/artist/${artistId}`);
-                  }}
-                  className="text-xl text-muted-foreground mt-2 hover:text-primary transition-colors"
-                >
-                  {artistName}
-                </button>
-
-                {/* Row 1: Log Listen */}
+                {/* ===== SECTION C: Log button ===== */}
+                {/* Move this section to rearrange the Log button position */}
                 {user && releaseGroup && (
-                  <div className="mt-4 flex justify-center">
+                  <div className="mt-3 flex justify-center">
                     <LogListenDialog
                       releaseGroupId={id!}
                       albumTitle={releaseGroup.title}
@@ -488,27 +467,18 @@ const AlbumDetail = () => {
                       releaseDate={releaseGroup["first-release-date"]}
                       hasListenedBefore={hasListenedBefore}
                       trigger={
-                        <Button className="gap-2 w-full max-w-[240px]">
+                        <Button variant="outline" size="sm" className="gap-2">
                           <Plus className="h-4 w-4" />
-                          Log Listen
+                          Log
                         </Button>
                       }
                     />
                   </div>
                 )}
 
-                {/* Row 2: Listened + To Listen */}
-                <div className="mt-3 flex justify-center gap-2">
-                  <ListeningStatusButtons
-                    releaseGroupId={id!}
-                    albumTitle={releaseGroup.title}
-                    artistName={artistName}
-                    showOnly={['is_listened', 'is_to_listen']}
-                  />
-                </div>
-
-                {/* Row 3: Share + Listen On */}
-                <div className="mt-3 flex justify-center gap-2">
+                {/* ===== SECTION D: Stream & Share (subtle utilities) ===== */}
+                {/* Move this section to rearrange. Intentionally subtle/small. */}
+                <div className="mt-3 flex justify-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
                   <StreamingLinks 
                     artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
                     albumTitle={releaseGroup?.title} 

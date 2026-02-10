@@ -71,7 +71,7 @@ export function StreamingLinks({ artistName, albumTitle, className = "" }: Strea
           className={`gap-1.5 ${className}`}
         >
           <span className="text-sm">🎧</span>
-          Listen
+          Stream
           <ChevronDown className="h-3 w-3 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
