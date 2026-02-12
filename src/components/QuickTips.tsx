@@ -78,7 +78,7 @@ const tips: Tip[] = [
   {
     id: "album-detail-tip",
     route: /^\/album\/[a-f0-9-]+$/,
-    message: "Rate with half-star precision, write reviews, mark as listened, or add to your 'To Listen' queue.",
+    message: "Rate with half-star precision, write reviews, mark as listened, or add to your queue.",
   },
   {
     id: "artist-detail-tip",
@@ -105,7 +105,7 @@ const tips: Tip[] = [
   {
     id: "profile-to-listen-tip",
     route: "/profile/to-listen",
-    message: "Your 'To Listen' queue — albums you've saved for later. Click any album to rate it when you're ready.",
+    message: "Your queue — albums you've saved for later. Click any album to rate it when you're ready.",
   },
   {
     id: "profile-diary-tip",

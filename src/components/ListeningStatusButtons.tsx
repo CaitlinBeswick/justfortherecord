@@ -82,7 +82,7 @@ export function ListeningStatusButtons({
           ) : (
             <Clock className="h-4 w-4" />
           )}
-          To Listen
+          Queue
         </button>
       )}
       {shouldShow('is_loved') && (

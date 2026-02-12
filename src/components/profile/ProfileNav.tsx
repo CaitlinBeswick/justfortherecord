@@ -10,7 +10,7 @@ interface ProfileNavProps {
 const tabs: { id: ProfileTab; label: string; icon: React.ReactNode; path: string }[] = [
   { id: "diary", label: "Diary", icon: <Calendar className="h-4 w-4" />, path: "/profile" },
   { id: "albums", label: "Albums", icon: <Music className="h-4 w-4" />, path: "/profile/albums" },
-  { id: "to_listen", label: "To Listen", icon: <Clock className="h-4 w-4" />, path: "/profile/to-listen" },
+  { id: "to_listen", label: "Queue", icon: <Clock className="h-4 w-4" />, path: "/profile/to-listen" },
   { id: "artists", label: "Artists", icon: <UserCheck className="h-4 w-4" />, path: "/profile/artists" },
   { id: "lists", label: "Lists", icon: <List className="h-4 w-4" />, path: "/profile/lists" },
   { id: "reviews", label: "Reviews", icon: <PenLine className="h-4 w-4" />, path: "/profile/reviews" },
