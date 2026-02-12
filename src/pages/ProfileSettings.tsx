@@ -75,7 +75,7 @@ const RELEASE_TYPE_OPTIONS = [
 
 const GENRE_SUGGESTIONS = [
   // Popular / Mainstream
-  "Pop", "Rock", "Hip-Hop", "R&B", "Country", "EDM",
+  "Pop", "Rock", "Hip-Hop", "R&B", "Country", "EDM", "Blues",
   // Rock subgenres
   "Alternative", "Indie", "Punk", "Metal", "Grunge", "Post-Rock", "Shoegaze", "Prog Rock",
   // Electronic subgenres
@@ -83,7 +83,7 @@ const GENRE_SUGGESTIONS = [
   // Hip-Hop / Urban
   "Trap", "Drill", "Boom Bap", "Lo-Fi Hip-Hop", "Grime",
   // Soul / Jazz / Blues
-  "Soul", "Jazz", "Blues", "Neo-Soul", "Funk", "Gospel",
+  "Soul", "Jazz", "Neo-Soul", "Funk", "Gospel",
   // Classical / Orchestral
   "Classical", "Orchestral", "Opera", "Chamber Music",
   // World / Regional
