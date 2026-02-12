@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
 
-type LeaderboardTab = "albums" | "artists";
+type LeaderboardTab = "albums";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -153,19 +153,21 @@ const DiscoveryLeaderboards = () => {
               }`}
             >
               <Disc3 className="h-4 w-4" />
-              Top 250 Albums
-            </button>
-            <button
-              onClick={() => setActiveTab("artists")}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === "artists"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-              }`}
-            >
-              <Users className="h-4 w-4" />
-              Top 250 Artists
-            </button>
+               Top 250 Albums
+             </button>
+             {/* Top 250 Artists tab temporarily disabled - kept for future reinstatement
+             <button
+               onClick={() => setActiveTab("artists")}
+               className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                 activeTab === "artists"
+                   ? "bg-primary text-primary-foreground"
+                   : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+               }`}
+             >
+               <Users className="h-4 w-4" />
+               Top 250 Artists
+             </button>
+             */}
           </div>
 
           {/* Fade Toggle */}
@@ -178,7 +180,7 @@ const DiscoveryLeaderboards = () => {
               />
               <Label htmlFor="fade-listened" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1.5">
                 {fadeListened ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                Fade {activeTab === "albums" ? "listened" : "rated"}
+                 Fade listened
               </Label>
             </div>
           )}
@@ -268,71 +270,7 @@ const DiscoveryLeaderboards = () => {
           </>
         )}
 
-        {/* Artists Grid */}
-        {activeTab === "artists" && (
-          <>
-            {topArtistsLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <div key={i}>
-                    <Skeleton className="aspect-square rounded-full mb-3" />
-                    <Skeleton className="h-4 w-3/4 mx-auto mb-2" />
-                    <Skeleton className="h-3 w-1/2 mx-auto" />
-                  </div>
-                ))}
-              </div>
-            ) : topArtists.length === 0 ? (
-              <div className="text-center py-20">
-                <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                <p className="text-muted-foreground">No artist ratings yet</p>
-                <p className="text-sm text-muted-foreground/60 mt-2">
-                  Be the first to rate an artist!
-                </p>
-              </div>
-            ) : (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"
-              >
-                {topArtists.map((artist, index) => {
-                  const rated = isArtistRated(artist.artist_id);
-                  const shouldFade = fadeListened && rated;
-
-                  return (
-                    <motion.div
-                      key={artist.artist_id}
-                      variants={itemVariants}
-                      style={{ opacity: shouldFade ? 0.3 : 1 }}
-                      className="relative transition-opacity"
-                    >
-                      <div
-                        className={`absolute top-2 left-2 z-10 text-xs font-bold px-1.5 py-0.5 rounded ${
-                          index === 0
-                            ? "bg-yellow-500 text-yellow-950"
-                            : index === 1
-                            ? "bg-gray-300 text-gray-700"
-                            : index === 2
-                            ? "bg-amber-600 text-amber-50"
-                            : "bg-background/90 text-foreground"
-                        }`}
-                      >
-                        #{index + 1}
-                      </div>
-                      <ArtistCard
-                        id={artist.artist_id}
-                        name={artist.artist_name}
-                        genres={[`★ ${artist.avg_rating.toFixed(1)}`]}
-                        onClick={() => navigate(`/artist/${artist.artist_id}`)}
-                      />
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            )}
-          </>
-        )}
+        {/* Artists Grid - temporarily disabled, kept for future reinstatement */}
       </main>
       <Footer />
     </div>

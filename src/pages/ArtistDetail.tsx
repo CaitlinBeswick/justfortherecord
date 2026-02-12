@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
-import { AverageArtistRating } from "@/components/AverageArtistRating";
-import { ArtistRating } from "@/components/ArtistRating";
+// Artist ratings feature temporarily disabled - kept for future reinstatement
+// import { AverageArtistRating } from "@/components/AverageArtistRating";
+// import { ArtistRating } from "@/components/ArtistRating";
 import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -600,7 +601,7 @@ const ArtistDetail = () => {
                     <h1 className="font-serif text-5xl md:text-6xl text-foreground">
                       {artist.name}
                     </h1>
-                    <AverageArtistRating artistId={artistId} />
+                    {/* AverageArtistRating temporarily disabled */}
                   </div>
                   {genres.length > 0 && (
                     <p className="text-lg text-muted-foreground mt-2">
@@ -650,10 +651,11 @@ const ArtistDetail = () => {
                       <StreamingLinks artistName={artist?.name || ""} />
                     </div>
                     
-                    {/* Rating section - separated for focus */}
+                    {/* Artist rating section temporarily disabled - kept for future reinstatement
                     <div className="mt-4 pt-4 border-t border-border/30 flex items-center justify-center">
                       <ArtistRating artistId={artistId} artistName={artist.name} />
                     </div>
+                    */}
                   </div>
                 </motion.div>
               </div>

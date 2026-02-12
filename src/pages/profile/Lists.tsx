@@ -6,9 +6,13 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -16,6 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface UserList {
   id: string;
@@ -31,8 +42,15 @@ type SortOption = 'name-asc' | 'name-desc';
 const Lists = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [newListDescription, setNewListDescription] = useState('');
+  const [newListPublic, setNewListPublic] = useState(true);
+  const [newListRanked, setNewListRanked] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -53,6 +71,30 @@ const Lists = () => {
     },
     enabled: !!user,
   });
+
+  const handleCreateList = async () => {
+    if (!user || !newListName.trim()) return;
+    setIsCreating(true);
+    const { error } = await supabase.from('user_lists').insert({
+      user_id: user.id,
+      name: newListName.trim(),
+      description: newListDescription.trim() || null,
+      is_public: newListPublic,
+      is_ranked: newListRanked,
+    });
+    setIsCreating(false);
+    if (error) {
+      toast.error("Failed to create list");
+    } else {
+      toast.success("List created");
+      queryClient.invalidateQueries({ queryKey: ['user-lists', user.id] });
+      setShowCreateDialog(false);
+      setNewListName('');
+      setNewListDescription('');
+      setNewListPublic(true);
+      setNewListRanked(false);
+    }
+  };
 
   const filteredAndSortedLists = lists
     .filter(list => {
@@ -117,7 +159,10 @@ const Lists = () => {
                         className="pl-9 w-[180px]"
                       />
                     </div>
-                    <button className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90">
+                    <button
+                      onClick={() => setShowCreateDialog(true)}
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
+                    >
                       <Plus className="h-4 w-4" />
                       Create List
                     </button>
@@ -154,7 +199,7 @@ const Lists = () => {
                     <List className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                     <p className="text-muted-foreground">You haven't created any lists yet</p>
                     <p className="text-sm text-muted-foreground/60 mt-2">
-                      Create a list to organize your favorite albums
+                      Create a list to organise your favourite albums
                     </p>
                   </div>
                 )}
@@ -163,6 +208,52 @@ const Lists = () => {
           </div>
         </div>
       </main>
+
+      {/* Create List Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New List</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="list-name">Name</Label>
+              <Input
+                id="list-name"
+                placeholder="My favourite albums..."
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="list-desc">Description (optional)</Label>
+              <Textarea
+                id="list-desc"
+                placeholder="What's this list about?"
+                value={newListDescription}
+                onChange={(e) => setNewListDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="list-public">Public</Label>
+              <Switch id="list-public" checked={newListPublic} onCheckedChange={setNewListPublic} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="list-ranked">Ranked</Label>
+              <Switch id="list-ranked" checked={newListRanked} onCheckedChange={setNewListRanked} />
+            </div>
+            <Button
+              onClick={handleCreateList}
+              disabled={!newListName.trim() || isCreating}
+              className="w-full"
+            >
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+              Create List
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

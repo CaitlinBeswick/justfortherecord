@@ -126,7 +126,7 @@ const ToListen = () => {
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-                  <h2 className="font-serif text-xl text-foreground">Your Listening Queue ({toListenAlbums.length})</h2>
+                  <h2 className="font-serif text-xl text-foreground">Your Queue ({toListenAlbums.length})</h2>
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -180,9 +180,9 @@ const ToListen = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Clock className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No albums in your listening queue</p>
+                    <p className="text-muted-foreground">No albums in your queue</p>
                     <p className="text-sm text-muted-foreground/60 mt-2">
-                      Mark albums as "To Listen" to add them here
+                      Add albums to your queue to save them for later
                     </p>
                     <button 
                       onClick={() => navigate('/search')}

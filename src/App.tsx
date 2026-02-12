@@ -64,7 +64,7 @@ const App = () => (
                 <Route path="/albums" element={<Albums />} />
                 <Route path="/artists" element={<Artists />} />
                 <Route path="/artists/popular" element={<PopularArtists />} />
-                <Route path="/top-artists" element={<TopArtists />} />
+                {/* /top-artists route temporarily disabled - kept for future reinstatement */}
                 <Route path="/top-albums" element={<TopAlbums />} />
                 <Route path="/album/:id" element={<AlbumDetail />} />
                 <Route path="/artist/:id" element={<ArtistDetail />} />
