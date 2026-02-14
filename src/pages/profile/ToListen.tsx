@@ -2,8 +2,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Clock, Search, ArrowUpDown, Shuffle, X, Disc3 } from "lucide-react";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { Loader2, Plus, Clock, Search, ArrowUpDown, Shuffle, X } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
@@ -46,6 +46,23 @@ interface ShuffledAlbum {
   artist_name: string;
 }
 
+// Carousel item for the shuffle animation
+function CarouselCard({ album, isActive }: { album: ShuffledAlbum; isActive: boolean }) {
+  return (
+    <div className={`flex-shrink-0 w-28 transition-all duration-200 ${isActive ? 'scale-110 opacity-100' : 'scale-90 opacity-40'}`}>
+      <div className="aspect-square rounded-lg overflow-hidden shadow-md">
+        <AlbumCoverWithFallback
+          releaseGroupId={album.release_group_id}
+          title={album.album_title}
+          size="250"
+          className="w-full h-full"
+          imageClassName="w-full h-full object-cover"
+        />
+      </div>
+    </div>
+  );
+}
+
 const ToListen = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -54,6 +71,9 @@ const ToListen = () => {
   const [sortBy, setSortBy] = useState<SortOption>('date-added-desc');
   const [shuffledAlbum, setShuffledAlbum] = useState<ShuffledAlbum | null>(null);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [carouselItems, setCarouselItems] = useState<ShuffledAlbum[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [shufflePhase, setShufflePhase] = useState<'idle' | 'spinning' | 'slowing' | 'landed'>('idle');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -61,7 +81,6 @@ const ToListen = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Fetch ratings for sorting by rating
   const { data: ratings = [] } = useQuery({
     queryKey: ['user-album-ratings-for-tolisten', user?.id],
     queryFn: async () => {
@@ -114,35 +133,65 @@ const ToListen = () => {
   const handleShuffle = useCallback(() => {
     if (toListenAlbums.length === 0) return;
     
-    setIsShuffling(true);
-    
-    // Rapid cycle through albums for visual effect
-    let count = 0;
-    const totalCycles = 12;
-    const interval = setInterval(() => {
-      const randomIndex = Math.floor(Math.random() * toListenAlbums.length);
-      const picked = toListenAlbums[randomIndex];
-      setShuffledAlbum({
-        id: picked.id,
-        release_group_id: picked.release_group_id,
-        album_title: picked.album_title,
-        artist_name: picked.artist_name,
-      });
-      count++;
-      if (count >= totalCycles) {
-        clearInterval(interval);
-        // Final pick
-        const finalIndex = Math.floor(Math.random() * toListenAlbums.length);
-        const finalPick = toListenAlbums[finalIndex];
-        setShuffledAlbum({
-          id: finalPick.id,
-          release_group_id: finalPick.release_group_id,
-          album_title: finalPick.album_title,
-          artist_name: finalPick.artist_name,
+    // Build a randomized carousel of albums (repeat to fill at least 20 slots)
+    const shuffled = [...toListenAlbums].sort(() => Math.random() - 0.5);
+    const items: ShuffledAlbum[] = [];
+    while (items.length < Math.max(20, toListenAlbums.length * 2)) {
+      for (const a of shuffled) {
+        items.push({
+          id: a.id,
+          release_group_id: a.release_group_id,
+          album_title: a.album_title,
+          artist_name: a.artist_name,
         });
-        setIsShuffling(false);
+        if (items.length >= Math.max(20, toListenAlbums.length * 2)) break;
       }
-    }, 80);
+    }
+    
+    setCarouselItems(items);
+    setActiveIndex(0);
+    setIsShuffling(true);
+    setShufflePhase('spinning');
+    setShuffledAlbum(null);
+    
+    // Pick the final landing index (somewhere in the middle-to-end range)
+    const landingIndex = Math.floor(items.length * 0.6) + Math.floor(Math.random() * Math.floor(items.length * 0.3));
+    
+    let currentIndex = 0;
+    const totalSteps = landingIndex;
+    let step = 0;
+    
+    const tick = () => {
+      step++;
+      currentIndex = step;
+      setActiveIndex(currentIndex);
+      
+      if (step >= totalSteps) {
+        // Landed
+        setShufflePhase('landed');
+        setIsShuffling(false);
+        setShuffledAlbum(items[currentIndex]);
+        return;
+      }
+      
+      // Easing: start fast, slow down towards the end
+      const progress = step / totalSteps;
+      let delay: number;
+      if (progress < 0.5) {
+        delay = 60; // Fast phase
+        setShufflePhase('spinning');
+      } else if (progress < 0.8) {
+        delay = 60 + (progress - 0.5) * 400; // Slowing
+        setShufflePhase('slowing');
+      } else {
+        delay = 200 + (progress - 0.8) * 1500; // Very slow at end
+        setShufflePhase('slowing');
+      }
+      
+      setTimeout(tick, delay);
+    };
+    
+    setTimeout(tick, 60);
   }, [toListenAlbums]);
 
   if (authLoading || isLoading) {
@@ -210,102 +259,83 @@ const ToListen = () => {
                   </div>
                 </div>
 
-                {/* Shuffle Result */}
-                <AnimatePresence mode="wait">
-                  {shuffledAlbum && (
+                {/* Shuffle Carousel */}
+                <AnimatePresence>
+                  {(isShuffling || shuffledAlbum) && carouselItems.length > 0 && (
                     <motion.div
-                      key={isShuffling ? shuffledAlbum.release_group_id + Math.random() : "final"}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: isShuffling ? 0.06 : 0.3 }}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
                       className="mb-6"
                     >
-                      <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 ${
-                        isShuffling 
-                          ? "border-primary/40 bg-primary/5" 
-                          : "border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg shadow-primary/5"
+                      <div className={`relative overflow-hidden rounded-2xl border transition-all duration-500 ${
+                        shufflePhase === 'landed'
+                          ? "border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg shadow-primary/5"
+                          : "border-border/50 bg-card/50"
                       }`}>
-                        {/* Decorative vinyl record background */}
-                        {!isShuffling && (
-                          <motion.div
-                            initial={{ opacity: 0, rotate: -180 }}
-                            animate={{ opacity: 0.06, rotate: 0 }}
-                            transition={{ duration: 0.8, ease: "easeOut" }}
-                            className="absolute -right-16 -top-16 w-48 h-48"
-                          >
-                            <Disc3 className="w-full h-full text-primary" />
-                          </motion.div>
-                        )}
-                        
-                        <div className="relative p-5">
+                        <div className="p-4">
                           <div className="flex items-center justify-between mb-3">
-                            <motion.h3
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              className="text-sm font-medium text-primary uppercase tracking-wide flex items-center gap-2"
-                            >
+                            <h3 className="text-sm font-medium text-primary uppercase tracking-wide flex items-center gap-2">
                               <Shuffle className={`h-4 w-4 ${isShuffling ? "animate-spin" : ""}`} />
                               {isShuffling ? "Shuffling..." : "Your Next Listen"}
-                            </motion.h3>
-                            {!isShuffling && (
-                              <button onClick={() => setShuffledAlbum(null)} className="text-muted-foreground hover:text-foreground transition-colors">
+                            </h3>
+                            {!isShuffling && shuffledAlbum && (
+                              <button onClick={() => { setShuffledAlbum(null); setCarouselItems([]); setShufflePhase('idle'); }} className="text-muted-foreground hover:text-foreground transition-colors">
                                 <X className="h-4 w-4" />
                               </button>
                             )}
                           </div>
-                          <div className="flex items-center gap-4">
-                            <motion.div
-                              className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer shadow-md"
-                              onClick={() => !isShuffling && navigate(`/album/${shuffledAlbum.release_group_id}`)}
-                              whileHover={!isShuffling ? { scale: 1.05 } : {}}
-                              whileTap={!isShuffling ? { scale: 0.98 } : {}}
+                          
+                          {/* Carousel strip */}
+                          <div className="relative overflow-hidden">
+                            {/* Gradient masks */}
+                            <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-card/80 to-transparent z-10 pointer-events-none" />
+                            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-card/80 to-transparent z-10 pointer-events-none" />
+                            
+                            <div 
+                              className="flex gap-3 transition-transform"
+                              style={{
+                                transform: `translateX(calc(50% - ${activeIndex * (112 + 12)}px - 56px))`,
+                                transitionDuration: shufflePhase === 'spinning' ? '60ms' : shufflePhase === 'slowing' ? '200ms' : '400ms',
+                                transitionTimingFunction: shufflePhase === 'landed' ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'linear',
+                              }}
                             >
-                              <AlbumCoverWithFallback
-                                releaseGroupId={shuffledAlbum.release_group_id}
-                                title={shuffledAlbum.album_title}
-                                size="250"
-                                className="w-full h-full"
-                                imageClassName="w-full h-full object-cover"
-                              />
-                            </motion.div>
-                            <div className="flex-1 min-w-0">
-                              <motion.h4
-                                key={shuffledAlbum.album_title}
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="font-serif text-lg text-foreground truncate cursor-pointer hover:text-primary transition-colors"
-                                onClick={() => !isShuffling && navigate(`/album/${shuffledAlbum.release_group_id}`)}
-                              >
-                                {shuffledAlbum.album_title}
-                              </motion.h4>
-                              <motion.p
-                                key={shuffledAlbum.artist_name}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="text-sm text-muted-foreground truncate"
-                              >
-                                {shuffledAlbum.artist_name}
-                              </motion.p>
+                              {carouselItems.map((album, i) => (
+                                <CarouselCard key={`${album.id}-${i}`} album={album} isActive={i === activeIndex} />
+                              ))}
                             </div>
-                            {!isShuffling && (
+                          </div>
+
+                          {/* Landed result details */}
+                          <AnimatePresence>
+                            {shufflePhase === 'landed' && shuffledAlbum && (
                               <motion.div
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
+                                className="mt-4 flex items-center justify-between"
                               >
+                                <div 
+                                  className="flex-1 min-w-0 cursor-pointer"
+                                  onClick={() => navigate(`/album/${shuffledAlbum.release_group_id}`)}
+                                >
+                                  <h4 className="font-serif text-lg text-foreground truncate hover:text-primary transition-colors">
+                                    {shuffledAlbum.album_title}
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground truncate">{shuffledAlbum.artist_name}</p>
+                                </div>
                                 <Button
                                   variant="secondary"
                                   size="sm"
                                   onClick={handleShuffle}
-                                  className="gap-1.5 flex-shrink-0"
+                                  className="gap-1.5 flex-shrink-0 ml-4"
                                 >
                                   <Shuffle className="h-4 w-4" />
                                   Again
                                 </Button>
                               </motion.div>
                             )}
-                          </div>
+                          </AnimatePresence>
                         </div>
                       </div>
                     </motion.div>

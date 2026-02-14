@@ -692,7 +692,10 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
     
     const scored = allCandidates.map(a => {
       let score = 0;
-      const artistGenres = (a.genres || []).map(g => g.name.toLowerCase());
+      // MusicBrainz search returns genre data in both `genres` and `tags` fields
+      const genreNames = (a.genres || []).map(g => g.name.toLowerCase());
+      const tagNames = ((a as any).tags || []).map((t: any) => (t.name || '').toLowerCase()).filter(Boolean);
+      const artistGenres = [...new Set([...genreNames, ...tagNames])];
       
       // Count how many of the SOURCE genres this candidate matches
       let exactMatches = 0;

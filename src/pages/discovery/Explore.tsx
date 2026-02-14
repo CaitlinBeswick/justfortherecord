@@ -278,11 +278,11 @@ function RecommendationsDisplay({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 + 0.25 }}
-                  className={`cursor-pointer group text-center ${hideOnDesktop ? "md:hidden" : ""}`}
+                  className={`cursor-pointer group text-center relative ${hideOnDesktop ? "md:hidden" : ""}`}
                 >
                   <div 
                     onClick={() => handleArtistClick(artist)}
-                    className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all relative"
+                    className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all"
                   >
                     {artist.artistId ? (
                       <ArtistImageWithFallback
@@ -297,26 +297,26 @@ function RecommendationsDisplay({
                         <Users className="h-12 w-12 text-primary/40" />
                       </div>
                     )}
-                    {/* Quick follow button */}
-                    {artist.artistId && !isFollowed && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleFollowArtist(artist);
-                        }}
-                        disabled={isFollowingArtist}
-                        className="absolute bottom-1 right-1 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md"
-                        title="Follow artist"
-                      >
-                        <UserPlus className="h-4 w-4" />
-                      </button>
-                    )}
-                    {isFollowed && (
-                      <div className="absolute bottom-1 right-1 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
-                        <UserCheck className="h-4 w-4" />
-                      </div>
-                    )}
                   </div>
+                  {/* Quick follow button - positioned outside overflow-hidden container */}
+                  {artist.artistId && !isFollowed && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFollowArtist(artist);
+                      }}
+                      disabled={isFollowingArtist}
+                      className="absolute bottom-[calc(50%+0.5rem)] right-0 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10"
+                      title="Follow artist"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </button>
+                  )}
+                  {isFollowed && (
+                    <div className="absolute bottom-[calc(50%+0.5rem)] right-0 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md z-10">
+                      <UserCheck className="h-4 w-4" />
+                    </div>
+                  )}
                   <h4 
                     onClick={() => handleArtistClick(artist)}
                     className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors"
