@@ -630,58 +630,83 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
   try {
     const allCandidates: MBArtist[] = [];
     const seenIds = new Set<string>();
+    seenIds.add(artistId); // exclude self
     
     const addCandidates = (artists: MBArtist[]) => {
       for (const a of artists) {
-        if (!seenIds.has(a.id) && a.id !== artistId && a.name.toLowerCase() !== artistName.toLowerCase()) {
+        if (!seenIds.has(a.id) && a.name.toLowerCase() !== artistName.toLowerCase()) {
           seenIds.add(a.id);
           allCandidates.push(a);
         }
       }
     };
     
-    // Step 1: Get related artists (members-of, collaborations) for highest accuracy
-    let relatedIds = new Set<string>();
+    // Step 1: Get related artists from MusicBrainz relations (most accurate source)
+    const relatedArtists: MBArtist[] = [];
     try {
       const relData = await callMusicBrainz({ action: 'get-artist-relations', id: artistId });
       const relations: MBArtistRelation[] = relData?.relations || [];
       for (const r of relations) {
         if (r.artist?.id && r.artist.id !== artistId) {
-          relatedIds.add(r.artist.id);
+          relatedArtists.push({
+            id: r.artist.id,
+            name: r.artist.name || '',
+            type: r.artist.type,
+          });
         }
       }
     } catch (e) {
       console.warn('Failed to fetch artist relations for similar artists', e);
     }
+    
+    // Add related artists as high-priority candidates
+    addCandidates(relatedArtists);
+    const relatedIds = new Set(relatedArtists.map(a => a.id));
 
-    // Step 2: Search by INDIVIDUAL genres (not OR'd together) to get genre-specific results
-    // This prevents the same popular artists from showing up for every search
+    // Step 2: Search using COMBINED genre queries for better specificity
+    // Use pairs of genres to find artists that share MULTIPLE genres (much more accurate)
     if (genres.length > 0) {
-      const genreSearches = genres.slice(0, 4).map(async (genre) => {
-        try {
-          const data = await callMusicBrainz({ action: 'search-artist', query: `tag:"${genre}"`, limit: 25 });
-          return (data.artists || []) as MBArtist[];
-        } catch {
-          return [];
-        }
-      });
+      const searches: Promise<MBArtist[]>[] = [];
       
-      const results = await Promise.all(genreSearches);
+      // Search with pairs of genres for highly specific results
+      if (genres.length >= 2) {
+        for (let i = 0; i < Math.min(genres.length, 4); i++) {
+          for (let j = i + 1; j < Math.min(genres.length, 4); j++) {
+            searches.push(
+              callMusicBrainz({ action: 'search-artist', query: `tag:"${genres[i]}" AND tag:"${genres[j]}"`, limit: 25 })
+                .then(d => (d.artists || []) as MBArtist[])
+                .catch(() => [])
+            );
+          }
+        }
+      }
+      
+      // Also search individual genres but with smaller limits
+      for (const genre of genres.slice(0, 3)) {
+        searches.push(
+          callMusicBrainz({ action: 'search-artist', query: `tag:"${genre}"`, limit: 15 })
+            .then(d => (d.artists || []) as MBArtist[])
+            .catch(() => [])
+        );
+      }
+      
+      const results = await Promise.all(searches);
       for (const artists of results) {
         addCandidates(artists);
       }
     }
     
-    // Step 3: If sparse results, try simplified/parent genres individually
-    if (allCandidates.length < limit && genres.length > 0) {
+    // Step 3: If still sparse, try simplified genre combos
+    if (allCandidates.length < limit * 2 && genres.length > 0) {
       const simplifiedGenres = getSimplifiedGenres(genres);
-      if (simplifiedGenres.length > 0) {
-        for (const genre of simplifiedGenres.slice(0, 3)) {
-          try {
-            const data = await callMusicBrainz({ action: 'search-artist', query: `tag:"${genre}"`, limit: 25 });
-            addCandidates((data.artists || []) as MBArtist[]);
-          } catch { /* skip */ }
-        }
+      const uniqueSimplified = simplifiedGenres.filter(g => !genres.map(x => x.toLowerCase()).includes(g));
+      if (uniqueSimplified.length > 0) {
+        const fallbackSearches = uniqueSimplified.slice(0, 2).map(genre =>
+          callMusicBrainz({ action: 'search-artist', query: `tag:"${genre}"`, limit: 15 })
+            .then(d => { addCandidates((d.artists || []) as MBArtist[]); })
+            .catch(() => {})
+        );
+        await Promise.all(fallbackSearches);
       }
     }
 
@@ -692,36 +717,43 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
     
     const scored = allCandidates.map(a => {
       let score = 0;
-      // MusicBrainz search returns genre data in both `genres` and `tags` fields
       const genreNames = (a.genres || []).map(g => g.name.toLowerCase());
       const tagNames = ((a as any).tags || []).map((t: any) => (t.name || '').toLowerCase()).filter(Boolean);
       const artistGenres = [...new Set([...genreNames, ...tagNames])];
       
-      // Count how many of the SOURCE genres this candidate matches
+      // Count exact genre matches
       let exactMatches = 0;
       for (const g of artistGenres) {
         if (sourceGenreSet.has(g)) {
           exactMatches++;
-          score += 3;
-        } else if (sourceSimplified.has(g)) {
-          score += 1;
+          score += 4; // Higher weight for exact genre match
         }
       }
       
-      // Also check simplified genres of the candidate against source
-      const candidateSimplified = getSimplifiedGenres(artistGenres);
+      // Check simplified genre overlap
+      const candidateSimplified = new Set(getSimplifiedGenres(artistGenres).map(g => g.toLowerCase()));
+      let simplifiedMatches = 0;
       for (const g of candidateSimplified) {
-        if (sourceGenreSet.has(g) || sourceSimplified.has(g)) score += 0.5;
+        if (sourceSimplified.has(g)) {
+          simplifiedMatches++;
+          score += 1.5;
+        }
       }
       
-      // Bonus for matching MULTIPLE genres (much more relevant)
-      if (exactMatches >= 2) score += exactMatches * 2;
+      // Strong bonus for matching MULTIPLE exact genres (exponential relevance)
+      if (exactMatches >= 3) score += exactMatches * 4;
+      else if (exactMatches >= 2) score += exactMatches * 2.5;
       
-      // Relation bonus (directly connected artists)
-      if (relatedIds.has(a.id)) score += 15;
+      // Relation bonus (directly connected artists are most relevant)
+      if (relatedIds.has(a.id)) score += 20;
       
-      // MusicBrainz relevance score as minor tiebreaker
-      score += (a.score ?? 0) / 500;
+      // Penalize candidates with NO genre overlap at all
+      if (exactMatches === 0 && simplifiedMatches === 0 && !relatedIds.has(a.id)) {
+        score = 0;
+      }
+      
+      // Minor tiebreaker from MB relevance score
+      score += (a.score ?? 0) / 1000;
       
       return { artist: a, score };
     });
@@ -729,11 +761,9 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
     // Sort by score descending
     scored.sort((a, b) => b.score - a.score);
     
-    // Only return candidates with meaningful scores
-    const goodResults = scored.filter(s => s.score > 0.5);
-    const results = goodResults.length >= limit 
-      ? goodResults.slice(0, limit) 
-      : scored.slice(0, limit);
+    // Filter out zero-score candidates (no genre overlap and not related)
+    const meaningful = scored.filter(s => s.score > 0);
+    const results = meaningful.slice(0, limit);
     
     return results.map(s => s.artist);
   } catch (error) {

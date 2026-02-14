@@ -167,31 +167,30 @@ const ToListen = () => {
       setActiveIndex(currentIndex);
       
       if (step >= totalSteps) {
-        // Landed
         setShufflePhase('landed');
         setIsShuffling(false);
         setShuffledAlbum(items[currentIndex]);
         return;
       }
       
-      // Easing: start fast, slow down towards the end
+      // Faster easing: total animation ~3-4 seconds
       const progress = step / totalSteps;
       let delay: number;
-      if (progress < 0.5) {
-        delay = 60; // Fast phase
+      if (progress < 0.6) {
+        delay = 40; // Very fast phase
         setShufflePhase('spinning');
-      } else if (progress < 0.8) {
-        delay = 60 + (progress - 0.5) * 400; // Slowing
+      } else if (progress < 0.85) {
+        delay = 40 + (progress - 0.6) * 300; // Slowing
         setShufflePhase('slowing');
       } else {
-        delay = 200 + (progress - 0.8) * 1500; // Very slow at end
+        delay = 120 + (progress - 0.85) * 800; // Slow at end
         setShufflePhase('slowing');
       }
       
       setTimeout(tick, delay);
     };
     
-    setTimeout(tick, 60);
+    setTimeout(tick, 40);
   }, [toListenAlbums]);
 
   if (authLoading || isLoading) {

@@ -675,7 +675,7 @@ const ArtistDetail = () => {
                     */}
                   </div>
 
-                  {/* Expandable Artist Bio */}
+                  {/* Expandable Artist Bio - temporarily hidden, kept for future reinstatement
                   {artistBio && (
                     <div className="mt-4">
                       <p className={`text-sm text-muted-foreground leading-relaxed ${!bioExpanded ? 'line-clamp-3' : ''}`}>
@@ -702,6 +702,7 @@ const ArtistDetail = () => {
                       </div>
                     </div>
                   )}
+                  */}
                 </motion.div>
               </div>
             </div>

@@ -298,25 +298,27 @@ function RecommendationsDisplay({
                       </div>
                     )}
                   </div>
-                  {/* Quick follow button - positioned outside overflow-hidden container */}
-                  {artist.artistId && !isFollowed && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFollowArtist(artist);
-                      }}
-                      disabled={isFollowingArtist}
-                      className="absolute bottom-[calc(50%+0.5rem)] right-0 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10"
-                      title="Follow artist"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                    </button>
-                  )}
-                  {isFollowed && (
-                    <div className="absolute bottom-[calc(50%+0.5rem)] right-0 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md z-10">
-                      <UserCheck className="h-4 w-4" />
-                    </div>
-                  )}
+                  {/* Quick follow button - centered below the circle */}
+                  <div className="flex justify-center -mt-4 mb-1 relative z-10">
+                    {artist.artistId && !isFollowed && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFollowArtist(artist);
+                        }}
+                        disabled={isFollowingArtist}
+                        className="bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full shadow-md border border-border/50 transition-all"
+                        title="Follow artist"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                      </button>
+                    )}
+                    {isFollowed && (
+                      <div className="bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                        <UserCheck className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
                   <h4 
                     onClick={() => handleArtistClick(artist)}
                     className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors"
