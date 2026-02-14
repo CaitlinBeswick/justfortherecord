@@ -632,7 +632,21 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
   try {
     let artists: MBArtist[] = [];
     
-    // Step 1: Try original genres with OR logic
+    // Step 1: Get related artists (members-of, collaborations) for highest accuracy
+    let relatedIds = new Set<string>();
+    try {
+      const relData = await callMusicBrainz({ action: 'get-artist-relations', id: artistId });
+      const relations: MBArtistRelation[] = relData?.relations || [];
+      for (const r of relations) {
+        if (r.artist?.id && r.artist.id !== artistId) {
+          relatedIds.add(r.artist.id);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch artist relations for similar artists', e);
+    }
+
+    // Step 2: Try genre-based search
     if (genres.length > 0) {
       const genresToUse = genres.slice(0, 3);
       const genreQuery = genresToUse.map(g => `tag:"${g}"`).join(' OR ');
@@ -641,7 +655,7 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
       artists = data.artists || [];
     }
     
-    // Step 2: If sparse results, try simplified/parent genres
+    // Step 3: If sparse results, try simplified/parent genres
     if (artists.length <= 3 && genres.length > 0) {
       const simplifiedGenres = getSimplifiedGenres(genres);
       
@@ -650,7 +664,6 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
         const data = await callMusicBrainz({ action: 'search-artist', query: simplifiedQuery, limit: requestLimit });
         const simplifiedResults: MBArtist[] = data.artists || [];
         
-        // Merge results, avoiding duplicates
         const existingIds = new Set(artists.map(a => a.id));
         for (const a of simplifiedResults) {
           if (!existingIds.has(a.id)) {
@@ -661,7 +674,7 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
       }
     }
     
-    // Step 3: If still sparse, try name-based fallback
+    // Step 4: If still sparse, try name-based fallback
     if (artists.length <= 3) {
       const data = await callMusicBrainz({ action: 'search-artist', query: artistName, limit: requestLimit });
       const nameResults: MBArtist[] = data.artists || [];
@@ -675,13 +688,104 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
       }
     }
     
-    // Filter out the current artist and return top matches
-    return artists
-      .filter(a => a.id !== artistId && a.name.toLowerCase() !== artistName.toLowerCase())
-      .slice(0, limit);
+    // Filter out the current artist
+    const filtered = artists.filter(a => a.id !== artistId && a.name.toLowerCase() !== artistName.toLowerCase());
+
+    // Score candidates by genre overlap + relation bonus
+    const sourceGenres = new Set(genres.map(g => g.toLowerCase()));
+    const sourceSimplified = new Set(getSimplifiedGenres(genres).map(g => g.toLowerCase()));
+    
+    const scored = filtered.map(a => {
+      let score = 0;
+      const artistGenres = (a.genres || []).map(g => g.name.toLowerCase());
+      
+      // Exact genre matches (highest value)
+      for (const g of artistGenres) {
+        if (sourceGenres.has(g)) score += 3;
+        else if (sourceSimplified.has(g)) score += 1;
+      }
+      
+      // Also check simplified genres of the candidate
+      const candidateSimplified = getSimplifiedGenres(artistGenres);
+      for (const g of candidateSimplified) {
+        if (sourceGenres.has(g) || sourceSimplified.has(g)) score += 0.5;
+      }
+      
+      // Relation bonus (directly connected artists)
+      if (relatedIds.has(a.id)) score += 10;
+      
+      // MusicBrainz relevance score as tiebreaker
+      score += (a.score ?? 0) / 200;
+      
+      return { artist: a, score };
+    });
+    
+    // Sort by score descending, filter out zero-score if we have enough
+    scored.sort((a, b) => b.score - a.score);
+    
+    const goodResults = scored.filter(s => s.score > 0);
+    const results = goodResults.length >= limit 
+      ? goodResults.slice(0, limit) 
+      : scored.slice(0, limit);
+    
+    return results.map(s => s.artist);
   } catch (error) {
     console.error('Failed to fetch similar artists:', error);
     return [];
+  }
+}
+
+// Fetch artist bio from Wikipedia via MusicBrainz relations
+export async function getArtistBio(artistId: string): Promise<{ extract: string; url: string } | null> {
+  if (!isValidId(artistId)) return null;
+  
+  try {
+    const data = await callMusicBrainz({ action: 'get-artist-relations', id: artistId });
+    const relations: Array<{ type?: string; url?: { resource?: string } }> = data?.relations || [];
+    
+    // Find Wikipedia URL from relations
+    const wikiRelation = relations.find(r => {
+      const url = r.url?.resource || '';
+      return url.includes('wikipedia.org') || url.includes('wikidata.org');
+    });
+    
+    if (!wikiRelation?.url?.resource) return null;
+    
+    let wikiUrl = wikiRelation.url.resource;
+    let apiUrl: string;
+    
+    if (wikiUrl.includes('wikipedia.org')) {
+      // Extract lang and title from URL like https://en.wikipedia.org/wiki/Artist_Name
+      const match = wikiUrl.match(/https?:\/\/(\w+)\.wikipedia\.org\/wiki\/(.+)/);
+      if (!match) return null;
+      const [, lang, title] = match;
+      apiUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${title}`;
+    } else if (wikiUrl.includes('wikidata.org')) {
+      // For Wikidata, get the English Wikipedia article
+      const match = wikiUrl.match(/https?:\/\/www\.wikidata\.org\/wiki\/(Q\d+)/);
+      if (!match) return null;
+      const entityId = match[1];
+      // Fetch from Wikidata to get the Wikipedia sitelink
+      const wdResponse = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${entityId}.json`);
+      const wdData = await wdResponse.json();
+      const enwiki = wdData?.entities?.[entityId]?.sitelinks?.enwiki?.title;
+      if (!enwiki) return null;
+      apiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(enwiki)}`;
+      wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(enwiki)}`;
+    } else {
+      return null;
+    }
+    
+    const response = await fetch(apiUrl);
+    if (!response.ok) return null;
+    const summary = await response.json();
+    
+    if (!summary.extract) return null;
+    
+    return { extract: summary.extract, url: wikiUrl };
+  } catch (error) {
+    console.error('Failed to fetch artist bio:', error);
+    return null;
   }
 }
 

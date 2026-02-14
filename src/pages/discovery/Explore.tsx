@@ -128,6 +128,8 @@ interface RecommendationsDisplayProps {
   isTogglingStatus: boolean;
   isFollowingArtist: boolean;
   followedArtistIds: Set<string>;
+  recentlyQueuedIds: Set<string>;
+  recentlyFollowedIds: Set<string>;
   resolvingAlbumKey: string | null;
   resolvingArtistKey: string | null;
 }
@@ -143,12 +145,15 @@ function RecommendationsDisplay({
   isTogglingStatus,
   isFollowingArtist,
   followedArtistIds,
+  recentlyQueuedIds,
+  recentlyFollowedIds,
   resolvingAlbumKey,
   resolvingArtistKey,
 }: RecommendationsDisplayProps) {
-  // Filter out albums that are already in to-listen list
+  // Filter out albums that are already in to-listen list or recently queued
   const filteredAlbums = (recommendations.albums || []).filter((album) => {
     if (!album.releaseGroupId) return true;
+    if (recentlyQueuedIds.has(album.releaseGroupId)) return false;
     const status = getStatusForAlbum(album.releaseGroupId);
     return !status.isToListen;
   });
@@ -156,6 +161,7 @@ function RecommendationsDisplay({
   // Filter out artists that are already followed
   const filteredArtists = (recommendations.artists || []).filter((artist) => {
     if (!artist.artistId) return true;
+    if (recentlyFollowedIds.has(artist.artistId)) return false;
     return !followedArtistIds.has(artist.artistId);
   });
 
@@ -209,15 +215,15 @@ function RecommendationsDisplay({
                       </div>
                     )}
                     {/* Save to To-Listen button */}
-                    {album.releaseGroupId && !isInToListen && (
+                     {album.releaseGroupId && !isInToListen && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSaveToListen(album);
                         }}
                         disabled={isTogglingStatus}
-                        className="absolute bottom-2 right-2 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
-                        title="Save to To-Listen"
+                        className="absolute bottom-2 right-2 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md"
+                        title="Save to Queue"
                       >
                         <Plus className="h-4 w-4" />
                       </button>
@@ -294,7 +300,7 @@ function RecommendationsDisplay({
                           handleFollowArtist(artist);
                         }}
                         disabled={isFollowingArtist}
-                        className="absolute bottom-1 right-1 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                        className="absolute bottom-1 right-1 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md"
                         title="Follow artist"
                       >
                         <UserPlus className="h-4 w-4" />
@@ -336,7 +342,8 @@ const DiscoveryExplore = () => {
   const [resolvingArtistKey, setResolvingArtistKey] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [pendingToListen, setPendingToListen] = useState<{ id: string; title: string; artist: string } | null>(null);
-  
+  const [recentlyQueuedIds, setRecentlyQueuedIds] = useState<Set<string>>(new Set());
+  const [recentlyFollowedIds, setRecentlyFollowedIds] = useState<Set<string>>(new Set());
   const { toggleStatus, isPending: isTogglingStatus, getStatusForAlbum, allStatuses } = useListeningStatus();
 
   // Fetch followed artists for quick follow
@@ -376,6 +383,10 @@ const DiscoveryExplore = () => {
     if (!user) {
       navigate("/auth");
       return;
+    }
+    // Optimistically track to filter out immediately
+    if (artist.artistId) {
+      setRecentlyFollowedIds(prev => new Set([...prev, artist.artistId!]));
     }
     followArtistMutation.mutate(artist);
   };
@@ -489,7 +500,7 @@ const DiscoveryExplore = () => {
     },
     enabled: !!user,
     staleTime: 1000 * 60 * 30, // 30 minutes
-    retry: 1,
+    gcTime: 1000 * 60 * 60, // Keep in cache for 1 hour
   });
 
   const handleGenreClick = (genre: string) => {
@@ -521,6 +532,9 @@ const DiscoveryExplore = () => {
       return;
     }
     
+    // Optimistically track to filter out immediately
+    setRecentlyQueuedIds(prev => new Set([...prev, album.releaseGroupId!]));
+    
     toggleStatus({
       releaseGroupId: album.releaseGroupId,
       albumTitle: album.title,
@@ -534,6 +548,12 @@ const DiscoveryExplore = () => {
 
   const handleUndoToListen = () => {
     if (pendingToListen) {
+      // Remove from optimistic set
+      setRecentlyQueuedIds(prev => {
+        const next = new Set(prev);
+        next.delete(pendingToListen.id);
+        return next;
+      });
       toggleStatus({
         releaseGroupId: pendingToListen.id,
         albumTitle: pendingToListen.title,
@@ -680,66 +700,13 @@ const DiscoveryExplore = () => {
                       <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
                       Refresh
                     </button>
-                    {historyData && historyData.length > 0 && (
-                      <button
-                        onClick={() => setShowHistory(!showHistory)}
-                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <History className="h-4 w-4" />
-                        History
-                      </button>
-                    )}
                   </>
                 )}
               </div>
             )}
           </div>
 
-          {/* History Panel */}
-          <AnimatePresence>
-            {showHistory && historyData && historyData.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mb-4 overflow-hidden"
-              >
-                <div className="bg-secondary/50 rounded-lg p-4 border border-border/50">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-                      <History className="h-4 w-4" />
-                      Previous Recommendations
-                    </h3>
-                    <button
-                      onClick={() => setShowHistory(false)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {historyData.map((entry) => (
-                      <button
-                        key={entry.id}
-                        onClick={() => loadHistoryEntry(entry)}
-                        className="flex-shrink-0 bg-background hover:bg-surface-hover border border-border/50 rounded-lg px-3 py-2 text-left transition-colors"
-                      >
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(entry.created_at), "MMM d, h:mm a")}
-                        </div>
-                        <div className="text-sm font-medium text-foreground capitalize">
-                          {entry.mood || "No mood"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {entry.albums?.length || 0} albums, {entry.artists?.length || 0} artists
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* History panel removed */}
 
           {!user ? (
             <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20 p-8 text-center">
@@ -805,6 +772,8 @@ const DiscoveryExplore = () => {
               isTogglingStatus={isTogglingStatus}
               isFollowingArtist={followArtistMutation.isPending}
               followedArtistIds={followedArtistIds}
+              recentlyQueuedIds={recentlyQueuedIds}
+              recentlyFollowedIds={recentlyFollowedIds}
               resolvingAlbumKey={resolvingAlbumKey}
               resolvingArtistKey={resolvingArtistKey}
             />
