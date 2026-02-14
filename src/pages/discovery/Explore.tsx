@@ -2,14 +2,15 @@ import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
 import { Footer } from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock, Calendar, ChevronDown, UserPlus, UserCheck } from "lucide-react";
+import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Plus, Clock, Calendar, UserPlus, UserCheck, Send } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { ArtistImageWithFallback } from "@/components/ArtistImageWithFallback";
 import { searchReleases, searchArtists } from "@/services/musicbrainz";
@@ -74,16 +75,6 @@ interface Recommendation {
   artists: ArtistRecommendation[];
 }
 
-type Mood = "chill" | "energetic" | "experimental" | "melancholic" | "joy" | "nostalgic" | null;
-
-const MOODS: { id: Mood; label: string; icon: React.ReactNode; color: string }[] = [
-  { id: "chill", label: "Chill", icon: <Leaf className="h-4 w-4" />, color: "from-teal-500 to-cyan-500" },
-  { id: "energetic", label: "Energetic", icon: <Zap className="h-4 w-4" />, color: "from-orange-500 to-rose-500" },
-  { id: "experimental", label: "Experimental", icon: <FlaskConical className="h-4 w-4" />, color: "from-violet-500 to-purple-500" },
-  { id: "melancholic", label: "Melancholic", icon: <Moon className="h-4 w-4" />, color: "from-slate-500 to-indigo-500" },
-  { id: "joy", label: "Joy", icon: <Heart className="h-4 w-4" />, color: "from-yellow-500 to-amber-500" },
-  { id: "nostalgic", label: "Nostalgic", icon: <Clock className="h-4 w-4" />, color: "from-amber-600 to-orange-400" },
-];
 
 interface HistoryEntry {
   id: string;
@@ -344,10 +335,10 @@ const DiscoveryExplore = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedMood, setSelectedMood] = useState<Mood>(null);
+  const [moodText, setMoodText] = useState("");
+  const [activeMood, setActiveMood] = useState<string | null>(null);
   const [resolvingAlbumKey, setResolvingAlbumKey] = useState<string | null>(null);
   const [resolvingArtistKey, setResolvingArtistKey] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
   const [pendingToListen, setPendingToListen] = useState<{ id: string; title: string; artist: string } | null>(null);
   const [recentlyQueuedIds, setRecentlyQueuedIds] = useState<Set<string>>(new Set());
   const [recentlyFollowedIds, setRecentlyFollowedIds] = useState<Set<string>>(new Set());
@@ -457,10 +448,10 @@ const DiscoveryExplore = () => {
   const includeKnown = profile?.ai_include_familiar ?? false;
 
   const { data: aiData, isLoading: aiLoading, error: aiError, refetch, isFetching } = useQuery({
-    queryKey: ["ai-recommendations", user?.id, selectedMood, includeKnown],
+    queryKey: ["ai-recommendations", user?.id, activeMood, includeKnown],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("ai-recommendations", {
-        body: { mood: selectedMood, includeKnown },
+        body: { mood: activeMood, includeKnown },
       });
       if (error) throw error;
       
@@ -514,17 +505,36 @@ const DiscoveryExplore = () => {
     navigate(`/discovery/genre/${encodeURIComponent(genre)}`);
   };
 
-  const handleMoodSelect = (mood: Mood) => {
-    // Toggle off if same mood clicked, otherwise set new mood
-    // React Query automatically refetches when selectedMood in the queryKey changes
-    setSelectedMood(prev => prev === mood ? null : mood);
+  const handleMoodSubmit = () => {
+    const trimmed = moodText.trim();
+    if (!trimmed) return;
+    // Save current recommendations to history before changing mood
+    if (recommendations) {
+      saveHistoryMutation.mutate({
+        mood: activeMood,
+        albums: recommendations.albums || [],
+        artists: recommendations.artists || [],
+      });
+    }
+    setActiveMood(trimmed);
+  };
+
+  const handleClearMood = () => {
+    if (recommendations) {
+      saveHistoryMutation.mutate({
+        mood: activeMood,
+        albums: recommendations.albums || [],
+        artists: recommendations.artists || [],
+      });
+    }
+    setMoodText("");
+    setActiveMood(null);
   };
 
   const handleRefresh = () => {
-    // Save current recommendations to history before refreshing
     if (recommendations) {
       saveHistoryMutation.mutate({
-        mood: selectedMood,
+        mood: activeMood,
         albums: recommendations.albums || [],
         artists: recommendations.artists || [],
       });
@@ -582,14 +592,15 @@ const DiscoveryExplore = () => {
 
   const loadHistoryEntry = (entry: HistoryEntry) => {
     // Load historical recommendations into the view
-    queryClient.setQueryData(["ai-recommendations", user?.id, entry.mood as Mood, includeKnown], {
+    queryClient.setQueryData(["ai-recommendations", user?.id, entry.mood as string | null, includeKnown], {
       recommendations: {
         albums: entry.albums,
         artists: entry.artists,
       },
     });
-    setSelectedMood(entry.mood as Mood);
-    setShowHistory(false);
+    setActiveMood(entry.mood);
+    setMoodText(entry.mood || "");
+    
     toast({ title: "Loaded recommendations", description: `From ${format(new Date(entry.created_at), "MMM d, h:mm a")}` });
   };
 
@@ -669,46 +680,58 @@ const DiscoveryExplore = () => {
           transition={{ delay: 0.1 }}
           className="mb-12"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <h2 className="font-serif text-xl text-foreground">For You</h2>
-              {selectedMood && (
-                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full capitalize">
-                  {selectedMood}
-                </span>
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h2 className="font-serif text-xl text-foreground">For You</h2>
+                {activeMood && (
+                  <button
+                    onClick={handleClearMood}
+                    className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full hover:bg-primary/30 transition-colors"
+                    title="Clear mood filter"
+                  >
+                    {activeMood.length > 30 ? activeMood.slice(0, 30) + "…" : activeMood} ✕
+                  </button>
+                )}
+              </div>
+              {user && recommendations && (
+                <button
+                  onClick={handleRefresh}
+                  disabled={isFetching}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
               )}
             </div>
             {user && (
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Mood buttons */}
-                {MOODS.map((mood) => (
-                  <button
-                    key={mood.id}
-                    onClick={() => handleMoodSelect(mood.id)}
-                    disabled={isFetching}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                      selectedMood === mood.id
-                        ? `bg-gradient-to-r ${mood.color} text-white shadow-md`
-                        : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-surface-hover"
-                    } disabled:opacity-50`}
-                  >
-                    {mood.icon}
-                    {mood.label}
-                  </button>
-                ))}
-                {recommendations && (
-                  <>
-                    <button
-                      onClick={handleRefresh}
-                      disabled={isFetching}
-                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 ml-2"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-                      Refresh
-                    </button>
-                  </>
-                )}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Textarea
+                    placeholder="Describe your mood… e.g. &quot;rainy day, feeling introspective&quot;"
+                    value={moodText}
+                    onChange={(e) => setMoodText(e.target.value.slice(0, 500))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleMoodSubmit();
+                      }
+                    }}
+                    className="min-h-[44px] max-h-[100px] resize-none text-sm"
+                    rows={1}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{moodText.length}/500</p>
+                </div>
+                <button
+                  onClick={handleMoodSubmit}
+                  disabled={!moodText.trim() || isFetching}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 h-[44px]"
+                >
+                  <Send className="h-4 w-4" />
+                  Pick by Mood
+                </button>
               </div>
             )}
           </div>

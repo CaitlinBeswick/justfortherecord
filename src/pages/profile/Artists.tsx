@@ -267,9 +267,10 @@ const Artists = () => {
                             onClick={() => navigate(`/artist/${artist.artist_id}`)}
                           >
                             {!brokenImages[artist.artist_id] && imageUrl ? (
-                              <img 
+                               <img 
                                 src={imageUrl} 
                                 alt={artist.artist_name}
+                                loading="lazy"
                                 className="w-full h-full object-cover"
                                 onError={() => setBrokenImages((prev) => ({ ...prev, [artist.artist_id]: true }))}
                               />

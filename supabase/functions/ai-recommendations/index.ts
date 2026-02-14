@@ -167,14 +167,9 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build mood instruction if provided
-    const moodDescriptions: Record<string, string> = {
-      chill: "calm, relaxed, mellow, atmospheric, and soothing music—think lo-fi, ambient, acoustic, downtempo, soft rock, or dreamy indie",
-      energetic: "upbeat, high-energy, driving music—think punk, dance, electronic bangers, fast-paced rock, hip-hop with heavy beats",
-      experimental: "adventurous, boundary-pushing, avant-garde music—think art rock, noise, free jazz, glitch, unconventional song structures, genre-defying artists",
-    };
-    const moodInstruction = mood && moodDescriptions[mood]
-      ? `\n\nIMPORTANT: The user is in a "${mood}" mood. Prioritize recommendations that feel ${moodDescriptions[mood]}.`
+    // Build mood instruction from free-text user input
+    const moodInstruction = mood
+      ? `\n\nIMPORTANT: The user described their current mood/vibe as: "${mood}". Tailor all recommendations to match this feeling. Interpret their description and find music that fits.`
       : "";
 
     // Build exclusion instruction if not including known content
