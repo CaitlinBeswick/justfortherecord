@@ -132,41 +132,31 @@ const Artists = () => {
     console.log("[ProfileArtists] followedArtists (first 3)", followedArtists.slice(0, 3));
   }, [followedArtists]);
 
-  // Fetch artist images when followedArtists changes
+  // Fetch artist images when followedArtists changes - all in parallel
   useEffect(() => {
+    if (followedArtists.length === 0) return;
+    
     const fetchImages = async () => {
+      const results = await Promise.all(
+        followedArtists.map(async (artist) => {
+          if (artistImages[artist.artist_id] !== undefined) {
+            return { id: artist.artist_id, url: artistImages[artist.artist_id] };
+          }
+          try {
+            const imageUrl = await getArtistImage(artist.artist_id);
+            return { id: artist.artist_id, url: imageUrl };
+          } catch {
+            return { id: artist.artist_id, url: null };
+          }
+        })
+      );
+      
       const newImages: Record<string, string | null> = {};
-      
-      // Fetch images in parallel, but limit concurrent requests
-      const batchSize = 5;
-      for (let i = 0; i < followedArtists.length; i += batchSize) {
-        const batch = followedArtists.slice(i, i + batchSize);
-        const results = await Promise.all(
-          batch.map(async (artist) => {
-            // Skip if we already have this image cached
-            if (artistImages[artist.artist_id] !== undefined) {
-              return { id: artist.artist_id, url: artistImages[artist.artist_id] };
-            }
-            try {
-              const imageUrl = await getArtistImage(artist.artist_id);
-              return { id: artist.artist_id, url: imageUrl };
-            } catch {
-              return { id: artist.artist_id, url: null };
-            }
-          })
-        );
-        
-        results.forEach(({ id, url }) => {
-          newImages[id] = url;
-        });
-      }
-      
+      results.forEach(({ id, url }) => { newImages[id] = url; });
       setArtistImages(prev => ({ ...prev, ...newImages }));
     };
 
-    if (followedArtists.length > 0) {
-      fetchImages();
-    }
+    fetchImages();
   }, [followedArtists]);
 
   const handleUnfollow = async (artistId: string, artistName: string) => {
@@ -269,7 +259,7 @@ const Artists = () => {
                           key={artist.id}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
+                          transition={{ duration: 0.2 }}
                           className="group text-center"
                         >
                           <div 

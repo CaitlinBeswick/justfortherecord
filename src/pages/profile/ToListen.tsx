@@ -130,30 +130,37 @@ const ToListen = () => {
     }
   }, [toListenAlbums, searchQuery, sortBy]);
 
-  // Preload carousel items so they're ready before user clicks shuffle
-  const preloadedCarousel = useMemo(() => {
-    if (toListenAlbums.length === 0) return [];
-    const shuffled = [...toListenAlbums].sort(() => Math.random() - 0.5);
-    const items: ShuffledAlbum[] = [];
-    const target = Math.max(15, toListenAlbums.length);
-    while (items.length < target) {
-      for (const a of shuffled) {
-        items.push({
-          id: a.id,
-          release_group_id: a.release_group_id,
-          album_title: a.album_title,
-          artist_name: a.artist_name,
-        });
-        if (items.length >= target) break;
-      }
+  // Fisher-Yates shuffle for true randomness
+  const fisherYatesShuffle = useCallback(<T,>(arr: T[]): T[] => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
     }
-    return items;
+    return a;
+  }, []);
+
+  // Preload carousel items so they're ready before user clicks shuffle
+  const preloadedAlbums = useMemo(() => {
+    return toListenAlbums.map(a => ({
+      id: a.id,
+      release_group_id: a.release_group_id,
+      album_title: a.album_title,
+      artist_name: a.artist_name,
+    }));
   }, [toListenAlbums]);
 
   const handleShuffle = useCallback(() => {
-    if (preloadedCarousel.length === 0) return;
+    if (preloadedAlbums.length === 0) return;
     
-    const items = [...preloadedCarousel].sort(() => Math.random() - 0.5);
+    // Pick a truly random winner first
+    const winnerIndex = Math.floor(Math.random() * preloadedAlbums.length);
+    const winner = preloadedAlbums[winnerIndex];
+    
+    // Build carousel: shuffled albums leading up to the winner
+    const others = fisherYatesShuffle(preloadedAlbums.filter((_, i) => i !== winnerIndex));
+    const carouselLength = Math.min(others.length, 12);
+    const items = [...others.slice(0, carouselLength), winner];
     
     setCarouselItems(items);
     setActiveIndex(0);
@@ -161,7 +168,7 @@ const ToListen = () => {
     setShufflePhase('spinning');
     setShuffledAlbum(null);
     
-    const landingIndex = Math.min(items.length - 1, 8 + Math.floor(Math.random() * 5));
+    const landingIndex = items.length - 1;
     let step = 0;
     
     const tick = () => {
@@ -189,7 +196,7 @@ const ToListen = () => {
     };
     
     setTimeout(tick, 60);
-  }, [preloadedCarousel]);
+  }, [preloadedAlbums, fisherYatesShuffle]);
 
   if (authLoading || isLoading) {
     return (
@@ -346,7 +353,7 @@ const ToListen = () => {
                         key={item.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(index * 0.03, 0.5) }}
+                        transition={{ duration: 0.2 }}
                         className="group cursor-pointer"
                         onClick={() => navigate(`/album/${item.release_group_id}`)}
                       >
