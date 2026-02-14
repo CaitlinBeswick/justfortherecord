@@ -707,7 +707,7 @@ const DiscoveryExplore = () => {
               )}
             </div>
             {user && (
-              <div className="flex gap-2 items-end">
+              <div className="flex gap-2 items-start">
                 <div className="flex-1">
                   <Textarea
                     placeholder="Describe your mood… e.g. &quot;rainy day, feeling introspective&quot;"
@@ -727,7 +727,7 @@ const DiscoveryExplore = () => {
                 <button
                   onClick={handleMoodSubmit}
                   disabled={!moodText.trim() || isFetching}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 h-[44px]"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 h-[44px] shrink-0"
                 >
                   <Send className="h-4 w-4" />
                   Pick by Mood
