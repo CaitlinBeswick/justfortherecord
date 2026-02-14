@@ -132,31 +132,34 @@ const Artists = () => {
     console.log("[ProfileArtists] followedArtists (first 3)", followedArtists.slice(0, 3));
   }, [followedArtists]);
 
-  // Fetch artist images when followedArtists changes - all in parallel
+  // Fetch artist images in batches of 5 for faster progressive loading
   useEffect(() => {
     if (followedArtists.length === 0) return;
     
-    const fetchImages = async () => {
-      const results = await Promise.all(
-        followedArtists.map(async (artist) => {
-          if (artistImages[artist.artist_id] !== undefined) {
-            return { id: artist.artist_id, url: artistImages[artist.artist_id] };
-          }
-          try {
-            const imageUrl = await getArtistImage(artist.artist_id);
-            return { id: artist.artist_id, url: imageUrl };
-          } catch {
-            return { id: artist.artist_id, url: null };
-          }
-        })
-      );
+    const fetchImagesInBatches = async () => {
+      const toFetch = followedArtists.filter(a => artistImages[a.artist_id] === undefined);
+      const BATCH_SIZE = 5;
       
-      const newImages: Record<string, string | null> = {};
-      results.forEach(({ id, url }) => { newImages[id] = url; });
-      setArtistImages(prev => ({ ...prev, ...newImages }));
+      for (let i = 0; i < toFetch.length; i += BATCH_SIZE) {
+        const batch = toFetch.slice(i, i + BATCH_SIZE);
+        const results = await Promise.all(
+          batch.map(async (artist) => {
+            try {
+              const imageUrl = await getArtistImage(artist.artist_id);
+              return { id: artist.artist_id, url: imageUrl };
+            } catch {
+              return { id: artist.artist_id, url: null };
+            }
+          })
+        );
+        
+        const newImages: Record<string, string | null> = {};
+        results.forEach(({ id, url }) => { newImages[id] = url; });
+        setArtistImages(prev => ({ ...prev, ...newImages }));
+      }
     };
 
-    fetchImages();
+    fetchImagesInBatches();
   }, [followedArtists]);
 
   const handleUnfollow = async (artistId: string, artistName: string) => {
