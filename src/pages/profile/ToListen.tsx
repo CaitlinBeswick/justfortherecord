@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
-import { AlbumCard } from "@/components/AlbumCard";
+
 import { useNavigate } from "react-router-dom";
 import { Loader2, Plus, Clock, Search, ArrowUpDown, Shuffle, X } from "lucide-react";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
@@ -346,14 +346,25 @@ const ToListen = () => {
                         key={item.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
+                        transition={{ delay: Math.min(index * 0.03, 0.5) }}
+                        className="group cursor-pointer"
+                        onClick={() => navigate(`/album/${item.release_group_id}`)}
                       >
-                        <AlbumCard
-                          id={item.release_group_id}
-                          title={item.album_title}
-                          artist={item.artist_name}
-                          onClick={() => navigate(`/album/${item.release_group_id}`)}
-                        />
+                        <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50">
+                          <AlbumCoverWithFallback
+                            releaseGroupId={item.release_group_id}
+                            title={item.album_title}
+                            className="aspect-square w-full rounded-lg"
+                            imageClassName="object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="mt-2">
+                          <h3 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                            {item.album_title}
+                          </h3>
+                          <p className="text-xs text-muted-foreground truncate">{item.artist_name}</p>
+                        </div>
                       </motion.div>
                     ))}
                   </div>
