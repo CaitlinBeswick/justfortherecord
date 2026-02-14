@@ -48,6 +48,7 @@ import { getAlbumInitials } from "@/components/AlbumCoverWithFallback";
 import { StarRating } from "@/components/ui/StarRating";
 import { Button } from "@/components/ui/button";
 import { StreamingLinks } from "@/components/StreamingLinks";
+import { AddToListDialog } from "@/components/AddToListDialog";
 
 const AlbumDetail = () => {
   const { id } = useParams();
@@ -507,8 +508,13 @@ const AlbumDetail = () => {
                   />
                 </div>
 
-                {/* Row 3: Share + Listen On */}
+                {/* Row 3: Add to List + Share + Listen On */}
                 <div className="mt-3 flex justify-center gap-2">
+                  <AddToListDialog
+                    releaseGroupId={id!}
+                    albumTitle={releaseGroup.title}
+                    artistName={artistName}
+                  />
                   <StreamingLinks 
                     artistName={getArtistNames(releaseGroup?.["artist-credit"])} 
                     albumTitle={releaseGroup?.title} 

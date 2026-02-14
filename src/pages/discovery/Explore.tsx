@@ -750,7 +750,7 @@ const DiscoveryExplore = () => {
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 h-[44px] shrink-0"
                 >
                   <Send className="h-4 w-4" />
-                  Pick by Mood
+                  Pick by Vibe
                 </button>
               </div>
             )}
