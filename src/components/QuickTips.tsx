@@ -44,7 +44,7 @@ const tips: Tip[] = [
   {
     id: "discovery-leaderboards-tip",
     route: "/discovery/leaderboards",
-    message: "See the top 250 albums and artists based on community ratings. Use 'Fade Listened' to dim items you've already heard.",
+    message: "See the top 250 albums based on community ratings. Use 'Fade Listened' to dim items you've already heard.",
   },
   {
     id: "genre-tip",

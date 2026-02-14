@@ -312,7 +312,7 @@ serve(async (req) => {
         // Include artist-credits so the frontend can filter out non-primary credited appearances.
         // NOTE: The browse endpoint does NOT support including `releases` (it can cause 400s).
         // secondary-types are included by default in the response for release-groups.
-        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits&fmt=json&limit=100`;
+        url = `${MUSICBRAINZ_BASE}/release-group?artist=${id}&inc=artist-credits+ratings&fmt=json&limit=100`;
         break;
       }
       

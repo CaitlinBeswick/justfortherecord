@@ -7,7 +7,7 @@ import { AlbumCard } from "@/components/AlbumCard";
 import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info, ChevronRight } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info, ChevronRight, ArrowUpDown } from "lucide-react";
 import { DiscographySearch } from "@/components/DiscographySearch";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -60,6 +60,7 @@ const ArtistDetail = () => {
   const { getStatusForAlbum, allStatuses } = useListeningStatus();
   const [fadeListened, setFadeListened] = useState(true);
   const [discographySearch, setDiscographySearch] = useState('');
+  const [discographySort, setDiscographySort] = useState<'date' | 'popularity'>('date');
 
   const artistId = id ?? "";
   const isValidArtistId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(artistId);
@@ -415,9 +416,16 @@ const ArtistDetail = () => {
     'Compilations': 'Compilation',
   };
 
-  // Sort each category by date (newest first)
+  // Sort each category
   Object.keys(groupedReleases).forEach((type) => {
     groupedReleases[type].sort((a, b) => {
+      if (discographySort === 'popularity') {
+        // Use MusicBrainz rating votes as popularity proxy
+        const popA = a.rating?.["votes-count"] ?? 0;
+        const popB = b.rating?.["votes-count"] ?? 0;
+        if (popA !== popB) return popB - popA;
+        // Fallback to date
+      }
       const dateA = a['first-release-date'] || '';
       const dateB = b['first-release-date'] || '';
       return dateB.localeCompare(dateA);
@@ -745,6 +753,18 @@ const ArtistDetail = () => {
             </div>
             <div className="flex items-center gap-3">
               <DiscographySearch value={discographySearch} onChange={setDiscographySearch} />
+              <button
+                onClick={() => setDiscographySort(prev => prev === 'date' ? 'popularity' : 'date')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  discographySort === 'popularity' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-secondary text-muted-foreground hover:text-foreground'
+                }`}
+                title={discographySort === 'date' ? 'Sort by popularity' : 'Sort by date'}
+              >
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                {discographySort === 'date' ? 'Date' : 'Popular'}
+              </button>
               {user && (
                 <div className="flex items-center gap-2">
                   <Switch
