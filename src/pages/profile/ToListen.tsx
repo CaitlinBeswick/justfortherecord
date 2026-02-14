@@ -130,10 +130,9 @@ const ToListen = () => {
     }
   }, [toListenAlbums, searchQuery, sortBy]);
 
-  const handleShuffle = useCallback(() => {
-    if (toListenAlbums.length === 0) return;
-    
-    // Build a randomized carousel of albums (repeat to fill at least 20 slots)
+  // Preload carousel items so they're ready before user clicks shuffle
+  const preloadedCarousel = useMemo(() => {
+    if (toListenAlbums.length === 0) return [];
     const shuffled = [...toListenAlbums].sort(() => Math.random() - 0.5);
     const items: ShuffledAlbum[] = [];
     while (items.length < Math.max(20, toListenAlbums.length * 2)) {
@@ -147,6 +146,14 @@ const ToListen = () => {
         if (items.length >= Math.max(20, toListenAlbums.length * 2)) break;
       }
     }
+    return items;
+  }, [toListenAlbums]);
+
+  const handleShuffle = useCallback(() => {
+    if (preloadedCarousel.length === 0) return;
+    
+    // Re-shuffle the preloaded items for variety
+    const items = [...preloadedCarousel].sort(() => Math.random() - 0.5);
     
     setCarouselItems(items);
     setActiveIndex(0);
@@ -155,43 +162,41 @@ const ToListen = () => {
     setShuffledAlbum(null);
     
     // Pick the final landing index (somewhere in the middle-to-end range)
-    const landingIndex = Math.floor(items.length * 0.6) + Math.floor(Math.random() * Math.floor(items.length * 0.3));
+    const landingIndex = Math.floor(items.length * 0.5) + Math.floor(Math.random() * Math.floor(items.length * 0.3));
     
-    let currentIndex = 0;
-    const totalSteps = landingIndex;
     let step = 0;
+    const totalSteps = landingIndex;
     
     const tick = () => {
       step++;
-      currentIndex = step;
-      setActiveIndex(currentIndex);
+      setActiveIndex(step);
       
       if (step >= totalSteps) {
         setShufflePhase('landed');
         setIsShuffling(false);
-        setShuffledAlbum(items[currentIndex]);
+        setShuffledAlbum(items[step]);
         return;
       }
       
-      // Faster easing: total animation ~3-4 seconds
+      // Total animation ~2-3 seconds max
       const progress = step / totalSteps;
       let delay: number;
-      if (progress < 0.6) {
-        delay = 40; // Very fast phase
+      if (progress < 0.7) {
+        delay = 30; // Very fast
         setShufflePhase('spinning');
-      } else if (progress < 0.85) {
-        delay = 40 + (progress - 0.6) * 300; // Slowing
+      } else if (progress < 0.9) {
+        delay = 30 + (progress - 0.7) * 400; // Slowing
         setShufflePhase('slowing');
       } else {
-        delay = 120 + (progress - 0.85) * 800; // Slow at end
+        delay = 110 + (progress - 0.9) * 600; // Final slow
         setShufflePhase('slowing');
       }
       
       setTimeout(tick, delay);
     };
     
-    setTimeout(tick, 40);
-  }, [toListenAlbums]);
+    setTimeout(tick, 30);
+  }, [preloadedCarousel]);
 
   if (authLoading || isLoading) {
     return (
