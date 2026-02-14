@@ -1,5 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Calendar, Music, Clock, Users, List, UserCheck, PenLine } from "lucide-react";
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 type ProfileTab = "diary" | "albums" | "to_listen" | "artists" | "lists" | "reviews" | "following";
 
@@ -19,6 +23,82 @@ const tabs: { id: ProfileTab; label: string; icon: React.ReactNode; path: string
 
 export const ProfileNav = ({ activeTab }: ProfileNavProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Prefetch data for other profile tabs in the background
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Prefetch album ratings
+    queryClient.prefetchQuery({
+      queryKey: ['user-album-ratings', user.id],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('album_ratings')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false });
+        return data || [];
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+
+    // Prefetch listening status (queue)
+    queryClient.prefetchQuery({
+      queryKey: ['listening-status', user.id],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('listening_status')
+          .select('*')
+          .eq('user_id', user.id);
+        return data || [];
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+
+    // Prefetch followed artists
+    queryClient.prefetchQuery({
+      queryKey: ['user-followed-artists-full', user.id],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('artist_follows')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        return data || [];
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+
+    // Prefetch diary entries
+    queryClient.prefetchQuery({
+      queryKey: ['diary-entries', user.id],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('diary_entries')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('listened_on', { ascending: false });
+        return data || [];
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+
+    // Prefetch user lists
+    queryClient.prefetchQuery({
+      queryKey: ['user-lists', user.id],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('user_lists')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false });
+        return data || [];
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+  }, [user?.id, queryClient]);
 
   return (
     <>
