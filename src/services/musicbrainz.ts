@@ -627,10 +627,18 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
     return [];
   }
   
-  const requestLimit = Math.min(limit * 5, 100);
-  
   try {
-    let artists: MBArtist[] = [];
+    const allCandidates: MBArtist[] = [];
+    const seenIds = new Set<string>();
+    
+    const addCandidates = (artists: MBArtist[]) => {
+      for (const a of artists) {
+        if (!seenIds.has(a.id) && a.id !== artistId && a.name.toLowerCase() !== artistName.toLowerCase()) {
+          seenIds.add(a.id);
+          allCandidates.push(a);
+        }
+      }
+    };
     
     // Step 1: Get related artists (members-of, collaborations) for highest accuracy
     let relatedIds = new Set<string>();
@@ -646,84 +654,80 @@ export async function getSimilarArtists(artistId: string, artistName: string, ge
       console.warn('Failed to fetch artist relations for similar artists', e);
     }
 
-    // Step 2: Try genre-based search
+    // Step 2: Search by INDIVIDUAL genres (not OR'd together) to get genre-specific results
+    // This prevents the same popular artists from showing up for every search
     if (genres.length > 0) {
-      const genresToUse = genres.slice(0, 3);
-      const genreQuery = genresToUse.map(g => `tag:"${g}"`).join(' OR ');
+      const genreSearches = genres.slice(0, 4).map(async (genre) => {
+        try {
+          const data = await callMusicBrainz({ action: 'search-artist', query: `tag:"${genre}"`, limit: 25 });
+          return (data.artists || []) as MBArtist[];
+        } catch {
+          return [];
+        }
+      });
       
-      const data = await callMusicBrainz({ action: 'search-artist', query: genreQuery, limit: requestLimit });
-      artists = data.artists || [];
+      const results = await Promise.all(genreSearches);
+      for (const artists of results) {
+        addCandidates(artists);
+      }
     }
     
-    // Step 3: If sparse results, try simplified/parent genres
-    if (artists.length <= 3 && genres.length > 0) {
+    // Step 3: If sparse results, try simplified/parent genres individually
+    if (allCandidates.length < limit && genres.length > 0) {
       const simplifiedGenres = getSimplifiedGenres(genres);
-      
       if (simplifiedGenres.length > 0) {
-        const simplifiedQuery = simplifiedGenres.slice(0, 3).map(g => `tag:"${g}"`).join(' OR ');
-        const data = await callMusicBrainz({ action: 'search-artist', query: simplifiedQuery, limit: requestLimit });
-        const simplifiedResults: MBArtist[] = data.artists || [];
-        
-        const existingIds = new Set(artists.map(a => a.id));
-        for (const a of simplifiedResults) {
-          if (!existingIds.has(a.id)) {
-            artists.push(a);
-            existingIds.add(a.id);
-          }
+        for (const genre of simplifiedGenres.slice(0, 3)) {
+          try {
+            const data = await callMusicBrainz({ action: 'search-artist', query: `tag:"${genre}"`, limit: 25 });
+            addCandidates((data.artists || []) as MBArtist[]);
+          } catch { /* skip */ }
         }
       }
     }
-    
-    // Step 4: If still sparse, try name-based fallback
-    if (artists.length <= 3) {
-      const data = await callMusicBrainz({ action: 'search-artist', query: artistName, limit: requestLimit });
-      const nameResults: MBArtist[] = data.artists || [];
-      
-      const existingIds = new Set(artists.map(a => a.id));
-      for (const a of nameResults) {
-        if (!existingIds.has(a.id)) {
-          artists.push(a);
-          existingIds.add(a.id);
-        }
-      }
-    }
-    
-    // Filter out the current artist
-    const filtered = artists.filter(a => a.id !== artistId && a.name.toLowerCase() !== artistName.toLowerCase());
 
     // Score candidates by genre overlap + relation bonus
-    const sourceGenres = new Set(genres.map(g => g.toLowerCase()));
+    const sourceGenresLower = genres.map(g => g.toLowerCase());
+    const sourceGenreSet = new Set(sourceGenresLower);
     const sourceSimplified = new Set(getSimplifiedGenres(genres).map(g => g.toLowerCase()));
     
-    const scored = filtered.map(a => {
+    const scored = allCandidates.map(a => {
       let score = 0;
       const artistGenres = (a.genres || []).map(g => g.name.toLowerCase());
       
-      // Exact genre matches (highest value)
+      // Count how many of the SOURCE genres this candidate matches
+      let exactMatches = 0;
       for (const g of artistGenres) {
-        if (sourceGenres.has(g)) score += 3;
-        else if (sourceSimplified.has(g)) score += 1;
+        if (sourceGenreSet.has(g)) {
+          exactMatches++;
+          score += 3;
+        } else if (sourceSimplified.has(g)) {
+          score += 1;
+        }
       }
       
-      // Also check simplified genres of the candidate
+      // Also check simplified genres of the candidate against source
       const candidateSimplified = getSimplifiedGenres(artistGenres);
       for (const g of candidateSimplified) {
-        if (sourceGenres.has(g) || sourceSimplified.has(g)) score += 0.5;
+        if (sourceGenreSet.has(g) || sourceSimplified.has(g)) score += 0.5;
       }
       
-      // Relation bonus (directly connected artists)
-      if (relatedIds.has(a.id)) score += 10;
+      // Bonus for matching MULTIPLE genres (much more relevant)
+      if (exactMatches >= 2) score += exactMatches * 2;
       
-      // MusicBrainz relevance score as tiebreaker
-      score += (a.score ?? 0) / 200;
+      // Relation bonus (directly connected artists)
+      if (relatedIds.has(a.id)) score += 15;
+      
+      // MusicBrainz relevance score as minor tiebreaker
+      score += (a.score ?? 0) / 500;
       
       return { artist: a, score };
     });
     
-    // Sort by score descending, filter out zero-score if we have enough
+    // Sort by score descending
     scored.sort((a, b) => b.score - a.score);
     
-    const goodResults = scored.filter(s => s.score > 0);
+    // Only return candidates with meaningful scores
+    const goodResults = scored.filter(s => s.score > 0.5);
     const results = goodResults.length >= limit 
       ? goodResults.slice(0, limit) 
       : scored.slice(0, limit);

@@ -132,6 +132,7 @@ interface RecommendationsDisplayProps {
   recentlyFollowedIds: Set<string>;
   resolvingAlbumKey: string | null;
   resolvingArtistKey: string | null;
+  includeKnown: boolean;
 }
 
 function RecommendationsDisplay({
@@ -149,13 +150,17 @@ function RecommendationsDisplay({
   recentlyFollowedIds,
   resolvingAlbumKey,
   resolvingArtistKey,
+  includeKnown,
 }: RecommendationsDisplayProps) {
   // Filter out albums that are already in to-listen list or recently queued
+  // Also filter out listened albums unless includeKnown is enabled
   const filteredAlbums = (recommendations.albums || []).filter((album) => {
     if (!album.releaseGroupId) return true;
     if (recentlyQueuedIds.has(album.releaseGroupId)) return false;
     const status = getStatusForAlbum(album.releaseGroupId);
-    return !status.isToListen;
+    if (status.isToListen) return false;
+    if (!includeKnown && status.isListened) return false;
+    return true;
   });
 
   // Filter out artists that are already followed
@@ -774,6 +779,7 @@ const DiscoveryExplore = () => {
               followedArtistIds={followedArtistIds}
               recentlyQueuedIds={recentlyQueuedIds}
               recentlyFollowedIds={recentlyFollowedIds}
+              includeKnown={includeKnown}
               resolvingAlbumKey={resolvingAlbumKey}
               resolvingArtistKey={resolvingArtistKey}
             />
