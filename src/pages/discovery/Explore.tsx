@@ -2,14 +2,14 @@ import { Navbar } from "@/components/Navbar";
 import { DiscoveryNav } from "@/components/discovery/DiscoveryNav";
 import { Footer } from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock, Calendar, ChevronDown } from "lucide-react";
+import { Sparkles, Music2, Disc3, Users, RefreshCw, LogIn, Leaf, Zap, FlaskConical, Moon, Heart, Plus, History, X, Clock, Calendar, ChevronDown, UserPlus, UserCheck } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { ArtistImageWithFallback } from "@/components/ArtistImageWithFallback";
 import { searchReleases, searchArtists } from "@/services/musicbrainz";
@@ -124,7 +124,10 @@ interface RecommendationsDisplayProps {
   handleAlbumClick: (album: AlbumRecommendation) => void;
   handleArtistClick: (artist: ArtistRecommendation) => void;
   handleSaveToListen: (album: AlbumRecommendation) => void;
+  handleFollowArtist: (artist: ArtistRecommendation) => void;
   isTogglingStatus: boolean;
+  isFollowingArtist: boolean;
+  followedArtistIds: Set<string>;
   resolvingAlbumKey: string | null;
   resolvingArtistKey: string | null;
 }
@@ -136,7 +139,10 @@ function RecommendationsDisplay({
   handleAlbumClick,
   handleArtistClick,
   handleSaveToListen,
+  handleFollowArtist,
   isTogglingStatus,
+  isFollowingArtist,
+  followedArtistIds,
   resolvingAlbumKey,
   resolvingArtistKey,
 }: RecommendationsDisplayProps) {
@@ -147,9 +153,15 @@ function RecommendationsDisplay({
     return !status.isToListen;
   });
 
+  // Filter out artists that are already followed
+  const filteredArtists = (recommendations.artists || []).filter((artist) => {
+    if (!artist.artistId) return true;
+    return !followedArtistIds.has(artist.artistId);
+  });
+
   // Always show exactly 5 on desktop, 6 on mobile (extra items act as buffer when albums are saved)
   const albumsToShow = filteredAlbums.slice(0, 6);
-  const artistsToShow = (recommendations.artists || []).slice(0, 6);
+  const artistsToShow = filteredArtists.slice(0, 6);
 
   return (
     <div className="space-y-8">
@@ -247,6 +259,7 @@ function RecommendationsDisplay({
             {artistsToShow.map((artist, i) => {
               // Hide 6th item on desktop (md+), show on mobile
               const hideOnDesktop = i === 5;
+              const isFollowed = artist.artistId ? followedArtistIds.has(artist.artistId) : false;
               
               return (
                 <motion.div
@@ -258,7 +271,7 @@ function RecommendationsDisplay({
                 >
                   <div 
                     onClick={() => handleArtistClick(artist)}
-                    className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all"
+                    className="aspect-square rounded-full overflow-hidden mb-2 mx-auto w-full max-w-[200px] group-hover:ring-2 ring-primary/50 transition-all relative"
                   >
                     {artist.artistId ? (
                       <ArtistImageWithFallback
@@ -271,6 +284,25 @@ function RecommendationsDisplay({
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 border border-border/50 flex items-center justify-center">
                         <Users className="h-12 w-12 text-primary/40" />
+                      </div>
+                    )}
+                    {/* Quick follow button */}
+                    {artist.artistId && !isFollowed && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFollowArtist(artist);
+                        }}
+                        disabled={isFollowingArtist}
+                        className="absolute bottom-1 right-1 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                        title="Follow artist"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                      </button>
+                    )}
+                    {isFollowed && (
+                      <div className="absolute bottom-1 right-1 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                        <UserCheck className="h-4 w-4" />
                       </div>
                     )}
                   </div>
@@ -306,6 +338,47 @@ const DiscoveryExplore = () => {
   const [pendingToListen, setPendingToListen] = useState<{ id: string; title: string; artist: string } | null>(null);
   
   const { toggleStatus, isPending: isTogglingStatus, getStatusForAlbum, allStatuses } = useListeningStatus();
+
+  // Fetch followed artists for quick follow
+  const { data: followedArtists = [] } = useQuery({
+    queryKey: ["artist-follows", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("artist_follows")
+        .select("artist_id")
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const followedArtistIds = useMemo(() => new Set(followedArtists.map(a => a.artist_id)), [followedArtists]);
+
+  const followArtistMutation = useMutation({
+    mutationFn: async (artist: ArtistRecommendation) => {
+      if (!user || !artist.artistId) throw new Error("Missing data");
+      const { error } = await supabase
+        .from("artist_follows")
+        .insert({ user_id: user.id, artist_id: artist.artistId, artist_name: artist.name });
+      if (error) throw error;
+    },
+    onSuccess: (_, artist) => {
+      queryClient.invalidateQueries({ queryKey: ["artist-follows", user?.id] });
+      toast({ title: "Following", description: `You're now following ${artist.name}` });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleFollowArtist = (artist: ArtistRecommendation) => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    followArtistMutation.mutate(artist);
+  };
 
   // Fetch recommendation history
   const { data: historyData } = useQuery({
@@ -728,7 +801,10 @@ const DiscoveryExplore = () => {
               handleAlbumClick={handleAlbumClick}
               handleArtistClick={handleArtistClick}
               handleSaveToListen={handleSaveToListen}
+              handleFollowArtist={handleFollowArtist}
               isTogglingStatus={isTogglingStatus}
+              isFollowingArtist={followArtistMutation.isPending}
+              followedArtistIds={followedArtistIds}
               resolvingAlbumKey={resolvingAlbumKey}
               resolvingArtistKey={resolvingArtistKey}
             />
@@ -813,7 +889,7 @@ const DiscoveryExplore = () => {
             <div className="bg-foreground text-background px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
               <Clock className="h-4 w-4" />
               <span className="text-sm">
-                Added <strong>{pendingToListen.title}</strong> to To-Listen
+                Added <strong>{pendingToListen.title}</strong> to Queue
               </span>
               <button
                 onClick={handleUndoToListen}

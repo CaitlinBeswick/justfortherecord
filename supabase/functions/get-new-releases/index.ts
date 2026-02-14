@@ -170,13 +170,39 @@ Deno.serve(async (req) => {
     }
 
     // Fetch missing/stale artists with conservative batching (avoids MB 429s)
+    // On failure, fall back to stale cache data so releases don't disappear between refreshes
     await runBatches(
       toFetch,
       3,
       350,
       async (artistId) => {
-        const groups = await fetchArtistReleaseGroups(artistId)
         const artistName = artistNameById.get(artistId) || 'Unknown Artist'
+        
+        let groups: any[]
+        try {
+          groups = await fetchArtistReleaseGroups(artistId)
+        } catch (err) {
+          // If fetch fails (e.g. rate limited), use stale cache if available
+          const staleCache = cacheByArtist.get(artistId)
+          if (staleCache) {
+            const staleGroups = Array.isArray(staleCache.payload) ? staleCache.payload : []
+            for (const rg of staleGroups as any[]) {
+              releases.push({
+                id: rg.id,
+                title: rg.title,
+                'primary-type': rg['primary-type'],
+                'secondary-types': rg['secondary-types'] || [],
+                'first-release-date': rg['first-release-date'],
+                artistId,
+                artistName,
+              })
+            }
+            console.warn(`Failed to fetch artist ${artistId}, using stale cache: ${err}`)
+          } else {
+            console.warn(`Failed to fetch artist ${artistId}, no cache available: ${err}`)
+          }
+          return
+        }
 
         // add to response
         for (const rg of groups) {

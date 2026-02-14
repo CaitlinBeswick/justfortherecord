@@ -6,7 +6,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Calendar, ChevronDown, Clock, Disc3, Music, LogIn, Eye, EyeOff } from "lucide-react";
+import { Calendar, ChevronDown, Clock, Disc3, Music, LogIn, Eye, EyeOff, Plus } from "lucide-react";
 import { AlbumCard } from "@/components/AlbumCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, isAfter, isBefore, addMonths, subMonths } from "date-fns";
@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useListeningStatus } from "@/hooks/useListeningStatus";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReleaseGroup {
   id: string;
@@ -42,6 +44,8 @@ const DiscoveryNewReleases = () => {
   const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("recent");
   const [fadeListened, setFadeListened] = useState(true);
+  const { toast } = useToast();
+  const { toggleStatus, isPending: isTogglingStatus, getStatusForAlbum } = useListeningStatus();
 
   // Fetch followed artists
   const { data: followedArtists = [], isLoading: loadingFollows } = useQuery({
@@ -291,10 +295,12 @@ const DiscoveryNewReleases = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {monthReleases.map((release) => {
                     const isListened = listenedIds.has(release.id);
+                    const status = getStatusForAlbum(release.id);
+                    const isInQueue = status.isToListen;
                     return (
                       <div
                         key={release.id}
-                        className={fadeListened && isListened ? "opacity-40" : ""}
+                        className={`relative group ${fadeListened && isListened ? "opacity-40" : ""}`}
                       >
                         <AlbumCard
                           id={release.id}
@@ -307,6 +313,32 @@ const DiscoveryNewReleases = () => {
                           }
                           onClick={() => navigate(`/album/${release.id}`)}
                         />
+                        {/* Quick add to queue */}
+                        {!isInQueue && !isListened && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleStatus({
+                                releaseGroupId: release.id,
+                                albumTitle: release.title,
+                                artistName: release.artistName,
+                                field: "is_to_listen",
+                                value: true,
+                              });
+                              toast({ title: "Added to Queue", description: release.title });
+                            }}
+                            disabled={isTogglingStatus}
+                            className="absolute top-2 right-2 z-30 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                            title="Add to Queue"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        )}
+                        {isInQueue && (
+                          <div className="absolute top-2 right-2 z-30 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                            <Clock className="h-4 w-4" />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
