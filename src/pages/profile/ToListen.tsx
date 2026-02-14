@@ -135,7 +135,8 @@ const ToListen = () => {
     if (toListenAlbums.length === 0) return [];
     const shuffled = [...toListenAlbums].sort(() => Math.random() - 0.5);
     const items: ShuffledAlbum[] = [];
-    while (items.length < Math.max(20, toListenAlbums.length * 2)) {
+    const target = Math.max(15, toListenAlbums.length);
+    while (items.length < target) {
       for (const a of shuffled) {
         items.push({
           id: a.id,
@@ -143,7 +144,7 @@ const ToListen = () => {
           album_title: a.album_title,
           artist_name: a.artist_name,
         });
-        if (items.length >= Math.max(20, toListenAlbums.length * 2)) break;
+        if (items.length >= target) break;
       }
     }
     return items;
@@ -152,7 +153,6 @@ const ToListen = () => {
   const handleShuffle = useCallback(() => {
     if (preloadedCarousel.length === 0) return;
     
-    // Re-shuffle the preloaded items for variety
     const items = [...preloadedCarousel].sort(() => Math.random() - 0.5);
     
     setCarouselItems(items);
@@ -161,41 +161,34 @@ const ToListen = () => {
     setShufflePhase('spinning');
     setShuffledAlbum(null);
     
-    // Pick the final landing index (somewhere in the middle-to-end range)
-    const landingIndex = Math.floor(items.length * 0.5) + Math.floor(Math.random() * Math.floor(items.length * 0.3));
-    
+    const landingIndex = Math.min(items.length - 1, 8 + Math.floor(Math.random() * 5));
     let step = 0;
-    const totalSteps = landingIndex;
     
     const tick = () => {
       step++;
       setActiveIndex(step);
       
-      if (step >= totalSteps) {
+      if (step >= landingIndex) {
         setShufflePhase('landed');
         setIsShuffling(false);
         setShuffledAlbum(items[step]);
         return;
       }
       
-      // Total animation ~2-3 seconds max
-      const progress = step / totalSteps;
+      const progress = step / landingIndex;
       let delay: number;
-      if (progress < 0.7) {
-        delay = 30; // Very fast
+      if (progress < 0.6) {
+        delay = 60;
         setShufflePhase('spinning');
-      } else if (progress < 0.9) {
-        delay = 30 + (progress - 0.7) * 400; // Slowing
-        setShufflePhase('slowing');
       } else {
-        delay = 110 + (progress - 0.9) * 600; // Final slow
+        delay = 60 + (progress - 0.6) * 350;
         setShufflePhase('slowing');
       }
       
       setTimeout(tick, delay);
     };
     
-    setTimeout(tick, 30);
+    setTimeout(tick, 60);
   }, [preloadedCarousel]);
 
   if (authLoading || isLoading) {
