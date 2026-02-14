@@ -1,9 +1,9 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Clock, Search, ArrowUpDown } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { Loader2, Plus, Clock, Search, ArrowUpDown, Shuffle, X } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useListeningStatus } from "@/hooks/useListeningStatus";
@@ -12,6 +12,8 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -37,12 +39,20 @@ const sortLabels: Record<SortOption, string> = {
   'date-added-asc': 'Date Added (Oldest)',
 };
 
+interface ShuffledAlbum {
+  id: string;
+  release_group_id: string;
+  album_title: string;
+  artist_name: string;
+}
+
 const ToListen = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { allStatuses, isLoading } = useListeningStatus();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date-added-desc');
+  const [shuffledAlbum, setShuffledAlbum] = useState<ShuffledAlbum | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -102,6 +112,18 @@ const ToListen = () => {
     }
   }, [toListenAlbums, searchQuery, sortBy]);
 
+  const handleShuffle = useCallback(() => {
+    if (toListenAlbums.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * toListenAlbums.length);
+    const picked = toListenAlbums[randomIndex];
+    setShuffledAlbum({
+      id: picked.id,
+      release_group_id: picked.release_group_id,
+      album_title: picked.album_title,
+      artist_name: picked.artist_name,
+    });
+  }, [toListenAlbums]);
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -128,6 +150,17 @@ const ToListen = () => {
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                   <h2 className="font-serif text-xl text-foreground">Your Queue ({toListenAlbums.length})</h2>
                   <div className="flex items-center gap-3">
+                    {toListenAlbums.length > 0 && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleShuffle}
+                        className="gap-1.5"
+                      >
+                        <Shuffle className="h-4 w-4" />
+                        Shuffle
+                      </Button>
+                    )}
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -154,6 +187,61 @@ const ToListen = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Shuffle Result */}
+                <AnimatePresence>
+                  {shuffledAlbum && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mb-6 p-5 rounded-xl bg-primary/10 border border-primary/20"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-medium text-primary uppercase tracking-wide flex items-center gap-2">
+                          <Shuffle className="h-4 w-4" />
+                          Your Next Listen
+                        </h3>
+                        <button onClick={() => setShuffledAlbum(null)} className="text-muted-foreground hover:text-foreground">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div
+                          className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer"
+                          onClick={() => navigate(`/album/${shuffledAlbum.release_group_id}`)}
+                        >
+                          <AlbumCoverWithFallback
+                            releaseGroupId={shuffledAlbum.release_group_id}
+                            title={shuffledAlbum.album_title}
+                            size="250"
+                            className="w-full h-full"
+                            imageClassName="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4
+                            className="font-serif text-lg text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => navigate(`/album/${shuffledAlbum.release_group_id}`)}
+                          >
+                            {shuffledAlbum.album_title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground truncate">{shuffledAlbum.artist_name}</p>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={handleShuffle}
+                          className="gap-1.5 flex-shrink-0"
+                        >
+                          <Shuffle className="h-4 w-4" />
+                          Again
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {filteredAlbums.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {filteredAlbums.map((item, index) => (

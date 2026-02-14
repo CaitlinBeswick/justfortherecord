@@ -7,11 +7,11 @@ import { AlbumCard } from "@/components/AlbumCard";
 import { ShareButton } from "@/components/ShareButton";
 
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info, ChevronRight, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, UserPlus, UserCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, Info, ChevronRight, ArrowUpDown, Plus, Clock, ChevronDown } from "lucide-react";
 import { DiscographySearch } from "@/components/DiscographySearch";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup, getSimilarArtists, getArtistNames, getReleaseGroup } from "@/services/musicbrainz";
+import { getArtist, getArtistImage, getArtistReleases, getCoverArtUrl, getYear, MBReleaseGroup, getSimilarArtists, getArtistNames, getReleaseGroup, getArtistBio } from "@/services/musicbrainz";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -57,10 +57,11 @@ const ArtistDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { getStatusForAlbum, allStatuses } = useListeningStatus();
+  const { getStatusForAlbum, allStatuses, toggleStatus, isPending: isTogglingStatus } = useListeningStatus();
   const [fadeListened, setFadeListened] = useState(true);
   const [discographySearch, setDiscographySearch] = useState('');
   const [discographySort, setDiscographySort] = useState<'date' | 'popularity'>('date');
+  const [bioExpanded, setBioExpanded] = useState(false);
 
   const artistId = id ?? "";
   const isValidArtistId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(artistId);
@@ -95,6 +96,14 @@ const ArtistDetail = () => {
     queryFn: () => getSimilarArtists(artistId, artist?.name || '', artistGenres),
     enabled: isValidArtistId && !!artist,
     staleTime: 1000 * 60 * 30,
+  });
+
+  // Fetch artist bio from Wikipedia
+  const { data: artistBio } = useQuery({
+    queryKey: ['artist-bio', artistId],
+    queryFn: () => getArtistBio(artistId),
+    enabled: isValidArtistId,
+    staleTime: 1000 * 60 * 60,
   });
 
   // Check if user follows this artist
@@ -665,6 +674,34 @@ const ArtistDetail = () => {
                     </div>
                     */}
                   </div>
+
+                  {/* Expandable Artist Bio */}
+                  {artistBio && (
+                    <div className="mt-4">
+                      <p className={`text-sm text-muted-foreground leading-relaxed ${!bioExpanded ? 'line-clamp-3' : ''}`}>
+                        {artistBio.extract}
+                      </p>
+                      <div className="flex items-center gap-3 mt-2">
+                        {artistBio.extract.length > 200 && (
+                          <button
+                            onClick={() => setBioExpanded(!bioExpanded)}
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            {bioExpanded ? 'Show less' : 'Read more'}
+                            <ChevronDown className={`h-3 w-3 transition-transform ${bioExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                        )}
+                        <a
+                          href={artistBio.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-muted-foreground/60 hover:text-muted-foreground"
+                        >
+                          via Wikipedia
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               </div>
             </div>
@@ -830,6 +867,8 @@ const ArtistDetail = () => {
                         (creditedArtists[0]?.artist?.name?.toLowerCase() || "") !== artist.name.toLowerCase()
                       );
 
+                      const isInQueue = statusForAlbum.isToListen;
+
                       return (
                         <motion.div
                           key={release.id}
@@ -837,6 +876,7 @@ const ArtistDetail = () => {
                           animate={{ y: 0 }}
                           transition={{ delay: index * 0.02 }}
                           style={{ opacity: fadeListened && isListened ? 0.4 : 1 }}
+                          className="relative group"
                         >
                           <AlbumCard
                             id={release.id}
@@ -849,6 +889,31 @@ const ArtistDetail = () => {
                             collabArtist={isCollab ? (creditedName || "Collaboration") : undefined}
                             onClick={() => navigate(`/album/${release.id}`)}
                           />
+                          {/* Quick add to Queue */}
+                          {user && !isInQueue && !isListened && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleStatus({
+                                  releaseGroupId: release.id,
+                                  albumTitle: release.title,
+                                  artistName: artist.name,
+                                  field: "is_to_listen",
+                                  value: true,
+                                });
+                              }}
+                              disabled={isTogglingStatus}
+                              className="absolute top-2 right-2 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md z-10"
+                              title="Add to Queue"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          )}
+                          {isInQueue && !isListened && (
+                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md z-10">
+                              <Clock className="h-3.5 w-3.5" />
+                            </div>
+                          )}
                         </motion.div>
                       );
                     })}

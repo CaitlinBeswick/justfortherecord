@@ -1,4 +1,4 @@
-import { ExternalLink, ChevronDown } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,7 +72,6 @@ export function StreamingLinks({ artistName, albumTitle, className = "" }: Strea
         >
           <span className="text-sm">🎧</span>
           Stream
-          <ChevronDown className="h-3 w-3 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="min-w-[160px]">
