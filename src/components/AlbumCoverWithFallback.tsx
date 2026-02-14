@@ -52,6 +52,7 @@ export const AlbumCoverWithFallback = React.forwardRef<HTMLDivElement, AlbumCove
         <img
           src={imageUrl}
           alt={title}
+          loading="lazy"
           className={`h-full w-full ${imageClassName}`}
           onError={() => setHasError(true)}
         />
