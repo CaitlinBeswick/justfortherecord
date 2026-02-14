@@ -220,21 +220,21 @@ function RecommendationsDisplay({
                       </div>
                     )}
                     {/* Save to To-Listen button */}
-                     {album.releaseGroupId && !isInToListen && (
+                      {album.releaseGroupId && !isInToListen && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSaveToListen(album);
                         }}
                         disabled={isTogglingStatus}
-                        className="absolute bottom-2 right-2 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md"
+                        className="absolute top-2 right-2 z-10 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md"
                         title="Save to Queue"
                       >
                         <Plus className="h-4 w-4" />
                       </button>
                     )}
                     {isInToListen && (
-                      <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                      <div className="absolute top-2 right-2 z-10 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
                         <Clock className="h-4 w-4" />
                       </div>
                     )}
