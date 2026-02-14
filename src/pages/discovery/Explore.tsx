@@ -124,6 +124,9 @@ interface RecommendationsDisplayProps {
   resolvingAlbumKey: string | null;
   resolvingArtistKey: string | null;
   includeKnown: boolean;
+  onRefreshAlbums?: () => void;
+  onRefreshArtists?: () => void;
+  isRefreshing?: boolean;
 }
 
 function RecommendationsDisplay({
@@ -142,6 +145,9 @@ function RecommendationsDisplay({
   resolvingAlbumKey,
   resolvingArtistKey,
   includeKnown,
+  onRefreshAlbums,
+  onRefreshArtists,
+  isRefreshing,
 }: RecommendationsDisplayProps) {
   // Filter out albums that are already in to-listen list or recently queued
   // Also filter out listened albums unless includeKnown is enabled
@@ -170,11 +176,23 @@ function RecommendationsDisplay({
       {/* Album Recommendations */}
       {albumsToShow.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Disc3 className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Recommended Albums
-            </h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Disc3 className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Recommended Albums
+              </h3>
+            </div>
+            {onRefreshAlbums && (
+              <button
+                onClick={onRefreshAlbums}
+                disabled={isRefreshing}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-4">
             {albumsToShow.map((album, i) => {
@@ -251,11 +269,23 @@ function RecommendationsDisplay({
       {/* Artist Recommendations */}
       {artistsToShow.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Recommended Artists
-            </h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Recommended Artists
+              </h3>
+            </div>
+            {onRefreshArtists && (
+              <button
+                onClick={onRefreshArtists}
+                disabled={isRefreshing}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-4">
             {artistsToShow.map((artist, i) => {
@@ -695,16 +725,6 @@ const DiscoveryExplore = () => {
                   </button>
                 )}
               </div>
-              {user && recommendations && (
-                <button
-                  onClick={handleRefresh}
-                  disabled={isFetching}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-                  Refresh
-                </button>
-              )}
             </div>
             {user && (
               <div className="flex gap-2 items-start">
@@ -807,6 +827,9 @@ const DiscoveryExplore = () => {
               includeKnown={includeKnown}
               resolvingAlbumKey={resolvingAlbumKey}
               resolvingArtistKey={resolvingArtistKey}
+              onRefreshAlbums={handleRefresh}
+              onRefreshArtists={handleRefresh}
+              isRefreshing={isFetching}
             />
           ) : null}
         </motion.div>
