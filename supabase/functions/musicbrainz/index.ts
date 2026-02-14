@@ -218,7 +218,8 @@ serve(async (req) => {
       
       case 'get-artist-relations':
         // Get artist relations for "also performs as" / "related artists" section
-        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=artist-rels&fmt=json`;
+        // Include both artist-rels (for collaborations) and url-rels (for Wikipedia/Wikidata links)
+        url = `${MUSICBRAINZ_BASE}/artist/${id}?inc=artist-rels+url-rels&fmt=json`;
         break;
       
       case 'get-artist-image': {
