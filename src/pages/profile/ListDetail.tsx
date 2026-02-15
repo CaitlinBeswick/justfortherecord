@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Trash2, Pencil, Settings2 } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, Pencil, Plus, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getCoverArtUrl } from "@/services/musicbrainz";
+import { getCoverArtUrl, searchReleases, getArtistNames, type MBReleaseGroup } from "@/services/musicbrainz";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +42,10 @@ const ListDetail = () => {
   const [editDescription, setEditDescription] = useState("");
   const [editPublic, setEditPublic] = useState(true);
   const [editRanked, setEditRanked] = useState(false);
+  const [addSearchQuery, setAddSearchQuery] = useState("");
+  const [addSearchResults, setAddSearchResults] = useState<MBReleaseGroup[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showAddBar, setShowAddBar] = useState(false);
 
   const { data: list, isLoading: listLoading } = useQuery({
     queryKey: ['user-list', id],
@@ -89,6 +93,44 @@ const ListDetail = () => {
       toast.error("Failed to remove album");
     },
   });
+  const addAlbumMutation = useMutation({
+    mutationFn: async (album: MBReleaseGroup) => {
+      const { error } = await supabase.from('list_items').insert({
+        list_id: id!,
+        release_group_id: album.id,
+        album_title: album.title,
+        artist_name: getArtistNames(album["artist-credit"]),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['list-items', id] });
+      queryClient.invalidateQueries({ queryKey: ['list-items-for-album'] });
+      toast.success("Album added to list");
+      setAddSearchQuery("");
+      setAddSearchResults([]);
+    },
+    onError: () => {
+      toast.error("Failed to add album");
+    },
+  });
+
+  const handleAddSearch = async (query: string) => {
+    setAddSearchQuery(query);
+    if (query.trim().length < 2) {
+      setAddSearchResults([]);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const results = await searchReleases(query, 6);
+      setAddSearchResults(results);
+    } catch {
+      setAddSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const updateListMutation = useMutation({
     mutationFn: async (updates: { name: string; description: string | null; is_public: boolean; is_ranked: boolean }) => {
@@ -279,8 +321,81 @@ const ListDetail = () => {
               <div className="text-center py-12">
                 <p className="text-muted-foreground">This list is empty</p>
                 <p className="text-sm text-muted-foreground/60 mt-2">
-                  Add albums from any album page using the dropdown menu
+                  Search below to add your first album
                 </p>
+              </div>
+            )}
+
+            {/* Add album bar */}
+            {isOwner && (
+              <div className="mt-3">
+                {!showAddBar ? (
+                  <button
+                    onClick={() => setShowAddBar(true)}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border p-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="text-sm font-medium">Add album</span>
+                  </button>
+                ) : (
+                  <div className="rounded-xl bg-card p-3 space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search for an album..."
+                        value={addSearchQuery}
+                        onChange={(e) => handleAddSearch(e.target.value)}
+                        className="pl-9"
+                        autoFocus
+                      />
+                      {addSearchQuery && (
+                        <button
+                          onClick={() => { setShowAddBar(false); setAddSearchQuery(""); setAddSearchResults([]); }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    {isSearching && (
+                      <div className="flex justify-center py-3">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                    {addSearchResults.length > 0 && (
+                      <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                        {addSearchResults.map((album) => {
+                          const artistName = getArtistNames(album["artist-credit"]);
+                          const alreadyInList = items.some(i => i.release_group_id === album.id);
+                          return (
+                            <button
+                              key={album.id}
+                              disabled={alreadyInList || addAlbumMutation.isPending}
+                              onClick={() => addAlbumMutation.mutate(album)}
+                              className="w-full flex items-center gap-3 rounded-lg p-2 hover:bg-secondary transition-colors text-left disabled:opacity-50"
+                            >
+                              <img
+                                src={getCoverArtUrl(album.id, '250')}
+                                alt={album.title}
+                                className="w-10 h-10 rounded-md object-cover bg-secondary"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{album.title}</p>
+                                <p className="text-xs text-muted-foreground truncate">{artistName}</p>
+                              </div>
+                              {alreadyInList ? (
+                                <span className="text-xs text-muted-foreground shrink-0">Added</span>
+                              ) : (
+                                <Plus className="h-4 w-4 text-primary shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </motion.div>
