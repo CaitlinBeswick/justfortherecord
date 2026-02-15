@@ -1,14 +1,17 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Trash2, GripVertical } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, Pencil, Settings2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { getCoverArtUrl } from "@/services/musicbrainz";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useState } from "react";
 
 const ListDetail = () => {
@@ -27,6 +36,12 @@ const ListDetail = () => {
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const [showDeleteList, setShowDeleteList] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPublic, setEditPublic] = useState(true);
+  const [editRanked, setEditRanked] = useState(false);
 
   const { data: list, isLoading: listLoading } = useQuery({
     queryKey: ['user-list', id],
@@ -75,6 +90,68 @@ const ListDetail = () => {
     },
   });
 
+  const updateListMutation = useMutation({
+    mutationFn: async (updates: { name: string; description: string | null; is_public: boolean; is_ranked: boolean }) => {
+      const { error } = await supabase
+        .from('user_lists')
+        .update(updates)
+        .eq('id', id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-list', id] });
+      queryClient.invalidateQueries({ queryKey: ['user-lists'] });
+      toast.success("List updated");
+      setShowEditDialog(false);
+    },
+    onError: () => {
+      toast.error("Failed to update list");
+    },
+  });
+
+  const deleteListMutation = useMutation({
+    mutationFn: async () => {
+      // Delete all items first, then the list
+      const { error: itemsError } = await supabase
+        .from('list_items')
+        .delete()
+        .eq('list_id', id!);
+      if (itemsError) throw itemsError;
+      const { error } = await supabase
+        .from('user_lists')
+        .delete()
+        .eq('id', id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-lists'] });
+      toast.success("List deleted");
+      navigate('/profile/lists');
+    },
+    onError: () => {
+      toast.error("Failed to delete list");
+    },
+  });
+
+  const openEditDialog = () => {
+    if (!list) return;
+    setEditName(list.name);
+    setEditDescription(list.description || "");
+    setEditPublic(list.is_public);
+    setEditRanked(list.is_ranked);
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editName.trim()) return;
+    updateListMutation.mutate({
+      name: editName.trim(),
+      description: editDescription.trim() || null,
+      is_public: editPublic,
+      is_ranked: editRanked,
+    });
+  };
+
   const isLoading = authLoading || listLoading || itemsLoading;
 
   if (isLoading) {
@@ -121,20 +198,36 @@ const ListDetail = () => {
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="mb-6">
-              <h1 className="font-serif text-3xl text-foreground">{list.name}</h1>
-              {list.description && (
-                <p className="text-muted-foreground mt-2">{list.description}</p>
-              )}
-              <div className="flex items-center gap-2 mt-3">
-                {list.is_ranked && (
-                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Ranked</span>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h1 className="font-serif text-3xl text-foreground">{list.name}</h1>
+                  {list.description && (
+                    <p className="text-muted-foreground mt-2">{list.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-3">
+                    {list.is_ranked && (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Ranked</span>
+                    )}
+                    <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded">
+                      {list.is_public ? 'Public' : 'Private'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {items.length} {items.length === 1 ? 'album' : 'albums'}
+                    </span>
+                  </div>
+                </div>
+                {isOwner && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={openEditDialog}>
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => setShowDeleteList(true)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </div>
                 )}
-                <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded">
-                  {list.is_public ? 'Public' : 'Private'}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {items.length} {items.length === 1 ? 'album' : 'albums'}
-                </span>
               </div>
             </div>
 
@@ -194,6 +287,51 @@ const ListDetail = () => {
         </div>
       </main>
 
+      {/* Edit List Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit List</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-desc">Description (optional)</Label>
+              <Textarea
+                id="edit-desc"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="edit-public">Public</Label>
+              <Switch id="edit-public" checked={editPublic} onCheckedChange={setEditPublic} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="edit-ranked">Ranked</Label>
+              <Switch id="edit-ranked" checked={editRanked} onCheckedChange={setEditRanked} />
+            </div>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={!editName.trim() || updateListMutation.isPending}
+              className="w-full"
+            >
+              {updateListMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Item Confirmation */}
       <AlertDialog open={!!deleteItemId} onOpenChange={(open) => !open && setDeleteItemId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -206,6 +344,27 @@ const ListDetail = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => deleteItemId && removeItemMutation.mutate(deleteItemId)}>
               Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete List Confirmation */}
+      <AlertDialog open={showDeleteList} onOpenChange={setShowDeleteList}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this list?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{list.name}" and all its items. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteListMutation.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
