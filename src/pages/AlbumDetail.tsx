@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { AverageAlbumRating } from "@/components/AverageAlbumRating";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown, MoreHorizontal, ListPlus, Share2, ExternalLink } from "lucide-react";
+import { ArrowLeft, Plus, Clock, Play, Loader2, AlertCircle, ChevronDown, ListPlus, Share2, ExternalLink } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -69,6 +69,7 @@ const AlbumDetail = () => {
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [coverError, setCoverError] = useState(false);
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
+  const [showAddToList, setShowAddToList] = useState(false);
 
   // Use real average rating from user ratings in our database - must be called before any early returns
   const { averageRating, ratingCount } = useAverageRating(id);
@@ -486,9 +487,9 @@ const AlbumDetail = () => {
                   {artistName}
                 </button>
 
-                {/* Row 1: Log Listen */}
+                {/* Actions row: Log Listen + Listened + Queue + More */}
                 {user && releaseGroup && (
-                  <div className="mt-4 flex justify-center">
+                  <div className="mt-4 flex justify-center items-center gap-2 flex-wrap">
                     <LogListenDialog
                       releaseGroupId={id!}
                       albumTitle={releaseGroup.title}
@@ -496,72 +497,64 @@ const AlbumDetail = () => {
                       releaseDate={releaseGroup["first-release-date"]}
                       hasListenedBefore={hasListenedBefore}
                       trigger={
-                        <Button className="gap-2 w-full max-w-[240px]">
+                        <Button className="gap-2">
                           <Plus className="h-4 w-4" />
                           Log Listen
                         </Button>
                       }
                     />
+                    <ListeningStatusButtons
+                      releaseGroupId={id!}
+                      albumTitle={releaseGroup.title}
+                      artistName={artistName}
+                      showOnly={['is_listened', 'is_to_listen']}
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="center" className="w-48 bg-popover border-border z-50">
+                        <DropdownMenuItem onSelect={() => setShowAddToList(true)}>
+                          <ListPlus className="h-4 w-4 mr-2" />
+                          Add to List
+                        </DropdownMenuItem>
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger>
+                            <span className="text-sm mr-2">🎧</span>
+                            Stream
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="bg-popover border-border z-50">
+                            {[
+                              { name: "Spotify", icon: "🎧", url: `https://open.spotify.com/search/${encodeURIComponent(`${artistName} ${releaseGroup.title}`)}` },
+                              { name: "Apple Music", icon: "🍎", url: `https://music.apple.com/search?term=${encodeURIComponent(`${artistName} ${releaseGroup.title}`)}` },
+                              { name: "YouTube Music", icon: "🎶", url: `https://music.youtube.com/search?q=${encodeURIComponent(`${artistName} ${releaseGroup.title}`)}` },
+                              { name: "Amazon Music", icon: "🛒", url: `https://music.amazon.com/search/${encodeURIComponent(`${artistName} ${releaseGroup.title}`)}` },
+                              { name: "Deezer", icon: "🎵", url: `https://www.deezer.com/search/${encodeURIComponent(`${artistName} ${releaseGroup.title}`)}` },
+                              { name: "Tidal", icon: "🌊", url: `https://listen.tidal.com/search?q=${encodeURIComponent(`${artistName} ${releaseGroup.title}`)}` },
+                            ].map((s) => (
+                              <DropdownMenuItem key={s.name} asChild>
+                                <a href={s.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 cursor-pointer">
+                                  <span className="text-sm">{s.icon}</span>
+                                  {s.name}
+                                  <ExternalLink className="h-3 w-3 ml-auto opacity-40" />
+                                </a>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                        <DropdownMenuItem onClick={() => {
+                          navigator.clipboard.writeText(window.location.href);
+                          toast({ title: "Link copied!" });
+                        }}>
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 )}
-
-                {/* Row 2: Listened + Queue + More */}
-                <div className="mt-3 flex justify-center items-center gap-2">
-                  <ListeningStatusButtons
-                    releaseGroupId={id!}
-                    albumTitle={releaseGroup.title}
-                    artistName={artistName}
-                    showOnly={['is_listened', 'is_to_listen']}
-                  />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className="w-48 bg-popover border-border z-50">
-                      <AddToListDialog
-                        releaseGroupId={id!}
-                        albumTitle={releaseGroup.title}
-                        artistName={artistName}
-                        trigger={
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                            <ListPlus className="h-4 w-4 mr-2" />
-                            Add to List
-                          </DropdownMenuItem>
-                        }
-                      />
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <span className="text-sm mr-2">🎧</span>
-                          Stream
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="bg-popover border-border z-50">
-                          {[
-                            { name: "Spotify", icon: "🎧", url: `https://open.spotify.com/search/${encodeURIComponent(`${artistName} ${releaseGroup.title}`)}` },
-                            { name: "Apple Music", icon: "🍎", url: `https://music.apple.com/search?term=${encodeURIComponent(`${artistName} ${releaseGroup.title}`)}` },
-                            { name: "YouTube Music", icon: "🎶", url: `https://music.youtube.com/search?q=${encodeURIComponent(`${artistName} ${releaseGroup.title}`)}` },
-                          ].map((s) => (
-                            <DropdownMenuItem key={s.name} asChild>
-                              <a href={s.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 cursor-pointer">
-                                <span className="text-sm">{s.icon}</span>
-                                {s.name}
-                                <ExternalLink className="h-3 w-3 ml-auto opacity-40" />
-                              </a>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                      <DropdownMenuItem onClick={() => {
-                        navigator.clipboard.writeText(window.location.href);
-                        toast({ title: "Link copied!" });
-                      }}>
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
               </motion.div>
             </div>
           </div>
@@ -628,6 +621,16 @@ const AlbumDetail = () => {
           )}
         </section>
       </main>
+      {/* Add to List Dialog (rendered outside dropdown) */}
+      {user && releaseGroup && (
+        <AddToListDialog
+          releaseGroupId={id!}
+          albumTitle={releaseGroup.title}
+          artistName={getArtistNames(releaseGroup["artist-credit"])}
+          open={showAddToList}
+          onOpenChange={setShowAddToList}
+        />
+      )}
       {/* Remove Rating Confirmation Dialog */}
       <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
         <AlertDialogContent>
