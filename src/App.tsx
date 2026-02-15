@@ -25,6 +25,7 @@ const ProfileAlbums = lazy(() => import("./pages/profile/Albums"));
 const ProfileToListen = lazy(() => import("./pages/profile/ToListen"));
 const ProfileDiary = lazy(() => import("./pages/profile/Diary"));
 const ProfileLists = lazy(() => import("./pages/profile/Lists"));
+const ProfileListDetail = lazy(() => import("./pages/profile/ListDetail"));
 const ProfileArtists = lazy(() => import("./pages/profile/Artists"));
 const ProfileReviews = lazy(() => import("./pages/profile/Reviews"));
 const ProfileFriends = lazy(() => import("./pages/profile/Friends"));
@@ -75,6 +76,7 @@ const App = () => (
                 <Route path="/profile/to-listen" element={<ProfileToListen />} />
                 <Route path="/profile/diary" element={<ProfileDiary />} />
                 <Route path="/profile/lists" element={<ProfileLists />} />
+                <Route path="/profile/lists/:id" element={<ProfileListDetail />} />
                 <Route path="/profile/artists" element={<ProfileArtists />} />
                 <Route path="/profile/reviews" element={<ProfileReviews />} />
                 <Route path="/profile/friends" element={<ProfileFriends />} />
