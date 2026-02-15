@@ -171,7 +171,7 @@ const Lists = () => {
                 {filteredAndSortedLists.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {filteredAndSortedLists.map((list) => (
-                      <div key={list.id} className="rounded-xl bg-card p-4 hover:bg-surface-elevated transition-colors">
+                      <div key={list.id} onClick={() => navigate(`/profile/lists/${list.id}`)} className="rounded-xl bg-card p-4 hover:bg-surface-elevated transition-colors cursor-pointer">
                         <h3 className="font-semibold text-foreground">{list.name}</h3>
                         {list.description && (
                           <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{list.description}</p>
