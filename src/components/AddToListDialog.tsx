@@ -19,6 +19,8 @@ interface AddToListDialogProps {
   albumTitle: string;
   artistName: string;
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function AddToListDialog({
@@ -26,11 +28,15 @@ export function AddToListDialog({
   albumTitle,
   artistName,
   trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: AddToListDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
   const [newListName, setNewListName] = useState("");
   const [creatingList, setCreatingList] = useState(false);
 
@@ -139,14 +145,16 @@ export function AddToListDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <ListPlus className="h-4 w-4" />
-            Add to List
-          </Button>
-        )}
-      </DialogTrigger>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <ListPlus className="h-4 w-4" />
+              Add to List
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add to List</DialogTitle>
