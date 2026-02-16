@@ -370,7 +370,8 @@ serve(async (req) => {
 
         // Build email content with off-white/red theme
         const primaryColor = '#dc2626'; // Red
-        const bgColor = '#faf8f5'; // Off-white background
+        const bgColor = '#dc2626'; // Red background
+        const contentBg = '#ffffff'; // White content area
         const cardBg = '#ffffff';
         const textColor = '#1a1a1a';
         const mutedColor = '#6b7280';
@@ -381,21 +382,23 @@ serve(async (req) => {
         if (userActivity.albumsLogged > 0 || userActivity.artistsRated > 0) {
           userSummaryHtml = `
             <div style="margin-bottom: 32px; background-color: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 24px;">
-              <h2 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 500;">
+              <h2 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 500; text-align: center;">
                 Your Week in Review
               </h2>
-              <div style="display: flex; gap: 24px;">
-                <div style="text-align: center;">
-                  <p style="font-size: 32px; font-weight: 600; color: ${primaryColor}; margin: 0;">${userActivity.albumsLogged}</p>
-                  <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Albums logged</p>
-                </div>
-                <div style="text-align: center;">
-                  <p style="font-size: 32px; font-weight: 600; color: ${primaryColor}; margin: 0;">${userActivity.artistsRated}</p>
-                  <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Artists rated</p>
-                </div>
-              </div>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="text-align: center; padding: 8px; width: 50%;">
+                    <p style="font-size: 32px; font-weight: 600; color: ${primaryColor}; margin: 0;">${userActivity.albumsLogged}</p>
+                    <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Albums logged</p>
+                  </td>
+                  <td style="text-align: center; padding: 8px; width: 50%;">
+                    <p style="font-size: 32px; font-weight: 600; color: ${primaryColor}; margin: 0;">${userActivity.artistsRated}</p>
+                    <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Artists rated</p>
+                  </td>
+                </tr>
+              </table>
               ${userActivity.topAlbum ? `
-                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid ${borderColor};">
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid ${borderColor}; text-align: center;">
                   <p style="font-size: 12px; color: ${mutedColor}; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">Top rated this week</p>
                   <p style="font-size: 16px; color: ${textColor}; margin: 0; font-weight: 500;">${escapeHtml(userActivity.topAlbum.title)}</p>
                   <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">by ${escapeHtml(userActivity.topAlbum.artist)}${userActivity.topAlbum.rating ? ` · ${userActivity.topAlbum.rating} stars` : ''}</p>
@@ -530,35 +533,43 @@ serve(async (req) => {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
           </head>
-          <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${bgColor}; color: ${textColor}; padding: 40px 20px; margin: 0;">
-            <div style="max-width: 600px; margin: 0 auto;">
-              <!-- Header with Logo -->
-              <div style="text-align: center; margin-bottom: 32px;">
-                <img src="${logoDataUri}" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" />
-                <h1 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 28px; margin: 0 0 8px 0; font-weight: 500;">Your Weekly Digest</h1>
-                <p style="color: ${mutedColor}; font-size: 16px; margin: 0;">${personalizedGreeting}</p>
-              </div>
-              
-              ${customNoteHtml}
-              ${userSummaryHtml}
-              ${releasesHtml}
-              ${activityHtml}
-              ${trendingHtml}
-              ${updatesHtml}
-              
-              <div style="text-align: center; margin: 32px 0;">
-                <a href="${baseUrl}" style="display: inline-block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px;">
-                  ${escapeHtml(templateSettings.ctaText)}
-                </a>
-              </div>
-              
-              <hr style="border: none; border-top: 1px solid ${borderColor}; margin: 32px 0;">
-              <p style="color: ${mutedColor}; font-size: 12px; text-align: center; margin: 0;">
-                You're receiving this weekly digest because you opted in.
-                <br><br>
-                <a href="${baseUrl}/profile/settings" style="color: ${mutedColor}; text-decoration: underline;">Manage email preferences</a>
-              </p>
-            </div>
+          <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${bgColor}; color: ${textColor}; padding: 0; margin: 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: ${bgColor};">
+              <tr>
+                <td align="center" style="padding: 40px 20px;">
+                  <div style="max-width: 600px; margin: 0 auto;">
+                    <!-- Header with Logo on red bg -->
+                    <div style="text-align: center; margin-bottom: 32px;">
+                      <img src="${logoDataUri}" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" />
+                      <h1 style="font-family: 'Georgia', serif; color: #ffffff; font-size: 28px; margin: 0 0 8px 0; font-weight: 500;">Your Weekly Digest</h1>
+                      <p style="color: #ffffffcc; font-size: 16px; margin: 0;">${personalizedGreeting}</p>
+                    </div>
+                    
+                    <!-- White content area -->
+                    <div style="background-color: ${contentBg}; border-radius: 16px; padding: 32px 24px;">
+                      ${customNoteHtml}
+                      ${userSummaryHtml}
+                      ${releasesHtml}
+                      ${activityHtml}
+                      ${trendingHtml}
+                      ${updatesHtml}
+                      
+                      <div style="text-align: center; margin: 32px 0 16px 0;">
+                        <a href="${baseUrl}" style="display: inline-block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+                          ${escapeHtml(templateSettings.ctaText)}
+                        </a>
+                      </div>
+                    </div>
+                    
+                    <p style="color: #ffffffaa; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
+                      You're receiving this weekly digest because you opted in.
+                      <br><br>
+                      <a href="${baseUrl}/profile/settings" style="color: #ffffffcc; text-decoration: underline;">Manage email preferences</a>
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
           </body>
           </html>
         `;

@@ -199,7 +199,8 @@ export function DigestEmailPreview() {
   const generateEmailHtml = () => {
     const baseUrl = 'https://justfortherecord.lovable.app';
     const primaryColor = '#dc2626';
-    const bgColor = '#faf8f5';
+    const bgColor = '#dc2626';
+    const contentBg = '#ffffff';
     const cardBg = '#ffffff';
     const textColor = '#1a1a1a';
     const mutedColor = '#6b7280';
@@ -218,22 +219,22 @@ export function DigestEmailPreview() {
     // User summary section
     const userSummaryHtml = `
       <div style="margin-bottom: 32px; background-color: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 24px;">
-        <h2 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 500;">
+        <h2 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 500; text-align: center;">
           Your Week in Review
         </h2>
-        <table style="width: 100%;">
+        <table style="width: 100%; border-collapse: collapse;">
           <tr>
-            <td style="text-align: center; padding: 0 12px;">
+            <td style="text-align: center; padding: 8px; width: 50%;">
               <p style="font-size: 32px; font-weight: 600; color: ${primaryColor}; margin: 0;">${sampleUserActivity.albumsLogged}</p>
               <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Albums logged</p>
             </td>
-            <td style="text-align: center; padding: 0 12px;">
+            <td style="text-align: center; padding: 8px; width: 50%;">
               <p style="font-size: 32px; font-weight: 600; color: ${primaryColor}; margin: 0;">${sampleUserActivity.artistsRated}</p>
               <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Artists rated</p>
             </td>
           </tr>
         </table>
-        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid ${borderColor};">
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid ${borderColor}; text-align: center;">
           <p style="font-size: 12px; color: ${mutedColor}; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">Top rated this week</p>
           <p style="font-size: 16px; color: ${textColor}; margin: 0; font-weight: 500;">${sampleUserActivity.topAlbum.title}</p>
           <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">by ${sampleUserActivity.topAlbum.artist} · ${sampleUserActivity.topAlbum.rating} stars</p>
@@ -346,35 +347,43 @@ export function DigestEmailPreview() {
           body { margin: 0; padding: 0; }
         </style>
       </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${bgColor}; color: ${textColor}; padding: 40px 20px; margin: 0;">
-        <div style="max-width: 600px; margin: 0 auto;">
-          <!-- Header with Logo -->
-          <div style="text-align: center; margin-bottom: 32px;">
-            <img src="${logoDataUri}" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" />
-            <h1 style="font-family: 'Georgia', serif; color: ${textColor}; font-size: 28px; margin: 0 0 8px 0; font-weight: 500;">Your Weekly Digest</h1>
-            <p style="color: ${mutedColor}; font-size: 16px; margin: 0;">${displayGreeting}</p>
-          </div>
-          
-          ${customNoteHtml}
-          ${userSummaryHtml}
-          ${releasesHtml}
-          ${activityHtml}
-          ${trendingHtml}
-          ${updatesHtml}
-          
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${baseUrl}" style="display: inline-block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px;">
-              ${ctaText}
-            </a>
-          </div>
-          
-          <hr style="border: none; border-top: 1px solid ${borderColor}; margin: 32px 0;">
-          <p style="color: ${mutedColor}; font-size: 12px; text-align: center; margin: 0;">
-            You're receiving this weekly digest because you opted in.
-            <br><br>
-            <a href="${baseUrl}/profile/settings" style="color: ${mutedColor}; text-decoration: underline;">Manage email preferences</a>
-          </p>
-        </div>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${bgColor}; color: ${textColor}; padding: 0; margin: 0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: ${bgColor};">
+          <tr>
+            <td align="center" style="padding: 40px 20px;">
+              <div style="max-width: 600px; margin: 0 auto;">
+                <!-- Header with Logo on red bg -->
+                <div style="text-align: center; margin-bottom: 32px;">
+                  <img src="${logoDataUri}" alt="Just For The Record" style="width: 64px; height: 64px; margin-bottom: 16px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" />
+                  <h1 style="font-family: 'Georgia', serif; color: #ffffff; font-size: 28px; margin: 0 0 8px 0; font-weight: 500;">Your Weekly Digest</h1>
+                  <p style="color: #ffffffcc; font-size: 16px; margin: 0;">${displayGreeting}</p>
+                </div>
+                
+                <!-- White content area -->
+                <div style="background-color: ${contentBg}; border-radius: 16px; padding: 32px 24px;">
+                  ${customNoteHtml}
+                  ${userSummaryHtml}
+                  ${releasesHtml}
+                  ${activityHtml}
+                  ${trendingHtml}
+                  ${updatesHtml}
+                  
+                  <div style="text-align: center; margin: 32px 0 16px 0;">
+                    <a href="${baseUrl}" style="display: inline-block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+                      ${ctaText}
+                    </a>
+                  </div>
+                </div>
+                
+                <p style="color: #ffffffaa; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
+                  You're receiving this weekly digest because you opted in.
+                  <br><br>
+                  <a href="${baseUrl}/profile/settings" style="color: #ffffffcc; text-decoration: underline;">Manage email preferences</a>
+                </p>
+              </div>
+            </td>
+          </tr>
+        </table>
       </body>
       </html>
     `;
