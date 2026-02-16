@@ -203,7 +203,9 @@ serve(async (req) => {
         // Support custom limit (max 100 per MusicBrainz API limits) and offset for pagination
         const searchLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
         const searchOffset = Math.max(Number(offset) || 0, 0);
-        url = `${MUSICBRAINZ_BASE}/release-group?query=${encodeURIComponent(query)}&fmt=json&limit=${searchLimit}&offset=${searchOffset}`;
+        // Add fuzzy matching (~) to each word for tolerance of misspellings
+        const fuzzyQuery = query.split(/\s+/).map(w => w.length > 3 ? `${w}~` : w).join(' ');
+        url = `${MUSICBRAINZ_BASE}/release-group?query=${encodeURIComponent(fuzzyQuery)}&fmt=json&limit=${searchLimit}&offset=${searchOffset}`;
         break;
       }
       

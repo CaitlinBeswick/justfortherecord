@@ -28,7 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const ListDetail = () => {
   const { id } = useParams();
@@ -115,22 +116,22 @@ const ListDetail = () => {
     },
   });
 
-  const handleAddSearch = async (query: string) => {
-    setAddSearchQuery(query);
-    if (query.trim().length < 2) {
+  const debouncedSearchQuery = useDebounce(addSearchQuery, 350);
+
+  useEffect(() => {
+    if (debouncedSearchQuery.trim().length < 2) {
       setAddSearchResults([]);
+      setIsSearching(false);
       return;
     }
+    let cancelled = false;
     setIsSearching(true);
-    try {
-      const results = await searchReleases(query, 6);
-      setAddSearchResults(results);
-    } catch {
-      setAddSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+    searchReleases(debouncedSearchQuery, 6)
+      .then((results) => { if (!cancelled) setAddSearchResults(results); })
+      .catch(() => { if (!cancelled) setAddSearchResults([]); })
+      .finally(() => { if (!cancelled) setIsSearching(false); });
+    return () => { cancelled = true; };
+  }, [debouncedSearchQuery]);
 
   const updateListMutation = useMutation({
     mutationFn: async (updates: { name: string; description: string | null; is_public: boolean; is_ranked: boolean }) => {
@@ -343,8 +344,8 @@ const ListDetail = () => {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search for an album..."
-                        value={addSearchQuery}
-                        onChange={(e) => handleAddSearch(e.target.value)}
+                       value={addSearchQuery}
+                       onChange={(e) => setAddSearchQuery(e.target.value)}
                         className="pl-9"
                         autoFocus
                       />
