@@ -230,7 +230,7 @@ export function DigestEmailPreview() {
             </td>
             <td style="text-align: center; padding: 8px; width: 50%;">
               <p style="font-size: 32px; font-weight: 600; color: ${primaryColor}; margin: 0;">${sampleUserActivity.artistsRated}</p>
-              <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Artists rated</p>
+              <p style="font-size: 14px; color: ${mutedColor}; margin: 4px 0 0 0;">Artists discovered</p>
             </td>
           </tr>
         </table>
