@@ -61,9 +61,11 @@ const DiscoveryNewReleases = () => {
       return data as ArtistFollow[];
     },
     enabled: !!user,
+    staleTime: 1000 * 60 * 5,
   });
 
   // Fetch new releases for followed artists via edge function
+  // Don't wait for followedArtists to be loaded - the edge function handles auth itself
   const { data: releases = [], isLoading: loadingReleases } = useQuery({
     queryKey: ["new-releases", user?.id],
     queryFn: async () => {
@@ -72,7 +74,7 @@ const DiscoveryNewReleases = () => {
       if (error) throw error;
       return (data?.releases || []) as ReleaseGroup[];
     },
-    enabled: !!user && !loadingFollows && followedArtists.length > 0,
+    enabled: !!user,
     staleTime: 1000 * 60 * 30,
   });
 
