@@ -95,16 +95,16 @@ Deno.serve(async (req) => {
     }> = [];
 
     // Check each artist for new releases (limit rate to be nice to MusicBrainz)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
     for (const [artistId, artistData] of artistFollowers) {
       try {
         // Add delay between requests to respect MusicBrainz rate limits
         await new Promise(resolve => setTimeout(resolve, 1100));
 
-        // Fetch recent releases from MusicBrainz
-        const url = `https://musicbrainz.org/ws/2/release-group?artist=${artistId}&type=album|ep|single&limit=5&fmt=json`;
+        // Fetch recent releases from MusicBrainz - use limit=25 to catch more recent releases
+        const url = `https://musicbrainz.org/ws/2/release-group?artist=${artistId}&type=album|ep|single&limit=25&fmt=json`;
         console.log(`Fetching releases for ${artistData.artistName}: ${url}`);
 
         const response = await fetch(url, {
@@ -129,8 +129,8 @@ Deno.serve(async (req) => {
 
           const releaseDate = new Date(release['first-release-date']);
           
-          // Check if release is within the last 30 days
-          if (releaseDate >= thirtyDaysAgo && releaseDate <= new Date()) {
+          // Check if release is within the last 60 days
+          if (releaseDate >= sixtyDaysAgo && releaseDate <= new Date()) {
             console.log(`New release found: ${release.title} by ${artistData.artistName}`);
 
             // Check if we already sent notifications for this release

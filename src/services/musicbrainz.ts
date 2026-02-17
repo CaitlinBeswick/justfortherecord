@@ -866,11 +866,27 @@ export async function getArtistReleases(artistId: string, type?: string): Promis
   if (!isValidId(artistId)) {
     throw new Error('Invalid artist ID');
   }
-  const data = await callMusicBrainz({ action: 'get-artist-releases', id: artistId, type });
-  const releaseGroups: any[] = data["release-groups"] || [];
+
+  // Paginate through all release groups (MusicBrainz returns max 100 per page)
+  const allReleaseGroups: any[] = [];
+  let offset = 0;
+  const limit = 100;
+
+  while (true) {
+    const data = await callMusicBrainz({ action: 'get-artist-releases', id: artistId, type, offset, limit });
+    const page: any[] = data["release-groups"] || [];
+    allReleaseGroups.push(...page);
+
+    // If we got fewer than the limit, we've fetched everything
+    if (page.length < limit) break;
+    offset += limit;
+
+    // Safety cap to avoid infinite loops
+    if (offset >= 1000) break;
+  }
   
   // Process release groups to use preferred titles from English-speaking regions
-  const processedGroups: MBReleaseGroup[] = releaseGroups.map((rg) => ({
+  const processedGroups: MBReleaseGroup[] = allReleaseGroups.map((rg) => ({
     id: rg.id,
     title: getBestTitle(rg),
     "primary-type": rg["primary-type"],
