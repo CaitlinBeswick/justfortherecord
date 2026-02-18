@@ -358,8 +358,8 @@ const ArtistDetail = () => {
   const releases = allPrimaryReleases.filter(release => !hiddenReleases.includes(release.id));
 
   // Filter releases to only official ones using the hook
-  // includePending=true: show releases while official status is being checked, only hide confirmed unofficial ones
-  const { filteredReleases: officialReleases, isChecking: isCheckingOfficial, progress: officialProgress, filteredOutCount } = useOfficialReleaseFilter(releases, true, true);
+  // includePending=false: hide releases until confirmed official — prevents bootlegs/unofficial entries showing up
+  const { filteredReleases: officialReleases, isChecking: isCheckingOfficial, progress: officialProgress, filteredOutCount } = useOfficialReleaseFilter(releases, true, false);
 
   // Categorize releases by type
   // Mixtapes and Soundtracks go into EPs unless they're Live or Compilation
