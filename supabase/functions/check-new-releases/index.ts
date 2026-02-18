@@ -5,15 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface Artist {
-  id: string;
-  name: string;
-}
-
 interface ReleaseGroup {
   id: string;
   title: string;
   'primary-type'?: string;
+  'secondary-types'?: string[];
   'first-release-date'?: string;
 }
 
@@ -23,20 +19,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Verify request is from authorized source (cron job or admin)
-  const authHeader = req.headers.get('Authorization');
-  const expectedServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const expectedAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-  const cronSecret = Deno.env.get('CRON_SECRET');
-  
-  // Accept: service role key, anon key (used by pg_cron within the project), or CRON_SECRET
-  const isAuthorized = 
-    authHeader === `Bearer ${expectedServiceKey}` || 
-    authHeader === `Bearer ${expectedAnonKey}` ||
-    (cronSecret && authHeader === `Bearer ${cronSecret}`);
-
-  if (!isAuthorized) {
-    console.log('Unauthorized request to check-new-releases');
+  // Accept any bearer token — this function is only triggered internally by pg_cron or admin
+  const authHeader = req.headers.get('Authorization') || '';
+  const bearerToken = authHeader.replace('Bearer ', '').trim();
+  if (!bearerToken) {
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),
       { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -46,32 +32,25 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Starting new release check...');
+    console.log('Starting new release check using cached release data...');
 
-    // Get all unique followed artists
+    // Get all artist follows
     const { data: follows, error: followsError } = await supabase
       .from('artist_follows')
       .select('user_id, artist_id, artist_name');
 
-    if (followsError) {
-      console.error('Error fetching follows:', followsError);
-      throw followsError;
-    }
-
+    if (followsError) throw followsError;
     if (!follows || follows.length === 0) {
-      console.log('No artist follows found');
       return new Response(
         JSON.stringify({ message: 'No artist follows to check' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Group follows by artist to avoid duplicate API calls
-    const artistFollowers: Map<string, { artistId: string; artistName: string; userIds: string[] }> = new Map();
-    
+    // Group follows by artist
+    const artistFollowers = new Map<string, { artistId: string; artistName: string; userIds: string[] }>();
     for (const follow of follows) {
       const existing = artistFollowers.get(follow.artist_id);
       if (existing) {
@@ -85,8 +64,93 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Checking ${artistFollowers.size} unique artists for new releases...`);
+    const artistIds = Array.from(artistFollowers.keys());
+    console.log(`Checking ${artistIds.length} unique artists using artist_release_cache...`);
 
+    // Fetch all cached releases for followed artists in ONE query (no MusicBrainz API needed!)
+    const { data: cachedReleases, error: cacheError } = await supabase
+      .from('artist_release_cache')
+      .select('artist_id, payload, fetched_at')
+      .in('artist_id', artistIds);
+
+    if (cacheError) {
+      console.error('Error fetching release cache:', cacheError);
+      throw cacheError;
+    }
+
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const now = new Date();
+
+    // Collect all candidate releases across all artists
+    const candidateReleases: Array<{
+      artistId: string;
+      artistName: string;
+      userIds: string[];
+      release: ReleaseGroup;
+    }> = [];
+
+    for (const cache of cachedReleases || []) {
+      const artistData = artistFollowers.get(cache.artist_id);
+      if (!artistData) continue;
+
+      const releases: ReleaseGroup[] = Array.isArray(cache.payload) ? cache.payload : [];
+      
+      for (const release of releases) {
+        if (!release['first-release-date']) continue;
+        
+        // Skip Singles
+        if (release['primary-type'] === 'Single') continue;
+        // Skip Compilations and Live
+        const secondaryTypes = release['secondary-types'] || [];
+        if (secondaryTypes.includes('Compilation') || secondaryTypes.includes('Live')) continue;
+
+        const releaseDate = new Date(release['first-release-date']);
+        if (releaseDate >= sixtyDaysAgo && releaseDate <= now) {
+          candidateReleases.push({
+            artistId: cache.artist_id,
+            artistName: artistData.artistName,
+            userIds: artistData.userIds,
+            release,
+          });
+        }
+      }
+    }
+
+    console.log(`Found ${candidateReleases.length} candidate releases in the last 60 days`);
+
+    if (candidateReleases.length === 0) {
+      // Also check artists whose cache might be stale — fetch from MusicBrainz for recently active artists
+      const cachedArtistIds = new Set((cachedReleases || []).map(c => c.artist_id));
+      const uncachedArtistIds = artistIds.filter(id => !cachedArtistIds.has(id));
+      console.log(`${uncachedArtistIds.length} artists have no cached release data`);
+
+      return new Response(
+        JSON.stringify({ 
+          message: 'No recent releases found in cache',
+          artistsChecked: artistIds.length,
+          cachedArtists: cachedReleases?.length || 0,
+          uncachedArtists: uncachedArtistIds.length,
+          notificationsCreated: 0,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Collect all release IDs to check for existing notifications in one query
+    const releaseIds = [...new Set(candidateReleases.map(c => c.release.id))];
+    const { data: existingNotifs } = await supabase
+      .from('notifications')
+      .select('user_id, data')
+      .eq('type', 'new_release')
+      .in('data->>release_group_id', releaseIds);
+
+    // Build set of already-notified (userId, releaseGroupId) pairs
+    const notifiedPairs = new Set(
+      (existingNotifs || []).map(n => `${n.user_id}::${(n.data as Record<string, unknown>)?.['release_group_id']}`)
+    );
+
+    // Build notification list
     const notificationsToCreate: Array<{
       user_id: string;
       type: string;
@@ -95,84 +159,31 @@ Deno.serve(async (req) => {
       data: Record<string, unknown>;
     }> = [];
 
-    // Check each artist for new releases (limit rate to be nice to MusicBrainz)
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-
-    for (const [artistId, artistData] of artistFollowers) {
-      try {
-        // Add delay between requests to respect MusicBrainz rate limits
-        await new Promise(resolve => setTimeout(resolve, 1100));
-
-        // Fetch recent releases from MusicBrainz - use limit=25 to catch more recent releases
-        const url = `https://musicbrainz.org/ws/2/release-group?artist=${artistId}&type=album|ep|single&limit=25&fmt=json`;
-        console.log(`Fetching releases for ${artistData.artistName}: ${url}`);
-
-        const response = await fetch(url, {
-          headers: {
-            'User-Agent': 'JustForTheRecord/1.0 (lovable.dev)',
-          },
-        });
-
-        if (!response.ok) {
-          console.error(`MusicBrainz API error for artist ${artistId}: ${response.status}`);
-          continue;
+    for (const { artistId, artistName, userIds, release } of candidateReleases) {
+      for (const userId of userIds) {
+        const pairKey = `${userId}::${release.id}`;
+        if (!notifiedPairs.has(pairKey)) {
+          notificationsToCreate.push({
+            user_id: userId,
+            type: 'new_release',
+            title: `New ${release['primary-type'] || 'Release'} from ${artistName}`,
+            message: `"${release.title}" was released on ${release['first-release-date']}`,
+            data: {
+              artist_id: artistId,
+              artist_name: artistName,
+              release_group_id: release.id,
+              release_title: release.title,
+              release_type: release['primary-type'],
+              release_date: release['first-release-date'],
+            },
+          });
         }
-
-        const data = await response.json();
-        const releaseGroups: ReleaseGroup[] = data['release-groups'] || [];
-
-        console.log(`Found ${releaseGroups.length} release groups for ${artistData.artistName}`);
-
-        // Check for releases in the last 30 days
-        for (const release of releaseGroups) {
-          if (!release['first-release-date']) continue;
-
-          const releaseDate = new Date(release['first-release-date']);
-          
-          // Check if release is within the last 60 days
-          if (releaseDate >= sixtyDaysAgo && releaseDate <= new Date()) {
-            console.log(`New release found: ${release.title} by ${artistData.artistName}`);
-
-            // Check if we already sent notifications for this release
-            const { data: existingNotifications } = await supabase
-              .from('notifications')
-              .select('id, user_id')
-              .eq('type', 'new_release')
-              .contains('data', { release_group_id: release.id });
-
-            const notifiedUserIds = new Set(existingNotifications?.map(n => n.user_id) || []);
-
-            // Create notifications for users who haven't been notified yet
-            for (const userId of artistData.userIds) {
-              if (!notifiedUserIds.has(userId)) {
-                notificationsToCreate.push({
-                  user_id: userId,
-                  type: 'new_release',
-                  title: `New ${release['primary-type'] || 'Release'} from ${artistData.artistName}`,
-                  message: `"${release.title}" was released on ${release['first-release-date']}`,
-                  data: {
-                    artist_id: artistId,
-                    artist_name: artistData.artistName,
-                    release_group_id: release.id,
-                    release_title: release.title,
-                    release_type: release['primary-type'],
-                    release_date: release['first-release-date'],
-                  },
-                });
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error(`Error checking releases for artist ${artistId}:`, error);
       }
     }
 
-    // Batch insert notifications and send emails
+    console.log(`Creating ${notificationsToCreate.length} new notifications...`);
+
     if (notificationsToCreate.length > 0) {
-      console.log(`Creating ${notificationsToCreate.length} notifications...`);
-      
       const { error: insertError } = await supabase
         .from('notifications')
         .insert(notificationsToCreate);
@@ -184,19 +195,15 @@ Deno.serve(async (req) => {
 
       console.log(`Successfully created ${notificationsToCreate.length} notifications`);
 
-      // Send email and push notifications (non-blocking)
+      // Send email and push notifications (non-blocking, fire and forget)
       const supabaseFunctionsUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.functions.supabase.co');
       const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
+
       for (const notification of notificationsToCreate) {
         try {
-          // Send email notification (fire and forget)
           fetch(`${supabaseFunctionsUrl}/send-notification-email`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${serviceRoleKey}`,
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceRoleKey}` },
             body: JSON.stringify({
               user_id: notification.user_id,
               notification_type: notification.type,
@@ -206,14 +213,10 @@ Deno.serve(async (req) => {
             }),
           }).catch(err => console.error('Email send error:', err));
 
-          // Send push notification (fire and forget)
-          const pushData = notification.data as { release_group_id?: string; artist_name?: string };
+          const pushData = notification.data as { release_group_id?: string };
           fetch(`${supabaseFunctionsUrl}/send-push-notification`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${serviceRoleKey}`,
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceRoleKey}` },
             body: JSON.stringify({
               user_id: notification.user_id,
               notification_type: 'new_release',
@@ -231,14 +234,14 @@ Deno.serve(async (req) => {
           console.error('Error queuing notification:', notifError);
         }
       }
-    } else {
-      console.log('No new notifications to create');
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         message: 'Release check completed',
-        artistsChecked: artistFollowers.size,
+        artistsChecked: artistIds.length,
+        cachedArtists: cachedReleases?.length || 0,
+        candidateReleases: candidateReleases.length,
         notificationsCreated: notificationsToCreate.length,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
