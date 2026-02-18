@@ -100,19 +100,46 @@ const DiscoveryNewReleases = () => {
     return new Set(listeningStatus.map((s) => s.release_group_id));
   }, [listeningStatus]);
 
+  // Fetch official status cache to filter out confirmed unofficial/bootleg releases
+  const releaseIds = useMemo(() => releases.map((r) => r.id), [releases]);
+  const { data: officialCache = [] } = useQuery({
+    queryKey: ["official-cache", releaseIds.slice(0, 50).join(",")],
+    queryFn: async () => {
+      if (releaseIds.length === 0) return [];
+      const { data } = await supabase
+        .from("release_group_official_cache")
+        .select("release_group_id, is_official")
+        .in("release_group_id", releaseIds);
+      return data || [];
+    },
+    enabled: releaseIds.length > 0,
+    staleTime: 1000 * 60 * 60,
+  });
+
+  // Build a map of confirmed unofficial releases — only hide what we KNOW is unofficial
+  const confirmedUnofficialIds = useMemo(() => {
+    return new Set(
+      officialCache
+        .filter((r) => r.is_official === false)
+        .map((r) => r.release_group_id)
+    );
+  }, [officialCache]);
+
   // Filter releases by time and group by month
   const { filteredReleases, groupedByMonth } = useMemo(() => {
     const now = new Date();
     const threeMonthsAgo = subMonths(now, 3);
     const threeMonthsAhead = addMonths(now, 3);
 
-    // Filter out Singles, Compilations, Live
+    // Filter out Singles, Compilations, Live, and confirmed unofficial releases
     let filtered = releases.filter((r) => {
       const primaryType = r["primary-type"];
       const secondaryTypes = r["secondary-types"] || [];
       if (primaryType === "Single") return false;
       if (secondaryTypes.includes("Compilation")) return false;
       if (secondaryTypes.includes("Live")) return false;
+      // Only hide releases we've CONFIRMED as unofficial — don't hide unknowns
+      if (confirmedUnofficialIds.has(r.id)) return false;
       return true;
     });
 
@@ -150,7 +177,7 @@ const DiscoveryNewReleases = () => {
     });
 
     return { filteredReleases: filtered, groupedByMonth: grouped };
-  }, [releases, timeFilter]);
+  }, [releases, timeFilter, confirmedUnofficialIds]);
 
   const isLoading = loadingFollows || loadingReleases;
 
