@@ -24,14 +24,15 @@ Deno.serve(async (req) => {
   }
 
   // Verify request is from authorized source (cron job or admin)
-  // This function should only be called by pg_cron or authorized services
   const authHeader = req.headers.get('Authorization');
-  const expectedKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  
-  // Accept either service role key or a matching CRON_SECRET
+  const expectedServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const expectedAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
   const cronSecret = Deno.env.get('CRON_SECRET');
+  
+  // Accept: service role key, anon key (used by pg_cron within the project), or CRON_SECRET
   const isAuthorized = 
-    authHeader === `Bearer ${expectedKey}` || 
+    authHeader === `Bearer ${expectedServiceKey}` || 
+    authHeader === `Bearer ${expectedAnonKey}` ||
     (cronSecret && authHeader === `Bearer ${cronSecret}`);
 
   if (!isAuthorized) {
