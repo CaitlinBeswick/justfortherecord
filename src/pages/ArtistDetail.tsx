@@ -21,6 +21,7 @@ import { useOfficialReleaseFilter } from "@/hooks/useOfficialReleaseFilter";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { VinylCelebration } from "@/components/VinylCelebration";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ReleaseManager } from "@/components/ReleaseManager";
@@ -820,7 +821,26 @@ const ArtistDetail = () => {
             </div>
           </div>
           
-          {sortedTypes.length > 0 ? (
+          {isCheckingOfficial && sortedTypes.length === 0 ? (
+            /* Skeleton grid while official status is being verified for all releases */
+            <div className="space-y-10">
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <Skeleton className="h-6 w-32 rounded-md" />
+                  <Skeleton className="h-4 w-12 rounded-md" />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <Skeleton className="aspect-square w-full rounded-lg" />
+                      <Skeleton className="h-3.5 w-4/5 rounded" />
+                      <Skeleton className="h-3 w-1/2 rounded" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : sortedTypes.length > 0 ? (
             <div className="space-y-10">
               {sortedTypes.map((type) => {
                 const categoryProgress = getCategoryProgress(groupedReleases[type]);
