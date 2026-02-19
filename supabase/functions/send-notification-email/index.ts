@@ -15,6 +15,64 @@ interface NotificationEmailRequest {
   data?: Record<string, unknown>;
 }
 
+function formatDateDDMMYYYY(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  } catch {
+    return dateStr;
+  }
+}
+
+const emailWrapper = (content: string) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Just For The Record</title>
+</head>
+<body style="margin:0;padding:0;background-color:#dc2626;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#dc2626;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <!-- Logo / Header -->
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;">
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <img src="https://justfortherecord.lovable.app/email-logo.png" alt="Just For The Record" width="48" height="48" style="border-radius:50%;display:block;margin:0 auto 12px auto;" />
+              <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">Just For The Record</span>
+            </td>
+          </tr>
+        </table>
+        <!-- White Card -->
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:#ffffff;border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="padding:40px 36px;">
+              ${content}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f9fafb;padding:20px 36px;border-top:1px solid #e5e7eb;">
+              <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">
+                <a href="https://justfortherecord.lovable.app/profile/settings" style="color:#9ca3af;text-decoration:underline;">Manage email preferences</a>
+                &nbsp;·&nbsp;
+                <a href="https://justfortherecord.lovable.app" style="color:#9ca3af;text-decoration:underline;">justfortherecord.lovable.app</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -63,7 +121,6 @@ serve(async (req) => {
       );
     }
 
-    // Check if email notifications are enabled globally
     if (!profile.email_notifications_enabled) {
       console.log(`Email notifications disabled for user ${user_id}`);
       return new Response(
@@ -72,7 +129,6 @@ serve(async (req) => {
       );
     }
 
-    // Check specific notification type preferences
     let shouldSendEmail = false;
     switch (notification_type) {
       case 'new_release':
@@ -86,7 +142,6 @@ serve(async (req) => {
         shouldSendEmail = profile.email_friend_activity;
         break;
       default:
-        // For other notification types, send if global is enabled
         shouldSendEmail = true;
     }
 
@@ -98,7 +153,6 @@ serve(async (req) => {
       );
     }
 
-    // Get user's email from auth
     const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(user_id);
     
     if (authError || !authUser?.user?.email) {
@@ -110,143 +164,116 @@ serve(async (req) => {
     }
 
     const userEmail = authUser.user.email;
-
-    // Build email content based on notification type
-    let emailHtml = '';
     const baseUrl = 'https://justfortherecord.lovable.app';
+    let emailHtml = '';
 
     if (notification_type === 'new_release' && data) {
       const albumUrl = `${baseUrl}/album/${data.release_group_id}`;
       const artistUrl = `${baseUrl}/artist/${data.artist_id}`;
-      
-      emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; color: #fafafa; padding: 40px 20px; margin: 0;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <h1 style="color: #fafafa; font-size: 24px; margin: 0 0 8px 0;">🎵 ${title}</h1>
-            </div>
-            <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
-              ${message}
-            </p>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${albumUrl}" style="display: inline-block; background-color: #f97316; color: #0a0a0a; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                Check it out
-              </a>
-            </div>
-            <hr style="border: none; border-top: 1px solid #262626; margin: 32px 0;">
-            <p style="color: #71717a; font-size: 12px; text-align: center; margin: 0;">
-              You're receiving this because you follow <a href="${artistUrl}" style="color: #f97316; text-decoration: none;">${data.artist_name}</a> on Just For The Record.
-              <br><br>
-              <a href="${baseUrl}/profile/settings" style="color: #71717a; text-decoration: underline;">Manage email preferences</a>
-            </p>
+      const coverArtUrl = `https://coverartarchive.org/release-group/${data.release_group_id}/front-250`;
+      const releaseDateStr = data.release_date ? formatDateDDMMYYYY(data.release_date as string) : '';
+
+      emailHtml = emailWrapper(`
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="width:48px;height:48px;background-color:#dc2626;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+            <span style="font-size:24px;">🎵</span>
           </div>
-        </body>
-        </html>
-      `;
+          <h1 style="color:#111827;font-size:24px;font-weight:700;margin:0 0 4px 0;">New Release</h1>
+          <p style="color:#6b7280;font-size:14px;margin:0;">From an artist you follow</p>
+        </div>
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+          <tr>
+            <td width="100" valign="top" style="padding-right:20px;">
+              <img
+                src="${coverArtUrl}"
+                alt="${data.album_title}"
+                width="100"
+                height="100"
+                style="border-radius:8px;display:block;object-fit:cover;background-color:#f3f4f6;"
+                onerror="this.style.display='none'"
+              />
+            </td>
+            <td valign="top">
+              <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 4px 0;">${data.album_title}</h2>
+              <p style="color:#dc2626;font-size:15px;font-weight:600;margin:0 0 8px 0;">
+                <a href="${artistUrl}" style="color:#dc2626;text-decoration:none;">${data.artist_name}</a>
+              </p>
+              ${releaseDateStr ? `<p style="color:#9ca3af;font-size:13px;margin:0;">Released ${releaseDateStr}</p>` : ''}
+            </td>
+          </tr>
+        </table>
+
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${albumUrl}" style="display:inline-block;background-color:#dc2626;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:15px;">
+            Listen Now
+          </a>
+        </div>
+
+        <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">
+          You're receiving this because you follow
+          <a href="${artistUrl}" style="color:#dc2626;text-decoration:none;">${data.artist_name}</a>
+          on Just For The Record.
+        </p>
+      `);
     } else if (notification_type === 'friend_request' && data) {
       const requesterName = data.requester_name || 'Someone';
-      
-      emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; color: #fafafa; padding: 40px 20px; margin: 0;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <h1 style="color: #fafafa; font-size: 24px; margin: 0 0 8px 0;">👋 New Follow Request</h1>
-            </div>
-            <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
-              <strong style="color: #f97316;">${requesterName}</strong> wants to follow you on Just For The Record.
-            </p>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${baseUrl}/profile/friends" style="display: inline-block; background-color: #f97316; color: #0a0a0a; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                View Request
-              </a>
-            </div>
-            <hr style="border: none; border-top: 1px solid #262626; margin: 32px 0;">
-            <p style="color: #71717a; font-size: 12px; text-align: center; margin: 0;">
-              <a href="${baseUrl}/profile/settings" style="color: #71717a; text-decoration: underline;">Manage email preferences</a>
-            </p>
+
+      emailHtml = emailWrapper(`
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="width:64px;height:64px;background-color:#fef2f2;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:32px;">
+            👋
           </div>
-        </body>
-        </html>
-      `;
+          <h1 style="color:#111827;font-size:24px;font-weight:700;margin:0 0 8px 0;">New Follow Request</h1>
+          <p style="color:#374151;font-size:16px;margin:0;">
+            <strong style="color:#dc2626;">${requesterName}</strong> wants to follow you on Just For The Record.
+          </p>
+        </div>
+
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${baseUrl}/profile/friends" style="display:inline-block;background-color:#dc2626;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:15px;">
+            View Request
+          </a>
+        </div>
+      `);
     } else if (notification_type === 'friend_accepted' && data) {
       const accepterName = data.accepter_name || 'Someone';
-      
-      emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; color: #fafafa; padding: 40px 20px; margin: 0;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <h1 style="color: #fafafa; font-size: 24px; margin: 0 0 8px 0;">🎉 You're Now Connected!</h1>
-            </div>
-            <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
-              <strong style="color: #f97316;">${accepterName}</strong> accepted your follow request!
-            </p>
-            <p style="color: #71717a; font-size: 14px; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
-              You can now see their listening activity and diary entries.
-            </p>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${baseUrl}/following" style="display: inline-block; background-color: #f97316; color: #0a0a0a; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                See Their Activity
-              </a>
-            </div>
-            <hr style="border: none; border-top: 1px solid #262626; margin: 32px 0;">
-            <p style="color: #71717a; font-size: 12px; text-align: center; margin: 0;">
-              <a href="${baseUrl}/profile/settings" style="color: #71717a; text-decoration: underline;">Manage email preferences</a>
-            </p>
+
+      emailHtml = emailWrapper(`
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="width:64px;height:64px;background-color:#fef2f2;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:32px;">
+            🎉
           </div>
-        </body>
-        </html>
-      `;
+          <h1 style="color:#111827;font-size:24px;font-weight:700;margin:0 0 8px 0;">You're Now Connected!</h1>
+          <p style="color:#374151;font-size:16px;margin:0 0 8px 0;">
+            <strong style="color:#dc2626;">${accepterName}</strong> accepted your follow request!
+          </p>
+          <p style="color:#6b7280;font-size:14px;margin:0;">
+            You can now see their listening activity and diary entries.
+          </p>
+        </div>
+
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${baseUrl}/following" style="display:inline-block;background-color:#dc2626;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:15px;">
+            See Their Activity
+          </a>
+        </div>
+      `);
     } else {
-      // Generic notification email template
-      emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; color: #fafafa; padding: 40px 20px; margin: 0;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <h1 style="color: #fafafa; font-size: 24px; margin: 0 0 8px 0;">${title}</h1>
-            </div>
-            <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
-              ${message}
-            </p>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${baseUrl}" style="display: inline-block; background-color: #f97316; color: #0a0a0a; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                Open Just For The Record
-              </a>
-            </div>
-            <hr style="border: none; border-top: 1px solid #262626; margin: 32px 0;">
-            <p style="color: #71717a; font-size: 12px; text-align: center; margin: 0;">
-              <a href="${baseUrl}/profile/settings" style="color: #71717a; text-decoration: underline;">Manage email preferences</a>
-            </p>
-          </div>
-        </body>
-        </html>
-      `;
+      emailHtml = emailWrapper(`
+        <div style="text-align:center;margin-bottom:28px;">
+          <h1 style="color:#111827;font-size:24px;font-weight:700;margin:0 0 8px 0;">${title}</h1>
+          <p style="color:#374151;font-size:16px;line-height:1.6;margin:0;">${message}</p>
+        </div>
+
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${baseUrl}" style="display:inline-block;background-color:#dc2626;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:15px;">
+            Open Just For The Record
+          </a>
+        </div>
+      `);
     }
 
-    // Send the email
     const emailResponse = await resend.emails.send({
       from: 'Just For The Record <notifications@resend.dev>',
       to: [userEmail],

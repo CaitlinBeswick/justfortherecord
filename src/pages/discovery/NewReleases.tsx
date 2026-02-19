@@ -6,7 +6,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Calendar, ChevronDown, Clock, Disc3, Music, LogIn, Eye, EyeOff, Plus } from "lucide-react";
+import { Calendar, ChevronDown, Clock, Disc3, Music, LogIn, Eye, EyeOff, Plus, Settings2 } from "lucide-react";
 import { AlbumCard } from "@/components/AlbumCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, isAfter, isBefore, addMonths, subMonths } from "date-fns";
@@ -44,6 +44,14 @@ const DiscoveryNewReleases = () => {
   const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("recent");
   const [fadeListened, setFadeListened] = useState(true);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('new-releases-type-filter');
+      return saved ? JSON.parse(saved) : ['Album'];
+    } catch {
+      return ['Album'];
+    }
+  });
   const { toast } = useToast();
   const { toggleStatus, isPending: isTogglingStatus, getStatusForAlbum } = useListeningStatus();
 
@@ -125,22 +133,45 @@ const DiscoveryNewReleases = () => {
     );
   }, [officialCache]);
 
+  const toggleType = (type: string) => {
+    setSelectedTypes(prev => {
+      const next = prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type];
+      // Always keep at least one type selected
+      if (next.length === 0) return prev;
+      localStorage.setItem('new-releases-type-filter', JSON.stringify(next));
+      return next;
+    });
+  };
+
+
+
   // Filter releases by time and group by month
   const { filteredReleases, groupedByMonth } = useMemo(() => {
     const now = new Date();
     const threeMonthsAgo = subMonths(now, 3);
     const threeMonthsAhead = addMonths(now, 3);
 
-    // Filter out Singles, Compilations, Live, and confirmed unofficial releases
+    // Filter by user-selected release types and confirmed unofficial releases
     let filtered = releases.filter((r) => {
       const primaryType = r["primary-type"];
       const secondaryTypes = r["secondary-types"] || [];
+
+      // Always exclude Singles
       if (primaryType === "Single") return false;
-      if (secondaryTypes.includes("Compilation")) return false;
-      if (secondaryTypes.includes("Live")) return false;
       // Only hide releases we've CONFIRMED as unofficial — don't hide unknowns
       if (confirmedUnofficialIds.has(r.id)) return false;
-      return true;
+
+      // Apply selected type filters
+      const isLive = secondaryTypes.includes("Live");
+      const isCompilation = secondaryTypes.includes("Compilation");
+      const isEP = primaryType === "EP";
+      const isAlbum = primaryType === "Album" && !isLive && !isCompilation;
+
+      if (isAlbum && selectedTypes.includes('Album')) return true;
+      if (isEP && selectedTypes.includes('EP')) return true;
+      if (isLive && selectedTypes.includes('Live')) return true;
+      if (isCompilation && selectedTypes.includes('Compilation')) return true;
+      return false;
     });
 
     // Apply time filter
@@ -177,7 +208,7 @@ const DiscoveryNewReleases = () => {
     });
 
     return { filteredReleases: filtered, groupedByMonth: grouped };
-  }, [releases, timeFilter, confirmedUnofficialIds]);
+  }, [releases, timeFilter, confirmedUnofficialIds, selectedTypes]);
 
   const isLoading = loadingFollows || loadingReleases;
 
@@ -274,6 +305,30 @@ const DiscoveryNewReleases = () => {
                 </span>
               )}
             </div>
+          </div>
+
+          {/* Release Type Filter Row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Settings2 className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground mr-1">Show:</span>
+            {[
+              { key: 'Album', label: 'Studio Albums' },
+              { key: 'EP', label: 'EPs' },
+              { key: 'Live', label: 'Live' },
+              { key: 'Compilation', label: 'Compilations' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => toggleType(key)}
+                className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                  selectedTypes.includes(key)
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-transparent text-muted-foreground border-border hover:border-primary/50'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </motion.div>
 

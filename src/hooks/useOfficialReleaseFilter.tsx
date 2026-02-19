@@ -137,13 +137,15 @@ export function useOfficialReleaseFilter(
     return releases.filter((release) => {
       const status = statusCache[release.id];
 
+      // Always show confirmed official releases
       if (status === true) return true;
+      // Always hide confirmed unofficial releases
       if (status === false) return false;
 
-      // If the caller wants a strict list (official-only), hide unknown/pending.
-      if (!includePending) return false;
-
-      // Otherwise, include unknown while checking to avoid flicker.
+      // For releases not yet in the DB cache (status is undefined/'pending'/'checking'):
+      // Show optimistically to avoid missing releases like Wuthering Heights that are
+      // confirmed official in the DB but haven't propagated to local statusCache yet.
+      // We only hide releases we've *confirmed* as unofficial.
       return true;
     });
   }, [releases, statusCache, includePending]);
