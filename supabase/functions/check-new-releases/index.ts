@@ -120,30 +120,40 @@ Deno.serve(async (req) => {
     console.log(`Found ${candidateReleases.length} candidate releases in the last 60 days`);
 
     if (candidateReleases.length === 0) {
-      // Also check artists whose cache might be stale — fetch from MusicBrainz for recently active artists
-      const cachedArtistIds = new Set((cachedReleases || []).map(c => c.artist_id));
-      const uncachedArtistIds = artistIds.filter(id => !cachedArtistIds.has(id));
-      console.log(`${uncachedArtistIds.length} artists have no cached release data`);
-
       return new Response(
         JSON.stringify({ 
           message: 'No recent releases found in cache',
           artistsChecked: artistIds.length,
           cachedArtists: cachedReleases?.length || 0,
-          uncachedArtists: uncachedArtistIds.length,
           notificationsCreated: 0,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Filter out confirmed unofficial releases (KL7, bootlegs, etc.)
+    const candidateReleaseIds = candidateReleases.map(c => c.release.id);
+    const { data: officialCache } = await supabase
+      .from('release_group_official_cache')
+      .select('release_group_id, is_official')
+      .in('release_group_id', candidateReleaseIds);
+
+    const confirmedUnofficialIds = new Set(
+      (officialCache || [])
+        .filter(r => r.is_official === false)
+        .map(r => r.release_group_id)
+    );
+
+    const filteredCandidates = candidateReleases.filter(c => !confirmedUnofficialIds.has(c.release.id));
+    console.log(`After official filter: ${filteredCandidates.length} releases (removed ${candidateReleases.length - filteredCandidates.length} unofficial)`);
+
     // Collect all release IDs to check for existing notifications in one query
-    const releaseIds = [...new Set(candidateReleases.map(c => c.release.id))];
+    const filteredReleaseIds = [...new Set(filteredCandidates.map(c => c.release.id))];
     const { data: existingNotifs } = await supabase
       .from('notifications')
       .select('user_id, data')
       .eq('type', 'new_release')
-      .in('data->>release_group_id', releaseIds);
+      .in('data->>release_group_id', filteredReleaseIds);
 
     // Build set of already-notified (userId, releaseGroupId) pairs
     const notifiedPairs = new Set(
@@ -159,7 +169,7 @@ Deno.serve(async (req) => {
       data: Record<string, unknown>;
     }> = [];
 
-    for (const { artistId, artistName, userIds, release } of candidateReleases) {
+    for (const { artistId, artistName, userIds, release } of filteredCandidates) {
       for (const userId of userIds) {
         const pairKey = `${userId}::${release.id}`;
         if (!notifiedPairs.has(pairKey)) {
