@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { AlbumCard } from "@/components/AlbumCard";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search as SearchIcon, Disc3, Users, Loader2, Clock, X } from "lucide-react";
+import { Search as SearchIcon, Disc3, Users, Loader2, Clock, X, Plus } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -21,6 +21,8 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { Footer } from "@/components/Footer";
 import { VinylBackground } from "@/components/VinylBackground";
+import { useListeningStatus } from "@/hooks/useListeningStatus";
+import { useAuth } from "@/hooks/useAuth";
 
 type SearchTab = "all" | "albums" | "artists";
 
@@ -41,10 +43,12 @@ const itemVariants = {
 const Search = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
   const debouncedQuery = useDebounce(query, 500);
+  const { toggleStatus, isPending: isTogglingStatus, getStatusForAlbum } = useListeningStatus();
 
   const { recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
 
@@ -232,22 +236,68 @@ const Search = () => {
                     Albums ({releases.length})
                   </h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {releases.slice(0, 12).map((release: MBReleaseGroup) => (
-                      <motion.div
-                        key={release.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                      >
-                        <AlbumCard
-                          id={release.id}
-                          title={release.title}
-                          artist={getArtistNames(release["artist-credit"])}
-                          coverUrl={getCoverArtUrl(release.id)}
-                          year={getYear(release["first-release-date"])}
-                          onClick={() => navigate(`/album/${release.id}`)}
-                        />
-                      </motion.div>
-                    ))}
+                    {releases.slice(0, 12).map((release: MBReleaseGroup) => {
+                      const status = user ? getStatusForAlbum(release.id) : null;
+                      const isInQueue = status?.isToListen ?? false;
+                      const artistName = getArtistNames(release["artist-credit"]);
+                      return (
+                        <motion.div
+                          key={release.id}
+                          className="relative group"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                        >
+                          <AlbumCard
+                            id={release.id}
+                            title={release.title}
+                            artist={artistName}
+                            coverUrl={getCoverArtUrl(release.id)}
+                            year={getYear(release["first-release-date"])}
+                            onClick={() => navigate(`/album/${release.id}`)}
+                          />
+                          {user && !isInQueue && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleStatus({
+                                  releaseGroupId: release.id,
+                                  albumTitle: release.title,
+                                  artistName,
+                                  field: "is_to_listen",
+                                  value: true,
+                                });
+                                toast({ title: "Added to Queue", description: release.title });
+                              }}
+                              disabled={isTogglingStatus}
+                              className="absolute top-2 right-2 z-30 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                              title="Add to Queue"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          )}
+                          {user && isInQueue && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleStatus({
+                                  releaseGroupId: release.id,
+                                  albumTitle: release.title,
+                                  artistName,
+                                  field: "is_to_listen",
+                                  value: false,
+                                });
+                                toast({ title: "Removed from Queue", description: release.title });
+                              }}
+                              disabled={isTogglingStatus}
+                              className="absolute top-2 right-2 z-30 bg-primary text-primary-foreground p-1.5 rounded-full opacity-100 transition-all shadow-md"
+                              title="Remove from Queue"
+                            >
+                              <Clock className="h-4 w-4" />
+                            </button>
+                          )}
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </section>
               )}
