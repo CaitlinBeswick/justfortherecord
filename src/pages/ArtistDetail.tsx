@@ -370,8 +370,8 @@ const ArtistDetail = () => {
     if (primaryType !== 'Album') return false;
     if (secondaryTypes.includes('Live')) return false;
     if (secondaryTypes.includes('Compilation')) return false;
+    // Mixtapes go to EPs, but Soundtracks stay in Studio Albums
     if (secondaryTypes.includes('Mixtape/Street')) return false;
-    if (secondaryTypes.includes('Soundtrack')) return false;
     return true;
   });
 
@@ -380,13 +380,12 @@ const ArtistDetail = () => {
     const secondaryTypes: string[] = (release as any)['secondary-types'] || [];
     // Include actual EPs
     if (primaryType === 'EP') return true;
-    // Include Albums that are Mixtapes or Soundtracks (unless Live/Compilation)
+    // Include Albums that are Mixtapes (not Soundtracks — those are studio albums)
     if (primaryType === 'Album') {
       const isMixtape = secondaryTypes.includes('Mixtape/Street');
-      const isSoundtrack = secondaryTypes.includes('Soundtrack');
       const isLive = secondaryTypes.includes('Live');
       const isCompilation = secondaryTypes.includes('Compilation');
-      if ((isMixtape || isSoundtrack) && !isLive && !isCompilation) {
+      if (isMixtape && !isLive && !isCompilation) {
         return true;
       }
     }
