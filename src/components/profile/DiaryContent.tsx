@@ -716,9 +716,21 @@ export function DiaryContent() {
             const displayRating = entry.rating ?? albumRating?.rating ?? null;
             const reviewText = albumRating?.review_text;
             const isLoved = albumRating?.loved;
+            const entryYear = new Date(entry.listened_on).getFullYear();
+            const prevEntryYear = index > 0 ? new Date(sortedDiaryEntries[index - 1].listened_on).getFullYear() : null;
+            const showYearDivider = selectedYear === 'all' && diarySort === 'date' && prevEntryYear !== null && entryYear !== prevEntryYear;
             return (
+              <div key={entry.id}>
+                {showYearDivider && (
+                  <div className="flex items-center gap-3 py-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase px-2">
+                      {entryYear}
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                )}
               <motion.div
-                key={entry.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
@@ -854,6 +866,7 @@ export function DiaryContent() {
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </motion.div>
+              </div>
             );
           })}
         </div>

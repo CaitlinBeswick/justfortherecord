@@ -202,8 +202,9 @@ export async function searchReleases(query: string, limit?: number, offset?: num
     uniqueReleases.push(rg);
   }
 
-  // Sort so: strongest title match first, then popularity proxy, then earliest original release, then MB score.
-  // This makes iconic albums like Fleetwood Mac's "Rumours" float to the top.
+  // Sort so: strongest title match first, then MB relevance score + popularity proxy (release_count).
+  // We do NOT sort by earliest year — that caused obscure old albums to outrank iconic newer ones
+  // (e.g., "Brat" 1998 over Charli xcx's "Brat" 2024). MB score already encodes recency + popularity.
   const sorted = uniqueReleases.sort((a, b) => {
     const titleANorm = normalizeForMatch(a.title);
     const titleBNorm = normalizeForMatch(b.title);
@@ -218,15 +219,10 @@ export async function searchReleases(query: string, limit?: number, offset?: num
     if (prefixA && !prefixB) return -1;
     if (prefixB && !prefixA) return 1;
 
-    const popA = a.release_count ?? 0;
-    const popB = b.release_count ?? 0;
-    if (popA !== popB) return popB - popA;
-
-    const yearA = getYear(a["first-release-date"]) ?? 9999;
-    const yearB = getYear(b["first-release-date"]) ?? 9999;
-    if (yearA !== yearB) return yearA - yearB; // earlier release = more canonical
-
-    return (b.score ?? 0) - (a.score ?? 0);
+    // Combined score: MB score (0-100) weighted most heavily, release_count as secondary signal
+    const scoreA = (a.score ?? 0) * 10 + (a.release_count ?? 0);
+    const scoreB = (b.score ?? 0) * 10 + (b.release_count ?? 0);
+    return scoreB - scoreA;
   });
 
   return sorted;

@@ -397,7 +397,7 @@ const DiscoveryNewReleases = () => {
                           }
                           onClick={() => navigate(`/album/${release.id}`)}
                         />
-                        {/* Quick add to queue */}
+                        {/* Quick add/remove queue */}
                         {!isInQueue && !isListened && (
                           <button
                             onClick={(e) => {
@@ -419,9 +419,24 @@ const DiscoveryNewReleases = () => {
                           </button>
                         )}
                         {isInQueue && (
-                          <div className="absolute top-2 right-2 z-30 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleStatus({
+                                releaseGroupId: release.id,
+                                albumTitle: release.title,
+                                artistName: release.artistName,
+                                field: "is_to_listen",
+                                value: false,
+                              });
+                              toast({ title: "Removed from Queue", description: release.title });
+                            }}
+                            disabled={isTogglingStatus}
+                            className="absolute top-2 right-2 z-30 bg-primary hover:bg-destructive text-primary-foreground p-1.5 rounded-full opacity-100 transition-all shadow-md"
+                            title="Remove from Queue"
+                          >
                             <Clock className="h-4 w-4" />
-                          </div>
+                          </button>
                         )}
                       </div>
                     );
