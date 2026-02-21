@@ -78,11 +78,37 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Only allow service role requests
   const authHeader = req.headers.get('Authorization');
-  const expectedKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  
-  if (authHeader !== `Bearer ${expectedKey}`) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  // Allow service role OR admin user auth
+  let isServiceRole = authHeader === `Bearer ${supabaseServiceKey}`;
+  let callerUserId: string | null = null;
+
+  if (!isServiceRole && authHeader?.startsWith('Bearer ')) {
+    // Try to authenticate as a user and check admin role
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData } = await userClient.auth.getUser(token);
+    if (userData?.user) {
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userData.user.id)
+        .eq('role', 'admin')
+        .single();
+      if (roleData) {
+        callerUserId = userData.user.id;
+      }
+    }
+  }
+
+  if (!isServiceRole && !callerUserId) {
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),
       { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -100,60 +126,65 @@ serve(async (req) => {
     }
 
     const resend = new Resend(resendApiKey);
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { user_id, notification_type, title, message, data }: NotificationEmailRequest = await req.json();
+
+    // For admin test mode, override user_id to the caller
+    const targetUserId = callerUserId && !user_id ? callerUserId : user_id;
+
+    // For admin test sends, skip preference checks
+    const isAdminTest = !!callerUserId;
 
     // Get user profile to check email preferences
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('email_notifications_enabled, email_new_releases, email_friend_requests, email_friend_activity')
-      .eq('id', user_id)
+      .eq('id', targetUserId)
       .single();
 
     if (profileError || !profile) {
-      console.log(`Could not find profile for user ${user_id}`);
+      console.log(`Could not find profile for user ${targetUserId}`);
       return new Response(
         JSON.stringify({ message: 'Profile not found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!profile.email_notifications_enabled) {
-      console.log(`Email notifications disabled for user ${user_id}`);
+    if (!isAdminTest && !profile.email_notifications_enabled) {
+      console.log(`Email notifications disabled for user ${targetUserId}`);
       return new Response(
         JSON.stringify({ message: 'Email notifications disabled' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    let shouldSendEmail = false;
-    switch (notification_type) {
-      case 'new_release':
-        shouldSendEmail = profile.email_new_releases;
-        break;
-      case 'friend_request':
-      case 'friend_accepted':
-        shouldSendEmail = profile.email_friend_requests;
-        break;
-      case 'friend_activity':
-        shouldSendEmail = profile.email_friend_activity;
-        break;
-      default:
-        shouldSendEmail = true;
+    if (!isAdminTest) {
+      let shouldSendEmail = false;
+      switch (notification_type) {
+        case 'new_release':
+          shouldSendEmail = profile.email_new_releases;
+          break;
+        case 'friend_request':
+        case 'friend_accepted':
+          shouldSendEmail = profile.email_friend_requests;
+          break;
+        case 'friend_activity':
+          shouldSendEmail = profile.email_friend_activity;
+          break;
+        default:
+          shouldSendEmail = true;
+      }
+
+      if (!shouldSendEmail) {
+        console.log(`User ${targetUserId} has disabled ${notification_type} email notifications`);
+        return new Response(
+          JSON.stringify({ message: 'Notification type disabled' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
-    if (!shouldSendEmail) {
-      console.log(`User ${user_id} has disabled ${notification_type} email notifications`);
-      return new Response(
-        JSON.stringify({ message: 'Notification type disabled' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(user_id);
+    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(targetUserId);
     
     if (authError || !authUser?.user?.email) {
       console.log(`Could not get email for user ${user_id}`);

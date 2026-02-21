@@ -74,7 +74,9 @@ async function callMusicBrainz(body: Record<string, string | number | undefined>
   // Normalize query-ish fields to avoid space/case sensitivity issues and improve caching.
   const normalizedBody = { ...body };
   if (typeof normalizedBody.query === 'string') {
-    normalizedBody.query = normalizedBody.query.trim().replace(/\s+/g, ' ');
+    // Lowercase + normalize whitespace so "BRAT" and "Brat" hit the same cache key
+    // and return identical MusicBrainz results.
+    normalizedBody.query = normalizedBody.query.trim().replace(/\s+/g, ' ').toLowerCase();
   }
 
   const { data, error } = await supabase.functions.invoke('musicbrainz', {

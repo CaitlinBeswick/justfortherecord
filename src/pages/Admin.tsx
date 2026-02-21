@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { AppUpdatesManager } from "@/components/admin/AppUpdatesManager";
 import { EmailHealthCheck } from "@/components/admin/EmailHealthCheck";
 import { DigestEmailPreview } from "@/components/admin/DigestEmailPreview";
+import { NotificationEmailPreview } from "@/components/admin/NotificationEmailPreview";
 import { DigestEmailHistory } from "@/components/admin/DigestEmailHistory";
 import {
   AlertDialog,
@@ -325,6 +326,9 @@ const Admin = () => {
 
             {/* Digest Email Preview */}
             <DigestEmailPreview />
+
+            {/* Notification Email Preview */}
+            <NotificationEmailPreview />
 
             {/* Digest Email History */}
             <div className="mb-8">
