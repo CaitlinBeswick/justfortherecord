@@ -43,7 +43,7 @@ const emailWrapper = (content: string) => `
         <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;">
           <tr>
             <td align="center" style="padding-bottom:24px;">
-              <img src="https://justfortherecord.lovable.app/email-logo.png" alt="Just For The Record" width="48" height="48" style="border-radius:50%;display:block;margin:0 auto 12px auto;" />
+              <img src="https://justfortherecord.app/email-logo.png" alt="Just For The Record" width="48" height="48" style="border-radius:50%;display:block;margin:0 auto 12px auto;" />
               <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">Just For The Record</span>
             </td>
           </tr>
@@ -59,9 +59,9 @@ const emailWrapper = (content: string) => `
           <tr>
             <td style="background-color:#f9fafb;padding:20px 36px;border-top:1px solid #e5e7eb;">
               <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">
-                <a href="https://justfortherecord.lovable.app/profile/settings" style="color:#9ca3af;text-decoration:underline;">Manage email preferences</a>
+                <a href="https://justfortherecord.app/profile/settings" style="color:#9ca3af;text-decoration:underline;">Manage email preferences</a>
                 &nbsp;·&nbsp;
-                <a href="https://justfortherecord.lovable.app" style="color:#9ca3af;text-decoration:underline;">justfortherecord.lovable.app</a>
+                <a href="https://justfortherecord.app" style="color:#9ca3af;text-decoration:underline;">justfortherecord.app</a>
               </p>
             </td>
           </tr>
@@ -195,7 +195,7 @@ serve(async (req) => {
     }
 
     const userEmail = authUser.user.email;
-    const baseUrl = 'https://justfortherecord.lovable.app';
+    const baseUrl = 'https://justfortherecord.app';
     let emailHtml = '';
 
     if (notification_type === 'new_release' && data) {
@@ -222,7 +222,7 @@ serve(async (req) => {
                 width="100"
                 height="100"
                 style="border-radius:8px;display:block;object-fit:cover;background-color:#f3f4f6;"
-                onerror="this.style.display='none'"
+                
               />
             </td>
             <td valign="top">
