@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, EyeOff, Edit2, RotateCcw, Save, Loader2, Send } from "lucide-react";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Eye, EyeOff, Edit2, RotateCcw, Save, Loader2, Send, History, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { DigestEmailHistory } from "@/components/admin/DigestEmailHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -197,7 +198,7 @@ export function DigestEmailPreview() {
 
   // Generate the email HTML
   const generateEmailHtml = () => {
-    const baseUrl = 'https://justfortherecord.lovable.app';
+    const baseUrl = 'https://justfortherecord.app';
     const primaryColor = '#dc2626';
     const bgColor = '#dc2626';
     const contentBg = '#ffffff';
@@ -603,6 +604,22 @@ export function DigestEmailPreview() {
               This preview uses sample data. Actual emails will contain personalized content for each user.
             </p>
           </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+      <Collapsible>
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between px-6 py-3 border-t text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <span className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Send History
+            </span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-6 pb-4">
+            <DigestEmailHistory />
+          </div>
         </CollapsibleContent>
       </Collapsible>
     </Card>

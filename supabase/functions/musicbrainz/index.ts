@@ -135,7 +135,13 @@ serve(async (req) => {
   }
 
   try {
-    const { action, query, id, type, limit, offset } = await req.json();
+    const rawBody = await req.json();
+    const action = rawBody.action;
+    const query = typeof rawBody.query === 'string' ? rawBody.query.toLowerCase() : rawBody.query;
+    const id = rawBody.id;
+    const type = rawBody.type;
+    const limit = rawBody.limit;
+    const offset = rawBody.offset;
     console.log(`MusicBrainz request: action=${action}, query=${query}, id=${id}, type=${type}, limit=${limit}, offset=${offset}`);
 
     // Define which actions are public (no auth required) vs protected

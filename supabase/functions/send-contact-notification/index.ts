@@ -72,7 +72,7 @@ serve(async (req) => {
       );
     }
 
-    const baseUrl = 'https://justfortherecord.lovable.app';
+    const baseUrl = 'https://justfortherecord.app';
     let emailsSent = 0;
     let emailsFailed = 0;
 

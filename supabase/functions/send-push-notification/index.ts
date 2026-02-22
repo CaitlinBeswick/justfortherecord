@@ -36,7 +36,7 @@ async function generateVapidSignature(
   const jwtPayload = {
     aud: audience,
     exp: now + 12 * 60 * 60, // 12 hours
-    sub: 'mailto:notifications@justfortherecord.lovable.app'
+    sub: 'mailto:notifications@justfortherecord.app'
   };
   
   // Base64url encode

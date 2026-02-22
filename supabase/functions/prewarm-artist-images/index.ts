@@ -19,7 +19,7 @@ async function fetchArtistImageFromWikidata(artistId: string): Promise<string | 
     const mbUrl = `https://musicbrainz.org/ws/2/artist/${artistId}?inc=url-rels&fmt=json`;
     const mbResponse = await fetch(mbUrl, {
       headers: {
-        'User-Agent': 'JustForTheRecord/1.0 (https://justfortherecord.lovable.app)',
+        'User-Agent': 'JustForTheRecord/1.0 (https://justfortherecord.app)',
       },
     });
 
@@ -52,7 +52,7 @@ async function fetchArtistImageFromWikidata(artistId: string): Promise<string | 
       `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparqlQuery)}&format=json`,
       {
         headers: {
-          'User-Agent': 'JustForTheRecord/1.0 (https://justfortherecord.lovable.app)',
+          'User-Agent': 'JustForTheRecord/1.0 (https://justfortherecord.app)',
           'Accept': 'application/sparql-results+json',
         },
       }

@@ -62,14 +62,14 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Just For The Record <noreply@justfortherecord.lovable.app>",
+            from: "Just For The Record <noreply@justfortherecord.app>",
             to: [email],
             subject: "Reminder: Send this week's digest",
             html: `
               <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
                 <h2 style="color: #dc2626;">Weekly Digest Reminder</h2>
                 <p>Hey! Just a friendly reminder to review and send out this week's digest email from the admin dashboard.</p>
-                <a href="https://justfortherecord.lovable.app/admin" style="display: inline-block; background: #dc2626; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; margin-top: 12px;">Go to Admin Dashboard</a>
+                <a href="https://justfortherecord.app/admin" style="display: inline-block; background: #dc2626; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; margin-top: 12px;">Go to Admin Dashboard</a>
               </div>
             `,
           }),
