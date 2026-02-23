@@ -734,7 +734,7 @@ export function DiaryContent() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
-                className="flex items-center gap-3 p-2 rounded-lg bg-card/30 hover:bg-card/60 transition-colors group"
+                className="flex items-center gap-3 md:gap-3 p-3 md:p-2 rounded-lg bg-card/30 hover:bg-card/60 transition-colors group"
               >
                 <div className="w-12 text-center shrink-0">
                   <p className="text-lg font-semibold text-foreground leading-none">
@@ -753,7 +753,7 @@ export function DiaryContent() {
                     releaseGroupId={entry.release_group_id}
                     title={entry.album_title}
                     size="250"
-                    className="w-10 h-10 rounded"
+                    className="w-14 h-14 md:w-10 md:h-10 rounded"
                   />
                 </div>
 

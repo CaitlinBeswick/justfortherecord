@@ -139,6 +139,18 @@
     display: none;
   }
 
+  /* Safe area for bottom tab bar */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Add bottom padding to pages on mobile for tab bar */
+  @media (max-width: 767px) {
+    .pb-20 {
+      padding-bottom: 6rem !important;
+    }
+  }
+
   /* Slow vinyl spin animation - respects reduced motion */
   .animate-vinyl-spin {
     animation: spin-slow 30s linear infinite;

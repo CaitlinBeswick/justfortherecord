@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2, Shield, Compass, Menu, X } from "lucide-react";
+import { Search, User, Music2, Disc3, Users, LogIn, LogOut, Loader2, Shield, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -14,13 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 const navItems = [
   { path: "/", label: "Home", icon: Music2 },
   { path: "/search", label: "Search", icon: Search },
@@ -59,79 +52,6 @@ export function Navbar() {
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          {/* Mobile Menu Button - prominent position on left */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <button className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:opacity-90">
-                <Menu className="h-5 w-5" />
-              </button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[280px] sm:w-[320px]">
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                    <Disc3 className="h-4 w-4 text-primary-foreground" />
-                  </div>
-                  Just For The Record
-                </SheetTitle>
-              </SheetHeader>
-              <nav className="mt-6 flex flex-col gap-1">
-                {navItems.map((item) => {
-                  const isActive = location.pathname === item.path || 
-                    (item.path === '/profile' && location.pathname.startsWith('/profile')) ||
-                    (item.path === '/discovery' && location.pathname.startsWith('/discovery'));
-                  // Hide auth-required items when not logged in
-                  if ((item as any).requiresAuth && !user) return null;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={getNavPath(item.path)}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                      location.pathname === '/admin'
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    )}
-                  >
-                    <Shield className="h-5 w-5" />
-                    Admin
-                  </Link>
-                )}
-              </nav>
-              {user && (
-                <div className="absolute bottom-6 left-4 right-4">
-                  <button
-                    onClick={() => {
-                      signOut();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-                  >
-                    <LogOut className="h-5 w-5" />
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </SheetContent>
-          </Sheet>
-
           <Link to="/" className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
               <Disc3 className="h-5 w-5 text-primary-foreground" />
