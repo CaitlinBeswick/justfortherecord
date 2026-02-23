@@ -88,23 +88,26 @@ serve(async (req) => {
   let callerUserId: string | null = null;
 
   if (!isServiceRole && authHeader?.startsWith('Bearer ')) {
-    // Try to authenticate as a user and check admin role
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const { data: userData } = await userClient.auth.getUser();
-    if (userData?.user) {
-      const userId = userData.user.id;
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .single();
-      if (roleData) {
-        callerUserId = userId;
+    // Decode JWT to get user ID without hitting session validation
+    try {
+      const token = authHeader.replace('Bearer ', '');
+      const payloadBase64 = token.split('.')[1];
+      const payload = JSON.parse(atob(payloadBase64));
+      const userId = payload.sub as string;
+      
+      if (userId) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .eq('role', 'admin')
+          .single();
+        if (roleData) {
+          callerUserId = userId;
+        }
       }
+    } catch (e) {
+      console.error('Failed to decode JWT:', e);
     }
   }
 
