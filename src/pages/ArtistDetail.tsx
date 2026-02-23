@@ -739,8 +739,8 @@ const ArtistDetail = () => {
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="font-serif text-2xl text-foreground">
                 Discography {totalDisplayedReleases > 0 && `(${totalDisplayedReleases} releases)`}
               </h2>
@@ -790,7 +790,7 @@ const ArtistDetail = () => {
                 </Popover>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <DiscographySearch value={discographySearch} onChange={setDiscographySearch} />
               <button
                 onClick={() => setDiscographySort(prev => prev === 'date' ? 'popularity' : 'date')}

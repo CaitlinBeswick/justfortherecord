@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { FeatureNotificationProvider } from "@/components/FeatureNotification";
+import { MobileTabBar } from "@/components/MobileTabBar";
 
 import { QuickTips } from "@/components/QuickTips";
 const Index = lazy(() => import("./pages/Index"));
@@ -101,7 +102,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <ScrollToTop />
-              
+              <MobileTabBar />
               <QuickTips />
             </Suspense>
         </BrowserRouter>
