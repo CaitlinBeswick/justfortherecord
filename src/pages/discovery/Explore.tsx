@@ -725,7 +725,7 @@ const DiscoveryExplore = () => {
               <div className="flex gap-2 items-start">
                 <div className="flex-1">
                   <Textarea
-                    placeholder="Describe your mood… e.g. &quot;rainy day, feeling introspective&quot;"
+                    placeholder="Describe your mood … e.g. feeling introspective walking through Manhattan on a rainy day"
                     value={moodText}
                     onChange={(e) => setMoodText(e.target.value.slice(0, 500))}
                     onKeyDown={(e) => {
