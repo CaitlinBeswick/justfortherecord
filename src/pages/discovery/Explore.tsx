@@ -167,9 +167,9 @@ function RecommendationsDisplay({
     return !followedArtistIds.has(artist.artistId);
   });
 
-  // Always show exactly 5 on desktop, 6 on mobile (extra items act as buffer when albums are saved)
-  const albumsToShow = filteredAlbums.slice(0, 6);
-  const artistsToShow = filteredArtists.slice(0, 6);
+  // Show 4 items each for a cleaner mobile layout
+  const albumsToShow = filteredAlbums.slice(0, 4);
+  const artistsToShow = filteredArtists.slice(0, 4);
 
   return (
     <div className="space-y-8">
@@ -194,14 +194,11 @@ function RecommendationsDisplay({
               </button>
             )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {albumsToShow.map((album, i) => {
               const isInToListen = album.releaseGroupId 
                 ? getStatusForAlbum(album.releaseGroupId).isToListen 
                 : false;
-              
-              // Hide 6th item on desktop (md+), show on mobile
-              const hideOnDesktop = i === 5;
               
               return (
                 <motion.div
@@ -209,7 +206,7 @@ function RecommendationsDisplay({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className={`cursor-pointer group relative ${hideOnDesktop ? "md:hidden" : ""}`}
+                  className="cursor-pointer group relative"
                 >
                   <div 
                     onClick={() => handleAlbumClick(album)}
@@ -287,10 +284,8 @@ function RecommendationsDisplay({
               </button>
             )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {artistsToShow.map((artist, i) => {
-              // Hide 6th item on desktop (md+), show on mobile
-              const hideOnDesktop = i === 5;
               const isFollowed = artist.artistId ? followedArtistIds.has(artist.artistId) : false;
               
               return (
@@ -299,7 +294,7 @@ function RecommendationsDisplay({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 + 0.25 }}
-                  className={`cursor-pointer group text-center relative ${hideOnDesktop ? "md:hidden" : ""}`}
+                  className="cursor-pointer group text-center relative"
                 >
                   <div 
                     onClick={() => handleArtistClick(artist)}
@@ -739,8 +734,8 @@ const DiscoveryExplore = () => {
                         handleMoodSubmit();
                       }
                     }}
-                    className="min-h-[44px] max-h-[100px] resize-none text-sm"
-                    rows={1}
+                    className="min-h-[56px] max-h-[120px] resize-none text-sm"
+                    rows={2}
                   />
                   <p className="text-xs text-muted-foreground mt-1">{moodText.length}/500</p>
                 </div>
@@ -779,9 +774,9 @@ const DiscoveryExplore = () => {
             <div className="space-y-6">
               <div>
                 <Skeleton className="h-5 w-40 mb-4" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-4">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className={i === 5 ? "md:hidden" : ""}>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i}>
                       <Skeleton className="aspect-square rounded-lg mb-2" />
                       <Skeleton className="h-4 w-3/4 mb-1" />
                       <Skeleton className="h-3 w-1/2" />

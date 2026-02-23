@@ -5,7 +5,8 @@ import { Footer } from "@/components/Footer";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useNavigate } from "react-router-dom";
-import { Disc3, Users, Trophy, Star, Eye, EyeOff } from "lucide-react";
+import { Disc3, Users, Trophy, Star, Eye, EyeOff, Plus, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,8 +54,9 @@ const DiscoveryLeaderboards = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<LeaderboardTab>("albums");
   const [fadeListened, setFadeListened] = useState(false);
+  const { toast } = useToast();
 
-  const { allStatuses, isLoadingAll } = useListeningStatus();
+  const { allStatuses, isLoadingAll, toggleStatus, isPending: isTogglingStatus, getStatusForAlbum } = useListeningStatus();
 
   // Fetch user's artist ratings - always fetch when user exists
   const { data: userArtistRatings = [] } = useQuery({
@@ -245,6 +247,29 @@ const DiscoveryLeaderboards = () => {
                         >
                           #{index + 1}
                         </div>
+                        {/* Quick add to queue */}
+                        {user && !listened && (() => {
+                          const status = getStatusForAlbum(album.release_group_id);
+                          if (status.isToListen) return (
+                            <div className="absolute top-2 right-2 z-10 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                              <Clock className="h-4 w-4" />
+                            </div>
+                          );
+                          return (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleStatus({ releaseGroupId: album.release_group_id, albumTitle: album.album_title, artistName: album.artist_name, field: "is_to_listen", value: true });
+                                toast({ title: "Added to Queue", description: album.album_title });
+                              }}
+                              disabled={isTogglingStatus}
+                              className="absolute top-2 right-2 z-10 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md"
+                              title="Add to Queue"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          );
+                        })()}
                       </div>
 
                       <h3 className="mt-2 text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
