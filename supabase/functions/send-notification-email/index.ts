@@ -206,9 +206,6 @@ serve(async (req) => {
 
       emailHtml = emailWrapper(`
         <div style="text-align:center;margin-bottom:28px;">
-          <div style="width:48px;height:48px;background-color:#dc2626;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
-            <span style="font-size:24px;">🎵</span>
-          </div>
           <h1 style="color:#111827;font-size:24px;font-weight:700;margin:0 0 4px 0;">New Release</h1>
           <p style="color:#6b7280;font-size:14px;margin:0;">From an artist you follow</p>
         </div>
@@ -216,14 +213,15 @@ serve(async (req) => {
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
           <tr>
             <td width="100" valign="top" style="padding-right:20px;">
+              <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" style="height:100px;width:100px;v-text-anchor:middle;" arcsize="8%" fill="true" stroke="false"><v:fill color="#f3f4f6"/><![endif]-->
               <img
-                src="${coverArtUrl}"
+                src="https://ia902908.us.archive.org/35/items/mbid-${data.release_group_id}/mbid-${data.release_group_id}-0_thumb250.jpg"
                 alt="${data.album_title}"
                 width="100"
                 height="100"
                 style="border-radius:8px;display:block;object-fit:cover;background-color:#f3f4f6;"
-                
               />
+              <!--[if mso]></v:roundrect><![endif]-->
             </td>
             <td valign="top">
               <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 4px 0;">${data.album_title}</h2>

@@ -714,137 +714,143 @@ export function DiaryContent() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
-                className="flex items-center gap-3 md:gap-3 p-3 md:p-2 rounded-lg bg-card/30 hover:bg-card/60 transition-colors group"
+                className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 md:p-2 rounded-lg bg-card/30 hover:bg-card/60 transition-colors group"
               >
-                <div className="w-12 text-center shrink-0">
-                  <p className="text-lg font-semibold text-foreground leading-none">
-                    {format(new Date(entry.listened_on), 'd')}
-                  </p>
-                  <p className="text-xs text-muted-foreground uppercase">
-                    {format(new Date(entry.listened_on), 'MMM')}
-                  </p>
-                </div>
-
-                <div 
-                  className="shrink-0 cursor-pointer"
-                  onClick={() => entry.release_group_id && navigate(`/album/${entry.release_group_id}`)}
-                >
-                  <AlbumCoverWithFallback
-                    releaseGroupId={entry.release_group_id}
-                    title={entry.album_title}
-                    size="250"
-                    className="w-14 h-14 md:w-10 md:h-10 rounded"
-                  />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h3 
-                      className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => entry.release_group_id && navigate(`/album/${entry.release_group_id}`)}
-                    >
-                      {entry.album_title}
-                    </h3>
-                    {reviewText && (
-                      <HoverCard openDelay={200} closeDelay={100}>
-                        <HoverCardTrigger asChild>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium shrink-0 cursor-pointer hover:bg-primary/20 transition-colors">
-                            Review
-                          </span>
-                        </HoverCardTrigger>
-                        <HoverCardContent className="w-80 p-3" side="top" align="start">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
-                              <span className="text-xs font-medium text-foreground">{displayRating}/5</span>
-                              {isLoved && <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" />}
-                            </div>
-                            <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap">
-                              {reviewText}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground/60">
-                              Click album to read full review
-                            </p>
-                          </div>
-                        </HoverCardContent>
-                      </HoverCard>
-                    )}
+                {/* Top row: date + cover + title/artist */}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 text-center shrink-0">
+                    <p className="text-lg font-semibold text-foreground leading-none">
+                      {format(new Date(entry.listened_on), 'd')}
+                    </p>
+                    <p className="text-xs text-muted-foreground uppercase">
+                      {format(new Date(entry.listened_on), 'MMM')}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
-                </div>
 
-                {/* Listen type icon - green check for first listen, consistent with activity */}
-                <div className="shrink-0" title={entry.is_relisten ? "Re-listen" : "First listen"}>
-                  {entry.is_relisten ? (
-                    <RotateCcw className="h-4 w-4 text-primary" />
-                  ) : (
-                    <Play className="h-4 w-4 text-green-500 fill-green-500" />
-                  )}
-                </div>
-
-                {/* Format tags */}
-                {entry.tags && entry.tags.length > 0 && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    {entry.tags.slice(0, 2).map((tag) => {
-                      const tagInfo = FORMAT_TAG_LABELS[tag];
-                      return tagInfo ? (
-                        <span key={tag} className="text-xs" title={tagInfo.label}>
-                          {tagInfo.emoji}
-                        </span>
-                      ) : null;
-                    })}
-                    {entry.tags.length > 2 && (
-                      <span className="text-[10px] text-muted-foreground">+{entry.tags.length - 2}</span>
-                    )}
+                  <div 
+                    className="shrink-0 cursor-pointer"
+                    onClick={() => entry.release_group_id && navigate(`/album/${entry.release_group_id}`)}
+                  >
+                    <AlbumCoverWithFallback
+                      releaseGroupId={entry.release_group_id}
+                      title={entry.album_title}
+                      size="250"
+                      className="w-16 h-16 md:w-10 md:h-10 rounded"
+                    />
                   </div>
-                )}
 
-                {/* Rating display with half-star support */}
-                {displayRating !== null && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((star) => {
-                        const ratingValue = displayRating;
-                        const isFull = star <= Math.floor(ratingValue);
-                        const isHalf = !isFull && star === Math.ceil(ratingValue) && ratingValue % 1 >= 0.5;
-                        
-                        if (isFull) {
-                          return <Star key={star} className="h-3 w-3 text-yellow-400 fill-yellow-400" />;
-                        } else if (isHalf) {
-                          return (
-                            <div key={star} className="relative h-3 w-3">
-                              <Star className="absolute h-3 w-3 text-muted-foreground/30" />
-                              <div className="absolute overflow-hidden w-1/2 h-3">
-                                <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h3 
+                        className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => entry.release_group_id && navigate(`/album/${entry.release_group_id}`)}
+                      >
+                        {entry.album_title}
+                      </h3>
+                      {reviewText && (
+                        <HoverCard openDelay={200} closeDelay={100}>
+                          <HoverCardTrigger asChild>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium shrink-0 cursor-pointer hover:bg-primary/20 transition-colors">
+                              Review
+                            </span>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-80 p-3" side="top" align="start">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
+                                <span className="text-xs font-medium text-foreground">{displayRating}/5</span>
+                                {isLoved && <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" />}
                               </div>
+                              <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap">
+                                {reviewText}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground/60">
+                                Click album to read full review
+                              </p>
                             </div>
-                          );
-                        } else {
-                          return <Star key={star} className="h-3 w-3 text-muted-foreground/30" />;
-                        }
-                      })}
+                          </HoverCardContent>
+                        </HoverCard>
+                      )}
                     </div>
-                    {isLoved && (
-                      <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 ml-1" />
+                    <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
+                  </div>
+                </div>
+
+                {/* Bottom row on mobile: rating, heart, format, actions */}
+                <div className="flex items-center gap-2 md:gap-2 pl-[60px] md:pl-0 flex-wrap">
+                  {/* Listen type icon */}
+                  <div className="shrink-0" title={entry.is_relisten ? "Re-listen" : "First listen"}>
+                    {entry.is_relisten ? (
+                      <RotateCcw className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Play className="h-4 w-4 text-green-500 fill-green-500" />
                     )}
                   </div>
-                )}
 
-                <button
-                  onClick={() => handleEditEntry(entry)}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-primary transition-all"
-                  title="Edit entry"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
+                  {/* Format tags */}
+                  {entry.tags && entry.tags.length > 0 && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      {entry.tags.slice(0, 2).map((tag) => {
+                        const tagInfo = FORMAT_TAG_LABELS[tag];
+                        return tagInfo ? (
+                          <span key={tag} className="text-xs" title={tagInfo.label}>
+                            {tagInfo.emoji}
+                          </span>
+                        ) : null;
+                      })}
+                      {entry.tags.length > 2 && (
+                        <span className="text-[10px] text-muted-foreground">+{entry.tags.length - 2}</span>
+                      )}
+                    </div>
+                  )}
 
-                <button
-                  onClick={() => handleDeleteDiaryEntry(entry.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive transition-all"
-                  title="Delete entry"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                  {/* Rating display */}
+                  {displayRating !== null && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const ratingValue = displayRating;
+                          const isFull = star <= Math.floor(ratingValue);
+                          const isHalf = !isFull && star === Math.ceil(ratingValue) && ratingValue % 1 >= 0.5;
+                          
+                          if (isFull) {
+                            return <Star key={star} className="h-3 w-3 text-yellow-400 fill-yellow-400" />;
+                          } else if (isHalf) {
+                            return (
+                              <div key={star} className="relative h-3 w-3">
+                                <Star className="absolute h-3 w-3 text-muted-foreground/30" />
+                                <div className="absolute overflow-hidden w-1/2 h-3">
+                                  <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return <Star key={star} className="h-3 w-3 text-muted-foreground/30" />;
+                          }
+                        })}
+                      </div>
+                      {isLoved && (
+                        <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 ml-1" />
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => handleEditEntry(entry)}
+                    className="opacity-0 group-hover:opacity-100 md:opacity-0 p-1.5 text-muted-foreground hover:text-primary transition-all"
+                    title="Edit entry"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteDiaryEntry(entry.id)}
+                    className="opacity-0 group-hover:opacity-100 md:opacity-0 p-1.5 text-muted-foreground hover:text-destructive transition-all"
+                    title="Delete entry"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </motion.div>
               </div>
             );
