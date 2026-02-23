@@ -96,7 +96,7 @@ const Index = () => {
         <div className="gradient-hero absolute inset-0" />
         <VinylBackground preset="home" />
         
-        <div className="relative container mx-auto px-4 py-16 md:py-20">
+        <div className="relative container mx-auto px-4 py-8 md:py-12">
           <div>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -106,7 +106,7 @@ const Index = () => {
             >
               <motion.h1 
                 animate={titleControls}
-                className="font-serif text-4xl md:text-6xl lg:text-7xl text-foreground leading-tight"
+                className="font-serif text-3xl md:text-5xl text-foreground leading-tight"
               >
                 Track the music
                 <br />
@@ -129,62 +129,11 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Popular This Week - Album Cover Carousel */}
-      {popularAlbums.length > 0 && (
-        <section className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-xl md:text-2xl text-foreground">Popular This Week</h2>
-            <Link 
-              to="/discovery/leaderboards"
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              See all
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
-            {loadingPopular ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="w-32 h-32 md:w-40 md:h-40 rounded-lg shrink-0" />
-              ))
-            ) : (
-              popularAlbums.map((album) => (
-                <motion.div
-                  key={album.release_group_id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="shrink-0 cursor-pointer group"
-                  onClick={() => navigate(`/album/${album.release_group_id}`)}
-                >
-                  <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl transition-shadow">
-                    <AlbumCoverWithFallback
-                      releaseGroupId={album.release_group_id}
-                      title={album.album_title}
-                      size="250"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {album.avg_rating && (
-                      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
-                        <Star className="h-2.5 w-2.5 fill-current" />
-                        {Number(album.avg_rating).toFixed(1)}
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs font-medium text-foreground mt-1.5 truncate w-32 md:w-40">{album.album_title}</p>
-                  <p className="text-[10px] text-muted-foreground truncate w-32 md:w-40">{album.artist_name}</p>
-                </motion.div>
-              ))
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* New From Friends - Album Cover Carousel */}
+      {/* Friends' Recent Listens - Album Cover Carousel */}
       {user && friendIds.length > 0 && (
         <section className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-xl md:text-2xl text-foreground">New From Friends</h2>
+            <h2 className="font-serif text-xl md:text-2xl text-foreground">Friends' Recent Listens</h2>
             <Link 
               to="/activity/following"
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"

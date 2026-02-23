@@ -36,8 +36,8 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
   const [isDragging, setIsDragging] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  // Create slots array with positions 1-5
-  const slots: FavoriteSlot[] = [1, 2, 3, 4, 5].map(position => {
+  // Create slots array with positions 1-6
+  const slots: FavoriteSlot[] = [1, 2, 3, 4, 5, 6].map(position => {
     const fav = favorites.find(f => f.position === position);
     return {
       position,
@@ -157,7 +157,7 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
             axis="x"
             values={orderedSlots}
             onReorder={handleReorder}
-            className="flex gap-3 md:gap-3 justify-start overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:overflow-visible md:flex-wrap md:justify-start"
+            className="grid grid-cols-3 gap-3 md:flex md:gap-3 md:justify-start md:overflow-visible md:flex-wrap"
           >
             {orderedSlots.map((slot) => (
               <Reorder.Item
@@ -166,7 +166,7 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
                 onDragStart={() => setIsDragging(true)}
                 onDragEnd={handleDragEnd}
                 dragListener={!!slot.release_group_id}
-                className="relative group flex-shrink-0 snap-start"
+                className="relative group"
                 whileDrag={{ scale: 1.05, zIndex: 50 }}
               >
                 {slot.release_group_id ? (
@@ -175,7 +175,7 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
                       releaseGroupId={slot.release_group_id}
                       title={slot.album_title || ''}
                       size="250"
-                      className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
+                      className="w-full aspect-square md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
                     />
                     <div 
                       className="absolute inset-0 rounded-lg cursor-pointer"
@@ -204,7 +204,7 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
                 ) : (
                   <button
                     onClick={() => setEditingPosition(slot.position)}
-                    className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    className="w-full aspect-square md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
@@ -213,14 +213,14 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
             ))}
           </Reorder.Group>
         ) : (
-          <div className="flex gap-3 md:gap-3 justify-start overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:overflow-visible md:flex-wrap md:justify-start">
+          <div className="grid grid-cols-3 gap-3 md:flex md:gap-3 md:justify-start md:overflow-visible md:flex-wrap">
             {orderedSlots.map((slot) => (
               <motion.div
                 key={slot.position}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: slot.position * 0.05 }}
-                className="relative group flex-shrink-0 snap-start"
+                className="relative group"
               >
                 {slot.release_group_id ? (
                   <div 
@@ -231,7 +231,7 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
                       releaseGroupId={slot.release_group_id}
                       title={slot.album_title || ''}
                       size="250"
-                      className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
+                      className="w-full aspect-square md:w-24 md:h-24 rounded-lg border border-border/50 transition-transform group-hover:scale-[1.2]"
                     />
                     {isOwner && (
                       <button
@@ -250,12 +250,12 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
                 ) : isOwner ? (
                   <button
                     onClick={() => setEditingPosition(slot.position)}
-                    className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    className="w-full aspect-square md:w-24 md:h-24 rounded-lg border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
                 ) : (
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-lg border border-border/30 bg-secondary/30" />
+                  <div className="w-full aspect-square md:w-24 md:h-24 rounded-lg border border-border/30 bg-secondary/30" />
                 )}
               </motion.div>
             ))}

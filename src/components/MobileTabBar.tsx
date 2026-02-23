@@ -1,13 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, PlusCircle, Activity, User, LogIn } from "lucide-react";
+import { Home, Search, PlusCircle, Compass, User, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
 const tabs = [
   { path: "/", label: "Home", icon: Home },
   { path: "/search", label: "Search", icon: Search },
-  { path: "/profile/diary", label: "Log", icon: PlusCircle, requiresAuth: true, isCenter: true },
-  { path: "/activity/following", label: "Activity", icon: Activity, requiresAuth: true },
+  { path: "/search", label: "Log", icon: PlusCircle, requiresAuth: true, isCenter: true },
+  { path: "/discovery", label: "Discover", icon: Compass, requiresAuth: false },
   { path: "/profile", label: "Profile", icon: User, requiresAuth: true },
 ];
 
@@ -21,8 +21,8 @@ export function MobileTabBar() {
       return location.pathname === "/profile" || 
         (location.pathname.startsWith("/profile/") && location.pathname !== "/profile/diary");
     }
-    if (path === "/activity/following") {
-      return location.pathname.startsWith("/activity");
+    if (path === "/discovery") {
+      return location.pathname.startsWith("/discovery");
     }
     return location.pathname.startsWith(path);
   };

@@ -221,46 +221,48 @@ const ToListen = () => {
             <ProfileNav activeTab="to_listen" />
             <section className="flex-1 min-w-0">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-                  <h2 className="font-serif text-xl text-foreground">Your Queue ({toListenAlbums.length})</h2>
-                  <div className="flex items-center gap-3">
-                    {toListenAlbums.length > 0 && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleShuffle}
-                        disabled={isShuffling}
-                        className="gap-1.5"
-                      >
-                        <Shuffle className={`h-4 w-4 ${isShuffling ? "animate-spin" : ""}`} />
-                        Shuffle
-                      </Button>
-                    )}
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search queue..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 w-[180px]"
-                      />
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <h2 className="font-serif text-xl text-foreground">Your Queue ({toListenAlbums.length})</h2>
+                    <div className="flex items-center gap-3">
+                      {toListenAlbums.length > 0 && (
+                        <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                          <SelectTrigger className="w-[160px]">
+                            <ArrowUpDown className="h-4 w-4 mr-2" />
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(sortLabels) as SortOption[]).map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {sortLabels[option]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search queue..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-9 w-[180px]"
+                        />
+                      </div>
                     </div>
-                    {toListenAlbums.length > 0 && (
-                      <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                        <SelectTrigger className="w-[160px]">
-                          <ArrowUpDown className="h-4 w-4 mr-2" />
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(Object.keys(sortLabels) as SortOption[]).map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {sortLabels[option]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
                   </div>
+                  {toListenAlbums.length > 0 && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleShuffle}
+                      disabled={isShuffling}
+                      className="gap-1.5"
+                    >
+                      <Shuffle className={`h-4 w-4 ${isShuffling ? "animate-spin" : ""}`} />
+                      Shuffle
+                    </Button>
+                  )}
                 </div>
 
                 {/* Shuffle Carousel */}

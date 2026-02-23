@@ -122,23 +122,38 @@ export const ProfileNav = ({ activeTab }: ProfileNavProps) => {
         </nav>
       </aside>
 
-      {/* Mobile grid navigation - 2 columns x 3 rows, content on separate page */}
+      {/* Mobile navigation - Diary full width, then 3 rows of 2 */}
       <aside className="md:hidden w-full mb-6">
-        <nav className="grid grid-cols-2 gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => navigate(tab.path)}
-              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+        <nav className="space-y-2">
+          {/* Diary - full width */}
+          <button
+            onClick={() => navigate(tabs[0].path)}
+            className={`w-full flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === tabs[0].id
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tabs[0].icon}
+            {tabs[0].label}
+          </button>
+          {/* Remaining tabs - 2 columns */}
+          <div className="grid grid-cols-2 gap-2">
+            {tabs.slice(1).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => navigate(tab.path)}
+                className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </nav>
       </aside>
     </>
