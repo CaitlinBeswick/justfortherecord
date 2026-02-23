@@ -348,6 +348,9 @@ const ProfileSettings = () => {
   const [showFriendsCount, setShowFriendsCount] = useState(true);
   const [showFriendsList, setShowFriendsList] = useState(true);
   const [allowFriendRequests, setAllowFriendRequests] = useState(true);
+  const [showQueue, setShowQueue] = useState(true);
+  const [showFollowing, setShowFollowing] = useState(true);
+  const [showReviews, setShowReviews] = useState(true);
   const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
   const [isExportExpanded, setIsExportExpanded] = useState(false);
@@ -372,6 +375,10 @@ const ProfileSettings = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  // Change password state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Blocked users
   const { blockedUsers, unblockUser } = useBlockedUsers();
@@ -464,6 +471,9 @@ const ProfileSettings = () => {
       setShowFriendsCount(profile.show_friends_count ?? true);
       setShowFriendsList(profile.show_friends_list ?? true);
       setAllowFriendRequests(profile.allow_friend_requests ?? true);
+      setShowQueue((profile as any).show_queue ?? true);
+      setShowFollowing((profile as any).show_following ?? true);
+      setShowReviews((profile as any).show_reviews ?? true);
       // Email notification settings
       setEmailNotificationsEnabled(profile.email_notifications_enabled ?? false);
       setEmailNewReleases(profile.email_new_releases ?? true);
@@ -503,6 +513,9 @@ const ProfileSettings = () => {
           show_friends_count: showFriendsCount,
           show_friends_list: showFriendsList,
           allow_friend_requests: allowFriendRequests,
+          show_queue: showQueue,
+          show_following: showFollowing,
+          show_reviews: showReviews,
           // Email notification settings
           email_notifications_enabled: emailNotificationsEnabled,
           email_new_releases: emailNewReleases,
@@ -1217,6 +1230,39 @@ const ProfileSettings = () => {
                             onCheckedChange={setShowLists}
                           />
                         </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="showQueue" className="text-sm font-normal cursor-pointer">
+                            Queue
+                          </Label>
+                          <Switch
+                            id="showQueue"
+                            checked={showQueue}
+                            onCheckedChange={setShowQueue}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="showFollowing" className="text-sm font-normal cursor-pointer">
+                            Following
+                          </Label>
+                          <Switch
+                            id="showFollowing"
+                            checked={showFollowing}
+                            onCheckedChange={setShowFollowing}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="showReviews" className="text-sm font-normal cursor-pointer">
+                            Reviews
+                          </Label>
+                          <Switch
+                            id="showReviews"
+                            checked={showReviews}
+                            onCheckedChange={setShowReviews}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -1488,6 +1534,69 @@ const ProfileSettings = () => {
                 </Button>
               </div>
             </form>
+
+            {/* Change Password */}
+            <Separator className="my-8" />
+            <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold text-foreground">Change Password</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="bg-card"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="bg-card"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!newPassword || newPassword.length < 6) {
+                      sonnerToast.error("Password must be at least 6 characters");
+                      return;
+                    }
+                    if (newPassword !== confirmPassword) {
+                      sonnerToast.error("Passwords don't match");
+                      return;
+                    }
+                    setIsChangingPassword(true);
+                    try {
+                      const { error } = await supabase.auth.updateUser({ password: newPassword });
+                      if (error) throw error;
+                      sonnerToast.success("Password updated successfully");
+                      setNewPassword("");
+                      setConfirmPassword("");
+                    } catch (err: any) {
+                      sonnerToast.error(err.message || "Failed to update password");
+                    } finally {
+                      setIsChangingPassword(false);
+                    }
+                  }}
+                  disabled={isChangingPassword || !newPassword || !confirmPassword}
+                  className="gap-2"
+                >
+                  {isChangingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                  Update Password
+                </Button>
+              </div>
+            </div>
 
             {/* Danger Zone - Delete Account */}
             <Separator className="my-8" />

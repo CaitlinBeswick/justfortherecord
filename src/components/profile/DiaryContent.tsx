@@ -544,26 +544,6 @@ export function DiaryContent() {
                 className="pl-9 w-[180px]"
               />
             </div>
-            <Select 
-              value={`${diarySort}-${sortAscending ? 'asc' : 'desc'}`} 
-              onValueChange={(v) => {
-                const [sort, dir] = v.split('-') as [DiarySortOption, string];
-                setDiarySort(sort);
-                setSortAscending(dir === 'asc');
-              }}
-            >
-              <SelectTrigger className="w-[160px] h-8 text-sm">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date-desc">Date (Newest)</SelectItem>
-                <SelectItem value="date-asc">Date (Oldest)</SelectItem>
-                <SelectItem value="artist-asc">Artist (A-Z)</SelectItem>
-                <SelectItem value="artist-desc">Artist (Z-A)</SelectItem>
-                <SelectItem value="album-asc">Album (A-Z)</SelectItem>
-                <SelectItem value="album-desc">Album (Z-A)</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
@@ -804,7 +784,7 @@ export function DiaryContent() {
 
                 {/* Format tags */}
                 {entry.tags && entry.tags.length > 0 && (
-                  <div className="hidden sm:flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     {entry.tags.slice(0, 2).map((tag) => {
                       const tagInfo = FORMAT_TAG_LABELS[tag];
                       return tagInfo ? (

@@ -696,9 +696,12 @@ export type Database = {
           show_albums: boolean
           show_artists: boolean
           show_diary: boolean
+          show_following: boolean | null
           show_friends_count: boolean
           show_friends_list: boolean
           show_lists: boolean
+          show_queue: boolean | null
+          show_reviews: boolean | null
           updated_at: string
           username: string | null
           yearly_listen_goal: number | null
@@ -729,9 +732,12 @@ export type Database = {
           show_albums?: boolean
           show_artists?: boolean
           show_diary?: boolean
+          show_following?: boolean | null
           show_friends_count?: boolean
           show_friends_list?: boolean
           show_lists?: boolean
+          show_queue?: boolean | null
+          show_reviews?: boolean | null
           updated_at?: string
           username?: string | null
           yearly_listen_goal?: number | null
@@ -762,9 +768,12 @@ export type Database = {
           show_albums?: boolean
           show_artists?: boolean
           show_diary?: boolean
+          show_following?: boolean | null
           show_friends_count?: boolean
           show_friends_list?: boolean
           show_lists?: boolean
+          show_queue?: boolean | null
+          show_reviews?: boolean | null
           updated_at?: string
           username?: string | null
           yearly_listen_goal?: number | null

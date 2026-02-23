@@ -242,15 +242,6 @@ const Albums = () => {
                     Albums ({albums.length})
                   </h2>
                   <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search albums..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 w-[200px]"
-                      />
-                    </div>
                     {albums.length > 0 && (
                       <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
                         <SelectTrigger className="w-[180px]">
@@ -266,6 +257,15 @@ const Albums = () => {
                         </SelectContent>
                       </Select>
                     )}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search albums..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-[200px]"
+                      />
+                    </div>
                   </div>
                 </div>
 

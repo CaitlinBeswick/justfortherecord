@@ -210,7 +210,7 @@ serve(async (req) => {
         const searchLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
         const searchOffset = Math.max(Number(offset) || 0, 0);
         // Add fuzzy matching (~) to each word for tolerance of misspellings
-        const fuzzyQuery = query.split(/\s+/).map(w => w.length > 3 ? `${w}~` : w).join(' ');
+        const fuzzyQuery = query.split(/\s+/).map(w => w.length > 4 ? `${w}~` : w).join(' ');
         url = `${MUSICBRAINZ_BASE}/release-group?query=${encodeURIComponent(fuzzyQuery)}&fmt=json&limit=${searchLimit}&offset=${searchOffset}`;
         break;
       }

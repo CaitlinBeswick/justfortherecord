@@ -201,7 +201,7 @@ serve(async (req) => {
     if (notification_type === 'new_release' && data) {
       const albumUrl = `${baseUrl}/album/${data.release_group_id}`;
       const artistUrl = `${baseUrl}/artist/${data.artist_id}`;
-      const coverArtUrl = `https://coverartarchive.org/release-group/${data.release_group_id}/front-250`;
+      const coverArtUrl = `https://coverartarchive.org/release-group/${data.release_group_id}/front`;
       const releaseDateStr = data.release_date ? formatDateDDMMYYYY(data.release_date as string) : '';
 
       emailHtml = emailWrapper(`
