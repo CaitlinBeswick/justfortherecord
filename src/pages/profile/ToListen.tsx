@@ -301,7 +301,7 @@ const ToListen = () => {
                             <div 
                               className="flex gap-3 transition-transform"
                               style={{
-                                transform: `translateX(calc(50% - ${activeIndex * (112 + 12)}px - 56px))`,
+                                transform: `translateX(calc(50% - ${activeIndex * 124 + 56}px))`,
                                 transitionDuration: shufflePhase === 'spinning' ? '60ms' : shufflePhase === 'slowing' ? '200ms' : '400ms',
                                 transitionTimingFunction: shufflePhase === 'landed' ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'linear',
                               }}
