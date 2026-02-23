@@ -257,9 +257,8 @@ const DiscoveryNewReleases = () => {
               </p>
             </div>
 
-            {/* All filters on one row, centered */}
+            {/* Row 1: Fade listened + release count */}
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {/* Fade Listened Toggle */}
               <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg">
                 {fadeListened ? (
                   <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -276,7 +275,15 @@ const DiscoveryNewReleases = () => {
                 />
               </div>
 
-              {/* Release Type Filter Dropdown */}
+              {filteredReleases.length > 0 && (
+                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                  {filteredReleases.length} release{filteredReleases.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+
+            {/* Row 2: Album type + time frame dropdowns */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger className="flex items-center gap-2 bg-secondary px-3 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
                   <Settings2 className="h-4 w-4" />
@@ -309,7 +316,6 @@ const DiscoveryNewReleases = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Time Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 bg-secondary px-3 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
                   {timeFilter === "recent" && <Clock className="h-4 w-4" />}
@@ -333,13 +339,6 @@ const DiscoveryNewReleases = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {/* Release count badge */}
-              {filteredReleases.length > 0 && (
-                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
-                  {filteredReleases.length} release{filteredReleases.length !== 1 ? "s" : ""}
-                </span>
-              )}
             </div>
           </div>
         </motion.div>
