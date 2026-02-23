@@ -299,11 +299,12 @@ const ToListen = () => {
                             <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-card/80 to-transparent z-10 pointer-events-none" />
                             
                             <div 
-                              className="flex gap-3 transition-transform"
+                              className="flex gap-3 transition-transform items-center"
                               style={{
-                                transform: `translateX(calc(50% - ${activeIndex * (112 + 12) + 56}px))`,
+                                transform: `translateX(calc(50% - ${activeIndex * 124 + 56}px))`,
                                 transitionDuration: shufflePhase === 'spinning' ? '60ms' : shufflePhase === 'slowing' ? '200ms' : '400ms',
                                 transitionTimingFunction: shufflePhase === 'landed' ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'linear',
+                                willChange: 'transform',
                               }}
                             >
                               {carouselItems.map((album, i) => (

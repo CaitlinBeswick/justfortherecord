@@ -143,9 +143,9 @@ const DiscoveryLeaderboards = () => {
         </motion.div>
 
         {/* Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-3 flex-wrap mb-8">
           {/* Tabs */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={() => setActiveTab("albums")}
               className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
@@ -157,35 +157,23 @@ const DiscoveryLeaderboards = () => {
               <Disc3 className="h-4 w-4" />
                Top 250 Albums
              </button>
-             {/* Top 250 Artists tab temporarily disabled - kept for future reinstatement
-             <button
-               onClick={() => setActiveTab("artists")}
-               className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                 activeTab === "artists"
-                   ? "bg-primary text-primary-foreground"
-                   : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-               }`}
-             >
-               <Users className="h-4 w-4" />
-               Top 250 Artists
-             </button>
-             */}
-          </div>
+             {/* Top 250 Artists tab temporarily disabled - kept for future reinstatement */}
 
-          {/* Fade Toggle */}
-          {user && (
-            <div className="flex items-center gap-2">
-              <Switch
-                id="fade-listened"
-                checked={fadeListened}
-                onCheckedChange={setFadeListened}
-              />
-              <Label htmlFor="fade-listened" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1.5">
-                {fadeListened ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                 Fade listened
-              </Label>
-            </div>
-          )}
+            {/* Fade Toggle - inline next to tab */}
+            {user && (
+              <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg">
+                {fadeListened ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}
+                <Label htmlFor="fade-listened" className="text-sm text-muted-foreground cursor-pointer">
+                  Fade listened
+                </Label>
+                <Switch
+                  id="fade-listened"
+                  checked={fadeListened}
+                  onCheckedChange={setFadeListened}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Albums Grid */}
