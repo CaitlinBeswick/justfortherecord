@@ -249,20 +249,20 @@ const DiscoveryNewReleases = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="space-y-4 mb-6">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-serif text-3xl md:text-4xl text-foreground">New Releases</h1>
-              {filteredReleases.length > 0 && (
-                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
-                  {filteredReleases.length}
-                </span>
-              )}
-              <p className="text-muted-foreground w-full sm:w-auto mt-1 sm:mt-0">
-                From {followedArtists.length} artists you follow
+              <p className="text-muted-foreground">
+                From{" "}
+                <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-sm font-medium">
+                  {followedArtists.length}
+                </span>{" "}
+                artists you follow
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            {/* All filters on one row */}
+            <div className="flex flex-wrap items-center gap-2">
               {/* Fade Listened Toggle */}
               <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg">
                 {fadeListened ? (
@@ -281,15 +281,15 @@ const DiscoveryNewReleases = () => {
               </div>
 
               {/* Release Type Filter Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-2 bg-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger className="flex items-center gap-2 bg-secondary px-3 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
                   <Settings2 className="h-4 w-4" />
                   {selectedTypes.length === 4 ? 'All Types' : selectedTypes.length === 1 
                     ? (selectedTypes[0] === 'Album' ? 'Studio Albums' : selectedTypes[0] === 'EP' ? 'EPs' : selectedTypes[0] === 'Live' ? 'Live' : 'Compilations')
                     : `${selectedTypes.length} Types`}
                   <ChevronDown className="h-4 w-4" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="start" className="w-48" onCloseAutoFocus={(e) => e.preventDefault()}>
                   {[
                     { key: 'Album', label: 'Studio Albums' },
                     { key: 'EP', label: 'EPs' },
@@ -298,11 +298,11 @@ const DiscoveryNewReleases = () => {
                   ].map(({ key, label }) => (
                     <DropdownMenuItem
                       key={key}
-                      onClick={(e) => {
+                      onSelect={(e) => {
                         e.preventDefault();
                         toggleType(key);
                       }}
-                      className="flex items-center justify-between"
+                      className="flex items-center justify-between cursor-pointer"
                     >
                       {label}
                       {selectedTypes.includes(key) && (
@@ -313,15 +313,16 @@ const DiscoveryNewReleases = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Time Filter */}
               <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-2 bg-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
+                <DropdownMenuTrigger className="flex items-center gap-2 bg-secondary px-3 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
                   {timeFilter === "recent" && <Clock className="h-4 w-4" />}
                   {timeFilter === "upcoming" && <Calendar className="h-4 w-4" />}
                   {timeFilter === "all" && <Disc3 className="h-4 w-4" />}
                   {timeFilter === "recent" ? "Recent" : timeFilter === "upcoming" ? "Upcoming" : "All Time"}
                   <ChevronDown className="h-4 w-4" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="start">
                   <DropdownMenuItem onClick={() => setTimeFilter("recent")}>
                     <Clock className="h-4 w-4 mr-2" />
                     Recent (3 months)
@@ -336,6 +337,13 @@ const DiscoveryNewReleases = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Release count badge */}
+              {filteredReleases.length > 0 && (
+                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                  {filteredReleases.length} release{filteredReleases.length !== 1 ? "s" : ""}
+                </span>
+              )}
             </div>
           </div>
         </motion.div>

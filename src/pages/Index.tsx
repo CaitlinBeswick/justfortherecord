@@ -113,7 +113,7 @@ const Index = () => {
                 <span className="text-primary glow-text">you love</span>
               </motion.h1>
               <p className="mt-4 md:mt-6 text-base md:text-lg text-muted-foreground max-w-md">
-                Log albums, review music and discover new artists — your personal music diary, beautifully organised.
+                Log albums, review music and discover new artists. Your personal music diary, beautifully organised.
               </p>
               <div className="mt-6 md:mt-8">
                 <button 
