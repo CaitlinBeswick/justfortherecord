@@ -94,16 +94,17 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
     const token = authHeader.replace('Bearer ', '');
-    const { data: userData } = await userClient.auth.getUser(token);
-    if (userData?.user) {
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (!claimsError && claimsData?.claims?.sub) {
+      const userId = claimsData.claims.sub as string;
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userData.user.id)
+        .eq('user_id', userId)
         .eq('role', 'admin')
         .single();
       if (roleData) {
-        callerUserId = userData.user.id;
+        callerUserId = userId;
       }
     }
   }
