@@ -14,8 +14,10 @@ import {
 } from "@/services/musicbrainz";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlbumCoverWithFallback } from "@/components/AlbumCoverWithFallback";
-import { RefreshCw, ArrowLeft } from "lucide-react";
+import { RefreshCw, ArrowLeft, Plus, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useListeningStatus } from "@/hooks/useListeningStatus";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -132,6 +134,8 @@ const DiscoveryDecade = () => {
   const { range: rawRange } = useParams<{ range: string }>();
   const [offset, setOffset] = useState(0);
   const { user } = useAuth();
+  const { toggleStatus, isPending: isTogglingStatus, getStatusForAlbum } = useListeningStatus();
+  const { toast } = useToast();
 
   const { range, decadeName, startYear, endYear } = useMemo(() => {
     const decoded = rawRange ? decodeURIComponent(rawRange) : "";
@@ -311,9 +315,33 @@ const DiscoveryDecade = () => {
                     key={rg.id}
                     variants={itemVariants}
                     onClick={() => navigate(`/album/${rg.id}`)}
-                    className="cursor-pointer group"
+                    className="cursor-pointer group relative"
                   >
                     <AlbumCoverWithFallback releaseGroupId={rg.id} title={rg.title} />
+                    {/* Quick add to queue */}
+                    {user && (() => {
+                      const status = getStatusForAlbum(rg.id);
+                      if (status.isToListen) return (
+                        <div className="absolute top-2 right-2 z-10 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                          <Clock className="h-4 w-4" />
+                        </div>
+                      );
+                      if (!status.isListened) return (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleStatus({ releaseGroupId: rg.id, albumTitle: rg.title, artistName: getArtistNames(rg["artist-credit"]) || "", field: "is_to_listen", value: true });
+                            toast({ title: "Added to Queue", description: rg.title });
+                          }}
+                          disabled={isTogglingStatus}
+                          className="absolute top-2 right-2 z-10 bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground p-1.5 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md"
+                          title="Add to Queue"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      );
+                      return null;
+                    })()}
                     <h3 className="mt-2 text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                       {rg.title}
                     </h3>

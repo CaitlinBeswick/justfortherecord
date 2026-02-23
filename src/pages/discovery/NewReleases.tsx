@@ -250,9 +250,14 @@ const DiscoveryNewReleases = () => {
           className="mb-8"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="font-serif text-3xl md:text-4xl text-foreground mb-2">New Releases</h1>
-              <p className="text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-serif text-3xl md:text-4xl text-foreground">New Releases</h1>
+              {filteredReleases.length > 0 && (
+                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                  {filteredReleases.length}
+                </span>
+              )}
+              <p className="text-muted-foreground w-full sm:w-auto mt-1 sm:mt-0">
                 From {followedArtists.length} artists you follow
               </p>
             </div>
@@ -274,6 +279,39 @@ const DiscoveryNewReleases = () => {
                   onCheckedChange={setFadeListened}
                 />
               </div>
+
+              {/* Release Type Filter Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-2 bg-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
+                  <Settings2 className="h-4 w-4" />
+                  {selectedTypes.length === 4 ? 'All Types' : selectedTypes.length === 1 
+                    ? (selectedTypes[0] === 'Album' ? 'Studio Albums' : selectedTypes[0] === 'EP' ? 'EPs' : selectedTypes[0] === 'Live' ? 'Live' : 'Compilations')
+                    : `${selectedTypes.length} Types`}
+                  <ChevronDown className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {[
+                    { key: 'Album', label: 'Studio Albums' },
+                    { key: 'EP', label: 'EPs' },
+                    { key: 'Live', label: 'Live Albums' },
+                    { key: 'Compilation', label: 'Compilations' },
+                  ].map(({ key, label }) => (
+                    <DropdownMenuItem
+                      key={key}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleType(key);
+                      }}
+                      className="flex items-center justify-between"
+                    >
+                      {label}
+                      {selectedTypes.includes(key) && (
+                        <span className="text-primary font-bold">✓</span>
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 bg-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
@@ -298,37 +336,7 @@ const DiscoveryNewReleases = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {filteredReleases.length > 0 && (
-                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                  {filteredReleases.length} releases
-                </span>
-              )}
             </div>
-          </div>
-
-          {/* Release Type Filter Row */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Settings2 className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="text-sm text-muted-foreground mr-1">Show:</span>
-            {[
-              { key: 'Album', label: 'Studio Albums' },
-              { key: 'EP', label: 'EPs' },
-              { key: 'Live', label: 'Live' },
-              { key: 'Compilation', label: 'Compilations' },
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => toggleType(key)}
-                className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
-                  selectedTypes.includes(key)
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-transparent text-muted-foreground border-border hover:border-primary/50'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
           </div>
         </motion.div>
 

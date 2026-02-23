@@ -212,27 +212,13 @@ serve(async (req) => {
           <p style="color:#6b7280;font-size:14px;margin:0;">From an artist you follow</p>
         </div>
 
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-          <tr>
-            <td width="100" valign="top" style="padding-right:20px;">
-              <img
-                src="https://coverartarchive.org/release-group/${data.release_group_id}/front"
-                alt="${data.album_title || 'Album cover'}"
-                width="100"
-                height="100"
-                loading="eager"
-                style="border-radius:8px;display:block;width:100px;height:100px;object-fit:cover;background-color:#f3f4f6;"
-              />
-            </td>
-            <td valign="top">
-              <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 4px 0;">${data.album_title}</h2>
-              <p style="color:#dc2626;font-size:15px;font-weight:600;margin:0 0 8px 0;">
-                <a href="${artistUrl}" style="color:#dc2626;text-decoration:none;">${data.artist_name}</a>
-              </p>
-              ${releaseDateStr ? `<p style="color:#9ca3af;font-size:13px;margin:0;">Released ${releaseDateStr}</p>` : ''}
-            </td>
-          </tr>
-        </table>
+        <div style="margin-bottom:28px;">
+          <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 4px 0;">${data.album_title}</h2>
+          <p style="color:#dc2626;font-size:15px;font-weight:600;margin:0 0 8px 0;">
+            <a href="${artistUrl}" style="color:#dc2626;text-decoration:none;">${data.artist_name}</a>
+          </p>
+          ${releaseDateStr ? `<p style="color:#9ca3af;font-size:13px;margin:0;">Released ${releaseDateStr}</p>` : ''}
+        </div>
 
         <div style="text-align:center;margin:32px 0;">
           <a href="${albumUrl}" style="display:inline-block;background-color:#dc2626;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:15px;">
