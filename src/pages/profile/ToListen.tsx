@@ -252,16 +252,18 @@ const ToListen = () => {
                     </div>
                   </div>
                   {toListenAlbums.length > 0 && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleShuffle}
-                      disabled={isShuffling}
-                      className="gap-1.5"
-                    >
-                      <Shuffle className={`h-4 w-4 ${isShuffling ? "animate-spin" : ""}`} />
-                      Shuffle
-                    </Button>
+                    <div className="flex justify-center">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleShuffle}
+                        disabled={isShuffling}
+                        className="gap-1.5"
+                      >
+                        <Shuffle className={`h-4 w-4 ${isShuffling ? "animate-spin" : ""}`} />
+                        Shuffle
+                      </Button>
+                    </div>
                   )}
                 </div>
 

@@ -1,0 +1,2 @@
+ALTER TABLE public.favorite_albums DROP CONSTRAINT favorite_albums_position_check;
+ALTER TABLE public.favorite_albums ADD CONSTRAINT favorite_albums_position_check CHECK (position >= 1 AND position <= 6);

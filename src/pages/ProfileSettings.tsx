@@ -358,6 +358,7 @@ const ProfileSettings = () => {
   const [showVisibilityConfirm, setShowVisibilityConfirm] = useState(false);
   const [pendingVisibility, setPendingVisibility] = useState<'public' | 'friends' | null>(null);
   const [isNotificationsExpanded, setIsNotificationsExpanded] = useState(false);
+  const [isAccountExpanded, setIsAccountExpanded] = useState(false);
   
   // Email notification settings state
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
@@ -1535,87 +1536,114 @@ const ProfileSettings = () => {
               </div>
             </form>
 
-            {/* Change Password */}
+            {/* Account Management - Collapsible */}
             <Separator className="my-8" />
-            <div className="rounded-lg border border-border bg-card p-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-semibold text-foreground">Change Password</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    placeholder="Enter new password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="bg-card"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Confirm new password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="bg-card"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  onClick={async () => {
-                    if (!newPassword || newPassword.length < 6) {
-                      sonnerToast.error("Password must be at least 6 characters");
-                      return;
-                    }
-                    if (newPassword !== confirmPassword) {
-                      sonnerToast.error("Passwords don't match");
-                      return;
-                    }
-                    setIsChangingPassword(true);
-                    try {
-                      const { error } = await supabase.auth.updateUser({ password: newPassword });
-                      if (error) throw error;
-                      sonnerToast.success("Password updated successfully");
-                      setNewPassword("");
-                      setConfirmPassword("");
-                    } catch (err: any) {
-                      sonnerToast.error(err.message || "Failed to update password");
-                    } finally {
-                      setIsChangingPassword(false);
-                    }
-                  }}
-                  disabled={isChangingPassword || !newPassword || !confirmPassword}
-                  className="gap-2"
-                >
-                  {isChangingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                  Update Password
-                </Button>
-              </div>
-            </div>
-
-            {/* Danger Zone - Delete Account */}
-            <Separator className="my-8" />
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <Trash2 className="h-5 w-5 text-destructive" />
-                <h3 className="text-lg font-semibold text-destructive">Danger Zone</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Permanently delete your account and all associated data. This action cannot be undone.
-              </p>
-              <Button
-                variant="destructive"
-                onClick={() => setShowDeleteConfirm(true)}
-                className="gap-2"
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => setIsAccountExpanded(!isAccountExpanded)}
+                className="w-full flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
               >
-                <Trash2 className="h-4 w-4" />
-                Delete My Account
-              </Button>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold text-foreground">Account Management</h2>
+                </div>
+                {isAccountExpanded ? (
+                  <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                )}
+              </button>
+
+              {isAccountExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-6 pl-4 border-l-2 border-primary/20"
+                >
+                  {/* Change Password */}
+                  <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold text-foreground">Change Password</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          placeholder="Enter new password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="bg-card"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          placeholder="Confirm new password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="bg-card"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          if (!newPassword || newPassword.length < 6) {
+                            sonnerToast.error("Password must be at least 6 characters");
+                            return;
+                          }
+                          if (newPassword !== confirmPassword) {
+                            sonnerToast.error("Passwords don't match");
+                            return;
+                          }
+                          setIsChangingPassword(true);
+                          try {
+                            const { error } = await supabase.auth.updateUser({ password: newPassword });
+                            if (error) throw error;
+                            sonnerToast.success("Password updated successfully");
+                            setNewPassword("");
+                            setConfirmPassword("");
+                          } catch (err: any) {
+                            sonnerToast.error(err.message || "Failed to update password");
+                          } finally {
+                            setIsChangingPassword(false);
+                          }
+                        }}
+                        disabled={isChangingPassword || !newPassword || !confirmPassword}
+                        className="gap-2"
+                      >
+                        {isChangingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                        Update Password
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Danger Zone - Delete Account */}
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Trash2 className="h-5 w-5 text-destructive" />
+                      <h3 className="text-lg font-semibold text-destructive">Danger Zone</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently delete your account and all associated data. This action cannot be undone.
+                    </p>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete My Account
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         </div>
