@@ -35,6 +35,7 @@ const UserProfile = lazy(() => import("./pages/UserProfile"));
 const FollowingActivity = lazy(() => import("./pages/FollowingActivity"));
 const YourActivity = lazy(() => import("./pages/YourActivity"));
 const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -86,6 +87,7 @@ const App = () => (
                 <Route path="/activity/following" element={<FollowingActivity />} />
                 <Route path="/activity/you" element={<YourActivity />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/contact" element={<Contact />} />

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, Play, Search, Target, Pencil, Check, X, Trophy, PartyPopper } from "lucide-react";
+import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, Search, Target, Pencil, Check, X, Trophy, PartyPopper } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -28,6 +28,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+// HoverCard kept for potential future use
 import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
 import { MobileListeningGoal } from "./MobileListeningGoal";
 import { Badge } from "@/components/ui/badge";
@@ -689,172 +690,126 @@ export function DiaryContent() {
 
 
       {sortedDiaryEntries.length > 0 ? (
-        <div className="space-y-2">
-          {sortedDiaryEntries.map((entry, index) => {
-            const albumRating = ratingsMap.get(entry.release_group_id);
-            // Use diary entry's rating if available, otherwise fall back to album_ratings
-            const displayRating = entry.rating ?? albumRating?.rating ?? null;
-            const reviewText = albumRating?.review_text;
-            const isLoved = albumRating?.loved;
-            const entryYear = new Date(entry.listened_on).getFullYear();
-            const prevEntryYear = index > 0 ? new Date(sortedDiaryEntries[index - 1].listened_on).getFullYear() : null;
-            const showYearDivider = selectedYear === 'all' && diarySort === 'date' && prevEntryYear !== null && entryYear !== prevEntryYear;
-            return (
-              <div key={entry.id}>
-                {showYearDivider && (
-                  <div className="flex items-center gap-3 py-3">
-                    <div className="flex-1 h-px bg-border" />
-                    <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase px-2">
-                      {entryYear}
-                    </span>
-                    <div className="flex-1 h-px bg-border" />
-                  </div>
-                )}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.02 }}
-                className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 md:p-2 rounded-lg bg-card/30 hover:bg-card/60 transition-colors group"
-              >
-                {/* Top row: date + cover + title/artist */}
-                <div className="flex items-center gap-3">
-                  <div className="w-12 text-center shrink-0">
-                    <p className="text-lg font-semibold text-foreground leading-none">
-                      {format(new Date(entry.listened_on), 'd')}
-                    </p>
-                    <p className="text-xs text-muted-foreground uppercase">
-                      {format(new Date(entry.listened_on), 'MMM')}
-                    </p>
-                  </div>
+        <div>
+          {(() => {
+            // Group entries by month/year for Letterboxd-style headers
+            let lastMonthKey = '';
+            return sortedDiaryEntries.map((entry, index) => {
+              const albumRating = ratingsMap.get(entry.release_group_id);
+              const displayRating = entry.rating ?? albumRating?.rating ?? null;
+              const reviewText = albumRating?.review_text;
+              const isLoved = albumRating?.loved;
+              const entryDate = new Date(entry.listened_on);
+              const monthKey = format(entryDate, 'MMMM yyyy').toUpperCase();
+              const showMonthHeader = diarySort === 'date' && monthKey !== lastMonthKey;
+              if (diarySort === 'date') lastMonthKey = monthKey;
 
-                  <div 
-                    className="shrink-0 cursor-pointer"
+              return (
+                <div key={entry.id}>
+                  {showMonthHeader && (
+                    <div className="px-3 py-2 bg-muted/50 border-b border-border">
+                      <span className="text-xs font-bold text-muted-foreground tracking-widest">
+                        {monthKey}
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    className="flex items-center gap-3 px-3 py-2.5 border-b border-border/50 hover:bg-card/60 transition-colors group cursor-pointer"
                     onClick={() => entry.release_group_id && navigate(`/album/${entry.release_group_id}`)}
                   >
-                    <AlbumCoverWithFallback
-                      releaseGroupId={entry.release_group_id}
-                      title={entry.album_title}
-                      size="250"
-                      className="w-16 h-16 md:w-10 md:h-10 rounded"
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <h3 
-                        className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
-                        onClick={() => entry.release_group_id && navigate(`/album/${entry.release_group_id}`)}
-                      >
-                        {entry.album_title}
-                      </h3>
-                      {reviewText && (
-                        <HoverCard openDelay={200} closeDelay={100}>
-                          <HoverCardTrigger asChild>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium shrink-0 cursor-pointer hover:bg-primary/20 transition-colors">
-                              Review
-                            </span>
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-80 p-3" side="top" align="start">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
-                                <span className="text-xs font-medium text-foreground">{displayRating}/5</span>
-                                {isLoved && <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" />}
-                              </div>
-                              <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap">
-                                {reviewText}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground/60">
-                                Click album to read full review
-                              </p>
-                            </div>
-                          </HoverCardContent>
-                        </HoverCard>
-                      )}
+                    {/* Day number */}
+                    <div className="w-10 text-center shrink-0">
+                      <span className="text-lg font-semibold text-foreground">
+                        {format(entryDate, 'd')}
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{entry.artist_name}</p>
-                  </div>
-                </div>
 
-                {/* Bottom row on mobile: rating, heart, format, actions */}
-                <div className="flex items-center gap-2 md:gap-2 pl-[60px] md:pl-0 flex-wrap">
-                  {/* Listen type icon */}
-                  <div className="shrink-0" title={entry.is_relisten ? "Re-listen" : "First listen"}>
-                    {entry.is_relisten ? (
-                      <RotateCcw className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Play className="h-4 w-4 text-green-500 fill-green-500" />
-                    )}
-                  </div>
-
-                  {/* Format tags */}
-                  {entry.tags && entry.tags.length > 0 && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      {entry.tags.slice(0, 2).map((tag) => {
-                        const tagInfo = FORMAT_TAG_LABELS[tag];
-                        return tagInfo ? (
-                          <span key={tag} className="text-xs" title={tagInfo.label}>
-                            {tagInfo.emoji}
-                          </span>
-                        ) : null;
-                      })}
-                      {entry.tags.length > 2 && (
-                        <span className="text-[10px] text-muted-foreground">+{entry.tags.length - 2}</span>
-                      )}
+                    {/* Album cover */}
+                    <div className="shrink-0">
+                      <AlbumCoverWithFallback
+                        releaseGroupId={entry.release_group_id}
+                        title={entry.album_title}
+                        size="250"
+                        className="w-12 h-12 rounded"
+                      />
                     </div>
-                  )}
 
-                  {/* Rating display */}
-                  {displayRating !== null && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((star) => {
-                          const ratingValue = displayRating;
-                          const isFull = star <= Math.floor(ratingValue);
-                          const isHalf = !isFull && star === Math.ceil(ratingValue) && ratingValue % 1 >= 0.5;
-                          
-                          if (isFull) {
-                            return <Star key={star} className="h-3 w-3 text-yellow-400 fill-yellow-400" />;
-                          } else if (isHalf) {
-                            return (
-                              <div key={star} className="relative h-3 w-3">
-                                <Star className="absolute h-3 w-3 text-muted-foreground/30" />
-                                <div className="absolute overflow-hidden w-1/2 h-3">
-                                  <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-                                </div>
-                              </div>
-                            );
-                          } else {
-                            return <Star key={star} className="h-3 w-3 text-muted-foreground/30" />;
-                          }
-                        })}
+                    {/* Title + Artist + Rating */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="text-sm font-semibold text-foreground truncate">
+                          {entry.album_title}
+                        </h3>
+                        {entry.is_relisten && (
+                          <RotateCcw className="h-3 w-3 text-primary shrink-0" />
+                        )}
                       </div>
-                      {isLoved && (
-                        <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 ml-1" />
-                      )}
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {displayRating !== null && (
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const isFull = star <= Math.floor(displayRating);
+                              const isHalf = !isFull && star === Math.ceil(displayRating) && displayRating % 1 >= 0.5;
+                              if (isFull) {
+                                return <Star key={star} className="h-3 w-3 text-primary fill-primary" />;
+                              } else if (isHalf) {
+                                return (
+                                  <div key={star} className="relative h-3 w-3">
+                                    <Star className="absolute h-3 w-3 text-muted-foreground/30" />
+                                    <div className="absolute overflow-hidden w-1/2 h-3">
+                                      <Star className="h-3 w-3 text-primary fill-primary" />
+                                    </div>
+                                  </div>
+                                );
+                              } else {
+                                return <Star key={star} className="h-3 w-3 text-muted-foreground/30" />;
+                              }
+                            })}
+                          </div>
+                        )}
+                        {isLoved && (
+                          <Heart className="h-3 w-3 text-red-500 fill-red-500" />
+                        )}
+                        {reviewText && (
+                          <span className="text-[10px] text-muted-foreground">📝</span>
+                        )}
+                        {entry.tags && entry.tags.length > 0 && (
+                          <div className="flex items-center gap-0.5">
+                            {entry.tags.slice(0, 2).map((tag) => {
+                              const tagInfo = FORMAT_TAG_LABELS[tag];
+                              return tagInfo ? (
+                                <span key={tag} className="text-[11px]" title={tagInfo.label}>
+                                  {tagInfo.emoji}
+                                </span>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
 
-                  <button
-                    onClick={() => handleEditEntry(entry)}
-                    className="opacity-0 group-hover:opacity-100 md:opacity-0 p-1.5 text-muted-foreground hover:text-primary transition-all"
-                    title="Edit entry"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    onClick={() => handleDeleteDiaryEntry(entry.id)}
-                    className="opacity-0 group-hover:opacity-100 md:opacity-0 p-1.5 text-muted-foreground hover:text-destructive transition-all"
-                    title="Delete entry"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEditEntry(entry); }}
+                        className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
+                        title="Edit entry"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteDiaryEntry(entry.id); }}
+                        className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Delete entry"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </motion.div>
-              </div>
-            );
-          })}
+              );
+            });
+          })()}
         </div>
       ) : (
         <div className="text-center py-12">
