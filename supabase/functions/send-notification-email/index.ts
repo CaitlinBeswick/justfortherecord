@@ -93,10 +93,9 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } }
     });
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (!claimsError && claimsData?.claims?.sub) {
-      const userId = claimsData.claims.sub as string;
+    const { data: userData } = await userClient.auth.getUser();
+    if (userData?.user) {
+      const userId = userData.user.id;
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
