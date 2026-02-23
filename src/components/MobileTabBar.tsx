@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 const tabs = [
   { path: "/", label: "Home", icon: Home },
   { path: "/search", label: "Search", icon: Search },
-  { path: "/search", label: "Log", icon: PlusCircle, requiresAuth: true, isCenter: true },
+  { path: "/log", label: "Log", icon: PlusCircle, requiresAuth: true, isCenter: true },
   { path: "/discovery", label: "Discover", icon: Compass, requiresAuth: false },
   { path: "/profile", label: "Profile", icon: User, requiresAuth: true },
 ];

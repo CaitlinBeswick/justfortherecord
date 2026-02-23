@@ -213,11 +213,12 @@ serve(async (req) => {
           <tr>
             <td width="100" valign="top" style="padding-right:20px;">
               <img
-                src="https://coverartarchive.org/release-group/${data.release_group_id}/front-250"
-                alt="${data.album_title}"
+                src="https://coverartarchive.org/release-group/${data.release_group_id}/front"
+                alt="${data.album_title || 'Album cover'}"
                 width="100"
                 height="100"
-                style="border-radius:8px;display:block;object-fit:cover;background-color:#f3f4f6;"
+                loading="eager"
+                style="border-radius:8px;display:block;width:100px;height:100px;object-fit:cover;background-color:#f3f4f6;"
               />
             </td>
             <td valign="top">
