@@ -253,16 +253,12 @@ const DiscoveryNewReleases = () => {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-serif text-3xl md:text-4xl text-foreground">New Releases</h1>
               <p className="text-muted-foreground">
-                From{" "}
-                <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-sm font-medium">
-                  {followedArtists.length}
-                </span>{" "}
-                artists you follow
+                From {followedArtists.length} artists you follow
               </p>
             </div>
 
-            {/* All filters on one row */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* All filters on one row, centered */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
               {/* Fade Listened Toggle */}
               <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg">
                 {fadeListened ? (

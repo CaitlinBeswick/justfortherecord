@@ -46,10 +46,17 @@ interface ShuffledAlbum {
   artist_name: string;
 }
 
+// Carousel item width (fixed) + gap
+const CARD_WIDTH = 112;
+const CARD_GAP = 12;
+
 // Carousel item for the shuffle animation
 function CarouselCard({ album, isActive }: { album: ShuffledAlbum; isActive: boolean }) {
   return (
-    <div className={`flex-shrink-0 w-28 transition-all duration-200 ${isActive ? 'scale-110 opacity-100' : 'scale-90 opacity-40'}`}>
+    <div
+      className={`transition-all duration-200 ${isActive ? 'scale-110 opacity-100' : 'scale-90 opacity-40'}`}
+      style={{ width: CARD_WIDTH, flexShrink: 0 }}
+    >
       <div className="aspect-square rounded-lg overflow-hidden shadow-md">
         <AlbumCoverWithFallback
           releaseGroupId={album.release_group_id}
@@ -74,6 +81,15 @@ const ToListen = () => {
   const [carouselItems, setCarouselItems] = useState<ShuffledAlbum[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [shufflePhase, setShufflePhase] = useState<'idle' | 'spinning' | 'slowing' | 'landed'>('idle');
+  const carouselContainerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Measure container width for centering
+  useEffect(() => {
+    if (carouselItems.length > 0 && carouselContainerRef.current) {
+      setContainerWidth(carouselContainerRef.current.offsetWidth);
+    }
+  }, [carouselItems]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -293,15 +309,16 @@ const ToListen = () => {
                           </div>
                           
                           {/* Carousel strip */}
-                          <div className="relative overflow-hidden">
+                          <div className="relative overflow-hidden" ref={carouselContainerRef}>
                             {/* Gradient masks */}
                             <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-card/80 to-transparent z-10 pointer-events-none" />
                             <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-card/80 to-transparent z-10 pointer-events-none" />
                             
                             <div 
-                              className="flex gap-3 transition-transform items-center"
+                              className="flex transition-transform items-center"
                               style={{
-                                transform: `translateX(calc(50% - ${activeIndex * 124 + 56}px))`,
+                                gap: `${CARD_GAP}px`,
+                                transform: `translateX(${(containerWidth || (carouselContainerRef.current?.offsetWidth ?? 300)) / 2 - activeIndex * (CARD_WIDTH + CARD_GAP) - CARD_WIDTH / 2}px)`,
                                 transitionDuration: shufflePhase === 'spinning' ? '60ms' : shufflePhase === 'slowing' ? '200ms' : '400ms',
                                 transitionTimingFunction: shufflePhase === 'landed' ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'linear',
                                 willChange: 'transform',
