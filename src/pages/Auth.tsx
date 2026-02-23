@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { VinylBackground } from "@/components/VinylBackground";
+import { supabase } from "@/integrations/supabase/client";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -237,7 +238,52 @@ const Auth = () => {
           </button>
         </form>
 
-        <p className="text-center text-muted-foreground mt-6">
+        {!isSignUp && (
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!email) {
+                  toast({
+                    title: "Enter your email",
+                    description: "Please enter your email address first, then click Forgot Password.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                const emailResult = emailSchema.safeParse(email);
+                if (!emailResult.success) {
+                  toast({
+                    title: "Invalid email",
+                    description: "Please enter a valid email address.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                  redirectTo: `${window.location.origin}/reset-password`,
+                });
+                if (error) {
+                  toast({
+                    title: "Error",
+                    description: error.message,
+                    variant: "destructive",
+                  });
+                } else {
+                  toast({
+                    title: "Check your email",
+                    description: "A password reset link has been sent to your email.",
+                  });
+                }
+              }}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Forgot password?
+            </button>
+          </div>
+        )}
+
+        <p className="text-center text-muted-foreground mt-4">
           {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
           <button
             onClick={() => {

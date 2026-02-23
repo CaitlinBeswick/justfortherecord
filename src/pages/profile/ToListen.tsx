@@ -252,13 +252,11 @@ const ToListen = () => {
                     </div>
                   </div>
                   {toListenAlbums.length > 0 && (
-                    <div className="flex justify-center">
+                    <div className="w-full">
                       <Button
-                        variant="secondary"
-                        size="sm"
                         onClick={handleShuffle}
                         disabled={isShuffling}
-                        className="gap-1.5"
+                        className="w-full gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
                       >
                         <Shuffle className={`h-4 w-4 ${isShuffling ? "animate-spin" : ""}`} />
                         Shuffle
