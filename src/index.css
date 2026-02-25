@@ -39,6 +39,7 @@
     --radius: 0.75rem;
 
     /* Custom tokens */
+    --brand-red: 4 60% 50%;
     --glow-primary: 0 72% 51%;
     --surface-elevated: 40 20% 94%;
     --surface-hover: 40 15% 90%;

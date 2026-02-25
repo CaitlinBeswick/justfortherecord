@@ -37,10 +37,10 @@ export function MobileTabBar() {
                 <Link
                   key="auth"
                   to="/auth"
-                  className="flex flex-col items-center justify-center gap-1 flex-1 py-2"
+                  className="flex flex-col items-center justify-center gap-1 flex-1 py-2 text-[hsl(var(--brand-red))]"
                 >
-                  <LogIn className="h-5 w-5 text-primary" />
-                  <span className="text-[10px] text-primary">Sign in</span>
+                  <LogIn className="h-5 w-5" />
+                  <span className="text-[10px]">Sign in</span>
                 </Link>
               );
             }
@@ -54,18 +54,15 @@ export function MobileTabBar() {
               key={tab.path}
               to={tab.path}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors",
-                active ? "text-primary" : "text-primary/60"
+                "flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors text-[hsl(var(--brand-red))]",
+                active ? "font-semibold" : ""
               )}
             >
               <tab.icon className={cn(
                 "h-5 w-5",
                 tab.isCenter && "h-7 w-7",
               )} />
-              <span className={cn(
-                "text-[10px]",
-                active ? "font-semibold" : ""
-              )}>
+              <span className="text-[10px]">
                 {tab.label}
               </span>
             </Link>
