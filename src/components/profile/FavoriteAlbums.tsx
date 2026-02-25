@@ -187,10 +187,14 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
                       }}
                     />
                     <button
-                      onClick={(e) => handleRemove(e, slot.position)}
-                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        removeFavorite(slot.position);
+                      }}
+                      className="absolute -top-2.5 -right-2.5 h-7 w-7 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-md"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-4 w-4" />
                     </button>
                     <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-0.5">
                       <GripVertical className="h-3 w-3 text-white/80" />
@@ -235,10 +239,14 @@ export const FavoriteAlbums = ({ userId, allowReorder = false }: FavoriteAlbumsP
                     />
                     {isOwner && (
                       <button
-                        onClick={(e) => handleRemove(e, slot.position)}
-                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          removeFavorite(slot.position);
+                        }}
+                        className="absolute -top-2.5 -right-2.5 h-7 w-7 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-md"
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-4 w-4" />
                       </button>
                     )}
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
