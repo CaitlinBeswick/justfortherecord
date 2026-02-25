@@ -29,7 +29,7 @@ export function MobileTabBar() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/95 backdrop-blur-xl safe-area-bottom">
-      <div className="flex items-center justify-around h-14 px-2">
+      <div className="flex items-center justify-around h-18 px-2">
         {tabs.map((tab) => {
           if (tab.requiresAuth && !user) {
             if (tab.path === "/profile") {
@@ -37,10 +37,10 @@ export function MobileTabBar() {
                 <Link
                   key="auth"
                   to="/auth"
-                  className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1"
+                  className="flex flex-col items-center justify-center gap-1 flex-1 py-2"
                 >
-                  <LogIn className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground">Sign in</span>
+                  <LogIn className="h-5 w-5 text-destructive" />
+                  <span className="text-[10px] text-destructive">Sign in</span>
                 </Link>
               );
             }
@@ -54,18 +54,17 @@ export function MobileTabBar() {
               key={tab.path}
               to={tab.path}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 py-1 transition-colors",
-                active ? "text-primary" : "text-muted-foreground"
+                "flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors",
+                active ? "text-destructive" : "text-destructive/70"
               )}
             >
               <tab.icon className={cn(
                 "h-5 w-5",
                 tab.isCenter && "h-7 w-7",
-                active && "text-primary"
               )} />
               <span className={cn(
                 "text-[10px]",
-                active ? "font-semibold text-primary" : "text-muted-foreground"
+                active ? "font-semibold" : ""
               )}>
                 {tab.label}
               </span>

@@ -11,15 +11,13 @@ import {
   Search,
   Disc3,
   Sparkles,
-  Menu
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const TOUR_STORAGE_KEY = "welcome-tour-completed";
-// Feature was added on this date - only show tour to users who signed up after
 const FEATURE_LAUNCH_DATE = new Date("2025-01-20T00:00:00Z");
 
 interface TourStep {
@@ -27,14 +25,13 @@ interface TourStep {
   icon: React.ReactNode;
   title: string;
   description: string;
-  mobileDescription?: string; // Alternative description for mobile
   action?: {
     label: string;
     route: string;
   };
 }
 
-const getTourSteps = (isMobile: boolean): TourStep[] => [
+const tourSteps: TourStep[] = [
   {
     id: "welcome",
     icon: <Sparkles className="h-8 w-8 text-primary" />,
@@ -42,13 +39,14 @@ const getTourSteps = (isMobile: boolean): TourStep[] => [
     description: "Track the albums you listen to, rate your favorites, and discover new music. Let's take a quick tour of the key features.",
   },
   {
-    id: "navigation",
-    icon: <Menu className="h-8 w-8 text-primary" />,
-    title: isMobile ? "📱 Find the Menu Button" : "Navigate Easily",
-    description: isMobile 
-      ? "Look for the highlighted menu button (☰) in the top-left corner of the screen. Tap it to open the sidebar where you'll find your Profile, Diary, Friends, and more!"
-      : "Use the navigation bar at the top to access all sections of the app.",
-    mobileDescription: "Look for the highlighted menu button (☰) in the top-left corner of the screen. Tap it to open the sidebar where you'll find your Profile, Diary, Friends, and more!",
+    id: "search",
+    icon: <Search className="h-8 w-8 text-primary" />,
+    title: "Search for Music",
+    description: "Use the Search tab to find albums and artists. Rate, review, and add them to your collection or queue.",
+    action: {
+      label: "Start Searching",
+      route: "/search",
+    },
   },
   {
     id: "diary",
@@ -71,30 +69,30 @@ const getTourSteps = (isMobile: boolean): TourStep[] => [
     },
   },
   {
-    id: "activity",
-    icon: <Activity className="h-8 w-8 text-primary" />,
-    title: "Activity Feed",
-    description: "See what your friends are listening to and share your own activity. Stay connected with fellow music lovers.",
-  },
-  {
-    id: "search",
-    icon: <Search className="h-8 w-8 text-primary" />,
-    title: "Search for Music",
-    description: "Search for albums and artists to add to your collection. Rate and review everything you listen to.",
-    action: {
-      label: "Start Searching",
-      route: "/search",
-    },
-  },
-  {
     id: "discovery",
     icon: <Disc3 className="h-8 w-8 text-primary" />,
     title: "Discover New Music",
-    description: "Explore personalized recommendations, browse by genre or decade, and find your next favorite album.",
+    description: "Explore personalized AI recommendations, browse by genre or decade, check new releases from artists you follow, and find your next favorite album.",
     action: {
       label: "Explore Discovery",
       route: "/discovery",
     },
+  },
+  {
+    id: "favorites",
+    icon: <Star className="h-8 w-8 text-primary" />,
+    title: "Pin Your Favorites",
+    description: "Showcase up to 6 favorite albums on your profile. Visit your Profile to set them up and show off your taste!",
+    action: {
+      label: "View Profile",
+      route: "/profile",
+    },
+  },
+  {
+    id: "activity",
+    icon: <Activity className="h-8 w-8 text-primary" />,
+    title: "Activity Feed",
+    description: "See what your friends are listening to and share your own activity. Like and comment to stay connected with fellow music lovers.",
   },
   {
     id: "friends",
@@ -113,27 +111,19 @@ export function WelcomeTour() {
   const [currentStep, setCurrentStep] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  
-  // Get tour steps based on device type
-  const tourSteps = getTourSteps(isMobile);
 
   useEffect(() => {
     if (!user) return;
     
-    // Check localStorage for completion status
     const completed = localStorage.getItem(TOUR_STORAGE_KEY);
     if (completed === "true") return;
     
-    // Only show tour to users who signed up after the feature was added
     const userCreatedAt = new Date(user.created_at);
     if (userCreatedAt < FEATURE_LAUNCH_DATE) {
-      // User existed before the feature - mark as completed silently
       localStorage.setItem(TOUR_STORAGE_KEY, "true");
       return;
     }
     
-    // New user - show the tour after a brief delay
     const timer = setTimeout(() => setIsOpen(true), 2000);
     return () => clearTimeout(timer);
   }, [user]);
@@ -141,7 +131,7 @@ export function WelcomeTour() {
   const handleClose = () => {
     localStorage.setItem(TOUR_STORAGE_KEY, "true");
     setIsOpen(false);
-    setCurrentStep(0); // Reset for next time if tour is reset
+    setCurrentStep(0);
   };
 
   const handleNext = () => {
@@ -182,7 +172,6 @@ export function WelcomeTour() {
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -191,7 +180,6 @@ export function WelcomeTour() {
             onClick={handleSkip}
           />
 
-          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -199,7 +187,6 @@ export function WelcomeTour() {
             transition={{ type: "spring", damping: 20, stiffness: 300 }}
             className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
           >
-            {/* Progress bar */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-muted">
               <motion.div
                 className="h-full bg-primary"
@@ -209,7 +196,6 @@ export function WelcomeTour() {
               />
             </div>
 
-            {/* Close button */}
             <button
               onClick={handleSkip}
               className="absolute top-4 right-4 p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-muted"
@@ -217,7 +203,6 @@ export function WelcomeTour() {
               <X className="h-5 w-5" />
             </button>
 
-            {/* Content */}
             <div className="p-8 pt-10">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -228,7 +213,6 @@ export function WelcomeTour() {
                   transition={{ duration: 0.2 }}
                   className="text-center"
                 >
-                  {/* Icon */}
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -238,17 +222,14 @@ export function WelcomeTour() {
                     {step.icon}
                   </motion.div>
 
-                  {/* Title */}
                   <h2 className="font-serif text-2xl text-foreground mb-3">
                     {step.title}
                   </h2>
 
-                  {/* Description */}
                   <p className="text-muted-foreground leading-relaxed">
                     {step.description}
                   </p>
 
-                  {/* Action button */}
                   {step.action && (
                     <Button
                       variant="outline"
@@ -264,7 +245,6 @@ export function WelcomeTour() {
               </AnimatePresence>
             </div>
 
-            {/* Step indicators */}
             <div className="flex justify-center gap-1.5 pb-4">
               {tourSteps.map((_, index) => (
                 <button
@@ -279,7 +259,6 @@ export function WelcomeTour() {
               ))}
             </div>
 
-            {/* Navigation */}
             <div className="flex items-center justify-between p-4 border-t border-border bg-muted/30">
               <Button
                 variant="ghost"

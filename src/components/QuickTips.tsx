@@ -11,10 +11,6 @@ interface Tip {
   id: string;
   route: string | RegExp;
   message: string;
-  action?: {
-    label: string;
-    route: string;
-  };
 }
 
 const tips: Tip[] = [
@@ -22,15 +18,21 @@ const tips: Tip[] = [
   {
     id: "home-tip",
     route: "/",
-    message: "Welcome! This is your home feed showing your recent activity and what your friends are listening to.",
+    message: "Welcome! This is your home feed showing recent activity and what your friends are listening to.",
   },
-  
-  // Search & Discovery
+  // Search
   {
     id: "search-tip",
     route: "/search",
     message: "Search for any album or artist to add it to your collection. Toggle between Albums, Artists, or All results.",
   },
+  // Log
+  {
+    id: "log-tip",
+    route: "/log",
+    message: "Quickly log a listen! Search for music and use the inline buttons to rate, review, or add to your queue.",
+  },
+  // Discovery
   {
     id: "discovery-tip",
     route: "/discovery",
@@ -39,17 +41,17 @@ const tips: Tip[] = [
   {
     id: "discovery-explore-tip",
     route: "/discovery/explore",
-    message: "Use mood filters to get personalized recommendations. Click the italic text to expand album descriptions.",
+    message: "Describe your mood to get AI-powered album recommendations. Click italic text to expand album descriptions.",
   },
   {
     id: "discovery-leaderboards-tip",
     route: "/discovery/leaderboards",
-    message: "See the top 250 albums based on community ratings. Use 'Fade Listened' to dim items you've already heard.",
+    message: "See the top 250 albums based on community ratings. Use 'Fade Listened' to dim albums you've already heard.",
   },
   {
     id: "genre-tip",
     route: /^\/discovery\/genre\/.+/,
-    message: "Explore albums from this genre. Your 'Include Familiar' setting in preferences controls whether listened albums appear.",
+    message: "Explore albums from this genre. Your 'Include Familiar' setting controls whether listened albums appear.",
   },
   {
     id: "decade-tip",
@@ -61,7 +63,6 @@ const tips: Tip[] = [
     route: "/new-releases",
     message: "Browse the latest releases across all artists. Filter by time range to find recent or upcoming albums.",
   },
-  
   // Top Charts
   {
     id: "top-albums-tip",
@@ -73,7 +74,6 @@ const tips: Tip[] = [
     route: "/top-artists",
     message: "The community's top 250 rated artists based on average ratings across all users.",
   },
-  
   // Album & Artist Details
   {
     id: "album-detail-tip",
@@ -90,12 +90,11 @@ const tips: Tip[] = [
     route: /^\/artist\/[a-f0-9-]+\/similar$/,
     message: "Discover artists similar to this one based on genre and style. Great for expanding your musical horizons!",
   },
-  
   // Profile Pages
   {
     id: "profile-tip",
     route: "/profile",
-    message: "Your profile hub! Set your favorite albums, track your listening goal progress, and see your stats.",
+    message: "Your profile hub! Set up to 6 favorite albums, track your listening goal, and view your stats.",
   },
   {
     id: "profile-albums-tip",
@@ -105,7 +104,7 @@ const tips: Tip[] = [
   {
     id: "profile-to-listen-tip",
     route: "/profile/to-listen",
-    message: "Your queue — albums you've saved for later. Click any album to rate it when you're ready.",
+    message: "Your queue — albums saved for later. Use shuffle mode to pick a random album when you can't decide!",
   },
   {
     id: "profile-diary-tip",
@@ -137,7 +136,6 @@ const tips: Tip[] = [
     route: "/profile/settings",
     message: "Customize your experience: set favorite genres, privacy settings, notifications, and export your data.",
   },
-  
   // Activity Feeds
   {
     id: "following-activity-tip",
@@ -149,21 +147,18 @@ const tips: Tip[] = [
     route: "/activity/you",
     message: "Your complete activity history — ratings, reviews, and diary entries all in one place.",
   },
-  
   // Other User Profiles
   {
     id: "user-profile-tip",
     route: /^\/user\/[a-f0-9-]+$/,
     message: "Viewing another user's profile. Send a follow request to see their activity in your feed!",
   },
-  
   // What's New
   {
     id: "whats-new-tip",
     route: "/whats-new",
     message: "See the latest app updates and new features. Check back regularly for improvements!",
   },
-  
   // Auth
   {
     id: "auth-tip",
@@ -179,7 +174,6 @@ export function QuickTips() {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Load dismissed tips from localStorage
   useEffect(() => {
     const dismissed = localStorage.getItem(TIPS_DISMISSED_KEY);
     if (dismissed) {
@@ -187,15 +181,12 @@ export function QuickTips() {
     }
   }, []);
 
-  // Check for matching tip when route changes
   useEffect(() => {
     if (!user) return;
 
-    // Only show tips if welcome tour is completed
     const tourCompleted = localStorage.getItem(TOUR_STORAGE_KEY);
     if (!tourCompleted) return;
 
-    // Find matching tip for current route
     const matchingTip = tips.find((tip) => {
       if (typeof tip.route === "string") {
         return location.pathname === tip.route;
@@ -204,7 +195,6 @@ export function QuickTips() {
     });
 
     if (matchingTip && !dismissedTips.includes(matchingTip.id)) {
-      // Delay showing tip to avoid interrupting page load
       const timer = setTimeout(() => {
         setCurrentTip(matchingTip);
         setIsVisible(true);
@@ -247,7 +237,6 @@ export function QuickTips() {
           className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-40"
         >
           <div className="bg-card border border-border rounded-xl shadow-lg overflow-hidden">
-            {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 bg-primary/5 border-b border-border">
               <div className="flex items-center gap-2 text-primary">
                 <Lightbulb className="h-4 w-4" />
@@ -261,13 +250,11 @@ export function QuickTips() {
               </button>
             </div>
 
-            {/* Content */}
             <div className="p-4">
               <p className="text-sm text-foreground leading-relaxed">
                 {currentTip.message}
               </p>
 
-              {/* Actions */}
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                 <button
                   onClick={handleDismissAll}
@@ -291,7 +278,6 @@ export function QuickTips() {
   );
 }
 
-// Helper to reset tips (can be called from settings)
 export function resetQuickTips() {
   localStorage.removeItem(TIPS_DISMISSED_KEY);
 }
