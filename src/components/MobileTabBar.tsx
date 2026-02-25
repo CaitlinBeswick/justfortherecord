@@ -39,8 +39,8 @@ export function MobileTabBar() {
                   to="/auth"
                   className="flex flex-col items-center justify-center gap-1 flex-1 py-2"
                 >
-                  <LogIn className="h-5 w-5 text-destructive" />
-                  <span className="text-[10px] text-destructive">Sign in</span>
+                  <LogIn className="h-5 w-5 text-primary" />
+                  <span className="text-[10px] text-primary">Sign in</span>
                 </Link>
               );
             }
@@ -55,7 +55,7 @@ export function MobileTabBar() {
               to={tab.path}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors",
-                active ? "text-destructive" : "text-destructive/70"
+                active ? "text-primary" : "text-primary/60"
               )}
             >
               <tab.icon className={cn(

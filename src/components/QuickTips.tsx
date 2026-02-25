@@ -41,7 +41,7 @@ const tips: Tip[] = [
   {
     id: "discovery-explore-tip",
     route: "/discovery/explore",
-    message: "Describe your mood to get AI-powered album recommendations. Click italic text to expand album descriptions.",
+    message: "Describe your mood to get personalized album recommendations. Click italic text to expand album descriptions.",
   },
   {
     id: "discovery-leaderboards-tip",
