@@ -6,8 +6,8 @@ const corsHeaders = {
 }
 
 const CACHE_TTL_HOURS = 12
-const BATCH_SIZE = 3
-const DELAY_BETWEEN_BATCHES = 400 // ms
+const BATCH_SIZE = 1
+const DELAY_BETWEEN_BATCHES = 1200 // ms — MusicBrainz allows ~1 req/sec
 
 interface ArtistFollow {
   artist_id: string
