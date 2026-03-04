@@ -135,7 +135,7 @@ export const PipelineHealthCheck = () => {
   const staleness = data.staleCount === 0 ? "healthy" : data.staleCount <= 5 ? "warning" : "error";
   const notifStatus = getAgeStatus(data.latestNotification, 26, 50);
 
-  const overallStatus: Status = [cacheCoverageStatus, freshness, staleness, notifStatus].includes("error")
+  const overallStatus: Status = ([cacheCoverageStatus, freshness, staleness, notifStatus] as Status[]).includes("error")
     ? "error"
     : [cacheCoverageStatus, freshness, staleness, notifStatus].includes("warning")
       ? "warning"
