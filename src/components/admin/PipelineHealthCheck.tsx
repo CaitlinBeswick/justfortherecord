@@ -141,7 +141,7 @@ export const PipelineHealthCheck = () => {
       ? "warning"
       : "healthy";
 
-  const sections = [
+  const sections: Array<{ title: string; icon: React.ReactNode; items: Array<{ label: string; status: Status; value: string }> }> = [
     {
       title: "Prewarm Job",
       icon: <RefreshCw className="h-4 w-4" />,
