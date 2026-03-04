@@ -205,13 +205,19 @@ Deno.serve(async (req) => {
 
       console.log(`Successfully created ${notificationsToCreate.length} notifications`);
 
-      // Send email and push notifications (non-blocking, fire and forget)
+      // Send email and push notifications with rate limiting (Resend allows 2 req/sec)
       const supabaseFunctionsUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.functions.supabase.co');
       const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-      for (const notification of notificationsToCreate) {
+      for (let i = 0; i < notificationsToCreate.length; i++) {
+        const notification = notificationsToCreate[i];
         try {
-          fetch(`${supabaseFunctionsUrl}/send-notification-email`, {
+          // Stagger requests to stay under Resend's 2 req/sec limit
+          if (i > 0) {
+            await new Promise(r => setTimeout(r, 600));
+          }
+
+          await fetch(`${supabaseFunctionsUrl}/send-notification-email`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceRoleKey}` },
             body: JSON.stringify({
@@ -241,7 +247,7 @@ Deno.serve(async (req) => {
             }),
           }).catch(err => console.error('Push send error:', err));
         } catch (notifError) {
-          console.error('Error queuing notification:', notifError);
+          console.error('Error sending notification:', notifError);
         }
       }
     }
