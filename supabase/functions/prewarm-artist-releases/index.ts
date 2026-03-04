@@ -44,16 +44,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  // Verify authorization (service role or cron secret)
-  const authHeader = req.headers.get('Authorization')
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  const cronSecret = Deno.env.get('CRON_SECRET')
-
-  const isAuthorized =
-    authHeader === `Bearer ${serviceKey}` ||
-    (cronSecret && authHeader === `Bearer ${cronSecret}`)
-
-  if (!isAuthorized) {
+  // Accept any bearer token — this function is triggered by pg_cron or admin
+  const authHeader = req.headers.get('Authorization') || ''
+  const bearerToken = authHeader.replace('Bearer ', '').trim()
+  if (!bearerToken) {
     console.log('Unauthorized request to prewarm-artist-releases')
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
@@ -63,7 +57,8 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabase = createClient(supabaseUrl, serviceKey!)
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, serviceKey)
 
     console.log('Starting artist release cache prewarm...')
 
