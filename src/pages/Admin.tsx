@@ -325,6 +325,9 @@ const Admin = () => {
               </Card>
             </div>
 
+            {/* Pipeline Health */}
+            <PipelineHealthCheck />
+
             {/* Digest Email Preview */}
             <DigestEmailPreview />
 
