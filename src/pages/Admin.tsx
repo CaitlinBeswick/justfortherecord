@@ -16,6 +16,7 @@ import { AppUpdatesManager } from "@/components/admin/AppUpdatesManager";
 import { EmailHealthCheck } from "@/components/admin/EmailHealthCheck";
 import { DigestEmailPreview } from "@/components/admin/DigestEmailPreview";
 import { NotificationEmailPreview } from "@/components/admin/NotificationEmailPreview";
+import { PipelineHealthCheck } from "@/components/admin/PipelineHealthCheck";
 
 import {
   AlertDialog,
