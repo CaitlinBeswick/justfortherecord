@@ -137,7 +137,7 @@ export const PipelineHealthCheck = () => {
 
   const overallStatus: Status = ([cacheCoverageStatus, freshness, staleness, notifStatus] as Status[]).includes("error")
     ? "error"
-    : [cacheCoverageStatus, freshness, staleness, notifStatus].includes("warning")
+    : ([cacheCoverageStatus, freshness, staleness, notifStatus] as Status[]).includes("warning")
       ? "warning"
       : "healthy";
 
