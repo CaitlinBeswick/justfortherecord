@@ -122,7 +122,7 @@ export function NotificationBell() {
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((notification) => (
+              {notifications.slice(0, 5).map((notification) => (
                 <div
                   key={notification.id}
                   className={cn(
@@ -169,6 +169,18 @@ export function NotificationBell() {
             </div>
           )}
         </ScrollArea>
+
+        {notifications.length > 0 && (
+          <div className="border-t p-2">
+            <Button
+              variant="ghost"
+              className="w-full text-sm h-8"
+              onClick={() => navigate('/notifications')}
+            >
+              View all notifications
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );

@@ -48,6 +48,7 @@ const DiscoveryExplore = lazy(() => import("./pages/discovery/Explore"));
 const DiscoveryGenre = lazy(() => import("./pages/discovery/Genre"));
 const DiscoveryDecade = lazy(() => import("./pages/discovery/Decade"));
 const DiscoveryLeaderboards = lazy(() => import("./pages/discovery/Leaderboards"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
@@ -101,6 +102,7 @@ const App = () => (
                 <Route path="/discovery/genre/:genre" element={<DiscoveryGenre />} />
                 <Route path="/discovery/decade/:range" element={<DiscoveryDecade />} />
                 <Route path="/discovery/leaderboards" element={<DiscoveryLeaderboards />} />
+                <Route path="/notifications" element={<Notifications />} />
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
