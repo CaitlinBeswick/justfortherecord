@@ -48,6 +48,7 @@ const DiscoveryExplore = lazy(() => import("./pages/discovery/Explore"));
 const DiscoveryGenre = lazy(() => import("./pages/discovery/Genre"));
 const DiscoveryDecade = lazy(() => import("./pages/discovery/Decade"));
 const DiscoveryLeaderboards = lazy(() => import("./pages/discovery/Leaderboards"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
