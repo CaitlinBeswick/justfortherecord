@@ -100,6 +100,11 @@ export function AppUpdatesManager() {
     briefNote: "",
     isGenerating: false,
   });
+  const [suggest, setSuggest] = useState<SuggestState>({
+    isLoading: false,
+    suggestions: [],
+    isVisible: false,
+  });
 
   const handleAIDraft = async () => {
     if (!aiDraft.briefNote.trim()) {
