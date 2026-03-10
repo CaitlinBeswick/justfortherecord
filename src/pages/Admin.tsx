@@ -330,6 +330,9 @@ const Admin = () => {
               </div>
             </div>
 
+            {/* Registered Users */}
+            <AdminUsersList />
+
             {/* App Updates Section */}
             <div className="mb-8">
               <AppUpdatesManager />
