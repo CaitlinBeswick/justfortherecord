@@ -28,10 +28,10 @@ import { Badge } from "@/components/ui/badge";
 
 // Pre-defined format tags
 const FORMAT_TAGS = [
+  { value: "digital", label: "Digital", emoji: "🎧" },
   { value: "vinyl", label: "Vinyl", emoji: "💿" },
   { value: "cd", label: "CD", emoji: "📀" },
   { value: "cassette", label: "Cassette", emoji: "📼" },
-  { value: "digital", label: "Digital", emoji: "🎧" },
   { value: "radio", label: "Radio", emoji: "📻" },
   { value: "live", label: "Live", emoji: "🎤" },
 ];
