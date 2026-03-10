@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, ShieldAlert, Mail, MailOpen, Reply, Archive, ArchiveRestore, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldAlert, Mail, MailOpen, Reply, Archive, ArchiveRestore, Trash2, Users } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
@@ -16,7 +16,6 @@ import { AppUpdatesManager } from "@/components/admin/AppUpdatesManager";
 import { EmailHealthCheck } from "@/components/admin/EmailHealthCheck";
 import { DigestEmailPreview } from "@/components/admin/DigestEmailPreview";
 import { NotificationEmailPreview } from "@/components/admin/NotificationEmailPreview";
-
 
 import {
   AlertDialog,
@@ -50,6 +49,16 @@ const Admin = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [deleteSubmissionId, setDeleteSubmissionId] = useState<string | null>(null);
+
+  const { data: totalUsers = 0 } = useQuery({
+    queryKey: ["admin-user-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_total_user_count");
+      if (error) throw error;
+      return data as number;
+    },
+    enabled: isAdmin,
+  });
 
   const { data: submissions = [], isLoading: submissionsLoading } = useQuery({
     queryKey: ["contact-submissions"],
@@ -284,112 +293,141 @@ const Admin = () => {
               </button>
               <div>
                 <h1 className="font-serif text-3xl text-foreground">Admin Dashboard</h1>
-                <p className="text-muted-foreground">Manage contact submissions and app updates</p>
+                <p className="text-muted-foreground">Manage your app, users, and communications</p>
               </div>
-              <EmailHealthCheck />
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">{activeSubmissions.length}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Unread</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-primary">{unreadCount}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Archived</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-muted-foreground">{archivedSubmissions.length}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">{submissions.length}</p>
-                </CardContent>
-              </Card>
+            {/* Platform Overview */}
+            <div className="mb-8">
+              <h2 className="font-serif text-xl text-foreground mb-4">Platform Overview</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Registered Users
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{totalUsers}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Email System
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Sends a test email to verify Resend API key and delivery
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <EmailHealthCheck />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-
-
-            {/* Digest Email Preview */}
-            <DigestEmailPreview />
-
-            {/* Notification Email Preview */}
-            <NotificationEmailPreview />
-
 
             {/* App Updates Section */}
             <div className="mb-8">
               <AppUpdatesManager />
             </div>
 
-            {/* Submissions List with Tabs */}
-            <h2 className="font-serif text-xl text-foreground mb-4">Contact Submissions</h2>
-            
-            {submissionsLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            {/* Email Templates */}
+            <DigestEmailPreview />
+            <NotificationEmailPreview />
+
+            {/* Contact Submissions */}
+            <div className="mb-8">
+              <h2 className="font-serif text-xl text-foreground mb-4">Contact Submissions</h2>
+              
+              {/* Contact Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{activeSubmissions.length}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Unread</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold text-primary">{unreadCount}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Archived</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold text-muted-foreground">{archivedSubmissions.length}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{submissions.length}</p>
+                  </CardContent>
+                </Card>
               </div>
-            ) : submissions.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No contact submissions yet.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Tabs defaultValue="active">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="active">
-                    Active {activeSubmissions.length > 0 && `(${activeSubmissions.length})`}
-                  </TabsTrigger>
-                  <TabsTrigger value="archived">
-                    Archived {archivedSubmissions.length > 0 && `(${archivedSubmissions.length})`}
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="active">
-                  {activeSubmissions.length === 0 ? (
-                    <Card>
-                      <CardContent className="py-8 text-center">
-                        <p className="text-muted-foreground">No active submissions.</p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="space-y-4">
-                      {activeSubmissions.map(renderSubmissionCard)}
-                    </div>
-                  )}
-                </TabsContent>
-                <TabsContent value="archived">
-                  {archivedSubmissions.length === 0 ? (
-                    <Card>
-                      <CardContent className="py-8 text-center">
-                        <p className="text-muted-foreground">No archived submissions.</p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="space-y-4">
-                      {archivedSubmissions.map(renderSubmissionCard)}
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            )}
+              
+              {submissionsLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : submissions.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No contact submissions yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Tabs defaultValue="active">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="active">
+                      Active {activeSubmissions.length > 0 && `(${activeSubmissions.length})`}
+                    </TabsTrigger>
+                    <TabsTrigger value="archived">
+                      Archived {archivedSubmissions.length > 0 && `(${archivedSubmissions.length})`}
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="active">
+                    {activeSubmissions.length === 0 ? (
+                      <Card>
+                        <CardContent className="py-8 text-center">
+                          <p className="text-muted-foreground">No active submissions.</p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="space-y-4">
+                        {activeSubmissions.map(renderSubmissionCard)}
+                      </div>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="archived">
+                    {archivedSubmissions.length === 0 ? (
+                      <Card>
+                        <CardContent className="py-8 text-center">
+                          <p className="text-muted-foreground">No archived submissions.</p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="space-y-4">
+                        {archivedSubmissions.map(renderSubmissionCard)}
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              )}
+            </div>
           </motion.div>
         </div>
       </main>
