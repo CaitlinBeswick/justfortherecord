@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
-import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell, Wand2, FlaskConical, RotateCcw, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell, Wand2, FlaskConical, RotateCcw, CheckCircle2, Lightbulb } from "lucide-react";
 import {
   Dialog,
   DialogContent,
