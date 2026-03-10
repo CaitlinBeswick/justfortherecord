@@ -102,6 +102,7 @@ const App = () => (
                 <Route path="/discovery/genre/:genre" element={<DiscoveryGenre />} />
                 <Route path="/discovery/decade/:range" element={<DiscoveryDecade />} />
                 <Route path="/discovery/leaderboards" element={<DiscoveryLeaderboards />} />
+                <Route path="/notifications" element={<Notifications />} />
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
