@@ -299,10 +299,10 @@ const Admin = () => {
             </div>
 
             {/* Platform Overview */}
-            <div className="mb-8">
+            <section className="mb-10 p-6 rounded-xl bg-card border border-border">
               <h2 className="font-serif text-xl text-foreground mb-4">Platform Overview</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Card className="bg-secondary/30 border-border/50">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <Users className="h-4 w-4" />
@@ -313,7 +313,7 @@ const Admin = () => {
                     <p className="text-3xl font-bold">{totalUsers}</p>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-secondary/30 border-border/50">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <Mail className="h-4 w-4" />
@@ -328,19 +328,22 @@ const Admin = () => {
                   </CardContent>
                 </Card>
               </div>
-            </div>
 
-            {/* Registered Users */}
-            <AdminUsersList />
+              {/* Registered Users (collapsible) */}
+              <AdminUsersList />
+            </section>
 
             {/* App Updates Section */}
-            <div className="mb-8">
+            <section className="mb-10 p-6 rounded-xl bg-card border border-border">
               <AppUpdatesManager />
-            </div>
+            </section>
 
             {/* Email Templates */}
-            <DigestEmailPreview />
-            <NotificationEmailPreview />
+            <section className="mb-10 p-6 rounded-xl bg-card border border-border space-y-6">
+              <h2 className="font-serif text-xl text-foreground">Email Templates</h2>
+              <DigestEmailPreview />
+              <NotificationEmailPreview />
+            </section>
 
             {/* Contact Submissions */}
             <div className="mb-8">
