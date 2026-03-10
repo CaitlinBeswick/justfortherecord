@@ -106,6 +106,38 @@ export function AppUpdatesManager() {
     isVisible: false,
   });
 
+  const handleAISuggest = async () => {
+    setSuggest(prev => ({ ...prev, isLoading: true, isVisible: true }));
+    try {
+      const existingTitles = updates.map(u => u.title);
+      const { data, error } = await supabase.functions.invoke('draft-app-update', {
+        body: { mode: "suggest", existingTitles },
+      });
+      if (error) throw error;
+      setSuggest(prev => ({ ...prev, suggestions: data.suggestions || [], isLoading: false }));
+    } catch (err) {
+      console.error('AI suggest error:', err);
+      toast({
+        title: "Failed to generate suggestions",
+        description: err instanceof Error ? err.message : "Please try again",
+        variant: "destructive",
+      });
+      setSuggest(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const useSuggestion = (suggestion: AISuggestion) => {
+    setFormData({
+      title: suggestion.title,
+      description: suggestion.description,
+      version: "",
+      is_active: false,
+      link: suggestion.link || "",
+    });
+    setIsDialogOpen(true);
+    setSuggest(prev => ({ ...prev, isVisible: false }));
+  };
+
   const handleAIDraft = async () => {
     if (!aiDraft.briefNote.trim()) {
       toast({ title: "Enter a brief note", description: "Describe what you built in a few words", variant: "destructive" });
