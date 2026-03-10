@@ -614,25 +614,33 @@ export function DiaryContent() {
         )}
         
         {/* Compact Goal Progress - desktop only, when goal is set */}
-        {selectedYearGoal ? (
-          <div className="hidden md:block mb-4 p-3 rounded-lg bg-card/50 border border-border">
-            <div className="flex items-center gap-3">
-              <Target className="h-4 w-4 text-primary shrink-0" />
-              <div className="flex-1">
-                <Progress 
-                  value={Math.min((yearFilteredEntries.length / selectedYearGoal) * 100, 100)} 
-                  className="h-2"
-                />
+        {selectedYearGoal ? (() => {
+          const { label, status } = getPaceInfo(yearFilteredEntries.length, selectedYearGoal, selectedYear as number);
+          const StatusIcon = status === "ahead" ? TrendingUp : status === "behind" ? TrendingDown : Minus;
+          const statusColor = status === "ahead" ? "text-green-500" : status === "behind" ? "text-orange-500" : "text-muted-foreground";
+          return (
+            <div className="hidden md:block mb-4 p-3 rounded-lg bg-card/50 border border-border">
+              <div className="flex items-center gap-3">
+                <Target className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex-1">
+                  <Progress 
+                    value={Math.min((yearFilteredEntries.length / selectedYearGoal) * 100, 100)} 
+                    className="h-2"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <StatusIcon className={`h-3 w-3 ${statusColor}`} />
+                  <span className={`text-xs ${statusColor}`}>
+                    {yearFilteredEntries.length >= selectedYearGoal 
+                      ? `🎉 +${yearFilteredEntries.length - selectedYearGoal} bonus!`
+                      : label
+                    }
+                  </span>
+                </div>
               </div>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {yearFilteredEntries.length >= selectedYearGoal 
-                  ? `🎉 +${yearFilteredEntries.length - selectedYearGoal} bonus!`
-                  : `${selectedYearGoal - yearFilteredEntries.length} to go`
-                }
-              </span>
             </div>
-          </div>
-        ) : selectedYear === currentYear && (
+          );
+        })() : selectedYear === currentYear && (
           <div className="hidden md:flex mb-4 p-4 rounded-lg bg-primary/5 border border-primary/20 items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <Target className="h-5 w-5 text-primary" />
