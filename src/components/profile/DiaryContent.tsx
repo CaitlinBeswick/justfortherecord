@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, Search, Target, Pencil, Check, X, Trophy, PartyPopper } from "lucide-react";
+import { Plus, RotateCcw, Trash2, Disc3, Star, Heart, Search, Target, Pencil, Check, X, Trophy, PartyPopper, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import {
   Select,
   SelectContent,
