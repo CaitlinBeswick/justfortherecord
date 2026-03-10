@@ -434,7 +434,7 @@ const Admin = () => {
                   </TabsContent>
                 </Tabs>
               )}
-            </div>
+            </section>
           </motion.div>
         </div>
       </main>
