@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { Plus, Pencil, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, Bell, Wand2, FlaskConical, RotateCcw, CheckCircle2, Lightbulb } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -521,56 +522,80 @@ export function AppUpdatesManager() {
                       )}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleTestNotification(update)}
-                      disabled={testingId === update.id}
-                      title="Send test notification to yourself"
-                    >
-                      {testingId === update.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <FlaskConical className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </Button>
-                    {update.broadcasted_at ? (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRecall(update)}
-                        disabled={recallingId === update.id}
-                        title="Recall notifications from all users"
-                      >
-                        {recallingId === update.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                    <TooltipProvider delayDuration={200}>
+                      <div className="flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleTestNotification(update)}
+                              disabled={testingId === update.id}
+                            >
+                              {testingId === update.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FlaskConical className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Test notification (you only)</TooltipContent>
+                        </Tooltip>
+                        {update.broadcasted_at ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRecall(update)}
+                                disabled={recallingId === update.id}
+                              >
+                                {recallingId === update.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <RotateCcw className="h-4 w-4 text-destructive" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Recall notifications</TooltipContent>
+                          </Tooltip>
                         ) : (
-                          <RotateCcw className="h-4 w-4 text-orange-500" />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleBroadcast(update)}
+                                disabled={broadcastingId === update.id}
+                              >
+                                {broadcastingId === update.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Bell className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Broadcast to all users</TooltipContent>
+                          </Tooltip>
                         )}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleBroadcast(update)}
-                        disabled={broadcastingId === update.id}
-                        title="Send to all users' notification bell"
-                      >
-                        {broadcastingId === update.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Bell className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(update)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(update.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => openEditDialog(update)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit update</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(update.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete update</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
                 </div>
               </CardHeader>
               <CardContent>
