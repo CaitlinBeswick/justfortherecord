@@ -696,8 +696,8 @@ export function DiaryContent() {
             let lastMonthKey = '';
             return sortedDiaryEntries.map((entry, index) => {
               const albumRating = ratingsMap.get(entry.release_group_id);
-              const displayRating = entry.rating ?? albumRating?.rating ?? null;
-              const reviewText = albumRating?.review_text;
+              const displayRating = entry.rating !== undefined ? entry.rating : null;
+              const reviewText = entry.notes || albumRating?.review_text;
               const isLoved = albumRating?.loved;
               const entryDate = new Date(entry.listened_on);
               const monthKey = format(entryDate, 'MMMM yyyy').toUpperCase();
