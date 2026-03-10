@@ -1,6 +1,7 @@
-import { Target, Trophy } from "lucide-react";
+import { Target, Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
+import { differenceInDays, startOfYear, endOfYear } from "date-fns";
 
 interface MobileListeningGoalProps {
   currentCount: number;
@@ -8,9 +9,52 @@ interface MobileListeningGoalProps {
   year: number;
 }
 
+function getPaceInfo(currentCount: number, goal: number, year: number) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  // For past years, just show final result
+  if (year < currentYear) {
+    return { expectedCount: goal, diff: currentCount - goal, label: currentCount >= goal ? "Goal reached!" : `Fell short by ${goal - currentCount}`, status: currentCount >= goal ? "ahead" as const : "behind" as const };
+  }
+
+  const yearStart = startOfYear(new Date(year, 0, 1));
+  const yearEnd = endOfYear(new Date(year, 0, 1));
+  const totalDays = differenceInDays(yearEnd, yearStart) + 1;
+  const daysPassed = Math.min(differenceInDays(now, yearStart) + 1, totalDays);
+  const fractionOfYear = daysPassed / totalDays;
+  const expectedCount = Math.round(goal * fractionOfYear);
+  const diff = currentCount - expectedCount;
+
+  let label: string;
+  let status: "ahead" | "behind" | "on-track";
+
+  if (currentCount >= goal) {
+    label = "Goal reached! 🎉";
+    status = "ahead";
+  } else if (diff >= 2) {
+    label = `${diff} ahead of schedule`;
+    status = "ahead";
+  } else if (diff <= -2) {
+    label = `${Math.abs(diff)} behind schedule`;
+    status = "behind";
+  } else {
+    label = "On track";
+    status = "on-track";
+  }
+
+  return { expectedCount, diff, label, status };
+}
+
+export { getPaceInfo };
+
 export function MobileListeningGoal({ currentCount, goal, year }: MobileListeningGoalProps) {
   const percentage = Math.min(Math.round((currentCount / goal) * 100), 100);
   const isComplete = currentCount >= goal;
+  const { label, status } = getPaceInfo(currentCount, goal, year);
+
+  const StatusIcon = status === "ahead" ? TrendingUp : status === "behind" ? TrendingDown : Minus;
+  const statusColor = status === "ahead" ? "text-green-500" : status === "behind" ? "text-orange-500" : "text-muted-foreground";
 
   return (
     <motion.div
@@ -34,9 +78,12 @@ export function MobileListeningGoal({ currentCount, goal, year }: MobileListenin
         </span>
       </div>
       <Progress value={percentage} className="h-2" />
-      <p className="text-xs text-muted-foreground mt-1.5 text-right">
-        {isComplete ? "Goal reached! 🎉" : `${percentage}% complete`}
-      </p>
+      <div className="flex items-center gap-1.5 mt-1.5 justify-end">
+        <StatusIcon className={`h-3 w-3 ${statusColor}`} />
+        <p className={`text-xs ${statusColor}`}>
+          {label}
+        </p>
+      </div>
     </motion.div>
   );
 }
