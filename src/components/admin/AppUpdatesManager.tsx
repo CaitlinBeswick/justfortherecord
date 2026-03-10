@@ -394,11 +394,86 @@ export function AppUpdatesManager() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-serif text-xl text-foreground">App Updates</h2>
-        <Button onClick={openCreateDialog} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          New Update
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleAISuggest}
+            size="sm"
+            variant="outline"
+            disabled={suggest.isLoading}
+          >
+            {suggest.isLoading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Lightbulb className="h-4 w-4 mr-2" />
+            )}
+            Suggest Updates
+          </Button>
+          <Button onClick={openCreateDialog} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            New Update
+          </Button>
+        </div>
       </div>
+
+      {/* AI Suggestions Panel */}
+      {suggest.isVisible && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Lightbulb className="h-4 w-4 text-primary" />
+                Suggested Updates
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => setSuggest(prev => ({ ...prev, isVisible: false }))}
+              >
+                Dismiss
+              </Button>
+            </div>
+            <CardDescription className="text-xs">
+              AI-generated suggestions based on your app's features. Click "Use" to create a draft.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {suggest.isLoading ? (
+              <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Analyzing features...
+              </div>
+            ) : suggest.suggestions.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No suggestions generated. Try again.</p>
+            ) : (
+              <div className="space-y-2">
+                {suggest.suggestions.map((s, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start justify-between gap-3 p-3 rounded-lg border border-border bg-background"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{s.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
+                      {s.link && (
+                        <p className="text-xs text-primary mt-1">→ {s.link}</p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0 h-7 text-xs"
+                      onClick={() => useSuggestion(s)}
+                    >
+                      Use
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-8">
