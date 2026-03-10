@@ -54,9 +54,33 @@ Your task: Suggest 3-5 app update announcements for features that users might no
 
 ${existingList ? `These updates have ALREADY been announced — do NOT suggest these again:\n- ${existingList}\n` : ""}
 
+IMPORTANT: The "link" field MUST be one of these exact valid routes:
+- / (home)
+- /profile (profile overview)
+- /profile/albums (rated albums)
+- /profile/artists (rated artists)
+- /profile/diary (listening diary)
+- /profile/lists (custom lists)
+- /profile/to-listen (queue)
+- /profile/reviews (reviews)
+- /profile/friends (friends)
+- /profile/settings (settings)
+- /activity/following (friend activity feed)
+- /activity/you (your activity)
+- /search (search)
+- /log (log a listen)
+- /new-releases (new releases)
+- /discovery (discovery)
+- /discovery/explore (explore genres/decades)
+- /discovery/leaderboards (leaderboards)
+- /whats-new (app updates)
+- /notifications (notifications)
+
+Do NOT use any other routes. Pick the most relevant route from this list.
+
 Respond with a JSON array of objects:
 [
-  { "title": "Short title (3-6 words)", "description": "1-2 sentence user-facing benefit description.", "link": "/relevant-page" }
+  { "title": "Short title (3-6 words)", "description": "1-2 sentence user-facing benefit description.", "link": "/relevant-route-from-list-above" }
 ]
 
 Only respond with the JSON array, no other text. Make suggestions diverse — cover different parts of the app.`;
