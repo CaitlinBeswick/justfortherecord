@@ -318,7 +318,7 @@ export function ReleaseManager({
         
         {/* Release Type Visibility Section */}
         <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border">
-          <span className="text-sm font-medium text-foreground mb-3">Visible Release Types</span>
+          <p className="text-sm font-medium text-foreground mb-3">Visible Release Types</p>
           <div className="flex flex-wrap gap-4">
             {VISIBILITY_TYPES.map((type) => (
               <div key={type.value} className="flex items-center gap-2">
