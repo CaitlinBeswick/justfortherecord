@@ -71,6 +71,18 @@ interface AIDraftState {
   isGenerating: boolean;
 }
 
+interface AISuggestion {
+  title: string;
+  description: string;
+  link?: string;
+}
+
+interface SuggestState {
+  isLoading: boolean;
+  suggestions: AISuggestion[];
+  isVisible: boolean;
+}
+
 export function AppUpdatesManager() {
   const { toast } = useToast();
   const { user } = useAuth();
