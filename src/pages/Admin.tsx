@@ -16,6 +16,7 @@ import { AppUpdatesManager } from "@/components/admin/AppUpdatesManager";
 import { EmailHealthCheck } from "@/components/admin/EmailHealthCheck";
 import { DigestEmailPreview } from "@/components/admin/DigestEmailPreview";
 import { NotificationEmailPreview } from "@/components/admin/NotificationEmailPreview";
+import { AdminUsersList } from "@/components/admin/AdminUsersList";
 
 import {
   AlertDialog,
@@ -328,6 +329,9 @@ const Admin = () => {
                 </Card>
               </div>
             </div>
+
+            {/* Registered Users */}
+            <AdminUsersList />
 
             {/* App Updates Section */}
             <div className="mb-8">

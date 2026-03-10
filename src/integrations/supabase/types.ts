@@ -1037,6 +1037,17 @@ export type Database = {
         Args: { profile_user_id: string; viewer_id: string }
         Returns: boolean
       }
+      get_all_users_admin: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          created_at: string
+          display_name: string
+          id: string
+          location: string
+          username: string
+        }[]
+      }
       get_total_user_count: { Args: never; Returns: number }
       has_role: {
         Args: {
