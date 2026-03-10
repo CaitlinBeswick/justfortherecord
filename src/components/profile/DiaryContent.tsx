@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/hover-card";
 // HoverCard kept for potential future use
 import { EditDiaryEntryDialog } from "./EditDiaryEntryDialog";
-import { MobileListeningGoal } from "./MobileListeningGoal";
+import { MobileListeningGoal, getPaceInfo } from "./MobileListeningGoal";
 import { Badge } from "@/components/ui/badge";
 // ExportDiaryButton and AnnualStats moved to ProfileSettings
 
