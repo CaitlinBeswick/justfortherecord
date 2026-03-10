@@ -346,7 +346,7 @@ const Admin = () => {
             </section>
 
             {/* Contact Submissions */}
-            <div className="mb-8">
+            <section className="mb-10 p-6 rounded-xl bg-card border border-border">
               <h2 className="font-serif text-xl text-foreground mb-4">Contact Submissions</h2>
               
               {/* Contact Stats */}
