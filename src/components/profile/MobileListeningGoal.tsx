@@ -54,7 +54,7 @@ export function MobileListeningGoal({ currentCount, goal, year }: MobileListenin
   const { label, status } = getPaceInfo(currentCount, goal, year);
 
   const StatusIcon = status === "ahead" ? TrendingUp : status === "behind" ? TrendingDown : Minus;
-  const statusColor = status === "ahead" ? "text-green-500" : status === "behind" ? "text-orange-500" : "text-muted-foreground";
+  const statusColor = status === "ahead" ? "text-green-500" : status === "behind" ? "text-primary" : "text-muted-foreground";
 
   return (
     <motion.div
