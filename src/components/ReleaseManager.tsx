@@ -311,7 +311,7 @@ export function ReleaseManager({
           Manage Releases
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Discography for {artistName}</DialogTitle>
         </DialogHeader>
